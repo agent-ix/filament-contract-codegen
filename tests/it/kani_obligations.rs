@@ -1470,11 +1470,11 @@ fn tc_025_every_confirmed_operation_is_rendered_or_honestly_refused() {
     );
 }
 
-/// An admitted division claim remains distinct from operand-lowering refusals:
-/// its confirmed operation has no scalar harness renderer.
-#[trace("FR-015-AC-109", "TC-023")]
+/// An admitted division claim renders the division scalar harness (FR-057 replaced the
+/// `OperationNotRendered` settlement FR-015-AC-109 recorded).
+#[trace("FR-057-AC-1", "TC-071")]
 #[test]
-fn admitted_integer_division_is_unrendered_and_emits_no_harness() {
+fn admitted_integer_division_renders_its_division_harness() {
     let (scalar, claim_map, _) = scalar_package();
     let division = claim_map
         .items
@@ -1502,11 +1502,16 @@ fn admitted_integer_division_is_unrendered_and_emits_no_harness() {
     let (records, harnesses) =
         emitted_scalar(negotiate_kani_obligations(&request(&items, "crate::subject")).unwrap());
     assert_eq!(records.len(), 1);
-    assert!(matches!(unsupported(&records[0]),
-        UnsupportedObligation::OperationNotRendered { operation_identity, .. }
-            if operation_identity == "quire.op.integer.div"
+    assert!(matches!(
+        records[0].disposition,
+        ObligationDisposition::Supported { .. }
     ));
-    assert!(harnesses.is_empty(), "unrendered division emits no harness");
+    assert_eq!(harnesses.len(), 1, "a division claim emits its harness");
+    assert!(harnesses[0].identity.division_scalar.is_some());
+    assert_eq!(
+        harnesses[0].identity.operation_identity,
+        "quire.op.integer.div"
+    );
 }
 
 /// FR-015-AC-6 ("an obligation over a `caller_declared` oracle is refused with a typed reason and

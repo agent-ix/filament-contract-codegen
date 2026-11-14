@@ -2937,7 +2937,7 @@ pub(super) fn plan_exact_scalar_oracles(
                                             ..
                                         }
                                     ),
-                                    division: super::DivisionClaim::of(&operation),
+                                    division: super::DivisionClaim::of(operation),
                                 })),
                             )
                         }

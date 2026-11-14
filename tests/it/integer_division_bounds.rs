@@ -343,7 +343,7 @@ fn case_{index}() {{
     run_generated_native(&native, selected.len(), "integer-division-bounds");
 }
 
-fn run_generated_native(native: &str, count: usize, label: &str) {
+pub(crate) fn run_generated_native(native: &str, count: usize, label: &str) {
     let scratch = scratch_crate::TemporaryDirectory::new(label);
     let manifest = format!("[package]\nname=\"integer-division-derived-native\"\nversion=\"0.0.0\"\nedition=\"2021\"\n[dependencies]\nquire-exact = {{ {EXACT_DEPENDENCY_SOURCE} }}\n[workspace]\n");
     scratch_crate::write_manifest(&scratch.path, &manifest);
@@ -493,7 +493,7 @@ fn reader_integer_operation(
 
 /// A reader-admitted `div`, `rem` or `mod` node over parameters of the given ranges, with an
 /// explicit narrowed result range when `narrow` is given.
-fn reader_division_operation(
+pub(crate) fn reader_division_operation(
     code: u32,
     identity: &str,
     profile: Option<quire_exact::DivisionProfile>,
@@ -543,6 +543,7 @@ fn reader_division_operation(
         let bound = builder.bound(&fixture::Bound::Integer(lower, upper));
         builder.narrow(code + 3, &fixture::key(code + 2), &bound);
     }
+    builder.expression_occurrences();
     let (read, _, ids) = builder.read_resolved();
     let CheckedPackageV2ReadResult::Admitted(package) = read else {
         panic!("IR admits canonical division fixture: {read:?}");
