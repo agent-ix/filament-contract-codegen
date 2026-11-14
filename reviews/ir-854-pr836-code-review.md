@@ -80,3 +80,17 @@ first run without `QUIRE_CVC5_BIN` failed only the environmental
 `cargo fmt --check` clean; `cargo clippy --all-targets -- -D warnings` clean. The six rewritten
 tests that asserted "division unrendered" now assert the landed behaviour and pass; the claim is
 sound, with the hygiene gaps of FND-003 and FND-004.
+
+## Dispositions
+
+Round 1, checked at 1339b944 (`git diff 89a7cc86..1339b944`): harness text unchanged (the only
+`src/` delta is a doc comment in `src/replay/scalar.rs`); focused `--test it` (division harness,
+scalar playback, capability settlement, kani gate, tractability, obligations) 155 passed / 14
+ignored; `cargo fmt --check` and `cargo clippy --all-targets -- -D warnings` clean.
+
+| FND | outcome | reason |
+|---|---|---|
+| FND-001 | fixed | AC-7 tags dropped from both `*_times_out` tests (now TC-071, AC-9); AC-8 tags dropped from the source-diff mutant test and the timed-out mutant test (now TC-071 only). |
+| FND-002 | fixed | `integer_division_harness` removed from `KANI_FILTERS` and `EXPECTED_KANI_FILTERS`; the ignore reasons and a new Reproducers section in the measurement doc say to run them by name. |
+| FND-003 | fixed | Decoder doc now names the seven operations and says the replay builder still refuses division; new `decoder_accepts_division_identities_with_their_operand_arity` asserts decode and arity refusal for div, rem and mod. |
+| FND-004 | fixed | Stale doc replaced, FR-015-AC-15 and FR-019-AC-29 tags dropped, and the test now asserts the harness's `division_scalar` profile and the `(0, 10)` result range. |

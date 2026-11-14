@@ -62,3 +62,16 @@ AC-7 and AC-8 explicitly not delivered and owned by IR-1541, the table rows matc
 data, and nothing refuses a measured-`Verified` shape. Over-claims remain for AC-9 (record
 incomplete), AC-12 (run-evidence clauses unevidenced) and, mildly, AC-11. Fix the status lines
 (FND-001, FND-002) in this PR; FND-003 and FND-004 are low.
+
+## Dispositions
+
+Round 1, checked at 1339b944. `quire matrix --strict` exits 1 on both origin/main 198df58f
+(295 untagged, 12 ignored-only) and 1339b944 (284 untagged, 12 ignored-only): pre-existing, and
+this PR lowers the count.
+
+| FND | outcome | reason |
+|---|---|---|
+| FND-001 | fixed | AC-9 is now PARTIAL in `tests.md`, FR-057 Status ("Partly delivered") and TC-071 Status, each naming the unmeasured shapes. |
+| FND-002 | fixed | AC-12 is now PARTIAL in all three places; the run-time clauses are assigned to IR-1541 with AC-7 and AC-8. |
+| FND-003 | fixed | AC-11 is now PARTIAL, stating the test is sibling independence over add/sub/mul/negate and that the before/after check for the other families is not run. |
+| FND-004 | fixed | The record names quire-exact revision b81e595046c96739ef738a390dbe4b536db26e49, which matches `Cargo.lock`. |

@@ -32,3 +32,12 @@ gap-analysis artifact and not repeated here.
 
 Spec edits are consistent with the code apart from two stale present-tense passages (low). No
 EARS or structural change was made, so no sub-analysis beyond base applies.
+
+## Dispositions
+
+Round 1, checked at 1339b944.
+
+| FND | outcome | reason |
+|---|---|---|
+| FND-001 | fixed | FR-015-AC-109 now reads "At IR-598, V2 did not serve divide or remainder ... settled ... stayed", then the landed amendment. |
+| FND-002 | fixed | FR-057 Description now reads "Before IR-854 these claims got no harness" and "FR-014-AC-81 now holds (IR-854), and this row renders `rem`"; TC-071 reads "This case is partly run (see Status)". |
