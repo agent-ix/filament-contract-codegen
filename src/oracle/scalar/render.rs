@@ -1229,6 +1229,7 @@ mod native_publication_tests {
                     dependencies: Vec::new(),
                     oracle_source: format!("pub fn {symbol}() {{}}\n"),
                     boolean_right_may_stop: false,
+                    division: None,
                 })),
             });
         }

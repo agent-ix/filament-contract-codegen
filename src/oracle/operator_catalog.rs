@@ -25,6 +25,9 @@ pub(crate) enum Operator {
     Subtract,
     Multiply,
     Negate,
+    Divide,
+    Remainder,
+    Modulo,
     Less,
     LessOrEqual,
     Greater,
@@ -49,6 +52,7 @@ pub(crate) struct Entry {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum Family {
     IntegerArithmetic,
+    IntegerDivision,
     IntegerOrdering,
 }
 
@@ -93,14 +97,23 @@ pub(crate) enum ScalarKaniOperator {
     Subtract,
     Multiply,
     Negate,
+    /// `div`: the quotient under the claim's law.
+    Divide,
+    /// `rem`: the remainder under the claim's law.
+    Remainder,
+    /// `mod`: the Euclidean remainder.
+    Modulo,
 }
 
 impl Operator {
-    pub(crate) const ALL: [Self; 10] = [
+    pub(crate) const ALL: [Self; 13] = [
         Self::Add,
         Self::Subtract,
         Self::Multiply,
         Self::Negate,
+        Self::Divide,
+        Self::Remainder,
+        Self::Modulo,
         Self::Less,
         Self::LessOrEqual,
         Self::Greater,
@@ -158,6 +171,36 @@ impl Operator {
                 ResultKind::Integer,
                 Some(IntegerOperator::Negate),
                 Some(ScalarKaniOperator::Negate),
+                None,
+                None,
+            ),
+            O::Divide => (
+                "quire.op.integer.div",
+                Family::IntegerDivision,
+                OperandOrder::LeftThenRight,
+                ResultKind::Integer,
+                None,
+                Some(ScalarKaniOperator::Divide),
+                None,
+                None,
+            ),
+            O::Remainder => (
+                "quire.op.integer.rem",
+                Family::IntegerDivision,
+                OperandOrder::LeftThenRight,
+                ResultKind::Integer,
+                None,
+                Some(ScalarKaniOperator::Remainder),
+                None,
+                None,
+            ),
+            O::Modulo => (
+                "quire.op.integer.mod",
+                Family::IntegerDivision,
+                OperandOrder::LeftThenRight,
+                ResultKind::Integer,
+                None,
+                Some(ScalarKaniOperator::Modulo),
                 None,
                 None,
             ),
@@ -289,6 +332,30 @@ mod tests {
                 OperandOrder::Unary,
                 ResultKind::Integer,
                 Some(ScalarKaniOperator::Negate),
+                None,
+            ),
+            (
+                "quire.op.integer.div",
+                Family::IntegerDivision,
+                OperandOrder::LeftThenRight,
+                ResultKind::Integer,
+                Some(ScalarKaniOperator::Divide),
+                None,
+            ),
+            (
+                "quire.op.integer.rem",
+                Family::IntegerDivision,
+                OperandOrder::LeftThenRight,
+                ResultKind::Integer,
+                Some(ScalarKaniOperator::Remainder),
+                None,
+            ),
+            (
+                "quire.op.integer.mod",
+                Family::IntegerDivision,
+                OperandOrder::LeftThenRight,
+                ResultKind::Integer,
+                Some(ScalarKaniOperator::Modulo),
                 None,
             ),
             (

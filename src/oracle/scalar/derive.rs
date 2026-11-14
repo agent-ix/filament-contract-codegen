@@ -187,6 +187,9 @@ pub(super) fn family_of_identity(identity: &str) -> Option<Family> {
             | CatalogOperator::Negate => {
                 Family::IntegerArithmetic(catalog_operator.entry().scalar_operator?)
             }
+            CatalogOperator::Divide => Family::IntegerDivision,
+            CatalogOperator::Remainder => Family::IntegerRemainder,
+            CatalogOperator::Modulo => Family::IntegerModulo,
             CatalogOperator::Less
             | CatalogOperator::LessOrEqual
             | CatalogOperator::Greater
@@ -213,9 +216,6 @@ pub(super) fn family_of_identity(identity: &str) -> Option<Family> {
         "quire.op.boolean.ne" => {
             Family::Equality(EqualityOperator::NotEqual, EqualityOperandKind::Boolean)
         }
-        "quire.op.integer.div" => Family::IntegerDivision,
-        "quire.op.integer.rem" => Family::IntegerRemainder,
-        "quire.op.integer.mod" => Family::IntegerModulo,
         "quire.op.rational.add" => Family::RationalArithmetic(RationalOperator::Add),
         "quire.op.rational.sub" => Family::RationalArithmetic(RationalOperator::Subtract),
         "quire.op.rational.mul" => Family::RationalArithmetic(RationalOperator::Multiply),

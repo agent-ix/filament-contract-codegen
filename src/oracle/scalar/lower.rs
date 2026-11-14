@@ -2792,6 +2792,7 @@ pub(super) fn plan_contract_scalar_oracles(
                                             ..
                                         }
                                     ),
+                                    division: super::DivisionClaim::of(&operation),
                                 })),
                             )
                         }
@@ -2936,6 +2937,7 @@ pub(super) fn plan_exact_scalar_oracles(
                                             ..
                                         }
                                     ),
+                                    division: super::DivisionClaim::of(&operation),
                                 })),
                             )
                         }

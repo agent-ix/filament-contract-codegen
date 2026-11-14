@@ -201,7 +201,7 @@ pub use kani::generate::float_scalar::{
     generate_float_scalar_harness, FloatCapability, FloatScalarHarness, FloatScalarOutcome,
     FloatScalarRefusal, FloatScalarRequest,
 };
-pub use kani::identity::{EnumScalarIdentity, FloatScalarIdentity};
+pub use kani::identity::{DivisionScalarIdentity, EnumScalarIdentity, FloatScalarIdentity};
 pub use kani::output::diagnostics::{
     KaniFailurePhase, KaniNoVerdictDiagnostics, KaniStreamExcerpt,
 };

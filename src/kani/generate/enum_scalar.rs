@@ -560,6 +560,7 @@ fn render_text(
         path_condition: Vec::new(),
         guard_inputs: Vec::new(),
         float_scalar: None,
+        division_scalar: None,
         enum_scalar: Some(EnumScalarIdentity {
             declaration: declaration.node.clone(),
             qualified_name: declaration.qualified.clone(),
