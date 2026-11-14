@@ -1382,11 +1382,14 @@ fn tc_025_a_claim_naming_a_node_absent_from_the_graph_is_refused_not_silently_su
 #[trace("FR-015-AC-6", "TC-025")]
 #[test]
 fn tc_025_every_confirmed_operation_is_rendered_or_honestly_refused() {
-    const RENDERED: [&str; 4] = [
+    const RENDERED: [&str; 7] = [
         "quire.op.integer.add",
         "quire.op.integer.sub",
         "quire.op.integer.mul",
         "quire.op.integer.negate",
+        "quire.op.integer.div",
+        "quire.op.integer.rem",
+        "quire.op.integer.mod",
     ];
     let mut generated_count = 0;
     let mut rendered_count = 0;

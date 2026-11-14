@@ -292,7 +292,13 @@ fn build_fixture() -> Fixture {
         .iter()
         .find(|claim| {
             !RENDERED.contains(&claim.operation.identity.as_str())
-                && claim.operation.identity != "quire.op.integer.mul"
+                && !matches!(
+                    claim.operation.identity.as_str(),
+                    "quire.op.integer.mul"
+                        | "quire.op.integer.div"
+                        | "quire.op.integer.rem"
+                        | "quire.op.integer.mod"
+                )
         })
         .map(|claim| claim.node_id.clone())
         .expect("the corpus generates a family Kani does not render");

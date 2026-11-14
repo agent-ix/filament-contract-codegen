@@ -688,7 +688,6 @@ fn unsupported_operator_and_invalid_persisted_schema_refuse_typed_playback() {
     let valid = transcript(&identity, &[3, 17]);
     for operation in [
         "quire.op.boolean.implies",
-        "quire.op.integer.div",
         "quire.op.integer.lt",
         "quire.op.integer.eq",
         "unknown",
