@@ -1378,9 +1378,9 @@ fn expect_timed_out(shape: &Shape, name: &str) {
 /// FR-057-AC-7 and AC-9, general route, constant divisor: the smallest listed shape (a singleton
 /// divisor range, dividend at 8 bits) under the FR-028 wall-clock ceiling does not finish, so no
 /// verdict is claimed for it and it is a `not_tractable` row of the shipped scalar table.
-#[trace("TC-071", "FR-057-AC-7", "FR-057-AC-9")]
+#[trace("TC-071", "FR-057-AC-9")]
 #[test]
-#[ignore = "kani lane: one run, serially, under the 24 GiB scope; expects TimedOut at 600 s"]
+#[ignore = "measurement reproducer outside the kani gate (cargo test --test it -- --ignored <name>, under the 24 GiB scope); expects TimedOut at 600 s"]
 fn general_route_constant_divisor_8_bit_floor_div_times_out() {
     expect_timed_out(
         &Shape {
@@ -1397,9 +1397,9 @@ fn general_route_constant_divisor_8_bit_floor_div_times_out() {
 
 /// FR-057-AC-7 and AC-9, general route, symbolic divisor: the smallest listed shape (both
 /// operands at 4 bits, the divisor range holding zero and both signs) does not finish.
-#[trace("TC-071", "FR-057-AC-7", "FR-057-AC-9")]
+#[trace("TC-071", "FR-057-AC-9")]
 #[test]
-#[ignore = "kani lane: one run, serially, under the 24 GiB scope; expects TimedOut at 600 s"]
+#[ignore = "measurement reproducer outside the kani gate (cargo test --test it -- --ignored <name>, under the 24 GiB scope); expects TimedOut at 600 s"]
 fn general_route_symbolic_divisor_4_bit_floor_div_times_out() {
     expect_timed_out(
         &Shape {
@@ -1541,7 +1541,7 @@ fn a_division_harness_at_or_above_its_row_width_is_refused_before_kani_and_below
 /// FR-057-AC-8: the seeded mutants of each operation and law are rendered, each changes the routed
 /// source, and the set holds both groups (wrong profile or operator or member, and a missing zero
 /// guard on the oracle or the expected side).
-#[trace("TC-071", "FR-057-AC-8")]
+#[trace("TC-071")]
 #[test]
 fn the_seeded_mutants_of_each_claim_change_the_routed_source_and_cover_both_groups() {
     let mut swaps = [0_usize; 2];
@@ -1613,9 +1613,9 @@ fn mutant_fixture() -> Shape {
 /// FR-057-AC-8 on the general route: the mutant whose oracle completes at a zero divisor, over the
 /// 5-bit fixture, does not finish inside the 600 s ceiling, so it is not `Falsified` and carries no
 /// playback. Measured 2026-11-14; see `docs/qualification/ir854-general-route-division-measurements.md`.
-#[trace("TC-071", "FR-057-AC-8")]
+#[trace("TC-071")]
 #[test]
-#[ignore = "kani lane: one run, serially, under the 24 GiB scope; expects TimedOut at 600 s"]
+#[ignore = "measurement reproducer outside the kani gate (cargo test --test it -- --ignored <name>, under the 24 GiB scope); expects TimedOut at 600 s"]
 fn general_route_zero_completing_mutant_times_out() {
     let generation = mutant_fixture().generation();
     let (harness, manifest) = harness_of(&generation).expect("a division harness");

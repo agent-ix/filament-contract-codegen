@@ -2131,12 +2131,11 @@ fn direct_fr015_division_renders_its_harness() {
     ));
 }
 
-/// A source-mapped, admitted integer division reaches form classification, rather than
-/// disappearing behind the missing-result guard. The FR-015 refusal wins before mode settlement.
+/// A source-mapped, admitted integer division with a selected narrowed result reaches form
+/// classification, settles on Kani as `Supported`, and routed generation renders a division harness
+/// whose identity carries its law profile and the narrowed result range.
 #[trace(
-    "FR-015-AC-15",
     "FR-019-AC-25",
-    "FR-019-AC-29",
     "FR-019-AC-44",
     "FR-014-AC-55",
     "FR-022-AC-30",
@@ -2288,7 +2287,20 @@ fn kani_selected_division_settles_and_renders() {
         "division renders: {:?}",
         record.disposition
     );
-    assert!(harness.is_some(), "rendered division emits a Kani harness");
+    let harness = harness
+        .as_ref()
+        .expect("rendered division emits a Kani harness");
+    let division = harness
+        .identity
+        .division_scalar
+        .as_ref()
+        .expect("a division harness records its division identity");
+    assert!(division.profile.is_some(), "div carries its law profile");
+    assert_eq!(
+        (division.result_minimum, division.result_maximum),
+        (0, 10),
+        "the selected narrowed result range"
+    );
 
     let roots = positions
         .iter()

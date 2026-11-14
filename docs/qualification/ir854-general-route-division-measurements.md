@@ -17,8 +17,9 @@ carries no claim.
   `memory.peak`; both the wall time and the peak include the cargo build of the crate.
 - Unwind 10 for every run. A larger unwind only enlarges the formula, so it cannot turn a shape
   that did not finish into one that does.
-- Generator version 0.1.0, kernel (quire-exact) revision as locked in `Cargo.lock`, host titan,
-  2026-11-14. Tool versions are not recorded (QSL-406, EA-49).
+- Generator version 0.1.0, kernel (quire-exact) revision
+  b81e595046c96739ef738a390dbe4b536db26e49, host titan, 2026-11-14. Tool versions are not
+  recorded (QSL-406, EA-49).
 - Each harness is the healthy generated harness: two `i64` operands over the operand ranges,
   the oracle call, the one assertion and the one completion cover.
 
@@ -56,6 +57,15 @@ carrying no claim:
   shapes were not tried).
 - The other AC-8 mutants, on the general route (the first did not finish).
 - Every shape on the native route (FR-057-AC-6: the native route refuses until IR-1541).
+
+## Reproducers
+
+Three of the rows above have an ignored reproducer in `tests/it/integer_division_harness.rs`
+(`general_route_constant_divisor_8_bit_floor_div_times_out`,
+`general_route_symbolic_divisor_4_bit_floor_div_times_out`,
+`general_route_zero_completing_mutant_times_out`). Each runs for the full 600 s at about 8.5 GB, so
+they are not in the `make kani` / `make kani-gate` filter list; run one by name with
+`cargo test --test it -- --ignored <name>` under the lane lock.
 
 ## Table rows
 
