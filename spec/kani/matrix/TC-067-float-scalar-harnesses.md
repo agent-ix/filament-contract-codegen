@@ -13,7 +13,7 @@ relationships:
 Verify [FR-053](../functional/FR-053-float-scalar-harnesses.md) through admitted float
 packages (over the quire-exact float carrier, IR-1446, for the comparisons whose quire-exact harnesses
 are Verified; the arithmetic identities are refused as not tractable, and the Contract IR float
-`requires_bound` ruling, IR-69, would make the unpinned-operand refusal upstream),
+`requires_bound` ruling makes the unpinned-operand refusal upstream),
 public CG generation, installed proof execution and owner replay. FR-014 oracle agreement does not establish Kani acceptance. Execute generated proofs only
 with the authorized runner and budget. The control points named in FR-053's Behavior
 section (`Z+`, `Z-`, `ONE`, `QN1`, `SN1`, `T1` through `T4`, `M1` and the others) are
@@ -49,8 +49,8 @@ used by name below.
    refusal), then the retained unreadable cause and the operand `requires-bound`, each with no
    harness,
    that no result bound is requested for a comparison, and that a `float_rounding` pin does
-   not narrow any operand draw. Record that the unpinned-operand case is upstream
-   `requires_bound` only after IR-69 (AC-3).
+   not narrow any operand draw. Record that the unpinned-operand case is the upstream
+   Contract IR `requires_bound` record (AC-3).
 4. Compare the generated oracle with the independent native expression from matching
    entry Meter state and limits at zero, exact and short budgets (including a short `work_units` budget) at each charge point:
    `ieee.operands`, `ieee.exact-intermediate`, `ieee.round` and `ieee.result-retain`. Run a
@@ -133,14 +133,14 @@ used by name below.
 
 Healthy operations verify with a satisfied cover; every mutant and refusal retains its own
 classification and receives no proof credit. Until the carrier and the generated-proof path
-run, IR-260 remains unaccepted regardless of oracle agreement.
+run, the row is unaccepted regardless of oracle agreement.
 
 ## Status
 
-PARTIAL (IR-260): steps 1 to 5, 7, 8 and 11 to 14 run for the three comparisons, and step 6 for the refusals and the supported sibling, at both widths in
+Implemented: steps 1 to 5, 7, 8 and 11 to 14 run for the three comparisons, and step 6 for the refusals and the supported sibling, at both widths in
 `tests/it/float_scalar_harness.rs`, with installed-Kani verdicts and owner replay of a decoded
 counterexample (`docs/qualification/ir260-float-scalar-kani-measurements.md`). Step 3 runs the
-operand `requires-bound` and the unreadable-rounding refusal on hand-edited Contract IR. The hand-edited package cannot be routed (Contract IR lowers it to an empty lowered set, so no admitted routing input exists), so the routed mapping to the `requires-bound` disposition is covered at the `FloatScalarRefusal::into_disposition` seam only. Step 7 runs
+Contract IR operand `requires-bound` and the unreadable-rounding refusal on hand-edited Contract IR. The hand-edited package cannot be routed (Contract IR lowers it to an empty lowered set, so no admitted routing input exists), so the routed mapping to the `requires-bound` disposition is covered at the `FloatScalarRefusal::into_disposition` seam only. Step 7 runs
 the healthy proof and a forced unsatisfied cover; its other forced failures are the shared runner's
 (`tests/it/terminal_map.rs`). Arithmetic is dispositioned not tractable (typed refusal, no
 harness), so the arithmetic parts of steps 1, 3, 4, 5, 9, 10, 13 and 14 settle as refusals only; steps 9 and

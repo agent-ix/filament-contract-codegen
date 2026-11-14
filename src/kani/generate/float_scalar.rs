@@ -9,7 +9,9 @@
 //! harnesses Verified. A float operand is one `i64` bit pattern; the carrier admits every
 //! pattern, so the draw has no admission step and no bound is encoded into it.
 
-use quire_contract_model::{CheckedNodeId, CheckedPackageV2, CheckedTerm};
+use quire_contract_model::{
+    CheckedNodeId, CheckedPackageV2, CheckedTerm, CompleteLoweringRecordV2,
+};
 
 use super::{
     outcome::{ObligationDisposition, UnsupportedObligation},
@@ -340,6 +342,19 @@ fn settle(request: &FloatScalarRequest<'_>) -> Result<FloatScalarHarness, FloatS
             "a float harness does not lower a path condition",
         ));
     }
+    if let Some(CompleteLoweringRecordV2::RequiresBound { unbounded_type, .. }) = request
+        .source
+        .lower(
+            std::slice::from_ref(request.node_id),
+            &crate::oracle::scalar::lower::scalar_profile(),
+        )
+        .records
+        .first()
+    {
+        return Err(FloatScalarRefusal::RequiresBound {
+            unbounded_type: unbounded_type.clone(),
+        });
+    }
     let operand = |term: &CheckedTerm| -> Result<Operand, FloatScalarRefusal> {
         let literal = unsupported(
             FloatCapability::LiteralOperand,
@@ -367,27 +382,17 @@ fn settle(request: &FloatScalarRequest<'_>) -> Result<FloatScalarHarness, FloatS
                 .is_some_and(|body| matches!(body, CheckedTerm::Literal { .. }));
             return Err(if is_literal { literal } else { not_parameter() });
         };
-        // FR-053-AC-3, the operand half: CG's own check until the Contract IR ruling (IR-69)
-        // covers floats. The operand's type must reach a `float_rounding` bound.
-        match operand_own_bound(&graph, term) {
-            Some(bound) => {
-                let readable = matches!(&bound.body, CheckedTerm::Aggregate { members }
-                    if crate::core::ir::scalar_bounds::read_float_rounding(members).is_some());
-                if !readable {
-                    return Err(unsupported(
-                        FloatCapability::RoundingUnreadable,
-                        identity,
-                        "the operand's float_rounding bound is present but unreadable",
-                    ));
-                }
-            }
-            None => {
-                let typed = graph
-                    .node(target)
-                    .map_or_else(|| target.clone(), |node| node.semantic_type.clone());
-                return Err(FloatScalarRefusal::RequiresBound {
-                    unbounded_type: typed,
-                });
+        // An unreadable `float_rounding` bound is named here; an unpinned operand never reaches
+        // this point because Contract IR raises `requires_bound` first (FR-053-AC-3).
+        if let Some(bound) = operand_own_bound(&graph, term) {
+            let readable = matches!(&bound.body, CheckedTerm::Aggregate { members }
+                if crate::core::ir::scalar_bounds::read_float_rounding(members).is_some());
+            if !readable {
+                return Err(unsupported(
+                    FloatCapability::RoundingUnreadable,
+                    identity,
+                    "the operand's float_rounding bound is present but unreadable",
+                ));
             }
         }
         let form = operand_form(&graph, term).unwrap_or_default();

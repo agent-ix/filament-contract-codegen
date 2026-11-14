@@ -844,7 +844,7 @@ fn corpus_with_unpinned_operands(retype: bool, bogus_rounding: bool) -> (Corpus,
 }
 
 /// An operand whose type reaches no `float_rounding` bound is `requires-bound` naming that type,
-/// with no harness (CG's own check until the Contract IR float ruling), an unreadable bound is a
+/// with no harness (the record Contract IR raises for an unbounded float), an unreadable bound is a
 /// named unsupported capability, and a pinned operand pair is unaffected.
 #[trace("TC-067", "FR-053-AC-3")]
 #[test]

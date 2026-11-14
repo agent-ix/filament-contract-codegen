@@ -2948,7 +2948,7 @@ pub(super) fn plan_exact_scalar_oracles(
     })
 }
 
-pub(super) fn scalar_profile() -> CompleteLoweringProfileV2 {
+pub(crate) fn scalar_profile() -> CompleteLoweringProfileV2 {
     CompleteLoweringProfileV2 {
         reference: quire_contract_model::LoweringProfileRef {
             authority: "agent-ix".into(),
