@@ -267,6 +267,13 @@ pub enum ExactScalarOperation {
         /// Consumer domain.
         domain: IntegerDomain,
     },
+    /// The remainder of `divide` under a selected law.
+    IntegerRemainder {
+        /// Division law.
+        profile: DivisionProfile,
+        /// Consumer domain.
+        domain: IntegerDomain,
+    },
     /// Euclidean `modulo`.
     IntegerModulo {
         /// Consumer domain.

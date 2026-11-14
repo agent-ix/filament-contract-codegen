@@ -599,9 +599,10 @@ fn scalar_family_from_item(item: crate::oracle::scalar::ExactScalarItem) -> Kani
             EqualityOperandKind::Boolean => KaniFormFamily::Boolean,
             EqualityOperandKind::Integer => KaniFormFamily::Integer,
         },
-        Op::IntegerArithmetic { .. } | Op::IntegerDivision { .. } | Op::IntegerModulo { .. } => {
-            KaniFormFamily::Integer
-        }
+        Op::IntegerArithmetic { .. }
+        | Op::IntegerDivision { .. }
+        | Op::IntegerRemainder { .. }
+        | Op::IntegerModulo { .. } => KaniFormFamily::Integer,
         Op::RationalArithmetic { .. } => KaniFormFamily::Rational,
         Op::Ordering { operands, .. } => match operands {
             OrderingOperandKind::Integer => KaniFormFamily::Integer,

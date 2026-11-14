@@ -61,6 +61,12 @@ fn every_operation() -> Vec<ExactScalarOperation> {
             domain: domain.clone(),
         });
     }
+    for profile in DivisionProfile::ALL {
+        all.push(Op::IntegerRemainder {
+            profile,
+            domain: domain.clone(),
+        });
+    }
     all.push(Op::IntegerModulo { domain });
     for operator in [
         RationalOperator::Add,
@@ -165,7 +171,7 @@ fn every_operation() -> Vec<ExactScalarOperation> {
 /// The number of `ExactScalarOperation` variants: [`expected_family`]'s match names each, and
 /// adding one fails to compile there until it has an arm. `every_operation` must then carry a
 /// descriptor of it, which the coverage assertion below checks.
-const OPERATION_VARIANTS: usize = 18;
+const OPERATION_VARIANTS: usize = 19;
 
 /// The family each descriptor belongs to, by an exhaustive match with no wildcard arm over
 /// `ExactScalarOperation` and, where the operator selects the identity, over the operator.
@@ -177,6 +183,7 @@ fn expected_family(operation: &ExactScalarOperation) -> Option<Family> {
         Op::Equality { operator, operands } => Family::Equality(*operator, *operands),
         Op::IntegerArithmetic { operator, .. } => Family::IntegerArithmetic(*operator),
         Op::IntegerDivision { .. } => Family::IntegerDivision,
+        Op::IntegerRemainder { .. } => Family::IntegerRemainder,
         Op::IntegerModulo { .. } => Family::IntegerModulo,
         Op::RationalArithmetic { operator, .. } => match operator {
             RationalOperator::Divide | RationalOperator::IntegerDivide => Family::RationalDivision,
@@ -478,6 +485,41 @@ fn tc_024_derivation_reads_the_division_profile_from_the_laws_and_nowhere_else()
     }
 }
 
+/// `integer.rem` names its profile through `operation.laws`, as `div` does: no law and two laws
+/// each refuse `LawNotDerivable` naming the `rem` identity, with no bound read first.
+#[trace("FR-014-AC-81", "TC-024")]
+#[test]
+fn tc_024_a_remainder_without_exactly_one_law_is_not_derivable() {
+    let remainder = |identities: &[&str]| {
+        derive_hand_built(fixture_application(CheckedApplicationOperationFixture {
+            identity: Some("quire.op.integer.rem".into()),
+            law_definitions: identities
+                .iter()
+                .map(|identity| CheckedArtifactRef {
+                    authority: "quire".into(),
+                    identity: (*identity).into(),
+                })
+                .collect(),
+            ..Default::default()
+        }))
+    };
+    let refusal = Err(no_claim(ClaimDerivationRefusal::LawNotDerivable {
+        operation_identity: "quire.op.integer.rem".to_owned(),
+    }));
+    assert_eq!(remainder(&[]), refusal);
+    assert_eq!(
+        remainder(&[
+            DivisionProfile::Truncating.definition_identity(),
+            DivisionProfile::Floor.definition_identity(),
+        ]),
+        refusal
+    );
+    assert_eq!(
+        family_of_identity("quire.op.integer.rem"),
+        Some(Family::IntegerRemainder)
+    );
+}
+
 /// `operation.mode` must carry the rounding of the bound it is read against: absent, of
 /// another kind or another value is `ModeNotDerivable`.
 #[trace("FR-014-AC-18", "TC-024")]
@@ -529,7 +571,6 @@ fn tc_024_the_refused_catalogue_identities_have_no_family() {
         "quire.op.rational.ne",
         "quire.op.decimal.eq",
         "quire.op.decimal.ne",
-        "quire.op.integer.rem",
         "quire.op.ieee.from_exact",
         "quire.op.ieee.to_rational",
         "quire.op.ieee.float32.negate",

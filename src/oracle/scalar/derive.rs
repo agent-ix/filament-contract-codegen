@@ -5,7 +5,7 @@
 
 use super::lower::{
     division_operand_bound_refusal, lowered, operand_form, scalar_profile, scalar_type_form,
-    BoundView, Bounds,
+    BoundView, Bounds, DivisionBounds,
 };
 use super::{
     BooleanOperator, BoundForm, ClaimDerivationRefusal, DecimalOperator, EqualityOperandKind,
@@ -121,6 +121,7 @@ pub(super) enum Family {
     Equality(EqualityOperator, EqualityOperandKind),
     IntegerArithmetic(IntegerOperator),
     IntegerDivision,
+    IntegerRemainder,
     IntegerModulo,
     RationalArithmetic(RationalOperator),
     /// `rational.div`: `IntegerDivide` or `Divide` by the operand forms.
@@ -146,6 +147,7 @@ pub(crate) fn needs_authenticated_operation_view(identity: &str) -> bool {
     match family_of_identity(identity) {
         Some(
             Family::IntegerDivision
+            | Family::IntegerRemainder
             | Family::IeeeArithmetic(..)
             | Family::IeeeToFloat32
             | Family::QuantityConversion,
@@ -212,6 +214,7 @@ pub(super) fn family_of_identity(identity: &str) -> Option<Family> {
             Family::Equality(EqualityOperator::NotEqual, EqualityOperandKind::Boolean)
         }
         "quire.op.integer.div" => Family::IntegerDivision,
+        "quire.op.integer.rem" => Family::IntegerRemainder,
         "quire.op.integer.mod" => Family::IntegerModulo,
         "quire.op.rational.add" => Family::RationalArithmetic(RationalOperator::Add),
         "quire.op.rational.sub" => Family::RationalArithmetic(RationalOperator::Subtract),
@@ -574,17 +577,31 @@ pub(super) fn derive_operation_from_view<'g, Body: GraphBody, NodeBody, BoundBod
                     graph,
                     node: derivation.bounds.clone(),
                 }
-                .integer_division_bounds(false)?
+                .integer_division_bounds(DivisionBounds::Quotient)?
                 .0,
             ),
         },
+        Family::IntegerRemainder => {
+            let profile = derivation.division_profile()?;
+            Op::IntegerRemainder {
+                profile,
+                domain: IntegerDomain::Bounded(
+                    Bounds {
+                        graph,
+                        node: derivation.bounds.clone(),
+                    }
+                    .integer_division_bounds(DivisionBounds::Remainder(profile))?
+                    .0,
+                ),
+            }
+        }
         Family::IntegerModulo => Op::IntegerModulo {
             domain: IntegerDomain::Bounded(
                 Bounds {
                     graph,
                     node: derivation.bounds.clone(),
                 }
-                .integer_division_bounds(true)?
+                .integer_division_bounds(DivisionBounds::Modulo)?
                 .0,
             ),
         },

@@ -2292,7 +2292,7 @@ struct Derived {
     package: CheckedPackageV2,
     /// The three rendered nodes and one unrendered node, resolved in this package.
     generated: Vec<CheckedNodeId>,
-    rem: CheckedNodeId,
+    refused: CheckedNodeId,
     /// The quantity conversion nodes, one per node code.
     quantity_conversions: Vec<CheckedNodeId>,
 }
@@ -2349,7 +2349,7 @@ fn derived() -> Derived {
     Derived {
         package,
         generated,
-        rem: ids.resolve(&package::code_id(package::DERIVE_REM)),
+        refused: ids.resolve(&package::code_id(package::DERIVE_REFUSED)),
         quantity_conversions: package::QUANTITY_CONVERSIONS
             .iter()
             .map(|code| ids.resolve(&package::code_id(*code)))
@@ -2371,7 +2371,7 @@ fn tc_033_an_underivable_item_keeps_its_refusal_and_its_siblings_are_unaffected(
         .enumerate()
         .map(|(index, node)| route(index, node))
         .collect::<Vec<_>>();
-    let (refused, identity) = (&derived.rem, "quire.op.integer.rem");
+    let (refused, identity) = (&derived.refused, "quire.op.numeric.narrow");
     let mut routed = with_siblings.clone();
     routed.push(route(9, refused));
     let mixed_input = admitted_routing_input(&derived.package, &routed);
@@ -2770,7 +2770,7 @@ fn tc_033_the_returned_claim_map_orders_package_claims_and_refusals() {
     let nodes = derived
         .generated
         .iter()
-        .chain([&derived.rem])
+        .chain([&derived.refused])
         .cloned()
         .collect::<Vec<_>>();
     let routed = nodes
@@ -2805,7 +2805,7 @@ fn tc_033_the_returned_claim_map_orders_package_claims_and_refusals() {
         })
         .map(|claim| claim.node_id.clone())
         .collect::<Vec<_>>();
-    let mut underivable = vec![derived.rem.clone()];
+    let mut underivable = vec![derived.refused.clone()];
     underivable.sort();
     assert_eq!(refused, underivable);
     let generated = claim_map
@@ -3001,7 +3001,7 @@ fn tc_033_a_selected_pair_routed_twice_retains_its_duplicate_refusal() {
 fn tc_033_an_underivable_claim_is_underived_and_carries_the_nodes_identity() {
     let derived = derived();
     let routed = [
-        route(0, &derived.rem),
+        route(0, &derived.refused),
         route(1, &package::code_id(package::MISSING)),
     ];
     let input = admitted_routing_input(&derived.package, &routed);
@@ -3017,26 +3017,26 @@ fn tc_033_an_underivable_claim_is_underived_and_carries_the_nodes_identity() {
     let claim = claim_map
         .items
         .iter()
-        .find(|claim| claim.node_id == derived.rem)
-        .expect("the rem node has a claim");
-    assert_eq!(claim.operation.identity, "quire.op.integer.rem");
+        .find(|claim| claim.node_id == derived.refused)
+        .expect("the refused node has a claim");
+    assert_eq!(claim.operation.identity, "quire.op.numeric.narrow");
     assert_eq!(
         claim.operation.provenance,
         quire_contract_codegen::OperationProvenance::Underived
     );
     assert!(
         matches!(claim.result, ClaimDisposition::Refused { .. }),
-        "remainder has no generated scalar family"
+        "an underivable identity has no generated scalar family"
     );
     let (record, harness) = kani_parts(&generation.items[0].output);
-    assert!(harness.is_none(), "underived remainder emits no harness");
+    assert!(harness.is_none(), "underived item emits no harness");
     assert_eq!(
         record.disposition,
         ObligationDisposition::Unsupported {
             reason: UnsupportedObligation::NoDerivableClaim {
-                node_id: derived.rem.clone(),
+                node_id: derived.refused.clone(),
                 reason: ClaimDerivationRefusal::OperationNotDerivable {
-                    operation_identity: "quire.op.integer.rem".to_owned(),
+                    operation_identity: "quire.op.numeric.narrow".to_owned(),
                 },
             },
         }
@@ -3118,7 +3118,7 @@ fn tc_033_the_oracle_crate_is_returned_and_defines_the_symbol_the_harness_refere
 fn tc_033_an_all_underivable_group_returns_package_crate_and_no_group_returns_none() {
     let derived = derived();
     let contexts = kani_context("crate::subject", 1);
-    let routed = [route(0, &derived.rem)];
+    let routed = [route(0, &derived.refused)];
     let input = admitted_routing_input(&derived.package, &routed);
     let generation = generate_routed(
         input.source,
@@ -3152,7 +3152,7 @@ fn tc_033_an_all_underivable_group_returns_package_crate_and_no_group_returns_no
 #[test]
 fn tc_033_the_returned_claim_map_file_keeps_underivable_refusals() {
     let derived = derived();
-    let routed = [route(0, &derived.generated[0]), route(1, &derived.rem)];
+    let routed = [route(0, &derived.generated[0]), route(1, &derived.refused)];
     let input = admitted_routing_input(&derived.package, &routed);
     let generation = generate_routed(
         input.source,
@@ -3176,7 +3176,7 @@ fn tc_033_the_returned_claim_map_file_keeps_underivable_refusals() {
         serde_json::to_value(&claim_map).expect("typed claim map")
     );
     assert!(claim_map.items.iter().any(|claim| {
-        claim.node_id == derived.rem
+        claim.node_id == derived.refused
             && matches!(
                 claim.result,
                 ClaimDisposition::Refused {

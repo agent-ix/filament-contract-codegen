@@ -968,11 +968,16 @@ pub(super) fn check_parameters_from_view<Body: GraphBody, NodeBody>(
             return Ok(vec![carrier.clone()]);
         }
         ExactScalarOperation::IntegerDivision { domain, .. }
+        | ExactScalarOperation::IntegerRemainder { domain, .. }
         | ExactScalarOperation::IntegerModulo { domain } => {
-            let (actual, checked) = bounds.integer_division_bounds(matches!(
-                operation,
-                ExactScalarOperation::IntegerModulo { .. }
-            ))?;
+            let member = match operation {
+                ExactScalarOperation::IntegerRemainder { profile, .. } => {
+                    DivisionBounds::Remainder(*profile)
+                }
+                ExactScalarOperation::IntegerModulo { .. } => DivisionBounds::Modulo,
+                _ => DivisionBounds::Quotient,
+            };
+            let (actual, checked) = bounds.integer_division_bounds(member)?;
             if domain != &IntegerDomain::Bounded(actual) {
                 let refusal = match bounds.read(BoundForm::IntegerRange, read_integer_range) {
                     Ok((bound, _)) => ExactScalarRefusal::BoundMismatch {
@@ -1084,6 +1089,17 @@ impl<'n> BoundView<'n, CheckedJson> {
     }
 }
 
+/// Which member an inferred division result interval bounds.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) enum DivisionBounds {
+    /// The quotient of `div`.
+    Quotient,
+    /// The remainder of `rem` under one law.
+    Remainder(quire_exact::DivisionProfile),
+    /// The Euclidean remainder of `mod`.
+    Modulo,
+}
+
 pub(super) struct Bounds<'g, 'n, Body: GraphBody = CheckedJson, NodeBody = CheckedTerm> {
     pub(super) graph: &'g Graph<'g, Body>,
     pub(super) node: BoundView<'n, NodeBody>,
@@ -1095,7 +1111,7 @@ impl<Body: GraphBody, NodeBody> Bounds<'_, '_, Body, NodeBody> {
     /// a result-bound node in the provenance.
     pub(super) fn integer_division_bounds(
         &self,
-        modulo: bool,
+        member: DivisionBounds,
     ) -> Result<(IntegerInterval, Vec<CheckedNodeId>), ExactScalarRefusal> {
         match self.read(BoundForm::IntegerRange, read_integer_range) {
             Ok((result, domain)) => {
@@ -1180,17 +1196,31 @@ impl<Body: GraphBody, NodeBody> Bounds<'_, '_, Body, NodeBody> {
         };
         let dividend = interval(left)?;
         let divisor = interval(right)?;
-        let source = if modulo { divisor } else { dividend };
+        let source = if member == DivisionBounds::Quotient {
+            dividend
+        } else {
+            divisor
+        };
         let magnitude = source.lower().abs().max(source.upper().abs());
-        let domain = if modulo {
-            let upper = if magnitude.is_zero() {
-                magnitude
+        let window_upper = || {
+            if magnitude.is_zero() {
+                magnitude.clone()
             } else {
                 magnitude.sub(&quire_exact::Integer::one())
-            };
-            IntegerInterval::spanning(quire_exact::Integer::zero(), upper)
-        } else {
-            IntegerInterval::spanning(magnitude.neg(), magnitude)
+            }
+        };
+        let domain = match member {
+            DivisionBounds::Quotient => IntegerInterval::spanning(magnitude.neg(), magnitude),
+            DivisionBounds::Modulo
+            | DivisionBounds::Remainder(quire_exact::DivisionProfile::Euclidean) => {
+                IntegerInterval::spanning(quire_exact::Integer::zero(), window_upper())
+            }
+            DivisionBounds::Remainder(
+                quire_exact::DivisionProfile::Truncating | quire_exact::DivisionProfile::Floor,
+            ) => {
+                let upper = window_upper();
+                IntegerInterval::spanning(upper.neg(), upper)
+            }
         };
         Ok((domain, checked))
     }
@@ -1655,6 +1685,7 @@ impl Shape {
                 }
             },
             ExactScalarOperation::IntegerDivision { .. }
+            | ExactScalarOperation::IntegerRemainder { .. }
             | ExactScalarOperation::IntegerModulo { .. } => {
                 Self::binary(&[F::Integer, F::Integer], F::Integer)
             }
@@ -1870,6 +1901,7 @@ pub(super) fn catalogued_operation(
             IntegerOperator::Negate => CatalogOperator::Negate.entry().identity,
         }),
         Op::IntegerDivision { .. } => plain("quire.op.integer.div"),
+        Op::IntegerRemainder { .. } => plain("quire.op.integer.rem"),
         Op::IntegerModulo { .. } => plain("quire.op.integer.mod"),
         Op::RationalArithmetic { operator, .. } => plain(match operator {
             RationalOperator::Add => "quire.op.rational.add",
@@ -2084,7 +2116,9 @@ pub(super) fn operation_confirmed<Body: GraphBody>(
             return Ok(false);
         }
     }
-    if let ExactScalarOperation::IntegerDivision { profile, .. } = operation {
+    if let ExactScalarOperation::IntegerDivision { profile, .. }
+    | ExactScalarOperation::IntegerRemainder { profile, .. } = operation
+    {
         if !scalar_ir::has_law(term, profile.definition_identity()) {
             return Ok(false);
         }
@@ -2142,6 +2176,11 @@ pub(super) fn operation_identity(
         }
         ExactScalarOperation::IntegerDivision { profile, domain } => format!(
             "{} domain={}",
+            profile.definition_identity(),
+            integer_domain_identity(domain)?
+        ),
+        ExactScalarOperation::IntegerRemainder { profile, domain } => format!(
+            "{} remainder domain={}",
             profile.definition_identity(),
             integer_domain_identity(domain)?
         ),

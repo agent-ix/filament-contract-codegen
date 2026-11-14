@@ -3264,9 +3264,9 @@ fn tc_024_each_overloaded_identity_derives_by_its_own_selector() {
 fn tc_024_derivation_refuses_what_it_cannot_derive_with_a_typed_reason() {
     let package = derivation_package().admit();
     assert_eq!(
-        derive_one(&package, DERIVE_REM),
+        derive_one(&package, DERIVE_REFUSED),
         Err(no_claim(ClaimDerivationRefusal::OperationNotDerivable {
-            operation_identity: "quire.op.integer.rem".to_owned()
+            operation_identity: "quire.op.numeric.narrow".to_owned()
         }))
     );
     assert!(
