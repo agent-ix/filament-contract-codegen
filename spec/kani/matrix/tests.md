@@ -10,7 +10,7 @@ type: TestMatrix
 
 | Functional Req | Acceptance Criteria | Test Cases | Status |
 |---|---|---|---|
-| FR-057 | FR-057-AC-1 through FR-057-AC-12 | TC-071 | 🚧 PLANNED (IR-854, IR-269 MVP row): no `div`, `rem` or `mod` scalar Kani harness; a `div` claim settles `OperationNotRendered` and `rem` is `Underived` until FR-014-AC-81. The native-route verdict (AC-7) is blocked by IR-1541 (quire-exact native division plan). No verdict is claimed for any shape; FR-057-AC-7 to AC-9 need installed-Kani measurements. TC-071 has not run. |
+| FR-057 | FR-057-AC-1 through FR-057-AC-12 | TC-071 | 🚧 PARTIAL (IR-854; owner of the rest IR-1541): AC-1 to AC-6 and AC-9 to AC-12 are tested (`tests/it/integer_division_harness.rs`); every measured general-route shape ended `TimedOut` at 600 s, so each operation is a `not_tractable` row at 4 bits and no shape is claimed `Verified`; AC-7's native verdicts and AC-8's mutant falsification and playback replay are not delivered and wait on IR-1541. |
 | FR-056 | FR-056-AC-1 through FR-056-AC-13 | TC-070 | 🚧 PLANNED (IR-1526): no tractability decider, table or corpus; only FR-056-AC-13 needs an installed Kani run; TC-070 controls have not run. |
 | FR-055 | FR-055-AC-1 through FR-055-AC-10 | TC-069 | 🚧 PLANNED (IR-1437): no `kani-mutations` target in CG; TC-069 has not run. |
 | FR-054 | FR-054-AC-1 through FR-054-AC-23 | TC-068 | 🚧 PLANNED (IR-1448): no option clause Kani harness; the scratch probe of the encoding is `docs/qualification/ir1448-kani-option-probe.md` and is not CG evidence; TC-068 controls have not run. |

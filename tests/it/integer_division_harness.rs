@@ -204,78 +204,6 @@ pub(crate) fn harness_of(
     }
 }
 
-/// Writes the routed crate of each named shape under `IR854_DUMP` for the measurement script. A
-/// no-op unless the variable is set.
-#[test]
-fn dump_division_crates_for_measurement() {
-    let Some(root) = std::env::var_os("IR854_DUMP") else {
-        return;
-    };
-    let mut shapes: Vec<(String, DivisionProfile, String, String)> = Vec::new();
-    for (operation, profile, tag) in [
-        ("div", DivisionProfile::Truncating, "trunc"),
-        ("div", DivisionProfile::Floor, "floor"),
-        ("div", DivisionProfile::Euclidean, "euc"),
-        ("rem", DivisionProfile::Truncating, "trunc"),
-        ("rem", DivisionProfile::Floor, "floor"),
-        ("rem", DivisionProfile::Euclidean, "euc"),
-        ("mod", DivisionProfile::Euclidean, "euc"),
-    ] {
-        let label = format!("{operation}-{tag}");
-        shapes.push((
-            format!("c8p-{label}"),
-            profile,
-            "x: Int[-128, 127], y: Int[8, 8]".to_owned(),
-            format!("x {operation} y"),
-        ));
-        shapes.push((
-            format!("c8n-{label}"),
-            profile,
-            "x: Int[-128, 127], y: Int[-8, -8]".to_owned(),
-            format!("x {operation} y"),
-        ));
-        shapes.push((
-            format!("s4-{label}"),
-            profile,
-            "x: Int[-8, 7], y: Int[-8, 7]".to_owned(),
-            format!("x {operation} y"),
-        ));
-    }
-    let selected = std::env::var("IR854_ONLY").ok();
-    for (name, profile, parameters, expression) in &shapes {
-        if selected.as_deref().is_some_and(|only| only != name) {
-            continue;
-        }
-        let unwind = std::env::var("IR854_UNWIND")
-            .ok()
-            .and_then(|value| value.parse().ok())
-            .unwrap_or(10);
-        let package = compile(
-            &source(&[("subject", parameters, "Integer", expression)]),
-            *profile,
-        );
-        let generation = routed(&package, "subject", unwind);
-        let (harness, manifest) = harness_of(&generation).expect("a harness");
-        let directory = std::path::Path::new(&root).join(name);
-        std::fs::create_dir_all(directory.join("src")).unwrap();
-        crate::scratch_crate::write_manifest(&directory, &manifest.contents);
-        std::fs::write(directory.join("src/lib.rs"), &harness.rust.contents).unwrap();
-        std::fs::write(
-            directory.join("build.rs"),
-            "fn main() { println!(\"cargo:rustc-check-cfg=cfg(kani)\"); }\n",
-        )
-        .unwrap();
-        std::fs::write(
-            directory.join("harness.txt"),
-            format!(
-                "{}\n{:?}\n{:?}\n",
-                harness.identity.harness_symbol, harness.identity.options, harness.identity.unwind
-            ),
-        )
-        .unwrap();
-    }
-}
-
 /// The result range of a harness's identity, as `(minimum, maximum)`.
 fn result_range(harness: &KaniScalarObligationHarness) -> (i64, i64) {
     let division = harness
@@ -1406,49 +1334,6 @@ pub(crate) fn kani_mutants(
     mutants
 }
 
-/// Writes the crates of the AC-8 mutants of the explicit-result fixture under `IR854_MUTANT_DUMP`
-/// for the measurement script. A no-op unless the variable is set.
-#[test]
-fn dump_division_mutant_crates_for_measurement() {
-    let Some(root) = std::env::var_os("IR854_MUTANT_DUMP") else {
-        return;
-    };
-    for (operation, profile, narrow, tag) in [
-        ("div", DivisionProfile::Floor, (-3, 3), "div-floor"),
-        ("rem", DivisionProfile::Truncating, (-1, 1), "rem-trunc"),
-        ("mod", DivisionProfile::Euclidean, (0, 1), "mod-euc"),
-    ] {
-        let shape = Shape {
-            profile,
-            operation,
-            left: (-9, 9),
-            right: (-4, 4),
-            narrow: Some(narrow),
-            unwind: 10,
-        };
-        let generation = shape.generation();
-        let (harness, manifest) = harness_of(&generation).expect("a division harness");
-        let mut variants = kani_mutants(harness, operation, profile);
-        variants.insert(0, ("healthy".to_owned(), harness.rust.contents.clone()));
-        for (name, mutated) in variants {
-            let directory = std::path::Path::new(&root).join(format!("{tag}-{name}"));
-            std::fs::create_dir_all(directory.join("src")).unwrap();
-            crate::scratch_crate::write_manifest(&directory, &manifest.contents);
-            std::fs::write(directory.join("src/lib.rs"), &mutated).unwrap();
-            std::fs::write(
-                directory.join("build.rs"),
-                "fn main() { println!(\"cargo:rustc-check-cfg=cfg(kani)\"); }\n",
-            )
-            .unwrap();
-            std::fs::write(
-                directory.join("harness.txt"),
-                format!("{}\n", harness.identity.harness_symbol),
-            )
-            .unwrap();
-        }
-    }
-}
-
 // ---- installed Kani lane ----
 
 /// Runs one routed division harness (or a mutated source of it) through the execution module in
@@ -1526,5 +1411,224 @@ fn general_route_symbolic_divisor_4_bit_floor_div_times_out() {
             unwind: 10,
         },
         "ir854-sym4-div-floor",
+    );
+}
+
+const SHIPPED_TABLE: &str = "docs/qualification/ir1530-general-route-scalar-table.json";
+
+/// FR-057-AC-9: the measured general-route division shapes are `not_tractable` rows of the single
+/// shipped scalar table at their smallest failing width, each with its `route`, no tool version
+/// and no `divisor_constant` extension (the rows show no split: no constant-divisor shape was
+/// measured `Verified`).
+#[trace("TC-071", "FR-057-AC-9")]
+#[test]
+fn the_shipped_table_holds_the_measured_division_rows_with_their_route() {
+    let table: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(SHIPPED_TABLE))
+            .expect("the shipped table is readable"),
+    )
+    .expect("the shipped table is JSON");
+    for identity in ["div", "rem", "mod"] {
+        let id = format!("quire.op.integer.{identity}");
+        let rows = table
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|row| row["operation_ids"] == serde_json::json!([id]))
+            .collect::<Vec<_>>();
+        assert_eq!(rows.len(), 1, "one row for {id}");
+        let row = rows[0];
+        assert_eq!(row["route"], "general");
+        assert_eq!(row["verdict"], "not_tractable");
+        assert_eq!(
+            row["max_operand_bits"], 4,
+            "the smallest listed symbolic width"
+        );
+        assert_eq!(row["wall_seconds"], 600);
+        assert!(row["peak_bytes"].as_u64().is_some_and(|peak| peak > 0));
+        for field in [
+            "kani_version",
+            "cbmc_version",
+            "solver_version",
+            "divisor_constant",
+        ] {
+            assert!(row.get(field).is_none(), "{field} in {row}");
+        }
+    }
+    quire_contract_codegen::TractabilityTable::shipped_general_route_scalar()
+        .expect("the embedded table loads with the division rows");
+}
+
+/// FR-057-AC-9: a division harness at or above the row's width is refused before any Kani
+/// launch, and one below it is not refused by the decider.
+#[trace("TC-071", "FR-057-AC-9")]
+#[test]
+fn a_division_harness_at_or_above_its_row_width_is_refused_before_kani_and_below_it_runs() {
+    use quire_contract_codegen::{
+        execute_kani_obligation_decided, DecidedRunRefusal, IntegerRoute, KaniExecutionRefusal,
+        TractabilityTable,
+    };
+    let table = TractabilityTable::shipped_general_route_scalar().expect("the shipped table");
+    let cancel = quire_exact::Cancel::new();
+    let installation = quire_contract_codegen::KaniInstallation::new("/nonexistent/cargo-kani");
+    let missing = std::path::Path::new("/nonexistent/crate");
+    for (function, operation) in [("dv", "div"), ("rm", "rem"), ("md", "mod")] {
+        let package = catalog(DivisionProfile::Floor);
+        let generation = routed_node(&package, &body_id(&package, function), 12);
+        let (harness, _) = harness_of(&generation).expect("a division harness");
+        fn request<'a>(
+            harness: &'a KaniScalarObligationHarness,
+            cancel: &'a quire_exact::Cancel,
+            installation: &'a quire_contract_codegen::KaniInstallation,
+            missing: &'a std::path::Path,
+        ) -> quire_contract_codegen::KaniExecutionRequest<'a> {
+            quire_contract_codegen::KaniExecutionRequest {
+                cancel,
+                installation,
+                harness: harness.into(),
+                crate_directory: missing,
+                target_directory: missing,
+                home_directory: None,
+            }
+        }
+        // `Int[-8, 7]` is 4 bits: at the row.
+        let refusal = execute_kani_obligation_decided(
+            &request(harness, &cancel, &installation, missing),
+            &table,
+        )
+        .expect_err("a 4-bit division harness is a measured not-tractable row");
+        let DecidedRunRefusal::NotTractable { refusal, .. } = refusal else {
+            panic!("expected NotTractable, got {refusal:?}");
+        };
+        let UnsupportedObligation::V2ClauseNotTractable {
+            operation_identity,
+            width_bits,
+            route,
+            row,
+            ..
+        } = *refusal
+        else {
+            panic!("the one refusal arm is V2ClauseNotTractable");
+        };
+        assert_eq!(operation_identity, format!("quire.op.integer.{operation}"));
+        assert_eq!(width_bits, 4);
+        assert_eq!(route, IntegerRoute::General);
+        assert_eq!(row.max_operand_bits, 4);
+        // Below the row, at 3 bits, the decider lets it through to the (missing) launcher.
+        let text = source(&[(
+            "subject",
+            "x: Int[-4, 3], y: Int[-2, 2]",
+            "Integer",
+            &format!("x {operation} y"),
+        )]);
+        let small = routed(&compile(&text, DivisionProfile::Floor), "subject", 12);
+        let (small_harness, _) = harness_of(&small).expect("a 3-bit division harness");
+        assert!(
+            matches!(
+                execute_kani_obligation_decided(
+                    &request(small_harness, &cancel, &installation, missing),
+                    &table
+                ),
+                Err(DecidedRunRefusal::Execution(
+                    KaniExecutionRefusal::HarnessNotInCrate { .. } | KaniExecutionRefusal::Tool(_)
+                ))
+            ),
+            "{operation} below its row width is not refused by the decider"
+        );
+    }
+}
+
+/// FR-057-AC-8: the seeded mutants of each operation and law are rendered, each changes the routed
+/// source, and the set holds both groups (wrong profile or operator or member, and a missing zero
+/// guard on the oracle or the expected side).
+#[trace("TC-071", "FR-057-AC-8")]
+#[test]
+fn the_seeded_mutants_of_each_claim_change_the_routed_source_and_cover_both_groups() {
+    let mut swaps = [0_usize; 2];
+    for (_, operation, profile) in CLAIMS {
+        let package = catalog(profile);
+        let function = match operation {
+            "div" => "dv",
+            "rem" => "rm",
+            _ => "md",
+        };
+        let generation = routed_node(&package, &body_id(&package, function), 12);
+        let (harness, _) = harness_of(&generation).expect("a division harness");
+        let mutants = kani_mutants(harness, operation, profile);
+        for (name, mutated) in &mutants {
+            assert_ne!(mutated, &harness.rust.contents, "{operation} {name}");
+        }
+        let names = mutants
+            .iter()
+            .map(|(name, _)| name.as_str())
+            .collect::<Vec<_>>();
+        for required in [
+            "completes-at-zero",
+            "expected-window-table-of-another-law",
+            "expected-zero-arm-removed",
+        ] {
+            assert!(
+                names.contains(&required),
+                "{operation} {profile:?}: {required}"
+            );
+        }
+        let profile_swaps = names
+            .iter()
+            .filter(|name| name.starts_with("profile-"))
+            .count();
+        match operation {
+            "div" => swaps[0] += profile_swaps,
+            "rem" => swaps[1] += profile_swaps,
+            _ => assert_eq!(profile_swaps, 0),
+        }
+        assert_eq!(names.contains(&"rem-as-modulo"), operation == "rem");
+        assert_eq!(
+            names.contains(&"rem-with-quotient-member"),
+            operation == "rem"
+        );
+        assert_eq!(
+            names
+                .iter()
+                .filter(|name| name.starts_with("mod-as-"))
+                .count(),
+            if operation == "mod" { 2 } else { 0 }
+        );
+    }
+    assert_eq!(swaps, [6, 6], "six profile swaps for div and six for rem");
+}
+
+/// The explicit-result fixture of FR-057-AC-8 (a negative dividend, both divisor signs and zero,
+/// a result range that excludes some members), for `div` under the floor law.
+fn mutant_fixture() -> Shape {
+    Shape {
+        profile: DivisionProfile::Floor,
+        operation: "div",
+        left: (-9, 9),
+        right: (-4, 4),
+        narrow: Some((-3, 3)),
+        unwind: 10,
+    }
+}
+
+/// FR-057-AC-8 on the general route: the mutant whose oracle completes at a zero divisor, over the
+/// 5-bit fixture, does not finish inside the 600 s ceiling, so it is not `Falsified` and carries no
+/// playback. Measured 2026-11-14; see `docs/qualification/ir854-general-route-division-measurements.md`.
+#[trace("TC-071", "FR-057-AC-8")]
+#[test]
+#[ignore = "kani lane: one run, serially, under the 24 GiB scope; expects TimedOut at 600 s"]
+fn general_route_zero_completing_mutant_times_out() {
+    let generation = mutant_fixture().generation();
+    let (harness, manifest) = harness_of(&generation).expect("a division harness");
+    let mutants = kani_mutants(harness, "div", DivisionProfile::Floor);
+    let (_, mutated) = mutants
+        .iter()
+        .find(|(name, _)| name == "completes-at-zero")
+        .expect("the zero-completing mutant");
+    let evidence = run_under_real_kani("ir854-mutant-zero", harness, &manifest, Some(mutated));
+    assert_eq!(
+        evidence.outcome,
+        quire_contract_codegen::KaniRunOutcome::Inconclusive {
+            reason: quire_contract_codegen::KaniInconclusiveReason::TimedOut
+        }
     );
 }

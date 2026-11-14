@@ -344,15 +344,42 @@ ships.
 
 ## Status
 
-PLANNED (IR-854). No `div`, `rem` or `mod` scalar Kani harness exists yet. A
-`div` claim settles `Unsupported(OperationNotRendered)`, and a `rem` claim is
-`Underived` until FR-014-AC-81. No verdict is claimed for any shape.
+PARTIAL (IR-854; the native-route verdict and the criteria that need a
+tractable shape are owned by IR-1541).
 
-IR-854 is an IR-269 MVP row. IR-598 retires the corpus's ground `div` and `rem`
-check, and IR-854 owns its V2 replacement (this requirement).
+Delivered and tested (TC-071): the `div`, `rem` and `mod` scalar harness under
+each law (FR-057-AC-1), its assertion structure and mapping controls over the
+real oracle and constructed outcomes (AC-2), the independent expected side and
+its inspection (AC-3), the host differential against quire-exact `divide` and
+`modulo` with the named vectors and the swapped-window failure (AC-4), the zero
+divisor, `MIN / -1`, `BoundNotI64` and `MIN rem/mod -1` dispositions (AC-5), the
+native refusal `NativeDivisionPlanUnavailable` with an unchanged sibling (AC-6),
+the cover and non-`Verified` controls (AC-10), sibling independence (AC-11) and
+the identity record (AC-12). FR-014-AC-81 (the `rem` oracle derivation) is
+implemented.
 
-IR-854 is blocked by IR-1541 (quire-exact native `Integer` Divide and Modulo
-plan, with Kani measurements) only for FR-057-AC-7's native-route `Verified`
-verdict. The spec, the renderer, the expected side, the refusals and the host
-criteria proceed without it, and FR-057-AC-6 governs the native route until the
-plan lands.
+Measured on the general route (AC-7, AC-9; record
+`docs/qualification/ir854-general-route-division-measurements.md`): every
+measured shape ends `TimedOut` at the 600 s wall-clock ceiling with a peak near
+8 GiB, so no general-route shape of `div`, `rem` or `mod` is claimed `Verified`.
+Each operation is a `not_tractable` row of the shipped scalar table at 4 bits
+(`route` general). The constant-divisor shape at 8 bits also did not finish, so
+the rows show no constant/symbolic split and no `divisor_constant` extension is
+added. Shapes the record lists as unmeasured carry no claim.
+
+Not delivered (PARTIAL, owner IR-1541):
+
+- AC-7's native-route `Verified` verdicts and its native minimum (one shape per
+  operation, at least the constant-divisor shape at 8 bits). The native route
+  refuses per AC-6 until the kernel plan exists. The native-route rows are copied
+  into the shipped table by the PR that consumes IR-1541's measurements (AC-9).
+- AC-8's installed-Kani mutant falsification and its playback replay. No
+  general-route shape is tractable, and the one mutant tried on the general route
+  (completing at a zero divisor, over a 5-bit explicit-result fixture) also
+  ended `TimedOut` at 600 s rather than `Falsified`. The mutant set is rendered
+  by `kani_mutants` in `tests/it/integer_division_harness.rs`, ready for the
+  native route. The host controls of AC-2 and AC-4 kill the mapping and window
+  mutants over the real oracle.
+
+IR-854 is an IR-269 MVP row. IR-598 retired the corpus's ground `div` and `rem`
+check, and this requirement is its V2 replacement.

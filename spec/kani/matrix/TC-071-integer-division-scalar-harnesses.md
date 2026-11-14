@@ -151,4 +151,13 @@ needs IR-1541.
 
 ## Status
 
-PLANNED (IR-854): no step has run.
+PARTIAL (IR-854; native route and the tractable-shape steps are owned by
+IR-1541). Steps 1 to 7 (generation, assertion structure, expected-side
+inspection, host controls and differential, zero-divisor and `MIN / -1`
+dispositions, native refusal), step 9 (non-`Verified` controls), step 10
+(sibling independence) and step 11 (run record) have run in
+`tests/it/integer_division_harness.rs`. Step 7's measurement and step 8's mutant
+runs ran on the general route and ended `TimedOut` (see the measurement record
+`docs/qualification/ir854-general-route-division-measurements.md`), so no shape
+has a `Verified` verdict and no mutant has a `Falsified` verdict or a replayed
+playback. The native-route verdict and the mutant falsification need IR-1541.
