@@ -55,7 +55,7 @@ generator. The composite family's own run is TC-025 steps 29 to 36.
     `equality.pair`, over one that refuses a legal pair, over one that returns the other
     verdict, and over one whose environment refuses to construct a value the shadow draws, reading
     each case outcome.
-14. Run the refinement over a domain of exactly the case cap, one case larger, and one whose case
+14. Run the refinement over a domain of exactly the effective case cap (a request cap above 2^20 acts as 2^20, so a domain between 2^20 and the request cap is sampled), one case larger, and one whose case
     count overflows `u128`, twice each with equal inputs and one run with another seed, reading the
     class, the case count, the cases run, the seed, that a sampled run executed the boundary cases
     (one leaf at a time, plus all-lower and all-upper, not a cross product) and exactly the
