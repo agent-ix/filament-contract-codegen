@@ -38,7 +38,35 @@ pub(crate) enum ClauseTerm {
         arguments: Vec<ClauseTerm>,
         result_bound: Option<(i128, i128)>,
     },
+    /// A read of the innermost enclosing `let` binder, by the unique number the reader gave it.
+    Binder {
+        binder: usize,
+    },
+    /// `quire.op.control.let`: the value is evaluated once, outside the binder's scope, and the
+    /// body reads it by `binder`.
+    Let {
+        binder: usize,
+        value: Box<ClauseTerm>,
+        body: Box<ClauseTerm>,
+    },
+    /// `quire.op.control.if`: only the selected branch is evaluated.
+    If {
+        condition: Box<ClauseTerm>,
+        then: Box<ClauseTerm>,
+        other: Box<ClauseTerm>,
+    },
+    /// `quire.op.control.case` over an arity-0 union operation parameter drawn as a member index:
+    /// one arm body per member in declaration order, only the selected arm is evaluated.
+    Case {
+        scrutinee: ClauseInput,
+        arms: Vec<ClauseTerm>,
+    },
 }
+
+/// Control identities the clause readers lower.
+pub(crate) const CONTROL_LET: &str = "quire.op.control.let";
+pub(crate) const CONTROL_IF: &str = "quire.op.control.if";
+pub(crate) const CONTROL_CASE: &str = "quire.op.control.case";
 
 pub(crate) struct ClauseCondition {
     pub(crate) term: ClauseTerm,
@@ -118,6 +146,9 @@ struct Reader<'a, 'view> {
     inputs: BTreeSet<ClauseInput>,
     visiting: BTreeSet<CheckedNodeId>,
     visits: usize,
+    /// The `let` binders in force, innermost last: the declared name and the binder's number.
+    scopes: Vec<(String, usize)>,
+    next_binder: usize,
 }
 
 impl Reader<'_, '_> {
@@ -138,6 +169,10 @@ impl Reader<'_, '_> {
                 }
                 let node = self.node(&id)?;
                 if &*node.node_tag == "value" && &*node.semantic_form == "parameter" {
+                    if let Some(binder) = self.binder(&id) {
+                        self.visiting.remove(&id);
+                        return Some(ClauseTerm::Binder { binder });
+                    }
                     let boolean = self.nodes.kind(&node.semantic_type)
                         == Some(CheckedNodeKind::ScalarType(
                             quire_contract_model::ScalarTypeForm::Boolean,
@@ -246,6 +281,18 @@ impl Reader<'_, '_> {
                     "quire.op.record.project" if args.len() == 1 => {
                         self.field(value, &args[0], side)
                     }
+                    CONTROL_LET => self.let_term(args, side),
+                    CONTROL_IF => {
+                        let [condition, then, other] = args.as_slice() else {
+                            return None;
+                        };
+                        Some(ClauseTerm::If {
+                            condition: Box::new(self.term(condition, side)?),
+                            then: Box::new(self.term(then, side)?),
+                            other: Box::new(self.term(other, side)?),
+                        })
+                    }
+                    CONTROL_CASE => self.case_term(args, side),
                     _ => {
                         let arguments = args
                             .iter()
@@ -261,6 +308,89 @@ impl Reader<'_, '_> {
             }
             _ => None,
         }
+    }
+
+    /// The binder a read of the parameter node `id` resolves to under the `let` scopes in force: a
+    /// binder hides every parameter of the same declared name, and the innermost one wins.
+    fn binder(&self, id: &CheckedNodeId) -> Option<usize> {
+        let name = self
+            .package
+            .parameter_declaration(id)
+            .ok()?
+            .name
+            .to_string();
+        self.scopes
+            .iter()
+            .rev()
+            .find_map(|(bound, binder)| (*bound == name).then_some(*binder))
+    }
+
+    fn let_term(&mut self, args: &[CheckedTerm], side: ClauseInputSide) -> Option<ClauseTerm> {
+        let [CheckedTerm::Binding { name, value }, body] = args else {
+            return None;
+        };
+        // The value is outside the binder's scope; the body is inside it.
+        let value = self.term(value, side)?;
+        let binder = self.next_binder;
+        self.next_binder = self.next_binder.checked_add(1)?;
+        self.scopes.push((name.to_string(), binder));
+        let body = self.term(body, side);
+        self.scopes.pop();
+        Some(ClauseTerm::Let {
+            binder,
+            value: Box::new(value),
+            body: Box::new(body?),
+        })
+    }
+
+    fn case_term(&mut self, args: &[CheckedTerm], side: ClauseInputSide) -> Option<ClauseTerm> {
+        let (scrutinee, arms) = args.split_first()?;
+        let id = reference(scrutinee)?.clone();
+        let node = self.node(&id)?;
+        if &*node.node_tag != "value"
+            || &*node.semantic_form != "parameter"
+            || side != ClauseInputSide::Current
+            || !self.allowed_parameters.contains(&id)
+        {
+            return None;
+        }
+        let members = union_members(self.package, self.nodes, &node.semantic_type)?;
+        if members.iter().any(|(_, arity)| *arity != 0) || members.len() != arms.len() {
+            return None;
+        }
+        let declaration = self.package.parameter_declaration(&id).ok()?;
+        let input = ClauseInput {
+            name: declaration.name.to_string(),
+            side: ClauseInputSide::Parameter,
+            declaring_node_id: None,
+            boolean: false,
+            lower: 0,
+            upper: i128::try_from(members.len()).ok()?.checked_sub(1)?,
+        };
+        let mut ordered = vec![None; members.len()];
+        for arm in arms {
+            let CheckedTerm::Binding { name, value } = arm else {
+                return None;
+            };
+            let position = members
+                .iter()
+                .position(|(member, _)| member == name.as_ref())?;
+            let CheckedTerm::Aggregate { members: parts } = value.as_ref() else {
+                return None;
+            };
+            let [CheckedTerm::Aggregate { members: binders }, body] = parts.as_slice() else {
+                return None;
+            };
+            if !binders.is_empty() || ordered[position].is_some() {
+                return None;
+            }
+            ordered[position] = Some(self.term(body, side)?);
+        }
+        self.inputs.insert(input.clone());
+        Some(ClauseTerm::Case {
+            scrutinee: input,
+            arms: ordered.into_iter().collect::<Option<Vec<_>>>()?,
+        })
     }
 
     fn field(
@@ -317,6 +447,34 @@ impl Reader<'_, '_> {
     }
 }
 
+/// The ordered members of the union declared by `type_node`, each with its payload arity, or `None`
+/// when the node is not a union declaration.
+pub(crate) fn union_members(
+    package: &CheckedPackageV2,
+    nodes: &ClauseGraphView<'_>,
+    type_node: &CheckedNodeId,
+) -> Option<Vec<(String, usize)>> {
+    let declaration = nodes.node(type_node)?;
+    if &*declaration.node_tag != "composite_type" || &*declaration.semantic_form != "union" {
+        return None;
+    }
+    let CheckedTerm::Aggregate { members } = package.term(type_node)? else {
+        return None;
+    };
+    members
+        .iter()
+        .map(|member| {
+            let CheckedTerm::Binding { name, value } = member else {
+                return None;
+            };
+            let CheckedTerm::Aggregate { members: payload } = value.as_ref() else {
+                return None;
+            };
+            Some((name.to_string(), payload.len()))
+        })
+        .collect()
+}
+
 pub(crate) fn read_clause(
     id: &CheckedNodeId,
     nodes: &ClauseGraphView<'_>,
@@ -358,6 +516,8 @@ pub(crate) fn read_clause(
         inputs: BTreeSet::new(),
         visiting: BTreeSet::new(),
         visits: 0,
+        scopes: Vec::new(),
+        next_binder: 0,
     };
     let term = reader.term(condition, ClauseInputSide::Current)?;
     Some(ClauseCondition {
@@ -366,3 +526,10 @@ pub(crate) fn read_clause(
         condition_node_id: reference(condition).cloned(),
     })
 }
+
+#[cfg(test)]
+#[path = "clause_control_fixture.rs"]
+pub(crate) mod control_fixture;
+#[cfg(test)]
+#[path = "clause_tests.rs"]
+mod tests;

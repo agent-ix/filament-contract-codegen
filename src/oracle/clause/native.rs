@@ -91,6 +91,18 @@ pub(super) fn helpers(
                 NativeIntegerInterval::new(input.lower, input.upper)
                     .map_err(|_| V2ClauseRefusal::Render)?,
             ),
+            StepTerm::Binder { source, .. } => ranges.get(*source).copied().flatten(),
+            StepTerm::Let { body, .. } => ranges.get(*body).copied().flatten(),
+            StepTerm::If { then, other, .. } => hull(&[
+                ranges.get(*then).copied().flatten(),
+                ranges.get(*other).copied().flatten(),
+            ]),
+            StepTerm::Case { arms, .. } => hull(
+                &arms
+                    .iter()
+                    .map(|arm| ranges.get(*arm).copied().flatten())
+                    .collect::<Vec<_>>(),
+            ),
             StepTerm::Operation {
                 identity,
                 operation,
@@ -222,6 +234,18 @@ pub(super) fn helpers(
     }
     source.push_str(&selected.annotation().ok_or(V2ClauseRefusal::Render)?);
     Ok((source, selected))
+}
+
+/// The smallest interval holding every branch interval, or `None` when a branch has none (a Boolean).
+fn hull(branches: &[Option<NativeIntegerInterval>]) -> Option<NativeIntegerInterval> {
+    let mut lower = i128::MAX;
+    let mut upper = i128::MIN;
+    for branch in branches {
+        let branch = (*branch)?;
+        lower = lower.min(branch.lower());
+        upper = upper.max(branch.upper());
+    }
+    NativeIntegerInterval::new(lower, upper).ok()
 }
 
 // Only values that completed the real prior semantic-domain check reach the next

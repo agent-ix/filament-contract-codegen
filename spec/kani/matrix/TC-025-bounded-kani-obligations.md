@@ -1076,13 +1076,13 @@ with the required author `make kani-gate`; independent review and final acceptan
 
 ## Control construct lowering (IR-1447)
 
-57. FR-015-AC-152 to FR-015-AC-173 (PLANNED, IR-1447; FR-025-AC-19 is TC-036 step 19). Control construct lowering.
+57. FR-015-AC-152 to FR-015-AC-173 (PARTIAL, IR-1447: `let`, `if`, nested and the laziness, refusal and unread-initializer fixtures are executed, the union `case`, collection and shadowing fixtures are not; the eager-branch and skip-unread mutants of AC-168 and AC-172 run as equivalent packages (the runner requires the generated source byte for byte), the `false`-mapping mutant of AC-169 as a host stop probe only; AC-166 has no test for the `option.value` clause; FR-025-AC-19 is TC-036 step 19). Control construct lowering.
     Generate a native V2 clause harness for each fixture of FR-015-AC-152 to FR-015-AC-155,
     FR-015-AC-164, FR-015-AC-170 and FR-015-AC-173 (`let`, `if`, `case` over a three-member arity-0
     union drawn as an `i64` member index, an `if` in an invariant collection `forall`, the nested
     `let`/`if`, and the shadowing and nested-rebinding `let`, the last two as constructed packages
     because FSL refuses shadowing) and require one harness each, the native `let`, `if` and `match`
-    forms (no wildcard arm for the `case`), the union parameter bound as one `i64` (FR-025-AC-19) and
+    forms (one `case` arm per member, the last holding the exhaustive pattern, none for a value outside the members), the union parameter bound as one `i64` (FR-025-AC-19) and
     the independent `i128` expectation, with each fixture's arithmetic-node bounds as its criterion states them
     (the kernel checks an integer result only against the arithmetic node's own bound, never an `if`, `let` or
     `case` node). Then, one Kani job at a time, run each fixture through CG's

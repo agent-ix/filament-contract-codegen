@@ -265,8 +265,12 @@ impl ScratchCrate {
                 mutation.package
             );
         }
+        // Cargo names the test executable and its fingerprint after the package, not its path, so
+        // scratch crates sharing a package name would reuse one another's stale executable when a
+        // test's sources are older than another's build. Each crate is named after its own label.
+        let package = format!("ir1509-clause-controls-{label}");
         let manifest = format!(
-            "[package]\nname = \"ir1509-clause-controls\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nquire-exact = {{ git = \"https://github.com/agent-ix/quire-exact\", branch = \"main\" }}\nquire-semantic-value = {{ git = \"https://github.com/agent-ix/quire-semantic-value\", branch = \"main\" }}\n{patch}\n[workspace]\n",
+            "[package]\nname = \"{package}\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nquire-exact = {{ git = \"https://github.com/agent-ix/quire-exact\", branch = \"main\" }}\nquire-semantic-value = {{ git = \"https://github.com/agent-ix/quire-semantic-value\", branch = \"main\" }}\n{patch}\n[workspace]\n",
             runtime_dependency(&["exact"])
         );
         write_manifest(&directory.path, &manifest);
@@ -290,7 +294,7 @@ impl ScratchCrate {
     }
 
     /// `cargo test` of this crate on the host, returning its stdout.
-    fn host_test(&self, filter: &str) -> (bool, String) {
+    pub(crate) fn host_test(&self, filter: &str) -> (bool, String) {
         let build = lock_agreement_build();
         let output = Command::new(env!("CARGO"))
             .args(["test", "--locked", "--offline", "-j2", "--lib", filter])
@@ -302,13 +306,15 @@ impl ScratchCrate {
             .output()
             .expect("run the host test");
         drop(build);
+        let text = format!(
+            "{}\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        // A run that selected no test checked nothing: report it as a failure.
         (
-            output.status.success(),
-            format!(
-                "{}\n{}",
-                String::from_utf8_lossy(&output.stdout),
-                String::from_utf8_lossy(&output.stderr)
-            ),
+            output.status.success() && !text.contains("running 0 tests"),
+            text,
         )
     }
 }
@@ -446,6 +452,10 @@ fn enumerate(
     let (success, output) = scratch.host_test("enumerate_clause_domain");
     assert!(success, "the enumeration test runs to completion: {output}");
     let visits = parse_visits(&output);
+    assert!(
+        !visits.is_empty(),
+        "the enumeration visited no value: {output}"
+    );
     let record = enumeration_record(&visits, &format!("{:?}", harness.identity.clause));
     let printed = render_record(&record);
     println!("ENUMERATION RECORD {label}: {printed}");
@@ -758,7 +768,7 @@ fn playback_values(counterexample: &str) -> Vec<i64> {
 
 /// A falsified two-phase run: the verdict and the in-domain playback are the witness phase's,
 /// the proof phase's evidence is nested, and one identity covers both.
-fn assert_two_phase_falsified(
+pub(crate) fn assert_two_phase_falsified(
     run: &InstalledRun,
     harness: &KaniV2ClauseObligationHarness,
     check: &str,
@@ -817,7 +827,7 @@ fn assert_two_phase_falsified(
     values
 }
 
-const RESULT_CHECK: &str =
+pub(crate) const RESULT_CHECK: &str =
     "the produced V2 Boolean result agrees with the independent checked condition";
 
 #[trace("FR-015-AC-151", "FR-015-AC-126", "FR-017-AC-63", "TC-025")]
