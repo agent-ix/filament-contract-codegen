@@ -374,7 +374,7 @@ leaf beside `fsl-replay`; they also depend on `filament-exact` for values and
 the meter and `filament-semantic-value` for the object closure. FSL
 does not re-export these leaf types. FSL FR-485's
 `fsl_replay` consumer API is delivered on FSL main through merged PR #1483, with
-`acfilament_checked_closure` returning a `CheckedClosureCompilation` whose
+`acquire_checked_closure` returning a `CheckedClosureCompilation` whose
 `handle()` supports `lookup_callable` and `registry()`. The registry accepts
 a checked `CallableSelection` and generated `BodyFactory` through `register`,
 then starts a metered `CheckedApplicationSession` through `begin_call`; the

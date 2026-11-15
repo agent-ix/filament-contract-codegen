@@ -146,7 +146,7 @@ required dependency or target path.
 12b. Planned owner-path corpus (AC-2, AC-4, AC-5, AC-9, AC-17, AC-32,
      AC-35 through AC-37; FSL FR-485 delivered by merged #1483,
      IR-595 Planned). For each retained function
-     vector, call `fsl_replay::acfilament_checked_closure` with the seven supplied
+     vector, call `fsl_replay::acquire_checked_closure` with the seven supplied
      inputs, take `CheckedClosureCompilation::handle()`, and use
      `CheckedClosureHandle::lookup_callable(owner_package_id, wire_node_id)`.
      From that same handle create `registry()`, register the generated
@@ -173,7 +173,7 @@ required dependency or target path.
      the independently admitted Contract IR package, that each generated or
      direct run acquired its closure once, and that CG neither rechecked nor
      reconstructed the package.
-     Give `acfilament_checked_closure` malformed source bytes and a separately
+     Give `acquire_checked_closure` malformed source bytes and a separately
      valid source with an insufficient stage or replay limit. Preserve each
      exact `AdmittedRefusal` and assert no `CheckedClosureHandle`, registry,
      body invocation or application charge is produced for either failure.

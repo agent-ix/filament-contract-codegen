@@ -16,7 +16,7 @@ use filament_exact::{
 };
 use filament_semantic_value::object_closure::ObjectClosure;
 use fsl_replay::{
-    acfilament_checked_closure, ApplicationEnvironment, CompileUnit, DependencyInput, LibraryName,
+    acquire_checked_closure, ApplicationEnvironment, CompileUnit, DependencyInput, LibraryName,
     ReplayLimits, SourceIdentity, StageLimits, SuppliedLibrary,
 };
 use ix_trace_rs::trace;
@@ -79,7 +79,7 @@ fn source_identity() -> SourceIdentity {
 }
 
 fn admitted_source_text(source: &str) -> CheckedPackageV2 {
-    let acquired = acfilament_checked_closure(
+    let acquired = acquire_checked_closure(
         CompileUnit {
             source: source_identity(),
             package_name: "ir595-agreement".to_owned(),
@@ -579,7 +579,7 @@ pub(super) fn genuine_temporal_and_healthy(
          function healthy using v(x: Int[0, 9], y: Int[0, 9]): Integer pure {{ x + y }}\n\
          function probe_healthy using v(x: Int[0, 9], y: Int[0, 9]): Integer pure {{ healthy(x, y) }}\n"
     );
-    let acquired = acfilament_checked_closure(
+    let acquired = acquire_checked_closure(
         CompileUnit {
             source: source_identity(),
             package_name: "ir595-agreement".to_owned(),
@@ -680,7 +680,7 @@ fn imported_corpus() -> (
     CheckedPackageV2,
     filament_contract_codegen::ExactFunctionOracles,
 ) {
-    let compiled = acfilament_checked_closure(
+    let compiled = acquire_checked_closure(
         CompileUnit {
             source: library_identity(),
             package_name: "test/function-library".to_owned(),
@@ -1161,7 +1161,7 @@ fn meter() -> Meter {
 #[test]
 fn tc_031_independent_fr485_session_runs_all_four_functions_without_registration() {
     let package = admitted_source();
-    let acquired = acfilament_checked_closure(
+    let acquired = acquire_checked_closure(
         CompileUnit {
             source: source_identity(),
             package_name: "ir595-agreement".to_owned(),
@@ -1257,7 +1257,7 @@ fn tc_031_nested_static_origin_matches_the_fsl_checked_call_site() {
         .expect("nested location record")
         .location
         .origin;
-    let acquired = acfilament_checked_closure(
+    let acquired = acquire_checked_closure(
         CompileUnit {
             source: source_identity(),
             package_name: "ir595-agreement".to_owned(),
@@ -1334,7 +1334,7 @@ fn tc_031_imported_static_origin_matches_the_fsl_checked_call_site() {
         bytes: LIBRARY_SOURCE.as_bytes().to_vec(),
     }])
     .expect("one genuine FSL library dependency");
-    let acquired = acfilament_checked_closure(
+    let acquired = acquire_checked_closure(
         CompileUnit {
             source: importer_identity(),
             package_name: "function-importer".to_owned(),

@@ -9,7 +9,7 @@ mod generated {
 }
 
 use fsl_replay::{
-    acfilament_checked_closure, ApplicationEnvironment, CompileUnit, DependencyInput, LibraryName,
+    acquire_checked_closure, ApplicationEnvironment, CompileUnit, DependencyInput, LibraryName,
     ReplayLimits, SourceIdentity, StageLimits,
 };
 use filament_contract_codegen::{checked_function_key, CheckedFunctionError, CheckedFunctionSource};
@@ -42,7 +42,7 @@ fn source<'a>(dependencies: &'a DependencyInput) -> CheckedFunctionSource<'a> {
 }
 
 fn package() -> CheckedPackageV2 {
-    let acquired = acfilament_checked_closure(
+    let acquired = acquire_checked_closure(
         CompileUnit {
             source: source_identity(),
             package_name: "ir595-agreement".to_owned(),
@@ -74,7 +74,7 @@ fn unrelated_package() -> CheckedPackageV2 {
         "profile v = \"filament.value.complete/v1\";\n",
         "function unrelated using v(x: Int[0, 9], y: Int[0, 9]): Integer pure { x - y }\n",
     );
-    let acquired = acfilament_checked_closure(
+    let acquired = acquire_checked_closure(
         CompileUnit {
             source: source_identity(),
             package_name: "ir595-agreement".to_owned(),
@@ -153,7 +153,7 @@ fn direct(
     arguments: Vec<Value>,
     meter: &mut Meter,
 ) -> filament_eval::Evaluation {
-    let acquired = acfilament_checked_closure(
+    let acquired = acquire_checked_closure(
         CompileUnit {
             source: source_identity(),
             package_name: "ir595-agreement".to_owned(),
@@ -337,7 +337,7 @@ fn direct_begin_refusal(
     arguments: Vec<Value>,
     meter: &mut Meter,
 ) -> fsl_replay::ApplicationBeginRefusal {
-    let acquired = acfilament_checked_closure(
+    let acquired = acquire_checked_closure(
         CompileUnit {
             source: source_identity(),
             package_name: "ir595-agreement".to_owned(),

@@ -22,7 +22,7 @@ use filament_contract_model::{
     CheckedPackageV2ReadResult,
 };
 use fsl_replay::{
-    acfilament_checked_closure, CompileUnit, DependencyInput, ReplayLimits, SourceIdentity,
+    acquire_checked_closure, CompileUnit, DependencyInput, ReplayLimits, SourceIdentity,
     StageLimits,
 };
 use ix_trace_rs::trace;
@@ -71,7 +71,7 @@ fn host_prepared(
     source: &str,
     name: &str,
 ) -> (String, CheckedNodeId, Vec<u8>, CheckedPackageEvidence) {
-    let compiled = acfilament_checked_closure(
+    let compiled = acquire_checked_closure(
         CompileUnit {
             source: identity(),
             package_name: "function-owner".to_owned(),

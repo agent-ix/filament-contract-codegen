@@ -11,7 +11,7 @@ use std::{
 
 use filament_exact::Cancel;
 use fsl_replay::{
-    acfilament_checked_closure, encode_refinement_query, CompileUnit, DependencyInput, DocumentRef,
+    acquire_checked_closure, encode_refinement_query, CompileUnit, DependencyInput, DocumentRef,
     NodeKey, RefinementQueryKind, RefinementQueryRequest, RefinementQuerySubject,
     RefinementUniverse, ReplayLimits, ScalarLimits, SourceIdentity, StageLimits,
 };
@@ -201,7 +201,7 @@ fn with_source_request<T>(
     if any {
         source = source.replace("-> stutter;", "-> any;");
     }
-    let compiled = acfilament_checked_closure(
+    let compiled = acquire_checked_closure(
         CompileUnit {
             source: SourceIdentity::new("agent-ix", "ir1120-refinement"),
             package_name: "ir1120-refinement".to_owned(),

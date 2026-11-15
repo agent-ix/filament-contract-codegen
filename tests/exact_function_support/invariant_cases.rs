@@ -1,7 +1,7 @@
 //! Execute the same emitted guards with genuine checked-owner inputs.
 use ix_trace_rs::trace;
 use fsl_replay::{
-    acfilament_checked_closure, CompileUnit, DependencyInput, ReplayLimits, SourceIdentity,
+    acquire_checked_closure, CompileUnit, DependencyInput, ReplayLimits, SourceIdentity,
     StageLimits,
 };
 use filament_contract_codegen::{CheckedFunctionResources, CheckedFunctionSource};
@@ -69,7 +69,7 @@ fn identity() -> SourceIdentity {
     SourceIdentity::new("agent-ix", "ir595-agreement")
 }
 fn acquired() -> fsl_replay::CheckedClosureCompilation {
-    acfilament_checked_closure(
+    acquire_checked_closure(
         CompileUnit {
             source: identity(),
             package_name: "ir595-agreement".into(),
