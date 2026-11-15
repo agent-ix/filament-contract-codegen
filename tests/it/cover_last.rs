@@ -43,7 +43,7 @@ const FAMILIES: [(&str, &str); 9] = [
 
 /// Test code the scan skips whole: `kani/test_support.rs` has no `#[cfg(test)]` of its own, its
 /// gate is the `mod` declaration in `kani/mod.rs`.
-const TEST_CODE_FILES: [&str; 1] = ["kani/test_support.rs"];
+const TEST_CODE_FILES: [&str; 2] = ["kani/test_support.rs", "kani/generate/shadow/tests.rs"];
 
 fn is_path(path: &syn::Path, segments: [&str; 2]) -> bool {
     path.segments
