@@ -23,7 +23,7 @@ use std::{
 /// Contract Runtime the generated crate already depends on. Matching
 /// constraints from this repository's manifest use its seeded dependency
 /// resolution before the locked native test.
-const AGREEMENT_DEV_DEPENDENCIES: &str = concat!(
+pub(super) const AGREEMENT_DEV_DEPENDENCIES: &str = concat!(
     "fsl-replay = { version = \"=0.1.0\", git = \"https://github.com/agent-ix/filament-spec-language\", branch = \"main\" }\n",
     "serde_json = \"=1.0.151\"\nsha2 = \"=0.10.9\"\n",
     "ix-trace-rs = { version = \"0.1\", git = \"https://github.com/agent-ix/ix-trace-rs\", branch = \"main\" }\n",
@@ -345,7 +345,7 @@ fn agreement_manifest_for_shared_target(manifest: &str, label: &str) -> String {
     )
 }
 
-fn composite_manifest_for_shared_target(manifest: &str, package_name: &str) -> String {
+pub(super) fn composite_manifest_for_shared_target(manifest: &str, package_name: &str) -> String {
     let original = format!(
         "[package]\nname = \"{}\"\n",
         filament_contract_codegen::COMPOSITE_EQUALITY_CRATE_NAME

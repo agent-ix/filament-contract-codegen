@@ -477,3 +477,110 @@ pub fn contains_loop(source: &str) -> bool {
     loops.visit_file(&file);
     loops.0
 }
+
+/// Why a shadow source is not straight-line code (FR-015-AC-72).
+///
+/// # Errors
+///
+/// The first loop, recursive call, heap type or integer type wider than `i64` that `source`,
+/// parsed, holds; or that it does not parse.
+pub fn check_straight_line(source: &str) -> Result<(), String> {
+    const HEAP: [&str; 12] = [
+        "Box",
+        "Vec",
+        "Rc",
+        "Arc",
+        "String",
+        "HashMap",
+        "BTreeMap",
+        "HashSet",
+        "BTreeSet",
+        "VecDeque",
+        "BinaryHeap",
+        "Cow",
+    ];
+    const WIDE: [&str; 2] = ["i128", "u128"];
+    struct Scan {
+        problem: Option<String>,
+        calls: BTreeMap<String, BTreeSet<String>>,
+        current: Vec<String>,
+    }
+    impl<'ast> Visit<'ast> for Scan {
+        fn visit_item_fn(&mut self, function: &'ast syn::ItemFn) {
+            self.current.push(function.sig.ident.to_string());
+            visit::visit_item_fn(self, function);
+            self.current.pop();
+        }
+        fn visit_expr_call(&mut self, call: &'ast ExprCall) {
+            if let (Expr::Path(path), Some(caller)) = (&*call.func, self.current.last()) {
+                if let Some(name) = path.path.get_ident() {
+                    self.calls
+                        .entry(caller.clone())
+                        .or_default()
+                        .insert(name.to_string());
+                }
+            }
+            visit::visit_expr_call(self, call);
+        }
+        fn visit_expr_while(&mut self, _: &'ast syn::ExprWhile) {
+            self.problem.get_or_insert("a `while` loop".to_owned());
+        }
+        fn visit_expr_loop(&mut self, _: &'ast syn::ExprLoop) {
+            self.problem.get_or_insert("a `loop`".to_owned());
+        }
+        fn visit_expr_for_loop(&mut self, _: &'ast syn::ExprForLoop) {
+            self.problem.get_or_insert("a `for` loop".to_owned());
+        }
+        fn visit_path_segment(&mut self, segment: &'ast syn::PathSegment) {
+            let name = segment.ident.to_string();
+            if HEAP.contains(&name.as_str()) {
+                self.problem
+                    .get_or_insert(format!("the heap type `{name}`"));
+            }
+            if WIDE.contains(&name.as_str()) {
+                self.problem
+                    .get_or_insert(format!("the integer type `{name}`, wider than `i64`"));
+            }
+            visit::visit_path_segment(self, segment);
+        }
+        fn visit_macro(&mut self, mac: &'ast Macro) {
+            if let Some(name) = mac.path.get_ident() {
+                if matches!(name.to_string().as_str(), "vec" | "format") {
+                    self.problem
+                        .get_or_insert(format!("the allocating macro `{name}!`"));
+                }
+            }
+            visit::visit_macro(self, mac);
+        }
+    }
+    let file = syn::parse_file(source).map_err(|error| error.to_string())?;
+    let mut scan = Scan {
+        problem: None,
+        calls: BTreeMap::new(),
+        current: Vec::new(),
+    };
+    scan.visit_file(&file);
+    if let Some(problem) = scan.problem {
+        return Err(problem);
+    }
+    // A function that reaches itself through the free functions it calls is recursive.
+    for start in scan.calls.keys() {
+        let mut seen = BTreeSet::new();
+        let mut stack: Vec<&String> = scan
+            .calls
+            .get(start)
+            .map(|callees| callees.iter().collect())
+            .unwrap_or_default();
+        while let Some(name) = stack.pop() {
+            if name == start {
+                return Err(format!("the recursive function `{start}`"));
+            }
+            if seen.insert(name) {
+                if let Some(callees) = scan.calls.get(name) {
+                    stack.extend(callees.iter());
+                }
+            }
+        }
+    }
+    Ok(())
+}

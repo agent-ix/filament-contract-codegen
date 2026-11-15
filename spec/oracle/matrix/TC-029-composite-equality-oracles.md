@@ -264,7 +264,7 @@ the enum-only owner facade does not excuse dropping it.
     returns, held by the test and not parsed from the source. Hand the comparison a closure that
     dropped a member, narrowed a bound, read an optional member as required, reordered members, or
     dropped a nullary union member or a payload position, and read each fail.
-14. Totality and schedule over the refinement domain (FR-018-AC-22, partial, IR-264, IR-241). For the
+14. Totality and schedule over the refinement domain (FR-018-AC-22, partial, IR-264; the union item and the sampled selector beyond the record item are unowned, planner to assign). For the
     record, tuple and option items of step 13, whose declared integer ranges are chosen so the
     domain fits the case cap (both Booleans, an integer range of three values, every presence
     state of an option and of an optional field), enumerate every operand pair of that domain, the

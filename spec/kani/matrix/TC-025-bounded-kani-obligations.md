@@ -678,7 +678,7 @@ broader disposition tests remain in `tests/it/kani_obligations_state_frame.rs`; 
 negotiate holds twenty-four shapes, each over nodes of its own and read under a byte ceiling above
 the default, which the corpus package alone nearly fills.
 
-## Composite equality over a bounded shadow (planned, IR-264, IR-241)
+## Composite equality over a bounded shadow (IR-264 PR3; partly implemented)
 
 29. Request a composite-equality claim over parameters of one record type, one tuple type and one
     option type (Boolean and bounded-integer leaves, an optional field, a nested option), under
@@ -718,11 +718,70 @@ the default, which the corpus package alone nearly fills.
     of the closure, a bound, the operator and the budget in turn, and regenerate from equal inputs
     (FR-015-AC-76).
 
-Steps 29 to 36 are planned. Nothing in `src/` renders a composite harness: the corpus families
-(arithmetic, graph, collection) draw no input, FR-025's argument table has rows for Boolean and
-bounded integer only, and composite equality has an oracle (FR-018) and a native agreement corpus
-(TC-029) but no Kani harness. The value of `SHADOW_PAIR_NODE_BUDGET` and the case cap's default are
-set by the code change's measurement and recorded here.
+Steps 29 to 36 are implemented by `generate_composite_shadow` (`src/kani/generate/shadow/composite.rs`)
+and its tests, except where this paragraph says otherwise. Generator side: `tests/it/composite_shadow.rs`
+(steps 29 to 33 and 36, the composite source check of FR-028-AC-13 and the closure-reader mutants of
+step 35). Native refinement: `tests/it/composite_shadow_native.rs` (steps 34 and 35 and
+FR-028-AC-16's Boolean and slot states). Installed backend, in the Kani lane (`make kani-gate`, filter
+`composite_shadow_kani`): `tests/it/composite_shadow_kani.rs` (steps 34 and 35 and the budget probe).
+
+Not met, and unowned (planner to assign): step 33's `reference` composite row (FR-018-AC-7 is
+planned, so no package reaches it), its `quantity` row and its `sequence`, `set`, `bag` and `ordered set`
+rows (the closure reader records those as `other` and `collection`; the other family names are fed to
+the generator as recorded type names), and the same-request clause (separate calls, no negotiated
+request); step 29's evidence in the run record (`KaniExecutionEvidence` carries neither the budget nor
+the count; the identity does, asserted in its serialised form); the parameter nodes of step 30's order
+check are the two argument references of the corpus equality application, read from the checked package; step 34's second case is the corpus record under a case cap of
+100 rather than two unconstrained `i64`-range leaves, and the shadow run's evidence names no tool
+versions (FR-028-AC-23); the generator is a public entry that takes the claim-map entry, and is not
+yet an item kind of the negotiated request.
+
+`SHADOW_PAIR_NODE_BUDGET` is 128. The probe (`tc_025_budget_probe_verifies_a_mixed_closure_of_the_requested_size`)
+generates, under an explicit budget, a record whose members cycle Boolean, `Int[0, 2]` and optional
+`Int[0, 2]`, so that its pair-node count is the size asked for, and proves it with the installed backend.
+Wall is the proof's own; the peak is the cgroup `memory.peak` of one scope (swap 0, a 24 GiB cap) holding
+the test process and the backend (sizes 16 and 32 ran through `cargo test`, the others through the built test binary):
+
+| Pair nodes | Verdict | Wall | memory.peak |
+|---|---|---|---|
+| 16 | Verified | 0.8 s | 200,159,232 B |
+| 32 | Verified | 2.5 s | 695,660,544 B |
+| 48 | Verified | 5.1 s | 1,196,711,936 B |
+| 64 | Verified | 9.8 s | 2,136,629,248 B |
+| 96 | Verified | 24.1 s | 4,737,323,008 B |
+| 128 | Verified | 46.4 s | 8,434,708,480 B |
+| 192 | Verified | 123.4 s | 18,917,900,288 B |
+
+The cost is roughly quadratic in the node count. 192 nodes needs more than the 16 GiB memory ceiling of
+the default identity, so the budget is the last size measured inside it, 128. The measured shape has
+three of every four members drawing integers or slot states; a closure of nested options or of leaves
+with wider bounds can cost more at the same count, and a closure that does is refused by the budget
+only by its count.
+
+Verdicts under the installed backend, one scope per row (a 24 GiB cap, swap 0), each run once the
+cross-lane lock was held. The wall is the proof's; the peak covers the test process and the backend:
+
+| Row | Verdict | Wall | memory.peak |
+|---|---|---|---|
+| record under `=` | Verified, cover satisfied | 0.3 s | 143,589,376 B |
+| record under `!=` | Verified, cover satisfied | 0.3 s | 135,118,848 B |
+| tuple | Verified, cover satisfied | 0.2 s | 130,248,704 B |
+| option | Verified, cover satisfied | 0.2 s | 117,428,224 B |
+| nested option | Verified, cover satisfied | 0.2 s | 145,530,880 B |
+| member order permuted | Verified | 0.3 s | 141,086,720 B |
+| mutant: `absent` equal to `null` | Falsified at the verdict assertion | 0.5 s | 141,496,320 B |
+| mutant: the left operand's first field compared with the right operand's second, on a two-Boolean record (healthy record Verified in 0.2 s) | Falsified at the verdict assertion | 0.4 s | 455,471,104 B (scope also ran the 4-node probe) |
+| mutant: option payload pair not counted | Falsified at the pair-count assertion | 0.4 s | 131,743,744 B |
+| mutant: count stops after the first unequal field | Falsified at the pair-count assertion | 0.5 s | 138,350,592 B |
+| mutant: `!=` rendered as `=` | Falsified at the verdict assertion | 0.5 s | 120,041,472 B |
+| mutant: a field left out | Falsified at the verdict assertion | 0.5 s | 129,110,016 B |
+
+Natively, the refinement runs of the corpus agree exhaustively over 2,916 cases (the record under
+either operator), 36 (the tuple), 36 (the option) and 64 (the nested option); the record under a case
+cap of 100 is sampled and agrees over 80 cases. The five production mutants disagree for the reason
+each claims: the opposite operator on all 2,916 cases, `absent` equal to `null` on 108, one pair too
+many on 9, an optional field declared required as a `ConstructionRefused` (`MissingField`) on 2,592,
+and a legal pair `Refused` on 126.
 
 ## State field ranges from the package FSL emits (planned, IR-624)
 

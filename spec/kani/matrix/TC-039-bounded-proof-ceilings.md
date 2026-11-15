@@ -239,9 +239,18 @@ the never-comparing subject (`tc_039_a_subject_that_never_compares_one_leaf_sett
 The installed-backend test is `#[ignore]`d under the `kani lane:` convention and runs through `make kani-gate` (filter `shadow_kani`), not plain `cargo test`. It took about 2 s of wall time with a cgroup `memory.peak` of 187,551,744 B
 (one cgroup, swap 0, the three proofs and the test binary together).
 
-The Boolean and option or optional-slot boundary values of step 14 (FR-028-AC-16) have no code yet: the plan covers integer leaves only (owner IR-264 PR3, which adds those leaf kinds with the composite family).
+The Boolean and option or optional-slot boundary values of step 14 (FR-028-AC-16) are implemented with the composite family (IR-264 PR3): the composite shadow encodes a Boolean and a presence as the range 0 to 1 and a slot state as 0 to 2, so `plan_refinement`'s boundary rule draws every state of each, asserted over a sampled plan by `tc_025_a_sampled_plan_draws_every_boolean_presence_and_slot_state` (`tests/it/composite_shadow_native.rs`).
 
-Still partial: step 21 has the per-phase vectors but not the tool versions in the shadow run's own
-evidence (owner IR-264 PR3, which is the ticket that closes IR-241's composite scope); the strength is not yet a member of the terminal value, the
-composite observables, the `evaluate_record` construction refusals and FR-018-AC-23's independent
-read of the closure belong to the composite family (IR-264 PR1 for the oracle side, PR3).
+The composite family (IR-264 PR3) implements steps 11, 12, 13, 14, 15, 16, 17 (FR-028-AC-18: the closure-reader mutants and the member-order permutation), 20 and 22 for the composite
+shadow: the source check over the composite source and its seven spliced faults
+(`tc_039_the_composite_shadow_source_has_no_runtime_path_no_stub_and_no_assumption_beyond_its_domain`),
+the construction refusals and the composite observables
+(`tc_025_each_production_mutant_disagrees_with_the_shadow_for_the_reason_it_claims`,
+`tc_025_each_corpus_refinement_agrees_exhaustively_and_a_smaller_cap_samples`), the refusal table
+(`tc_025_each_unsupported_shape_settles_with_its_reason_and_no_harness`, whose `reference` row is
+partial) and the mutant set (`tc_025_installed_kani_falsifies_each_shadow_mutant_by_the_check_it_claims`
+in the Kani lane, with the native and closure-reader mutants above). Its verdicts are in TC-025.
+
+Still partial, and unowned (planner to assign): step 21 has the per-phase vectors and the solver name
+but not the Kani version, the solver version or the Rust compiler version in the shadow run's own
+evidence; and the strength is not yet a member of the terminal value (FR-028-AC-17).
