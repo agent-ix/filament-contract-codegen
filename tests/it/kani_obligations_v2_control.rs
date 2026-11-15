@@ -5,6 +5,8 @@
 //! typed refusals; the `kani` lane (`#[ignore]`) runs the installed controls through CG's
 //! two-phase runner.
 
+#![allow(clippy::result_large_err)]
+
 use filament_contract_codegen::{
     negotiate_kani_native_obligations, KaniObligationOutcome, KaniObligationRequest,
     KaniV2ClauseObligationHarness, ObligationDisposition, ObligationItem, ProofCeilings,
