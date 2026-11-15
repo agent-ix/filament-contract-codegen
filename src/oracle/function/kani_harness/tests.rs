@@ -2,7 +2,7 @@ use super::*;
 use crate::oracle::function::owner_path::{CheckedFunctionErrorCode, CheckedFunctionResources};
 use filament_contract_model::{CheckedPackageLimit, CheckedPackageReadLimits};
 use fsl_replay::{
-    acfilament_checked_closure, CompileUnit, DependencyInput, ReplayLimits, SourceIdentity,
+    acquire_checked_closure, CompileUnit, DependencyInput, ReplayLimits, SourceIdentity,
     StageLimits,
 };
 use ix_trace_rs::trace;
@@ -52,7 +52,7 @@ fn evidence() -> CheckedPackageEvidence {
 
 impl Fixture {
     fn new(source: &'static str) -> Self {
-        let compiled = acfilament_checked_closure(
+        let compiled = acquire_checked_closure(
             CompileUnit {
                 source: identity(),
                 package_name: "function-owner".to_owned(),

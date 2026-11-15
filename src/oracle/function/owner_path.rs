@@ -9,7 +9,7 @@ use filament_eval::{Admission, BodyFactory, CallFailure, Evaluation};
 use filament_exact::{Meter, NodeKey, Value};
 use filament_semantic_value::object_closure::ObjectClosure;
 use fsl_replay::{
-    acfilament_checked_closure, AdmittedRefusal, ApplicationBeginRefusal, ApplicationEnvironment,
+    acquire_checked_closure, AdmittedRefusal, ApplicationBeginRefusal, ApplicationEnvironment,
     CallableLookupRefusal, CallableSelection, CheckedClosureCompilation, ClosureOwnerRefusal,
     CompileUnit, DependencyInput, LibraryName, NestedCallOccurrence, NestedCallSite,
     NestedCallSiteRefusal, NominalDeclaration, NominalDeclarationMember, NominalDeclarationRefusal,
@@ -500,7 +500,7 @@ pub(crate) fn acquire_checked_source(
     admitted_unit: &CheckedPackageV2,
     source: &CheckedFunctionSource<'_>,
 ) -> Result<CheckedClosureCompilation, CheckedFunctionError> {
-    acfilament_checked_closure(
+    acquire_checked_closure(
         CompileUnit {
             source: source.source.clone(),
             package_name: admitted_unit.name().to_owned(),
@@ -664,7 +664,7 @@ mod tests {
     }
 
     fn admitted() -> (CheckedPackageV2, CheckedNodeId, CheckedNodeId) {
-        let compiled = acfilament_checked_closure(
+        let compiled = acquire_checked_closure(
             CompileUnit {
                 source: identity(),
                 package_name: "function-owner".to_owned(),
@@ -707,7 +707,7 @@ mod tests {
     }
 
     fn separately_admitted_unit() -> CheckedPackageV2 {
-        let compiled = acfilament_checked_closure(
+        let compiled = acquire_checked_closure(
             CompileUnit {
                 source: identity(),
                 package_name: "function-owner".to_owned(),
@@ -740,7 +740,7 @@ mod tests {
         String,
     ) {
         let library_source = SourceIdentity::new("agent-ix", "function-library");
-        let library_compiled = acfilament_checked_closure(
+        let library_compiled = acquire_checked_closure(
             CompileUnit {
                 source: library_source.clone(),
                 package_name: "test/function-library".to_owned(),
@@ -789,7 +789,7 @@ mod tests {
             bytes: LIBRARY_SOURCE.as_bytes().to_vec(),
         }])
         .expect("one authentic supplied library");
-        let unit_compiled = acfilament_checked_closure(
+        let unit_compiled = acquire_checked_closure(
             CompileUnit {
                 source: identity(),
                 package_name: "function-importer".to_owned(),
@@ -996,7 +996,7 @@ mod tests {
     #[test]
     fn nested_call_site_comes_from_the_selected_checked_body() {
         let (unit, library, imported_function, dependencies, source_bytes) = imported();
-        let acquired = acfilament_checked_closure(
+        let acquired = acquire_checked_closure(
             CompileUnit {
                 source: identity(),
                 package_name: "function-importer".to_owned(),
@@ -1320,7 +1320,7 @@ mod tests {
             package_bytes(&unit).unwrap(),
             package_bytes(&unrelated).unwrap()
         );
-        let acquisition = acfilament_checked_closure(
+        let acquisition = acquire_checked_closure(
             CompileUnit {
                 source: identity(),
                 package_name: "function-owner".to_owned(),
@@ -1343,7 +1343,7 @@ mod tests {
     #[test]
     fn post_lookup_guard_refuses_a_genuine_second_selection() {
         let (package, f, g) = admitted();
-        let acquisition = acfilament_checked_closure(
+        let acquisition = acquire_checked_closure(
             CompileUnit {
                 source: identity(),
                 package_name: "function-owner".to_owned(),

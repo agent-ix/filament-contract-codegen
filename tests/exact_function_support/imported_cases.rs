@@ -8,7 +8,7 @@ mod generated {
 }
 
 use fsl_replay::{
-    acfilament_checked_closure, ApplicationEnvironment, CompileUnit, DependencyInput, LibraryName,
+    acquire_checked_closure, ApplicationEnvironment, CompileUnit, DependencyInput, LibraryName,
     ReplayLimits, SourceIdentity, StageLimits, SuppliedLibrary,
 };
 use filament_contract_codegen::{checked_function_key, CheckedFunctionSource};
@@ -84,7 +84,7 @@ fn function_id(package: &CheckedPackageV2) -> CheckedNodeId {
 )]
 #[test]
 fn generated_library_body_matches_importer_facade_application() {
-    let compiled_library = acfilament_checked_closure(
+    let compiled_library = acquire_checked_closure(
         CompileUnit {
             source: library_identity(),
             package_name: "test/function-library".to_owned(),
@@ -105,7 +105,7 @@ fn generated_library_body_matches_importer_facade_application() {
         bytes: generated::LIBRARY_SOURCE.as_bytes().to_vec(),
     }])
     .expect("one genuine FSL library dependency");
-    let compiled_unit = acfilament_checked_closure(
+    let compiled_unit = acquire_checked_closure(
         CompileUnit {
             source: importer_identity(),
             package_name: "function-importer".to_owned(),
@@ -146,7 +146,7 @@ fn generated_library_body_matches_importer_facade_application() {
     .expect("FSL selects and accepts generated imported body")
     .expect("generated imported body completes");
 
-    let fresh = acfilament_checked_closure(
+    let fresh = acquire_checked_closure(
         CompileUnit {
             source: importer_identity(),
             package_name: "function-importer".to_owned(),
