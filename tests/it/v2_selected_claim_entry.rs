@@ -1,9 +1,9 @@
 //! Public V2 strategy selection of an admitted state-clause claim.
 
-use ix_trace_rs::trace;
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     select_v2_claim_execution_point, V2SelectedClaimKey, V2SelectedClaimRequest,
 };
+use ix_trace_rs::trace;
 use quire_contract_model::{
     CheckedExecutionPointRefusal, CheckedNodeId, CheckedOccurrence, CheckedOccurrenceRole,
     ExecutionPoint, ExecutionPointName,
@@ -34,7 +34,7 @@ fn v2_selected_claim_entry_keeps_point_and_exact_refusal_key() {
         ("TransferBalanceNeverDrops", transfer_expected.clone()),
     ]);
     let [deposit_clause, transfer_clause] =
-        <[CheckedNodeId; 2]>::try_from(clauses).expect("two distinct QSL-authored clauses");
+        <[CheckedNodeId; 2]>::try_from(clauses).expect("two distinct FSL-authored clauses");
 
     let deposit = package
         .resolved_graph()

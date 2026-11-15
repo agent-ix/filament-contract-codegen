@@ -2,7 +2,7 @@
 //!
 //! CG owns the finite graph lowerer. This module owns the codegen-side
 //! vertical slice: once one lowering is admitted, it renders the corpus roles (oracle, strategy,
-//! Kani harness, QSL source and dependency, and proof-dependency graph) from the same profile
+//! Kani harness, FSL source and dependency, and proof-dependency graph) from the same profile
 //! selection, finite input, and declared proof-dependency census. A non-success outcome returns before any role is
 //! emitted.
 
@@ -39,7 +39,7 @@ use crate::{
 ///
 /// This corpus schema carries only the fields that
 /// [`generate_bounded_kani_corpus_case`] actually derives, separate from retired bundle output.
-pub const CORPUS_PROOF_GRAPH_SCHEMA: &str = "quire.kani-corpus-proof-graph/v1";
+pub const CORPUS_PROOF_GRAPH_SCHEMA: &str = "filament.kani-corpus-proof-graph/v1";
 
 /// One semantic family represented in the bounded corpus.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -92,11 +92,11 @@ pub struct BoundedCorpusArtifacts {
     pub strategy: Artifact,
     /// Kani harness artifact with no input-erasing assumptions.
     pub kani_harness: Artifact,
-    /// Real QSL source for this exact finite case; replay compiles these bytes through
+    /// Real FSL source for this exact finite case; replay compiles these bytes through
     /// `qsl_replay::call_site` rather than supplying a copied package.
-    pub qsl_source: Artifact,
-    /// The locked QSL library source imported by `qsl_source` for this case.
-    pub qsl_dependency: Artifact,
+    pub fsl_source: Artifact,
+    /// The locked FSL library source imported by `fsl_source` for this case.
+    pub fsl_dependency: Artifact,
     /// Deterministic corpus-scoped proof-dependency graph for this case
     /// ([`CORPUS_PROOF_GRAPH_SCHEMA`]).
     pub proof_graph: Artifact,
@@ -336,7 +336,7 @@ pub struct BoundedCorpusCase {
     pub family: BoundedCorpusFamily,
     /// Finite oracle prediction, distinct from a run-authenticated Kani outcome.
     pub expectation: BoundedCorpusExpectation,
-    /// The exact Kani symbol whose playback is joined to this case's QSL source.
+    /// The exact Kani symbol whose playback is joined to this case's FSL source.
     pub(crate) harness_symbol: HarnessSymbol,
     /// Generated roles derived from the same profile and finite input selection.
     pub artifacts: BoundedCorpusArtifacts,
@@ -455,10 +455,10 @@ pub fn generate_bounded_kani_corpus_case(
             revision.clone(),
         )
     })?;
-    let (value, oracle_body, qsl_body) = match request {
+    let (value, oracle_body, fsl_body) = match request {
         BoundedCorpusRequest::Graph(request) => {
             let lowered = prepare_finite_graph_reaches(profile, dispatch, input, request)?;
-            let qsl_body = render_graph_qsl(&lowered, input).ok_or_else(|| {
+            let fsl_body = render_graph_qsl(&lowered, input).ok_or_else(|| {
                 KaniOutcome::refused(
                     std001_code!("kani_corpus_serialization_failed"),
                     request_source_id.clone(),
@@ -468,7 +468,7 @@ pub fn generate_bounded_kani_corpus_case(
             (
                 lowered.reachable,
                 render_graph_oracle(&lowered, input),
-                qsl_body,
+                fsl_body,
             )
         }
     };
@@ -492,7 +492,7 @@ pub fn generate_bounded_kani_corpus_case(
         &name,
         value,
         &oracle_body,
-        &qsl_body,
+        &fsl_body,
         &normalized_dependencies,
     ) else {
         // The caller's input is not at fault, so this is `Refused` and not `InvalidInput`.
@@ -625,7 +625,7 @@ fn render_artifacts(
     name: &str,
     value: bool,
     oracle_body: &str,
-    qsl_body: &str,
+    fsl_body: &str,
     dependencies: &[ProofDependencyEdge],
 ) -> Result<BoundedCorpusArtifacts, String> {
     let label = family.label();
@@ -665,30 +665,30 @@ fn render_artifacts(
     };
     let proof_graph_contents =
         artifact_json(&proof_graph_value).map_err(|error| error.to_string())?;
-    let qsl_source = String::from(
+    let fsl_source = String::from(
         "language \"ix:native\" edition \"1-draft\";\n\
          profile v = \"quire.value.complete/v1\";\n\
          import \"ir-453/corpus-dependency\" as d;\n\
          function corpus_case using v(): Boolean pure { d::corpus_case(true) }\n",
     );
-    let qsl_functions = if qsl_body.starts_with("function edge ") {
-        qsl_body.to_owned()
+    let fsl_functions = if fsl_body.starts_with("function edge ") {
+        fsl_body.to_owned()
     } else {
         format!(
-            "function corpus_case using v(enabled: Boolean): Boolean pure {{ enabled and ({qsl_body}) }}"
+            "function corpus_case using v(enabled: Boolean): Boolean pure {{ enabled and ({fsl_body}) }}"
         )
     };
-    let qsl_dependency = format!(
+    let fsl_dependency = format!(
         "language \"ix:native\" edition \"1-draft\";\n\
          profile v = \"quire.value.complete/v1\";\n\
-         {qsl_functions}\n"
+         {fsl_functions}\n"
     );
     Ok(BoundedCorpusArtifacts {
         oracle: Artifact::new(format!("corpus/{name}.oracle.rs"), oracle),
         strategy: Artifact::new(format!("corpus/{name}.strategy.rs"), strategy),
         kani_harness: Artifact::new(format!("corpus/{name}.kani.rs"), harness),
-        qsl_source: Artifact::new(format!("corpus/{name}.qsl"), qsl_source),
-        qsl_dependency: Artifact::new(format!("corpus/{name}.dependency.qsl"), qsl_dependency),
+        fsl_source: Artifact::new(format!("corpus/{name}.qsl"), fsl_source),
+        fsl_dependency: Artifact::new(format!("corpus/{name}.dependency.qsl"), fsl_dependency),
         proof_graph: Artifact::new(
             format!("corpus/{name}.proof-graph.json"),
             proof_graph_contents,
@@ -756,11 +756,11 @@ pub(crate) mod tests {
             .starts_with("corpus/graph_"));
     }
 
-    /// Each graph case retains source bytes that QSL compiles into the selected function
+    /// Each graph case retains source bytes that FSL compiles into the selected function
     /// used by replay. No case turns its generated verdict into a literal `ReplaySource::Input`.
     #[trace("TC-023")]
     #[test]
-    fn tc_023_each_corpus_case_compiles_its_retained_qsl_source() {
+    fn tc_023_each_corpus_case_compiles_its_retained_fsl_source() {
         let (profile, dispatch, input) = fixture();
         let cases = vec![
             emit(
@@ -791,11 +791,11 @@ pub(crate) mod tests {
             .unwrap(),
         ];
         for case in &cases {
-            assert!(case.qsl_source_matches_case_claim().unwrap());
+            assert!(case.fsl_source_matches_case_claim().unwrap());
         }
-        assert!(cases[0].qsl_identity_rejects_case(&cases[1]).unwrap());
+        assert!(cases[0].fsl_identity_rejects_case(&cases[1]).unwrap());
         assert_ne!(
-            cases[0].artifacts.qsl_dependency, cases[1].artifacts.qsl_dependency,
+            cases[0].artifacts.fsl_dependency, cases[1].artifacts.fsl_dependency,
             "each imported dependency carries the case's own semantic source"
         );
     }

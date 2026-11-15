@@ -13,7 +13,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     KaniObligationOutcome, KaniObligationRequest, KaniRunOutcome, KaniV2ClauseObligationHarness,
     ObligationItem, ProofCeilings,
 };
@@ -82,7 +82,7 @@ impl ProbeOp {
 /// The probe clause with both operands `Int[0, 2^bits - 1]`, negotiated on the general route
 /// with an empty tractability table.
 fn probe_harness(op: ProbeOp, bits: u32) -> KaniV2ClauseObligationHarness {
-    use quire_contract_codegen::{
+    use filament_contract_codegen::{
         negotiate_kani_obligations_with_options, GenerationOptions, IntegerRoute,
     };
     let scratch = TemporaryDirectory::new("ir1526-probe-table");
@@ -112,7 +112,7 @@ fn probe_harness(op: ProbeOp, bits: u32) -> KaniV2ClauseObligationHarness {
     .expect("the request negotiates");
     assert!(matches!(
         &outcome.records()[0].disposition,
-        quire_contract_codegen::ObligationDisposition::Supported { .. }
+        filament_contract_codegen::ObligationDisposition::Supported { .. }
     ));
     let KaniObligationOutcome::Emitted {
         mut v2_clause_harnesses,
@@ -154,7 +154,7 @@ fn the_wide_probe_clauses_negotiate_supported_with_one_harness_at_every_width() 
 #[test]
 #[ignore = "measurement probe, run by name (no Kani lane): IR1526_PROBE_BITS=<15|23|31> IR1526_PROBE_OP=<mul|add>, one run each, serially"]
 fn ir1526_probe_wide_integer_multiply_under_installed_kani() {
-    use quire_contract_codegen::{GENERATOR_VERSION, KERNEL_VERSION};
+    use filament_contract_codegen::{GENERATOR_VERSION, KERNEL_VERSION};
     let op = ProbeOp::from_env();
     let bits = probe_bits();
     let harness = probe_harness(op, bits);
@@ -261,7 +261,7 @@ pub(crate) fn native_probe_clause(
 /// The clause with its one operand `Int[0, 2^bits - 1]`, negotiated on the native route with an
 /// empty tractability table.
 fn native_probe_harness(op: NativeOp, bits: u32) -> KaniV2ClauseObligationHarness {
-    use quire_contract_codegen::{
+    use filament_contract_codegen::{
         negotiate_kani_obligations_with_options, GenerationOptions, IntegerRoute,
     };
     let scratch = TemporaryDirectory::new("ir1526-native-probe-table");
@@ -289,7 +289,7 @@ fn native_probe_harness(op: NativeOp, bits: u32) -> KaniV2ClauseObligationHarnes
     assert!(
         matches!(
             &outcome.records()[0].disposition,
-            quire_contract_codegen::ObligationDisposition::Supported { .. }
+            filament_contract_codegen::ObligationDisposition::Supported { .. }
         ),
         "{} at {bits} bits: {:?}",
         op.name(),
@@ -328,7 +328,7 @@ fn the_native_probe_clauses_negotiate_supported_with_one_harness_at_every_width(
 #[test]
 #[ignore = "measurement probe, run by name (no Kani lane): IR1526_NATIVE_BITS=<10|15|23|31> IR1526_NATIVE_OP=<add|mul|chain>, one run each, serially"]
 fn ir1526_probe_native_route_under_installed_kani() {
-    use quire_contract_codegen::{GENERATOR_VERSION, KERNEL_VERSION};
+    use filament_contract_codegen::{GENERATOR_VERSION, KERNEL_VERSION};
     let op = NativeOp::from_env();
     let bits = native_bits();
     let harness = native_probe_harness(op, bits);

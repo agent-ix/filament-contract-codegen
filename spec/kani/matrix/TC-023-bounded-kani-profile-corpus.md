@@ -3,7 +3,7 @@ id: TC-023
 title: "Verify bounded Kani profile corpus parity"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-015
+  - target: ix://agent-ix/filament-contract-codegen/FR-015
     type: verifies
 ---
 # TC-023: Verify bounded Kani profile corpus parity
@@ -18,7 +18,7 @@ slice; their former controls are historical. While the graph hand-built path
 remains, its generated `KaniOutcome` is a case classification. After the final
 step 4g slice, generation returns no `KaniOutcome`. Only FR-017's
 installed-backend run provides proof evidence. Each successful retained graph
-case has a QSL source unit and imported dependency source. The graph real-Kani
+case has a FSL source unit and imported dependency source. The graph real-Kani
 lane passes actual falsification playback immediately to the replay facade;
 playback is run evidence, not a persisted case artifact. Current source tests
 carry `TC-023` trace tags. FR-015-AC-94's collection corpus identity control
@@ -77,7 +77,7 @@ finite input; compare their selected family, profile, case identity and oracle
 truth value. Vary one case input at a time, reorder graph objects and edges,
 repeat emission through one registry, and submit invalid dependency censuses.
 Run the installed backend for FR-015-AC-57's healthy and falsifying cases.
-At AD-004 step 4g, first verify that authentic QSL-emitted packages admit through
+At AD-004 step 4g, first verify that authentic FSL-emitted packages admit through
 Contract IR and that the one V2 generator serves arithmetic, collection and
 graph cases; collection and graph must meet FR-015-AC-96 to AC-102 with
 model-derived symbolic bounds. Check that the shared renderer places the cover
@@ -92,19 +92,19 @@ Retirement procedure (IR-598), per slice, only after IR-858 (step 4b) has landed
 Inspect the resolved Cargo graph for a reverse Contract IR-to-codegen dependency.
 
 Replay procedure (IR-453; graph corpus replay remains live until the final slice FR-015-AC-111 drops it without re-homing; the V2 real-Kani replays of FR-015-AC-99 and FR-015-AC-106 replace the former collection and current graph corpus controls, respectively): for the retained graph family, compile the case's
-retained QSL unit and locked dependency through `call_site`, run the generated
+retained FSL unit and locked dependency through `call_site`, run the generated
 harness under Kani with concrete playback enabled, then pass the actual
 `Falsified` playback and the case's typed harness/site identity through the
 Witness replay arm. Require a typed reproduced violation. A mismatched harness
-or QSL package/site is evidence failure. The corpus does not model state/frame
+or FSL package/site is evidence failure. The corpus does not model state/frame
 operations; their source-backed replay remains covered by the separate
 state/frame facade tests, not by a corpus case.
 
 ## Expected Results
 
-Every successful retained graph corpus case has the oracle, strategy, Kani harness, QSL unit,
+Every successful retained graph corpus case has the oracle, strategy, Kani harness, FSL unit,
 locked dependency source and proof graph derived from its admitted request.
-Focused source tests compile the retained graph family through QSL's
+Focused source tests compile the retained graph family through FSL's
 call-site API. The ignored real-Kani false graph case, when run, replays actual
 playback against the selected source package and settles as a reproduced typed
 violation; the former collection corpus replay test is deleted in this slice.
@@ -167,7 +167,7 @@ corpus arms retired by IR-598 AC-109/AC-110): its harness ends with exactly one
 `tc_023_kani_executes_the_generated_graph_harness` and
 `tc_023_kani_falsifies_a_false_graph_harness` exercise true `Verified` and
 false `Falsified` classifications when run, and
-`tc_023_real_corpus_playback_replays_through_its_qsl_source` checks graph
+`tc_023_real_corpus_playback_replays_through_its_fsl_source` checks graph
 playback. The former collection corpus Kani tests are deleted; they provide
 historical evidence only, not a current run. A retained graph corpus case has
 no symbolic input or precondition, so it cannot yield a vacuous corpus run.
@@ -191,14 +191,14 @@ The removed finite-input `i128` arithmetic procedures included checked
 add/subtract/multiply/divide/remainder admission and range/refusal behavior,
 including requests outside `i64`. Divide/remainder had only ground Rust
 `checked_div`/`checked_rem` checks for exact result, nonzero divisor and range,
-with no mutation control. Their retained QSL text used `/` and `%`; this slice
-claims no QSL division/modulo proof and passes none to IR-854. FR-015-AC-57's
+with no mutation control. Their retained FSL text used `/` and `%`; this slice
+claims no FSL division/modulo proof and passes none to IR-854. FR-015-AC-57's
 arithmetic family therefore excludes division, remainder and modulo;
 [FR-057](../functional/FR-057-integer-division-scalar-harnesses.md) (IR-854, verified by
 [TC-071](TC-071-integer-division-scalar-harnesses.md)) is their V2 replacement. V2 supports symbolic
 `i64` add/subtract/multiply/negate with independent `i128` assertions; it does not
 replace the old finite-request API. IR-858's differential reference renderer,
-authentic QSL-emitted AC-103 inputs, real healthy Add/Add-to-Subtract mutant and
+authentic FSL-emitted AC-103 inputs, real healthy Add/Add-to-Subtract mutant and
 routed healthy/bound-violation controls remain; this does not claim dedicated
 real Subtract/Multiply/Negate mutants.
 

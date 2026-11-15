@@ -462,7 +462,7 @@ fn tc_024_a_failed_record_is_refused_by_its_limit_kind() {
     }
 }
 
-/// quire-contract-ir's `validate_operations` requires `operation.identity`
+/// filament-contract-ir's `validate_operations` requires `operation.identity`
 /// on every application node before admission, so no admitted package can
 /// carry a node without it and this node is built directly -- the same
 /// reason the record cases above are.
@@ -525,7 +525,7 @@ fn tc_024_catalogued_operation_identity_refuses_a_node_whose_operation_has_no_id
              not reported as an identity this generator declined to consume"
     );
 }
-// -- QSL shape (FR-322): bounded_domain-typed parameters and binding-shaped bounds ---------
+// -- FSL shape (FR-322): bounded_domain-typed parameters and binding-shaped bounds ---------
 
 pub(in crate::oracle::scalar) fn v2_node(
     digit: char,
@@ -537,7 +537,7 @@ pub(in crate::oracle::scalar) fn v2_node(
     inference_node(node_id(digit), tag, form, node_id(semantic_type), body)
 }
 
-/// A `{term: binding, name, value: <literal>}` member, the shape QSL emits and IR reads;
+/// A `{term: binding, name, value: <literal>}` member, the shape FSL emits and IR reads;
 /// the literal carries `type` as FR-322 requires.
 fn binding_member(name: &str, value: &str) -> CheckedTerm {
     CheckedTerm::Binding {
@@ -757,7 +757,7 @@ fn tc_024_integer_range_is_read_from_binding_members_and_refuses_bare_literals()
     );
 }
 
-/// Bound members are looked up by name, in any order (QSpec's reader does the same); a
+/// Bound members are looked up by name, in any order (FSpec's reader does the same); a
 /// missing, duplicate or unknown name is refused.
 #[trace("FR-014-AC-16", "TC-024")]
 #[test]

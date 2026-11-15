@@ -3,7 +3,7 @@ id: TC-063
 title: "Verify enum scalar comparison harnesses"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-049
+  - target: ix://agent-ix/filament-contract-codegen/FR-049
     type: verifies
 ---
 # TC-063: Verify enum scalar comparison harnesses

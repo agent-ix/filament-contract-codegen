@@ -3,7 +3,7 @@ id: TC-018
 title: "Verify constructive satisfying and violating populations"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-009
+  - target: ix://agent-ix/filament-contract-codegen/FR-009
     type: verifies
 ---
 # TC-018: Verify constructive satisfying and violating populations
@@ -14,11 +14,11 @@ Verify that populations for a selected V2 claim (FR-008) are constructed rather 
 generate exactly the true value sets, refuse empty sides explicitly, and handle `i64` extremes
 without overflow. Every fixture is an IR-admitted `CheckedPackageV2` with a selected clause id and
 authentic claim occurrence; synthetic topology fixtures are labelled and do not stand in for the
-QSL-produced ConfigVersion control.
+FSL-produced ConfigVersion control.
 
 ## Test Procedure
 
-1. From the QSL-produced, IR-admitted ConfigVersion V2 package, select the direct
+1. From the FSL-produced, IR-admitted ConfigVersion V2 package, select the direct
    `self.versionNumber = pre(self.versionNumber)` claim (`VersionUnchanged`), generate `Satisfying`,
    `Violating`, and `Broad` populations, and draw 10,000 seeded cases from each.
 2. Scan each generated population source for `prop_filter`, `prop_filter_map`, `prop_assume`,
@@ -52,7 +52,7 @@ QSL-produced ConfigVersion control.
 
 ## Scoped evidence status (IR-1316)
 
-Step 7 (FR-009-AC-7) is covered by the tagged QSL-produced mirror population control in
+Step 7 (FR-009-AC-7) is covered by the tagged FSL-produced mirror population control in
 `tests/it/v2_numeric_population.rs`. The compiled consumer compares all three populations' reachable
 values and tags with independently enumerated four-member sets for all four noncommutative
 operators and both authored positions. Steps 1–6 retain their existing Planned status; this control

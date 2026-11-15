@@ -3,7 +3,7 @@ id: TC-065
 title: "Verify bounded decimal scalar operation harnesses"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-051
+  - target: ix://agent-ix/filament-contract-codegen/FR-051
     type: verifies
 ---
 # TC-065: Verify bounded decimal scalar operation harnesses
@@ -11,7 +11,7 @@ relationships:
 ## Description
 
 Verify [FR-051](../functional/FR-051-decimal-scalar-harnesses.md) through admitted
-decimal packages (conditional on the quire-exact decimal carrier, IR-1444, which is
+decimal packages (conditional on the filament-exact decimal carrier, IR-1444, which is
 not delivered), public CG generation, installed proof execution and owner replay.
 This case is planned; FR-014 oracle agreement does not establish Kani acceptance.
 Execute generated proofs only with the authorized runner and budget.

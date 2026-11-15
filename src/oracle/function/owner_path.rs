@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! FR-021: apply a generated body through QSL's retained checked closure.
+//! FR-021: apply a generated body through FSL's retained checked closure.
 
 use qsl_replay::{
     acquire_checked_closure, AdmittedRefusal, ApplicationBeginRefusal, ApplicationEnvironment,
@@ -18,7 +18,7 @@ use quire_semantic_value::object_closure::ObjectClosure;
 
 use super::ExactFunctionRefusal;
 
-/// Caller-owned limits and cancellation for the generated body's QSV work.
+/// Caller-owned limits and cancellation for the generated body's FSV work.
 #[derive(Clone, Default)]
 pub struct CheckedFunctionResources {
     /// Limits for assembling the selected owner's nominal environment.
@@ -31,7 +31,7 @@ pub struct CheckedFunctionResources {
 pub struct CheckedFunctionSource<'a> {
     /// Identity of the supplied unit source.
     pub source: SourceIdentity,
-    /// Source path used by QSL diagnostics.
+    /// Source path used by FSL diagnostics.
     pub path: &'a str,
     /// Exact unit source bytes.
     pub bytes: &'a [u8],
@@ -43,7 +43,7 @@ pub struct CheckedFunctionSource<'a> {
     pub limits: StageLimits,
     /// Replay-stage limits.
     pub replay_limits: ReplayLimits,
-    /// Body-side QSV limits, cancellation and reservation policy.
+    /// Body-side FSV limits, cancellation and reservation policy.
     pub body_resources: CheckedFunctionResources,
 }
 
@@ -81,7 +81,7 @@ pub enum CheckedFunctionErrorCode {
 /// A typed failure before a checked function application can run.
 #[derive(Debug, thiserror::Error)]
 pub enum CheckedFunctionError {
-    /// QSL did not admit the supplied closure; no handle was issued.
+    /// FSL did not admit the supplied closure; no handle was issued.
     #[error("checked closure acquisition refused: {0:?}")]
     Acquisition(AdmittedRefusal),
     /// The selected owner did not issue its reachable nominal declaration.
@@ -93,13 +93,13 @@ pub enum CheckedFunctionError {
     /// The admitted package could not be represented by its canonical writer.
     #[error("admitted package encoding failed")]
     PackageEncoding,
-    /// QSL refused the retained owner payload without recompiling it.
+    /// FSL refused the retained owner payload without recompiling it.
     #[error(transparent)]
     OwnerPackage(ClosureOwnerRefusal),
     /// The acquired unit or checker-issued selection differs from the IR-admitted identities.
     #[error("checked unit or declaring owner contents differ from the acquisition")]
     OwnerIdentityMismatch,
-    /// QSL did not issue a callable selection.
+    /// FSL did not issue a callable selection.
     #[error(transparent)]
     FacadeLookup(CallableLookupRefusal),
     /// The selection belongs to a different acquisition.
@@ -111,7 +111,7 @@ pub enum CheckedFunctionError {
     /// More than one source occurrence of this call belongs to the selected body.
     #[error("call node has multiple matching expression occurrences")]
     AmbiguousCallOccurrence,
-    /// QSL did not issue a nested site inside the selected checked body.
+    /// FSL did not issue a nested site inside the selected checked body.
     #[error(transparent)]
     NestedCallSiteRefused(NestedCallSiteRefusal),
     /// The leaf did not accept the generated body registration.
@@ -340,12 +340,12 @@ fn validate_selected_callable(
 
 /// Issue the checked call location for one body-root call in a selected callable.
 /// Only expression ordinals recorded by the declaring V2 package are considered;
-/// QSL then verifies which of them belongs to this caller's retained body.
+/// FSL then verifies which of them belongs to this caller's retained body.
 ///
 /// # Errors
 ///
 /// Refuses an invalid owner or node identity, a missing or ambiguous source
-/// occurrence, or QSL's typed refusal for a call outside the selected body.
+/// occurrence, or FSL's typed refusal for a call outside the selected body.
 pub fn selected_nested_call_site(
     declaring_package: &CheckedPackageV2,
     call: &CheckedNodeId,
@@ -401,7 +401,7 @@ pub fn selected_nested_call_site(
 /// witnesses are returned unchanged; no declaration is invented or recompiled.
 ///
 /// # Errors
-/// Returns QSL's typed owner refusal if a reachable declaration is unavailable.
+/// Returns FSL's typed owner refusal if a reachable declaration is unavailable.
 pub fn checked_function_declarations(
     declaring_package: &CheckedPackageV2,
     acquired: &CheckedClosureCompilation,
@@ -439,7 +439,7 @@ pub fn checked_function_declarations(
                 declarations.push(declaration);
             }
             // This authentic owner declaration is not reachable from this
-            // selected signature. QSL owns and checks that reachability.
+            // selected signature. FSL owns and checks that reachability.
             Err(NominalDeclarationRefusal::Unknown) => {}
             Err(cause) => return Err(CheckedFunctionError::NominalDeclaration(cause)),
         }
@@ -493,7 +493,7 @@ pub fn checked_function_declarations(
     Ok(declarations)
 }
 
-/// Acquire the checked closure of `source` for the admitted unit, through QSL's genuine
+/// Acquire the checked closure of `source` for the admitted unit, through FSL's genuine
 /// acquisition. Application and the Kani-harness entry share this one call.
 pub(crate) fn acquire_checked_source(
     admitted_unit: &CheckedPackageV2,
@@ -514,7 +514,7 @@ pub(crate) fn acquire_checked_source(
     .map_err(CheckedFunctionError::Acquisition)
 }
 
-/// Convert the owner's nominal declaration views into the QSV composite declarations the
+/// Convert the owner's nominal declaration views into the FSV composite declarations the
 /// generated `PreparedFunction::new` admits, refusing a member that does not match its
 /// declaration's form or an invalid union member identifier. Generated source and the
 /// Kani-harness entry share this one conversion.
@@ -684,7 +684,7 @@ mod tests {
             &evidence,
         );
         let CheckedPackageV2ReadResult::Admitted(package) = read else {
-            panic!("the same QSL emission must be admitted by Contract IR: {read:?}");
+            panic!("the same FSL emission must be admitted by Contract IR: {read:?}");
         };
         let function = |name: &str| {
             package
@@ -726,7 +726,7 @@ mod tests {
             CheckedPackageReadLimits::bounded(),
             &evidence,
         ) else {
-            panic!("the second QSL emission must be admitted by Contract IR");
+            panic!("the second FSL emission must be admitted by Contract IR");
         };
         *package
     }
@@ -982,7 +982,7 @@ mod tests {
                 Ok(EchoFactory)
             },
         )
-        .expect("QSL selected the locked imported declaration")
+        .expect("FSL selected the locked imported declaration")
         .expect("the leaf completed the imported callable");
         assert!(matches!(
             result.outcome,
@@ -1007,7 +1007,7 @@ mod tests {
             StageLimits::default(),
             ReplayLimits::default(),
         )
-        .expect("QSL retains the imported closure");
+        .expect("FSL retains the imported closure");
         let handle = &acquired;
         let caller = unit
             .resolved_graph()
@@ -1037,9 +1037,9 @@ mod tests {
             .find(|entry| entry.node_id == call && entry.role == CheckedOccurrenceRole::Expression)
             .expect("exact expression occurrence in the IR-admitted source map");
         let caller_selection = select_checked_callable(&unit, &unit, &caller, handle)
-            .expect("QSL selects the own caller");
+            .expect("FSL selects the own caller");
         let site = selected_nested_call_site(&unit, &call, handle, &caller_selection)
-            .expect("QSL issues this caller's nested site");
+            .expect("FSL issues this caller's nested site");
         assert_eq!(site.owner_package_name(), &owner_name(&unit).unwrap());
         let issued = handle
             .handle()
@@ -1050,7 +1050,7 @@ mod tests {
                     occurrence.ordinal,
                 ),
             )
-            .expect("QSL issues the IR-selected occurrence");
+            .expect("FSL issues the IR-selected occurrence");
         assert_eq!(site.location(), issued.location());
         assert!(matches!(
             &site.location().origin,
@@ -1071,7 +1071,7 @@ mod tests {
 
         let imported_selection =
             select_checked_callable(&unit, &library, &imported_function, handle)
-                .expect("QSL selects the imported declaration");
+                .expect("FSL selects the imported declaration");
         assert!(matches!(
             selected_nested_call_site(&unit, &call, handle, &imported_selection),
             Err(CheckedFunctionError::OwnerIdentityMismatch)
@@ -1100,10 +1100,10 @@ mod tests {
             .node_id
             .clone();
         let outer_selection = select_checked_callable(&unit, &library, &outer, handle)
-            .expect("QSL selects the imported caller");
+            .expect("FSL selects the imported caller");
         let imported_site =
             selected_nested_call_site(&library, &imported_call, handle, &outer_selection)
-                .expect("QSL issues the imported caller's site");
+                .expect("FSL issues the imported caller's site");
         assert_eq!(
             imported_site.owner_package_name(),
             &owner_name(&library).expect("IR library identity")
@@ -1196,7 +1196,7 @@ mod tests {
                     })
                 },
             )
-            .expect("QSL selects both callables and the checked child site")
+            .expect("FSL selects both callables and the checked child site")
             .expect("the leaf applies the interpreted child");
             assert!(matches!(
                 completed.outcome,
@@ -1252,7 +1252,7 @@ mod tests {
             CheckedFunctionSource {
                 source: identity(),
                 path: "function-owner.native",
-                bytes: b"not a QSL unit",
+                bytes: b"not a FSL unit",
                 packages: &[],
                 dependencies: &dependencies,
                 limits: StageLimits::default(),

@@ -3,23 +3,23 @@ id: AD-006
 title: "Admitted native integer oracles preserve the genuine proof boundary"
 type: ArchitectureDescription
 status: accepted
-owner: quire-contract-codegen-maintainer
+owner: filament-contract-codegen-maintainer
 system: CG scalar and V2 clause oracle generation over checked finite integer domains
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-015
+  - target: ix://agent-ix/filament-contract-codegen/FR-015
     type: realizes
-  - target: ix://agent-ix/quire-contract-codegen/FR-014
+  - target: ix://agent-ix/filament-contract-codegen/FR-014
     type: references
-  - target: ix://agent-ix/quire-exact/FR-384
+  - target: ix://agent-ix/filament-exact/FR-384
     type: references
-  - target: ix://agent-ix/quire-exact/AD-003
+  - target: ix://agent-ix/filament-exact/AD-003
     type: references
 ---
 # AD-006: Admitted native integer oracles preserve the genuine proof boundary
 
 ## System Boundary
 
-Peter approved IR-705 option 2: a kernel-owned admitted bounded-native API with a proven refinement to BigInt, followed by genuine IR-705, IR-917 and IR-948 proof qualification. CG selects and renders that production API from authentic IR-admitted CheckedPackageV2 data. quire-exact owns native value/operation admission, arithmetic and Meter semantics. This decision does not authorize a private CG evaluator or replace existing general Integer and as_big contracts.
+Peter approved IR-705 option 2: a kernel-owned admitted bounded-native API with a proven refinement to BigInt, followed by genuine IR-705, IR-917 and IR-948 proof qualification. CG selects and renders that production API from authentic IR-admitted CheckedPackageV2 data. filament-exact owns native value/operation admission, arithmetic and Meter semantics. This decision does not authorize a private CG evaluator or replace existing general Integer and as_big contracts.
 
 ## Views
 
@@ -41,7 +41,7 @@ A kernel capacity refusal is a typed generation/capability disposition carrying 
 
 ### Refinement and genuine proof view
 
-Kernel qualification supplies machine-checked full-capacity refinement against an independent mathematical abstraction of actual BigInt semantics; sampled differential tests alone are not a universal proof. Kernel qualification proves native admission and every operation against BigInt semantics over its full accepted operator capacity, including complete signed32 multiplication with widened signed64 products and the unchanged full admitted i128 capacities of the other operations, plus real Meter/refusal refinement. Unsuccessful earlier unrestricted-i128 multiplication evidence stays retained as unsuccessful evidence and cannot establish this amended theorem. CG qualification separately obtains authentic QSL-emitted, IR-admitted inputs through the public generator and installed backend. No generated fixture is hand-edited into a replacement evaluator, and no healthy proof becomes ignored or waived.
+Kernel qualification supplies machine-checked full-capacity refinement against an independent mathematical abstraction of actual BigInt semantics; sampled differential tests alone are not a universal proof. Kernel qualification proves native admission and every operation against BigInt semantics over its full accepted operator capacity, including complete signed32 multiplication with widened signed64 products and the unchanged full admitted i128 capacities of the other operations, plus real Meter/refusal refinement. Unsuccessful earlier unrestricted-i128 multiplication evidence stays retained as unsuccessful evidence and cannot establish this amended theorem. CG qualification separately obtains authentic FSL-emitted, IR-admitted inputs through the public generator and installed backend. No generated fixture is hand-edited into a replacement evaluator, and no healthy proof becomes ignored or waived.
 
 The route can change generated oracle source bytes and native ABI carriers. Those changes are recorded and reviewed. It preserves the original proposition, selected clause, input/domain bounds, compiled subject intent, independent oracle/expectation, assertions, final completion cover and substantive mutants. The general-only route's source bytes are not an acceptance oracle for this architecture change.
 

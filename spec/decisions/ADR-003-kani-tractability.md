@@ -3,17 +3,17 @@ id: ADR-003
 title: "Kani tractability of generated obligations"
 type: ADR
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/AD-001
+  - target: ix://agent-ix/filament-contract-codegen/AD-001
     type: relates_to
-  - target: ix://agent-ix/quire-contract-codegen/FR-015
+  - target: ix://agent-ix/filament-contract-codegen/FR-015
     type: relates_to
-  - target: ix://agent-ix/quire-contract-codegen/FR-017
+  - target: ix://agent-ix/filament-contract-codegen/FR-017
     type: relates_to
-  - target: ix://agent-ix/quire-contract-codegen/FR-021
+  - target: ix://agent-ix/filament-contract-codegen/FR-021
     type: relates_to
-  - target: ix://agent-ix/quire-contract-codegen/FR-028
+  - target: ix://agent-ix/filament-contract-codegen/FR-028
     type: relates_to
-  - target: ix://agent-ix/quire-spec-language/ADR-011
+  - target: ix://agent-ix/filament-spec-language/ADR-011
     type: relates_to
 ---
 # ADR-003: Kani tractability of generated obligations
@@ -25,7 +25,7 @@ Accepted.
 ## Context
 
 A generated Kani harness embeds its generated oracle. The oracle calls
-`quire_contract_runtime::exact`, so the prover proves the production code through the production
+`filament_contract_runtime::exact`, so the prover proves the production code through the production
 data structures.
 
 ## Decision
@@ -42,7 +42,7 @@ Proof coverage is maximised per family:
 - A family whose production harness cannot verify within its ceilings proves its claim over a
   bounded shadow model, together with a separate refinement obligation showing that the production
   code agrees with the shadow on the bounded domain. The shadow is derived independently of the
-  code under proof (QSL ADR-011 §2.3). Contract Runtime co-owns the shadow and the refinement
+  code under proof (FSL ADR-011 §2.3). Contract Runtime co-owns the shadow and the refinement
   obligation for its kernel types.
 
 A shadow proof is never reported without its refinement obligation.

@@ -3,13 +3,13 @@
 
 //! Genuine producer forms at the strict-reader and native scalar seams.
 
+use filament_contract_codegen::{
+    derive_exact_scalar_items, generate_exact_scalar_oracles, ClaimDisposition, ExactScalarOracles,
+    OperationProvenance,
+};
 use ix_trace_rs::trace;
 use qsl_replay::{
     compile_package, CompileUnit, DependencyInput, ReplayLimits, SourceIdentity, StageLimits,
-};
-use quire_contract_codegen::{
-    derive_exact_scalar_items, generate_exact_scalar_oracles, ClaimDisposition, ExactScalarOracles,
-    OperationProvenance,
 };
 use quire_contract_model::{
     CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2, CheckedPackageV2ReadResult,
@@ -30,7 +30,7 @@ pub(crate) fn emitted(declarations: &str) -> Vec<u8> {
         StageLimits::default(),
         ReplayLimits::default(),
     )
-    .expect("public QSL facade emits the authored source");
+    .expect("public FSL facade emits the authored source");
     emitted.bytes().to_vec()
 }
 
@@ -43,7 +43,7 @@ pub(crate) fn admit(bytes: &[u8]) -> CheckedPackageV2 {
     evidence.support_feature("quire.value.complete/v1");
     match CheckedPackageV2::read(bytes, CheckedPackageReadLimits::bounded(), &evidence) {
         CheckedPackageV2ReadResult::Admitted(package) => *package,
-        other => panic!("strict IR reader must admit unchanged genuine QSL bytes: {other:?}"),
+        other => panic!("strict IR reader must admit unchanged genuine FSL bytes: {other:?}"),
     }
 }
 
@@ -225,7 +225,7 @@ fn genuine_carried_quantity_u01_conversion_generates() {
             "assert_eq!(actual.magnitude(), &expected); assert_eq!(actual.unit(), &m.id());",
         )
     );
-    run_native("quantity-source-forms", manifest, &native, "qsl-replay = { git = \"https://github.com/agent-ix/quire-spec-language\", branch = \"main\" }\n");
+    run_native("quantity-source-forms", manifest, &native, "qsl-replay = { git = \"https://github.com/agent-ix/filament-spec-language\", branch = \"main\" }\n");
 }
 
 pub(crate) fn run_native(label: &str, manifest: &str, source: &str, dependencies: &str) {
@@ -314,7 +314,7 @@ fn values_and_ledgers() {
 #[test]
 fn ieee_extension_preserves_binary_support_and_refuses_other_shapes() {
     use crate::exact_scalar_generation::package::read_mutated_wire;
-    use quire_contract_codegen::{
+    use filament_contract_codegen::{
         ExactScalarItem, ExactScalarOperation, ExactScalarRefusal, ScalarForm,
     };
     use quire_exact::{IeeeComparison, IeeeWidth};
@@ -548,7 +548,7 @@ fn ieee_call_extension_does_not_admit_integer_calls() {
 #[trace("TC-024", "FR-014-AC-68", "FR-014-AC-12", "FR-038-AC-3")]
 #[test]
 fn same_shape_ieee_descriptor_mismatch_retains_caller_declared_generation() {
-    use quire_contract_codegen::{ExactScalarItem, ExactScalarOperation};
+    use filament_contract_codegen::{ExactScalarItem, ExactScalarOperation};
     use quire_exact::{IeeeComparison, IeeeWidth};
     let package = compiled("function subject using v(a: Float64[nearest-even], b: Float64[nearest-even]): Boolean pure { a = b }");
     let node = package.resolved_graph().nodes.iter().find(|node| matches!(&node.body, CheckedTerm::Application { operation, .. } if operation.identity() == Some("quire.op.ieee.numeric_equal"))).unwrap();
@@ -590,12 +590,12 @@ fn same_shape_ieee_descriptor_mismatch_retains_caller_declared_generation() {
 fn carried_input_native_harness_component_executes_owner_admission_and_conversion() {
     let manifest = format!(
         "[package]\nname = \"carried-input-harness-component\"\nversion = \"0.0.0\"\nedition = \"2021\"\n[dependencies]\nquire-exact = {{ {} }}\nquire-semantic-value = {{ {} }}\n[workspace]\n",
-        quire_contract_codegen::EXACT_DEPENDENCY_SOURCE,
-        quire_contract_codegen::SEMANTIC_VALUE_DEPENDENCY_SOURCE,
+        filament_contract_codegen::EXACT_DEPENDENCY_SOURCE,
+        filament_contract_codegen::SEMANTIC_VALUE_DEPENDENCY_SOURCE,
     );
     let native = native_quantity_checks(
         "owner::convert_quantity(operand, m.unit(), &owner::QuantityTarget::Exact, &mut generated_meter)",
         "assert_eq!(actual, direct);",
     );
-    run_native("carried-input-harness-component", &manifest, &native, "qsl-replay = { git = \"https://github.com/agent-ix/quire-spec-language\", branch = \"main\" }\n");
+    run_native("carried-input-harness-component", &manifest, &native, "qsl-replay = { git = \"https://github.com/agent-ix/filament-spec-language\", branch = \"main\" }\n");
 }

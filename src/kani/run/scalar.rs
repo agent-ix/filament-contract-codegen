@@ -68,29 +68,29 @@ pub struct KaniScalarNativeRequest<'a> {
 
 /// The opaque result of proving and natively invoking one staged scalar artifact.
 /// ```compile_fail,E0599
-/// use quire_contract_codegen::KaniScalarNativeReceipt;
+/// use filament_contract_codegen::KaniScalarNativeReceipt;
 /// fn no_digest(receipt: &KaniScalarNativeReceipt) {
 ///     let _ = receipt.proof_content_digest();
 /// }
 /// ```
 /// ```compile_fail
-/// use quire_contract_codegen::KaniScalarNativeReceipt;
+/// use filament_contract_codegen::KaniScalarNativeReceipt;
 /// let receipt = KaniScalarNativeReceipt {};
 /// ```
 /// ```compile_fail,E0616
-/// use quire_contract_codegen::KaniScalarNativeReceipt;
+/// use filament_contract_codegen::KaniScalarNativeReceipt;
 /// fn mutate(receipt: &mut KaniScalarNativeReceipt) { receipt.entries.clear(); }
 /// ```
 /// ```compile_fail,E0596
-/// use quire_contract_codegen::KaniScalarNativeReceipt;
+/// use filament_contract_codegen::KaniScalarNativeReceipt;
 /// fn mutate(receipt: &mut KaniScalarNativeReceipt) { receipt.staged_entries()[0].1.clear(); }
 /// ```
 /// ```compile_fail,E0594
-/// use quire_contract_codegen::KaniScalarNativeReceipt;
+/// use filament_contract_codegen::KaniScalarNativeReceipt;
 /// fn mutate(receipt: &mut KaniScalarNativeReceipt) { receipt.meter_observation().limits().work_units = 0; }
 /// ```
 /// ```compile_fail,E0277
-/// use quire_contract_codegen::KaniScalarNativeReceipt;
+/// use filament_contract_codegen::KaniScalarNativeReceipt;
 /// let _: KaniScalarNativeReceipt = serde_json::from_str("{}").unwrap();
 /// ```
 #[derive(Debug)]
@@ -186,7 +186,7 @@ impl KaniScalarNativeReceipt {
 ///
 /// The frozen code catalog is available at the crate root:
 /// ```
-/// use quire_contract_codegen::{
+/// use filament_contract_codegen::{
 ///     SCALAR_NATIVE_CODE_INVALID_REQUEST,
 ///     SCALAR_NATIVE_CODE_ARTIFACT_PACKAGE,
 ///     SCALAR_NATIVE_CODE_SNAPSHOT_IO,
@@ -215,7 +215,7 @@ impl KaniScalarNativeReceipt {
 ///
 /// Downstream consumers must leave room for future error variants:
 /// ```compile_fail,E0004
-/// use quire_contract_codegen::KaniScalarNativeError as E;
+/// use filament_contract_codegen::KaniScalarNativeError as E;
 /// fn exhaustive(error: E) {
 ///     match error {
 ///         E::InvalidRequest(_) | E::ArtifactPackage(_) | E::Snapshot(_) | E::Kani(_)
@@ -225,7 +225,7 @@ impl KaniScalarNativeReceipt {
 /// }
 /// ```
 /// ```
-/// use quire_contract_codegen::{KaniScalarNativeError as E, KaniScalarNativeErrorClass as C};
+/// use filament_contract_codegen::{KaniScalarNativeError as E, KaniScalarNativeErrorClass as C};
 /// fn consumer(error: E) -> &'static str {
 ///     let _ = match &error { E::InvalidRequest(_) => true, _ => false };
 ///     match error.class() { C::CompletionRefusal => error.code(), C::EnvironmentFault => error.code() }
@@ -668,7 +668,7 @@ fn stage_package(
 }
 
 /// Pure original scalar staging layout, shared by proof execution and checked replay.
-/// This constructs bytes only: no process, native invocation, or QSL evaluation occurs here.
+/// This constructs bytes only: no process, native invocation, or FSL evaluation occurs here.
 pub(crate) fn scalar_staged_entries(
     harness: &KaniScalarObligationHarness,
     oracle_artifacts: &[Artifact],

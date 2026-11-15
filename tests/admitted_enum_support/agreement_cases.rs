@@ -1,4 +1,4 @@
-//! Actual generated enum oracles versus direct QSV, both using real admitted identities.
+//! Actual generated enum oracles versus direct FSV, both using real admitted identities.
 #[path = "fixture.rs"]
 mod fixture;
 #[path = "native_values.rs"]

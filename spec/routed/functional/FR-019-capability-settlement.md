@@ -3,41 +3,41 @@ id: FR-019
 title: "Settle every capability claim at one negotiation point"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/StR-001
+  - target: ix://agent-ix/filament-contract-codegen/StR-001
     type: satisfies
-  - target: ix://agent-ix/quire-contract-codegen/FR-015
+  - target: ix://agent-ix/filament-contract-codegen/FR-015
     type: depends_on
-  - target: ix://agent-ix/quire-specification/FR-290
+  - target: ix://agent-ix/filament-specification/FR-290
     type: references
-  - target: ix://agent-ix/quire-specification/FR-272
+  - target: ix://agent-ix/filament-specification/FR-272
     type: references
-  - target: ix://agent-ix/quire-specification/FR-331
+  - target: ix://agent-ix/filament-specification/FR-331
     type: references
-  - target: ix://agent-ix/quire-specification/TC-271
+  - target: ix://agent-ix/filament-specification/TC-271
     type: references
-  - target: ix://agent-ix/quire-spec-language/FR-288
+  - target: ix://agent-ix/filament-spec-language/FR-288
     type: references
-  - target: ix://agent-ix/quire-spec-language/ADR-029
+  - target: ix://agent-ix/filament-spec-language/ADR-029
     type: references
-  - target: ix://agent-ix/quire-spec-language/FR-335
+  - target: ix://agent-ix/filament-spec-language/FR-335
     type: references
-  - target: ix://agent-ix/quire-contract-ir/FR-036
+  - target: ix://agent-ix/filament-contract-ir/FR-036
     type: references
-  - target: ix://agent-ix/quire-contract-ir/FR-029
+  - target: ix://agent-ix/filament-contract-ir/FR-029
     type: references
-  - target: ix://agent-ix/quire-spec-language/ADR-018
+  - target: ix://agent-ix/filament-spec-language/ADR-018
     type: references
-  - target: ix://agent-ix/quire-spec-language/ADR-020
+  - target: ix://agent-ix/filament-spec-language/ADR-020
     type: references
-  - target: ix://agent-ix/quire-spec-language/ADR-021
+  - target: ix://agent-ix/filament-spec-language/ADR-021
     type: references
-  - target: ix://agent-ix/quire-spec-language/ADR-022
+  - target: ix://agent-ix/filament-spec-language/ADR-022
     type: references
-  - target: ix://agent-ix/quire-spec-language/ADR-023
+  - target: ix://agent-ix/filament-spec-language/ADR-023
     type: references
-  - target: ix://agent-ix/quire-spec-language/ADR-025
+  - target: ix://agent-ix/filament-spec-language/ADR-025
     type: references
-  - target: ix://agent-ix/quire-spec-language/ADR-027
+  - target: ix://agent-ix/filament-spec-language/ADR-027
     type: references
 ---
 # FR-019: Settle every capability claim at one negotiation point
@@ -79,10 +79,10 @@ nothing says so.
   beside its identity, advertised (kind, mode) pairs, and the FR-331 manifest's
   advertised `domains` and optional `bounds`. The manifest's `bounds` are run-limit defaults, not
   admission limits; the process arm does not compare their numbers with item
-  proof bounds (QSpec FR-331). An absent `bounds` member remains absent in the CG
+  proof bounds (FSpec FR-331). An absent `bounds` member remains absent in the CG
   descriptor; a present empty map remains present and empty. The driver copies
   `domains` and `bounds` from the same FR-331 manifest descriptor as the advertised
-  pairs; QSL's route descriptor carries
+  pairs; FSL's route descriptor carries
   advertised pairs but no `domains` or `bounds`. QSL-654 owns the matching
   PV-4 wording update.
   The FR-331 registry snapshot supplies unique backend identities; FR-290's
@@ -95,9 +95,9 @@ nothing says so.
   typed IR tag/form is the form lowered from the admitted checked item; it is
   an in-process negotiation input, not a new FR-331 wire member. For a bounded extent the arm
   reads `extent.bounds[].kind`, the domain kind of each substituted `ProofBound`
-  (QSpec FR-331; QSL-654 owns the producer); for an unbounded extent it reads
+  (FSpec FR-331; QSL-654 owns the producer); for an unbounded extent it reads
   `extent.domains[].kind` and `finite_bound_available`.
-- `candidates` is read, never computed. The `quire-spec-language` registry
+- `candidates` is read, never computed. The `filament-spec-language` registry
   computes it under FR-290's candidate-set rule; this generator is the consumer
   on the far side of that seam.
 - On the admitted FR-330 package path, the full lowering-position sequence may
@@ -137,7 +137,7 @@ carry equal manifests, "the registry SHALL hold that identity once, with that
 manifest" and "a repeat is not refused." FR-290:261-265 says that differing
 manifests cause the registry to refuse every registration of that identity and
 hold none of that identity; FR-290:274 and :315-316 leave other identities
-eligible. QSL's registry snapshot therefore holds each backend identity at
+eligible. FSL's registry snapshot therefore holds each backend identity at
 most once (FR-290:258-265; FR-331:57), so no driver-built FR-331 manifest
 repeats an identity. At CG's public API, a caller-supplied manifest can violate
 that precondition; CG's typed refusal defends it rather than establishing it.
@@ -170,7 +170,7 @@ that precondition; CG's typed refusal defends it rather than establishing it.
   disposition for an excluded position, even if its accounting record is
   `lowered`.
 - The generator shall refuse an envelope whose `capability_vocabulary` is not
-  exactly `quire.capability-kind/v1`, or is absent, as
+  exactly `filament.capability-kind/v1`, or is absent, as
   `invalid_capability`/`unsupported-version`, and shall read none of its kinds.
 - The generator shall evaluate each item's rules in FR-290's stated order, and
   the first rule that matches shall settle the item: an absent or unknown kind;
@@ -265,11 +265,11 @@ generator entry and generation routing remain AD-004's and FR-022's concern.
   safety and optional liveness halves, SG-1 through SG-3, and HP-1's model
   claim, HP-2, HP-3 and HP-6, each on its admitted model or protocol subject.
   It shall settle a form only when its descriptor advertises the required
-  capability and the form is one EN-1 discharges (QSL ADR-018, ADR-020,
+  capability and the form is one EN-1 discharges (FSL ADR-018, ADR-020,
   ADR-022 and ADR-023). HP-1's code claim and HP-5 do not become EN-1
   every-behaviour proofs through this arm.
 - The SMT temporal arm shall read TP-1 through TP-4 and the subject class,
-  selecting only EN-2 unrolling or EN-3 induction where QSL ADR-018 assigns
+  selecting only EN-2 unrolling or EN-3 induction where FSL ADR-018 assigns
   that method. It shall not claim an EN-3 liveness proof or treat a
   bounded-to-`k` search as an exhaustive proof.
 - For TP-5, the EN-1 arm shall retain both halves on the concrete subject;
@@ -281,33 +281,33 @@ generator entry and generation routing remain AD-004's and FR-022's concern.
 - For HP forms, the EN-1 arm shall accept only HP-1 model, HP-2, HP-3 and
   HP-6; the SMT arm shall accept HP-2 only where its advertised EN-2 or EN-3
   method applies. HP-4 shall settle unsupported before reaching an engine;
-  HP-5 belongs to QSL ADR-022's possible-property path. HP-1's code claim
+  HP-5 belongs to FSL ADR-022's possible-property path. HP-1's code claim
   remains an `operation-contract` item for the Kani arm only if its typed
-  lowering and advertisement admit it (QSL ADR-023 XC-1 to XC-5).
+  lowering and advertisement admit it (FSL ADR-023 XC-1 to XC-5).
 - For state-graph forms, the EN-1 arm shall accept SG-1, SG-2 and SG-3; the
   SMT arm shall accept SG-1 only, when advertised. SG-2 or SG-3 shall not be
-  routed to the SMT arm (QSL ADR-022 GE-1 to GE-3).
+  routed to the SMT arm (FSL ADR-022 GE-1 to GE-3).
 - An arm receiving a selected reduction shall require the candidate to
   advertise that exact reduction and retain the selection in the routed
   request. Selected symmetry declarations and POR enter the obligation
   identity, so their reduced and unreduced requests have distinct obligation
   identities. A state constraint remains an EN-1 method parameter: it enters
-  the request identity, not the obligation identity (QSL ADR-021 SC-3, RV-8).
+  the request identity, not the obligation identity (FSL ADR-021 SC-3, RV-8).
   A selected POR without subject footprints shall settle unsupported. It
-  shall never silently run unreduced or add a reduction (QSL ADR-021 RV-6,
+  shall never silently run unreduced or add a reduction (FSL ADR-021 RV-6,
   RV-8 and RV-9).
 - An arm over a subject with a weak `parallel` shall read its resolved `tso`
   or `ra` model and require the candidate to advertise that model. The arm
   shall retain the resolved model in the routed obligation and never weaken
-  it to fit a candidate (QSL ADR-025 MX-7 and MM-5). An `sc` subject is a
+  it to fit a candidate (FSL ADR-025 MX-7 and MM-5). An `sc` subject is a
   separate strong-model control.
 - Every model-checking arm shall read whether the admitted subject is a
   model or a protocol and route it only if that arm discharges the subject
   class under the candidate's advertised capability. A protocol subject shall retain its
   protocol transition-system identity; it shall not be treated as an
-  ordinary model graph (QSL ADR-027 DS-2).
+  ordinary model graph (FSL ADR-027 DS-2).
 
-### The process-provider kind (QSL ADR-029 PV-4)
+### The process-provider kind (FSL ADR-029 PV-4)
 
 - The generator shall give the closed backend kind one variant for process providers, beside `Kani`.
 - The generator shall list the finite built-in kinds only in `BackendKind::ALL`. A process
@@ -315,7 +315,7 @@ generator entry and generation routing remain AD-004's and FR-022's concern.
   process candidates from the request's descriptors, not from `ALL`.
 - CG shall represent the `BackendId` inside `Process(id)` with its own backend
   identity string, the same value held by `Candidate.identity`; it shall not
-  import QSL's Rust `BackendId` type. `BackendKind::index` shall return `0` for
+  import FSL's Rust `BackendId` type. `BackendKind::index` shall return `0` for
   Kani and `1` for any Process identity as a category sort key, not as an
   enumeration of process identities.
 - The generator shall settle an item whose candidate is a process-provider backend in that variant's
@@ -329,12 +329,12 @@ generator entry and generation routing remain AD-004's and FR-022's concern.
   `extent.bounds[].kind` with manifest `domains`, including when the descriptor
   advertises `unbounded` only for the item's kind. If such an admitted
   unbounded-only descriptor omits `domains`, the arm shall treat it as covering
-  no bound kind for this check. An empty `bounds` passes this check (QSpec
+  no bound kind for this check. An empty `bounds` passes this check (FSpec
   FR-290-AC-13; FR-331-AC-22).
 - When a bounded extent has an unadvertised `bounds[].kind`, the process arm
   shall settle it `unsupported`, warned, with
   `unsupported_projection`/`unsupported-requested-capability`, naming the
-  offending domain kind and candidate (QSpec FR-290-AC-13).
+  offending domain kind and candidate (FSpec FR-290-AC-13).
 - When a bounded extent passes that check, the process arm shall settle it
   `supported` if the descriptor advertises `bounded` for its kind; otherwise
   it shall settle it `unsupported`, warned, with
@@ -346,7 +346,7 @@ generator entry and generation routing remain AD-004's and FR-022's concern.
   `extent.domains[].kind` values (`collection`, `population`, `integer`,
   `recursive`) with manifest `domains`, before the advertised-mode decision.
   It shall skip the non-boundable kinds (`quantity`, `loop`, `infinite-trace`)
-  and leave them to the advertised-mode table (QSL ADR-014 §4; QSpec
+  and leave them to the advertised-mode table (FSL ADR-014 §4; FSpec
   FR-290-AC-13).
 - When that comparison finds an unadvertised boundable kind, the process arm
   shall settle the unbounded item `unsupported`, warned, with
@@ -360,7 +360,7 @@ generator entry and generation routing remain AD-004's and FR-022's concern.
   `finite_bound_available` is false, the process arm shall settle an unbounded
   item on a `bounded`-only descriptor `unsupported`, warned, with
   `unsupported_projection`/`unbounded-extent`.
-- QSL supplies admitted descriptors (QSpec FR-290 "Advertised mode";
+- FSL supplies admitted descriptors (FSpec FR-290 "Advertised mode";
   FR-331-AC-22). When the process arm receives an admitted bounded-capable
   descriptor, it shall use its manifest `domains` and supply no
   missing-`domains` fallback. QSL-654 owns the admit-side `invalid-domains`
@@ -376,30 +376,30 @@ generator entry and generation routing remain AD-004's and FR-022's concern.
 - The process-provider arm shall return a `Disposition` and nothing else.
 - The generator shall never return a terminal value, a verification result or an artifact from settling.
 
-### Provider origin at the QSL to CG boundary (IR-633)
+### Provider origin at the FSL to CG boundary (IR-633)
 
 The driver shall make one projection from each descriptor in `Registry::descriptors()` to this
 crate's `BackendDescriptor` for the FR-331 envelope. It copies the registry descriptor's `id`, advertised
 (kind, mode) pairs and `origin()` into CG's corresponding typed members without changing their
-meaning. At registration, the driver's manifest-to-QSL-descriptor conversion supplies
+meaning. At registration, the driver's manifest-to-FSL-descriptor conversion supplies
 `ProviderOrigin::Linked` for a compile-time provider or `ProviderOrigin::Process` for a plugin
-`hello` to QSL `BackendDescriptor::new` or `admit` (QSL ADR-029 PV-1). The QSL registry holds that
+`hello` to FSL `BackendDescriptor::new` or `admit` (FSL ADR-029 PV-1). The FSL registry holds that
 typed value and checks conflicting registrations; neither the manifest nor the plugin supplies
 the origin. CG shall preserve that value and shall not derive or override it from the backend
 identity, executable or provider bytes, or a second identity-to-origin side map. A
 built-in Kani descriptor supplied by the driver has origin `Linked`; its existing Kani
 classification remains the built-in path. A process descriptor's origin is the sole fact that
 permits the planned `Process(id)` classification, including when its identity text resembles a
-built-in identity. QSL's registry conflict rule removes registrations with one identity and
+built-in identity. FSL's registry conflict rule removes registrations with one identity and
 different origins before this projection (ADR-029 PV-1).
 
-This is a Rust input boundary, not a new FR-331 wire member. QSL layer R owns the closed,
-two-valued origin vocabulary and descriptor semantics (QSL FR-288; ADR-029 PV-1); its registry
+This is a Rust input boundary, not a new FR-331 wire member. FSL layer R owns the closed,
+two-valued origin vocabulary and descriptor semantics (FSL FR-288; ADR-029 PV-1); its registry
 holds the authoritative value. CG's enum is a local typed projection of those meanings and
-defines no independent origin category. QSL ADR-013 T-7 requires separate native representations
-across this boundary, so the driver maps QSL `ProviderOrigin` to CG `ProviderOrigin` in one exhaustive match
-with no wildcard arm and tests both values. A new QSL variant fails the driver build until that
-projection is updated. CG takes no direct `qsl-route` dependency (FR-022 "Where the input type
+defines no independent origin category. FSL ADR-013 T-7 requires separate native representations
+across this boundary, so the driver maps FSL `ProviderOrigin` to CG `ProviderOrigin` in one exhaustive match
+with no wildcard arm and tests both values. A new FSL variant fails the driver build until that
+projection is updated. CG takes no direct `fsl-route` dependency (FR-022 "Where the input type
 lives"). The IR-633 origin slice did not add `BackendKind::Process`, change its
 serialization or settle a process item; IR-629 owns those behavioral changes.
 
@@ -408,11 +408,11 @@ Measured present fact: `BackendKind::from_identity` (`src/routed/capability.rs`)
 the built-in lookup; the behavior above owns the origin-aware conversion.
 
 Adding the variant breaks the public `BackendKind` enum for every exhaustive match outside this crate. The
-quire-driver lane's pre-negotiation conversion is the paired adaptation (QSL ADR-029 Amendments, ADR-012
+filament-driver lane's pre-negotiation conversion is the paired adaptation (FSL ADR-029 Amendments, ADR-012
 §7.2); this repository edits no other repository. Adding
-`EnvelopeRefusal::ManifestRepeatsBackendIdentity` likewise breaks quire-driver's exhaustive
+`EnvelopeRefusal::ManifestRepeatsBackendIdentity` likewise breaks filament-driver's exhaustive
 `EnvelopeRefusal` matches in `src/refusal.rs`. The driver needs a paired change to classify
-and render this variant. Because a driver-built manifest comes from QSL's unique registry
+and render this variant. Because a driver-built manifest comes from FSL's unique registry
 snapshot, receiving this refusal is a broken internal invariant; the driver should report
 FR-272's `runtime_invariant` code, consistent with its existing internal faults.
 
@@ -452,13 +452,13 @@ listed public fields without deriving a backend cause. The two variants SHALL
 carry these projections so the existing `EnvelopeRefusal: Serialize` derive
 remains satisfiable.
 
-The quire-driver handling of `ContractPackageReadRefused` and
+The filament-driver handling of `ContractPackageReadRefused` and
 `ContractPackageReadIncomplete` is tracked by IR-896. Its owner
 SHALL choose the FR-272 code for these reader variants and extend the
 exhaustive `DriverRefusal::code` and `envelope_message` matches in
 `src/refusal.rs`; `src/upstream.rs` already returns `EnvelopeRefusal`.
-A search of `quire-spec-language` Rust sources found no direct
-`EnvelopeRefusal` match; QSL consumes the result through the driver. Those
+A search of `filament-spec-language` Rust sources found no direct
+`EnvelopeRefusal` match; FSL consumes the result through the driver. Those
 repositories are outside this spec PR.
 
 On the current oracle-function path,
@@ -488,17 +488,17 @@ those genuine backend refusals to either reader envelope refusal.
 IR-629 follow-on decisions (the process-provider criteria remain planned; IR-633 implements none
 of their arms):
 
-1. QSL ADR-029 PV-4 requires the process arm to read advertised domains and
-   (kind, mode) pairs from the manifest. QSpec FR-290-AC-13 owns the domain-kind
-   check; QSL-654 owns admit-side enforcement. QSpec FR-331 defines manifest `bounds` as
-   run-limit defaults, so they are not admission inputs. QSpec's required
+1. FSL ADR-029 PV-4 requires the process arm to read advertised domains and
+   (kind, mode) pairs from the manifest. FSpec FR-290-AC-13 owns the domain-kind
+   check; QSL-654 owns admit-side enforcement. FSpec FR-331 defines manifest `bounds` as
+   run-limit defaults, so they are not admission inputs. FSpec's required
    `ProofBound.kind` is merged; QSL-654 owns its producer and the PV-4 wording.
    The arm reads that kind instead of deriving one from a `DomainKey` (AC-12,
    AC-19 and AC-23).
-2. QSL ADR-029 PV-1 and PV-4 make the descriptor's typed origin the classification input;
+2. FSL ADR-029 PV-1 and PV-4 make the descriptor's typed origin the classification input;
    `Process(BackendId)` carries the plugin identity as data and `from_identity` remains the
    built-in lookup. IR-629 owns that variant and its exhaustive dispatch (AC-11).
-3. QSL ADR-029 PV-4 now assigns CG an empty process generation output and assigns execution,
+3. FSL ADR-029 PV-4 now assigns CG an empty process generation output and assigns execution,
    replay and terminal settlement to the driver. IR-629 owns the corresponding exhaustive arms;
    this slice adds none.
 4. PV-4 names `Process(BackendId)` but does not state a serialized label for the data-bearing
@@ -506,7 +506,7 @@ of their arms):
    dynamic process identities; CG enumerates those from descriptors.
 5. PV-4 states the bounded and unbounded mode decisions from the process manifest. IR-629
    owns the concrete arm and tests (AC-12, AC-16 and AC-17); the Kani arm is unchanged here.
-6. QSL ADR-029 PV-1 withdraws linked and process descriptors that conflict on one `BackendId`,
+6. FSL ADR-029 PV-1 withdraws linked and process descriptors that conflict on one `BackendId`,
    regardless of registration order. Neither reaches CG as a candidate; CG does not resolve that
    conflict from identity text.
 
@@ -521,34 +521,34 @@ requires its exhaustive arms to compile. FR-019-AC-14 is a property of the retur
 | FR-019-AC-2 | Every requested item receives exactly one of `supported`, `requires-bound`, `unsupported` and `invalid-request`, settled from its `candidates` and extent classification, and `candidates` is read from the request rather than computed here. | Test (TC-030) |
 | FR-019-AC-3 | On the Kani arm, an unbounded extent against a `bounded`-only advertisement settles `requires-bound` when a finite bound is available, rather than `unsupported`; with no finite bound available it settles `unsupported`, warned, with `unsupported_projection`/`unbounded-extent`; and it never settles `supported`. | Test (TC-030) |
 | FR-019-AC-4 | An item with more than one candidate and no named backend settles `invalid-request` with `invalid_capability`/`ambiguous-backend`, naming every candidate in candidate order, identically under every registration order. | Test (TC-030) |
-| FR-019-AC-10 | Only an item settled `supported` routes. | Analysis (quire-driver FR-001-AC-3, Test TC-003, calls `route` only after negotiation and only for `supported` items; QSL FR-057-AC-6, Test TC-155, routes only the `supported` item from mixed settled dispositions; CG has no `qsl-route` dependency under FR-019's Rust input boundary paragraph, which cites FR-022 "Where the input type lives", and `generate_routed` accepts routed items, not settlements) |
+| FR-019-AC-10 | Only an item settled `supported` routes. | Analysis (filament-driver FR-001-AC-3, Test TC-003, calls `route` only after negotiation and only for `supported` items; FSL FR-057-AC-6, Test TC-155, routes only the `supported` item from mixed settled dispositions; CG has no `fsl-route` dependency under FR-019's Rust input boundary paragraph, which cites FR-022 "Where the input type lives", and `generate_routed` accepts routed items, not settlements) |
 | FR-019-AC-45 | A manifest with a second descriptor of one backend identity causes a whole-envelope `EnvelopeRefusal::ManifestRepeatsBackendIdentity { identity: String }`, whether the descriptors are identical, differ in `ProviderOrigin` alone, or differ in any other CG descriptor field, and whether adjacent or non-adjacent. The call returns no item settlements. The variant has no string cause, manifest or digest payload; `negotiate_backend_provider` keeps its return signature. | Test (TC-030) |
 | FR-019-AC-46 | With several repeated identities, the refusal names the bytewise-first repeated identity independent of manifest order; identities differing only in case are distinct. An invalid contract version or capability vocabulary is refused as `EnvelopeRefusal::InvalidCapability` before repeat detection or any kind read. | Test (TC-030) |
-| FR-019-AC-47 | QSL's registry snapshot holds each backend identity at most once (FR-290:258-265; FR-331:57), so no driver-built FR-331 manifest repeats an identity. | Analysis (FR-290:258-265; FR-331:57; CG takes no `qsl-route` dependency under FR-019's Rust input boundary paragraph, which cites FR-022 "Where the input type lives", and `generate_routed` accepts routed items rather than settlements) |
+| FR-019-AC-47 | FSL's registry snapshot holds each backend identity at most once (FR-290:258-265; FR-331:57), so no driver-built FR-331 manifest repeats an identity. | Analysis (FR-290:258-265; FR-331:57; CG takes no `fsl-route` dependency under FR-019's Rust input boundary paragraph, which cites FR-022 "Where the input type lives", and `generate_routed` accepts routed items rather than settlements) |
 | FR-019-AC-49 | An `Incomplete(incomplete)` outcome from the current Kani oracle-function preflight read produces `Err(EnvelopeRefusal::ContractPackageReadIncomplete { incomplete: ContractPackageIncompleteProjection })` for the whole request, with the reader's `limit_kind`, `limit`, `consumed` and `path` copied into the named CG projection. No item settlement or artifact is returned. | Test (TC-030) |
 | FR-019-AC-50 | An `Admitted` Kani function-application preflight read whose exact generator produces a claim for an otherwise supported item retains the existing `supported` settlement. | Test (TC-030) |
 | FR-019-AC-51 | Among several request items with non-`Admitted` preflight outcomes, the first failing item in manifest/item request order determines the whole-request `ContractPackageReadRefused` or `ContractPackageReadIncomplete` variant and projection, irrespective of outcome kind. Earlier successful items contribute no returned settlement or artifact. | Test (TC-030) |
 | FR-019-AC-52 | An `Admitted` Kani function-application read whose exact generator emits no claim, and a structural preflight rejection before any read, each retain item-level `KaniFormRefused { OperationNotRendered }` without a reader envelope refusal. | Test (TC-030) |
 | FR-019-AC-53 | Given an admitted package with bound driver items at driver indexes 0 and 2 around an excluded accounting-only position at index 1 whose accounting is `lowered` with a Kani-supported form, an FR-331 envelope with exactly two items settles the bound items without an `EnvelopeItemCount` refusal. Both `ContractItemSettlement.request_index` and its nested `ItemSettlement.request_index` equal 0 and 2 respectively, not envelope indexes 0 and 1. The excluded position produces no settlement or claim, and its own classifier-call and Kani-preflight-read counts are both zero. An envelope with fewer or more than two items returns the typed `EnvelopeItemCount` refusal. A context-only root changes neither count nor driver indexes. | Test (TC-030) |
 | FR-019-AC-54 | A `Refused(refusal)` outcome from the Kani oracle-function preflight reader produces `Err(EnvelopeRefusal::ContractPackageReadRefused { refusal: ContractPackageRefusalProjection })` for the whole request, copying the reader's `code`, nonempty ordered typed `loci` including paths and source regions, `cause`, `locus`, `contract_version`, `document_pointer`, `extension_detail`, `protocol_detail` and `terminal_duplicate` without loss or reinterpretation. The obsolete `path`, `expected` and `actual` projection members are absent. No item settlement or artifact is returned. Distinct extension, protocol and terminal refusals retain their exact detail payloads. | Test (TC-030) |
-| FR-019-AC-7 | An envelope whose `capability_vocabulary` is not exactly `quire.capability-kind/v1`, or is absent, is refused as `invalid_capability`/`unsupported-version` with none of its kinds read. | Test (TC-030) |
+| FR-019-AC-7 | An envelope whose `capability_vocabulary` is not exactly `filament.capability-kind/v1`, or is absent, is refused as `invalid_capability`/`unsupported-version` with none of its kinds read. | Test (TC-030) |
 | FR-019-AC-8 | An item with an absent extent classification settles `invalid-request` with `invalid_capability`/`absent-extent`, and an absent or unknown kind settles before the candidate table is consulted. | Test (TC-030) |
 | FR-019-AC-9 | A backend kind added without a negotiation arm does not compile: the dispatch is an exhaustive `match` over the closed kind with no catch-all arm. | Analysis |
 | FR-019-AC-11 | PLANNED (IR-629). `BackendKind` has `Process(id)` beside `Kani`; `ALL` lists finite built-in kinds only, while CG enumerates process candidates from descriptors. CG's descriptor-to-kind conversion returns `Process(id)` exactly when a descriptor has process origin, including identity text `kani`. A named, registered process backend reaches that arm and receives one disposition; no process item disappears for being absent from `ALL`. | Test (TC-046) |
-| FR-019-AC-12 | PLANNED (IR-629; non-empty bounded rows depend on QSL-654's producer and admit-side enforcement). A bounded process item with an uncovered `extent.bounds[].kind` settles `unsupported`, warned, with `unsupported_projection`/`unsupported-requested-capability` naming the offending domain kind and candidate (QSpec FR-290-AC-13). An item that passes the domain check, including one with empty `bounds`, settles `supported` exactly when its descriptor advertises `bounded` for its kind; otherwise it settles `unsupported`, warned, with `unsupported_projection`/`unsupported-requested-capability`. | Test (TC-046) |
+| FR-019-AC-12 | PLANNED (IR-629; non-empty bounded rows depend on QSL-654's producer and admit-side enforcement). A bounded process item with an uncovered `extent.bounds[].kind` settles `unsupported`, warned, with `unsupported_projection`/`unsupported-requested-capability` naming the offending domain kind and candidate (FSpec FR-290-AC-13). An item that passes the domain check, including one with empty `bounds`, settles `supported` exactly when its descriptor advertises `bounded` for its kind; otherwise it settles `unsupported`, warned, with `unsupported_projection`/`unsupported-requested-capability`. | Test (TC-046) |
 | FR-019-AC-16 | PLANNED (IR-629). An unbounded process item settles `supported` when its descriptor advertises `unbounded` for its kind, regardless of whether any `extent.domains[].kind` belongs to manifest `domains`. | Test (TC-046) |
-| FR-019-AC-17 | PLANNED (IR-629). On a `bounded`-only process descriptor, an unbounded item settles `requires-bound` exactly when `finite_bound_available` is true and every boundable `extent.domains[].kind` is in manifest `domains` (QSpec FR-290-AC-13). | Test (TC-046) |
+| FR-019-AC-17 | PLANNED (IR-629). On a `bounded`-only process descriptor, an unbounded item settles `requires-bound` exactly when `finite_bound_available` is true and every boundable `extent.domains[].kind` is in manifest `domains` (FSpec FR-290-AC-13). | Test (TC-046) |
 | FR-019-AC-18 | PLANNED (IR-629). Given the same process advertisements and item extent, changing only backend identity, manifest position, manifest run-limit defaults or ambient state leaves the disposition and cause unchanged apart from the backend named in the output. | Test (TC-046) |
 | FR-019-AC-19 | PLANNED (IR-629; bounded row depends on QSL-654's producer). The process arm reads each explicit `extent.bounds[].kind` and never derives a domain kind from `DomainKey`; two otherwise equal bounded items with the same `DomainKey` and different explicit kinds can settle differently under one manifest `domains` set. | Test (TC-046) |
 | FR-019-AC-20 | PLANNED (IR-629; driver projection remains paired work). CG's process descriptor retains the FR-331 manifest's advertised (kind, mode) pairs, `domains` and optional `bounds` beside the IR-633 `id` and `origin` projection. | Test (TC-046) |
 | FR-019-AC-42 | Two otherwise equal CG Process descriptors with absent and present-empty manifest `bounds` remain distinct typed values. Changing only between those forms leaves process settlement's disposition and request-validation precedence unchanged; run-limit defaults are not proof bounds. | Test (TC-046) |
-| FR-019-AC-21 | PLANNED (IR-629). On a `bounded`-only process descriptor, an unbounded item with any unadvertised boundable `extent.domains[].kind` settles `unsupported`, warned, with `unsupported_projection`/`unsupported-requested-capability` naming the offending domain kind and candidate, regardless of `finite_bound_available`; non-boundable kinds are not compared (QSpec FR-290-AC-13). | Test (TC-046) |
-| FR-019-AC-22 | PLANNED (IR-629). On a `bounded`-only process descriptor, an unbounded item with every boundable `extent.domains[].kind` advertised and the item's `finite_bound_available=false` settles `unsupported`, warned, with `unsupported_projection`/`unbounded-extent`. CG reads that flag from the item and does not derive it from the domain kinds (QSpec FR-290-AC-13). | Test (TC-046) |
+| FR-019-AC-21 | PLANNED (IR-629). On a `bounded`-only process descriptor, an unbounded item with any unadvertised boundable `extent.domains[].kind` settles `unsupported`, warned, with `unsupported_projection`/`unsupported-requested-capability` naming the offending domain kind and candidate, regardless of `finite_bound_available`; non-boundable kinds are not compared (FSpec FR-290-AC-13). | Test (TC-046) |
+| FR-019-AC-22 | PLANNED (IR-629). On a `bounded`-only process descriptor, an unbounded item with every boundable `extent.domains[].kind` advertised and the item's `finite_bound_available=false` settles `unsupported`, warned, with `unsupported_projection`/`unbounded-extent`. CG reads that flag from the item and does not derive it from the domain kinds (FSpec FR-290-AC-13). | Test (TC-046) |
 | FR-019-AC-23 | PLANNED (IR-629; bounded row depends on QSL-654). Changing only a bounded item's proof-bound numeric maximum leaves its process-provider `supported` or `unsupported` disposition and cause unchanged. | Test (TC-046) |
 | FR-019-AC-13 | Settling a process-provider item reaches no plugin: a descriptor whose identity names a non-existent executable settles identically to one with an ordinary identity, apart from the backend each names, and starts nothing, and a descriptor whose identity names an executable that records its own start leaves no record. A mutant arm that starts or resolves the identity as a process either changes the first disposition or leaves the record, and fails this. | Test (TC-046) |
 | FR-019-AC-14 | The process-provider arm's return type is `Disposition`, which has no terminal-value, verification-result or artifact member, so settling returns none of them. A change that returns one does not compile against that type. | Analysis |
-| FR-019-AC-15 | PLANNED (IR-633). CG's `BackendDescriptor` has a typed `ProviderOrigin` projecting exactly QSL layer R's `Linked` and `Process` meanings (QSL FR-288, ADR-029 PV-1); layer R owns that vocabulary. The driver projects each descriptor from `Registry::descriptors()` once into CG's descriptor, copying `id` and advertised pairs unchanged and mapping `origin()` exhaustively, `Linked` to `Linked` and `Process` to `Process`, with no wildcard or origin inference from identity, manifest or provider bytes or a side map. Two registry descriptors identical except for origin produce CG descriptors identical except for origin; a linked Kani descriptor remains `Linked`. The CG dependency graph adds no direct `qsl-route` edge and the FR-331 wire gains no origin field. | Test (TC-030) |
-| FR-019-AC-24 | PLANNED (IR-338). Given QSL FR-335's `value-validity` claim rooted at an unbounded `s: Set<Int[0,9999]>`, an empty candidate registry settles `unsupported` with a warning naming `value-validity` and emits no artifact or Kani outcome; one linked Kani candidate advertising (`value-validity`, `bounded`) with `finite_bound_available=true` settles the unbounded item `requires-bound` without substituting a bound or emitting an artifact; a separately requested bounded `ProofBound::Cardinality{maximum: 8}` item with that same sole candidate settles `supported` under its own request index, while the unbounded item remains `requires-bound`; and an unboundable added root with `finite_bound_available=false` against that candidate settles `unsupported`, warned, with `unsupported_projection`/`unbounded-extent`. The bounded disposition alone claims no Kani execution outcome. | Test |
+| FR-019-AC-15 | PLANNED (IR-633). CG's `BackendDescriptor` has a typed `ProviderOrigin` projecting exactly FSL layer R's `Linked` and `Process` meanings (FSL FR-288, ADR-029 PV-1); layer R owns that vocabulary. The driver projects each descriptor from `Registry::descriptors()` once into CG's descriptor, copying `id` and advertised pairs unchanged and mapping `origin()` exhaustively, `Linked` to `Linked` and `Process` to `Process`, with no wildcard or origin inference from identity, manifest or provider bytes or a side map. Two registry descriptors identical except for origin produce CG descriptors identical except for origin; a linked Kani descriptor remains `Linked`. The CG dependency graph adds no direct `fsl-route` edge and the FR-331 wire gains no origin field. | Test (TC-030) |
+| FR-019-AC-24 | PLANNED (IR-338). Given FSL FR-335's `value-validity` claim rooted at an unbounded `s: Set<Int[0,9999]>`, an empty candidate registry settles `unsupported` with a warning naming `value-validity` and emits no artifact or Kani outcome; one linked Kani candidate advertising (`value-validity`, `bounded`) with `finite_bound_available=true` settles the unbounded item `requires-bound` without substituting a bound or emitting an artifact; a separately requested bounded `ProofBound::Cardinality{maximum: 8}` item with that same sole candidate settles `supported` under its own request index, while the unbounded item remains `requires-bound`; and an unboundable added root with `finite_bound_available=false` against that candidate settles `unsupported`, warned, with `unsupported_projection`/`unbounded-extent`. The bounded disposition alone claims no Kani execution outcome. | Test |
 | FR-019-AC-25 | OPEN for surviving typed V2 forms; deprecated `V1BoundClause` roles retire under the 2026-10-27 owner ruling on IR-348. Original criterion retained for traceability: The normative Kani form set is the complete V1 proof set defined by IR-269 and FR-015: scalar families Boolean, integer, rational, decimal, IEEE float, text, enum and quantity; record and tuple composite equality; function application; precondition, postcondition and invariant `BoundClause` roles; and bounded collection and graph forms. V1 `ClauseKind` has no frame variant. State before/after and frame obligations are typed V2 `StateFrame` items with the `contract` or `frame` role, included where FR-015 defines their typed lowering. Each item is identified by its typed IR tag/form, family, operation identity and obligation role as applicable. Implementation status is recorded per family in TC-030's status register and does not narrow this normative set. A legal in-set form with a valid finite extent and one Kani candidate settles `supported` when the candidate advertises the required mode; an unbounded in-set form with a bounded-only candidate follows AC-31; malformed forms and forms outside this V1/V2 set are refused before generation with their typed FR-015 cause. No form is inferred from display or debug text. | Inspection (TC-030) |
 | FR-019-AC-26 | OPEN for surviving forms; a `V1BoundClause` candidate is no longer supported after IR-348. Original criterion retained for traceability: For any form in FR-019-AC-25 with one validated Kani candidate, a bounded extent settles `supported` exactly when the form's FR-015 lowering succeeds and the candidate advertises the bounded mode; negotiation creates no artifact as part of settlement. | Test (TC-030) |
 | FR-019-AC-27 | With one Kani candidate, a typed form outside the normative set in FR-019-AC-25 settles `unsupported`, warned, with `unsupported_projection`/`unsupported-requested-capability` naming its typed tag/form and Kani; no artifact is emitted and no generator is invoked. A malformed in-set form settles with the applicable typed FR-015 validation refusal. | Test (TC-030) |
@@ -579,14 +579,14 @@ No Kani execution outcome is claimed.
 | Criteria | Status | Concrete reason |
 |---|---|---|
 | FR-019-AC-9 | Planned (IR-1316) | `negotiate_arm` is an exhaustive closed-kind match, but no retained compile-fail control proves a newly unhandled kind fails compilation. The source-level analysis alone has no criterion-bound evidence in strict coverage. |
-| FR-019-AC-10 | Planned (IR-1316) | CG generation takes already routed items. The supported-only routing decision belongs to quire-driver/QSL; a CG generation test cannot prove that upstream filter. Composed routing evidence is not retained here. |
+| FR-019-AC-10 | Planned (IR-1316) | CG generation takes already routed items. The supported-only routing decision belongs to filament-driver/FSL; a CG generation test cannot prove that upstream filter. Composed routing evidence is not retained here. |
 | FR-019-AC-14 | Planned (IR-1316) | `negotiate_process` returns `Disposition` without result/artifact fields, but no criterion-bound compile-fail evidence proves an added terminal/artifact return is rejected. |
-| FR-019-AC-15 | Planned (IR-1316; driver work IR-633) | CG already has typed `ProviderOrigin` and consumes it. Its local descriptor tests do not establish the driver's one-time exhaustive projection from QSL `Registry::descriptors()`, unchanged advertisements, or the wire/dependency boundary. Full cross-repository projection evidence is missing. |
-| FR-019-AC-24 | Planned (IR-1316; composition IR-338) | Generic extent tests do not admit QSL FR-335's concrete collection claim and its distinct bounded/unbounded driver requests. The source-to-driver composition remains untested here. |
+| FR-019-AC-15 | Planned (IR-1316; driver work IR-633) | CG already has typed `ProviderOrigin` and consumes it. Its local descriptor tests do not establish the driver's one-time exhaustive projection from FSL `Registry::descriptors()`, unchanged advertisements, or the wire/dependency boundary. Full cross-repository projection evidence is missing. |
+| FR-019-AC-24 | Planned (IR-1316; composition IR-338) | Generic extent tests do not admit FSL FR-335's concrete collection claim and its distinct bounded/unbounded driver requests. The source-to-driver composition remains untested here. |
 | FR-019-AC-34 through FR-019-AC-38 | Planned (IR-1316; implementation IR-516) | `BackendKind` has only Kani and Process variants. No EN-1 explicit-state or EN-2/EN-3 SMT temporal settlement arm exists for the specified TP/HP/SG form, subject and advertisement controls. Existing SMT execution helpers do not supply negotiation arms. |
 | FR-019-AC-39 | Planned (IR-1316; implementation IR-516) | The settlement request/descriptor has no selected reduction advertisement or POR-footprint negotiation input. Reduction preservation and request/obligation identity controls cannot run through this seam. |
 | FR-019-AC-40, FR-019-AC-41 | Planned (IR-1316; implementation IR-516) | Negotiation has no resolved weak-memory model or separate model/protocol subject-class input. Neither memory-model preservation nor class-specific engine admission is implemented at this boundary. |
-| FR-019-AC-47 | Planned (IR-1316; QSL producer evidence) | CG refuses repeated manifest identities under AC-45/46, but this does not prove QSL's registry snapshot never produces them. The upstream registry invariant has no criterion-bound evidence retained in CG. |
+| FR-019-AC-47 | Planned (IR-1316; FSL producer evidence) | CG refuses repeated manifest identities under AC-45/46, but this does not prove FSL's registry snapshot never produces them. The upstream registry invariant has no criterion-bound evidence retained in CG. |
 
 AC-48 is retired in favor of AC-54 and earns no implementation credit. This
 triage does not add installed-Kani evidence for surviving Kani-form obligations.
@@ -594,15 +594,15 @@ triage does not add installed-Kani evidence for surviving Kani-form obligations.
 ## Dependencies
 
 - **Upstream**: [FR-015](../../kani/functional/FR-015-bounded-kani-obligations.md), the
-  `quire-spec-language` registry that computes `candidates`, and QSL-654's
-  QSpec FR-290-AC-13 domain-kind rule and FR-331/schema addition of required
+  `filament-spec-language` registry that computes `candidates`, and QSL-654's
+  FSpec FR-290-AC-13 domain-kind rule and FR-331/schema addition of required
   `ProofBound.kind` (merged); QSL-654 owns the producer, admit-side
   `invalid-domains` enforcement, and ADR-029 PV-4 reword of the domain-check
   scope and bounded admission rule.
 - **Downstream**: [TC-030](../matrix/TC-030-capability-settlement.md),
-  [TC-046](../matrix/TC-046-process-provider-settlement.md); quire-driver
+  [TC-046](../matrix/TC-046-process-provider-settlement.md); filament-driver
   IR-609's pre-negotiation conversion and adaptation to the new variant;
   [FR-022](./FR-022-routed-generation.md), the generation arm of the same seam.
-- **Boundary**: QSL FR-335/TC-845 owns the source-to-claim fixture and request writer;
-  quire-integration owns the composed CG and driver run. IR FR-036 owns the absent-capability
+- **Boundary**: FSL FR-335/TC-845 owns the source-to-claim fixture and request writer;
+  filament-integration owns the composed CG and driver run. IR FR-036 owns the absent-capability
   warning and IR FR-029 owns unsupported entries without artifact or Kani outcome.

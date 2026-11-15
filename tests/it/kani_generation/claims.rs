@@ -6,12 +6,12 @@ use std::{collections::BTreeSet, fs, path::Path};
 
 use crate::{kani_obligations, scratch_crate::TemporaryDirectory};
 use census::{controls, Claim, Compiled, Control, Refusal};
-use ix_trace_rs::trace;
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     execute_kani_obligation, execute_kani_obligations, Artifact, KaniCheckClass, KaniCheckStatus,
     KaniExecutionEvidence, KaniExecutionRequest, KaniInstallation, KaniRunOutcome,
     KaniScalarObligationHarness,
 };
+use ix_trace_rs::trace;
 
 const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nfunction implication using v(left: Boolean, right: Boolean): Boolean pure { left implies right }\n";
 
@@ -28,7 +28,7 @@ fn checked_source(source: &str) -> quire_contract_model::CheckedPackageV2 {
         qsl_replay::StageLimits::default(),
         qsl_replay::ReplayLimits::default(),
     )
-    .expect("authored implications compile through QSL");
+    .expect("authored implications compile through FSL");
     crate::admitted_enum_equality::checked(&compiled, &[])
 }
 
@@ -501,9 +501,9 @@ fn current_generated_claim_has_fresh_compiled_roots_and_falsifying_control() {
     );
 
     for reason in [
-        quire_contract_codegen::KaniInconclusiveReason::NoVerdict,
-        quire_contract_codegen::KaniInconclusiveReason::TimedOut,
-        quire_contract_codegen::KaniInconclusiveReason::FailedWithoutCounterexample,
+        filament_contract_codegen::KaniInconclusiveReason::NoVerdict,
+        filament_contract_codegen::KaniInconclusiveReason::TimedOut,
+        filament_contract_codegen::KaniInconclusiveReason::FailedWithoutCounterexample,
     ] {
         let mut invalid = failed.clone();
         invalid.outcome = KaniRunOutcome::Inconclusive { reason };

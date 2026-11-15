@@ -3,7 +3,7 @@ id: TC-007
 title: "Verify cross-backend semantic parity"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-005
+  - target: ix://agent-ix/filament-contract-codegen/FR-005
     type: verifies
 ---
 # TC-007: Verify cross-backend semantic parity

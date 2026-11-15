@@ -1,23 +1,23 @@
-//! Agreement support: direct owning kernel/QSV execution and generated
+//! Agreement support: direct owning kernel/FSV execution and generated
 //! oracles.
 //!
 //! Adapted from the Contract Runtime agreement harness.
 //! A vector body is written once. [`agree2!`] evaluates the direct call with
-//! owning kernel/QSV APIs in scope and evaluates the generated
+//! owning kernel/FSV APIs in scope and evaluates the generated
 //! oracle with the runtime in scope. Every evaluation is run under the same
 //! limits and then re-run with each admitted charge denied in turn. The two
 //! `Debug` renderings, which include every value, typed refusal, incomplete
 //! record, admitted charge and consumed counter, must be identical.
 //!
-//! This crate checks generated==direct owner execution only and claims no agreement with the QSL
+//! This crate checks generated==direct owner execution only and claims no agreement with the FSL
 //! value authority (FR-014-AC-47); that comparison for the quantity vectors is
-//! owned by quire-integration IR-842.
-//! QSL arch-lint T12-A confines this crate to `qsl_replay`'s public API.
+//! owned by filament-integration IR-842.
+//! FSL arch-lint T12-A confines this crate to `qsl_replay`'s public API.
 //! The admitted source supplies nominal metadata; comparisons still execute
-//! value-level operators directly, without replaying a QSL value witness.
+//! value-level operators directly, without replaying a FSL value witness.
 //!
-//! Named unit and enum fixtures come from the public QSL admitted facade.
-//! Malformed graph controls separately use the public low-level QSV node boundary;
+//! Named unit and enum fixtures come from the public FSL admitted facade.
+//! Malformed graph controls separately use the public low-level FSV node boundary;
 //! those arbitrary node labels make no claim to compiler provenance.
 
 // Each helper is used by some vectors on one side only.
@@ -336,7 +336,7 @@ pub const fn root(name: &'static str, dimension: &'static str) -> UnitSpec {
 }
 
 impl GraphSpec {
-    /// The QSpec TC-187 unit fixture.
+    /// The FSpec TC-187 unit fixture.
     pub fn tc187() -> Self {
         Self {
             dimensions: vec![
@@ -418,7 +418,7 @@ pub mod rt_side {
     pub use quire_semantic_value::semantic_node::{InvalidSemanticGraph, SemanticGraphCause};
 
     /// The runtime's `InjectedDenial::occurrence` is `NonZeroU64`
-    /// (`agent-ix/quire-contract-runtime#20`). Every caller in this crate
+    /// (`agent-ix/filament-contract-runtime#20`). Every caller in this crate
     /// passes a literal or a derived count that is always at least one, so
     /// this never panics.
     pub fn to_occurrence(n: u64) -> std::num::NonZeroU64 {

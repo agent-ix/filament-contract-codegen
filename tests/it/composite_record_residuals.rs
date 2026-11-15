@@ -5,8 +5,8 @@ use super::{
     admitted_enum_equality, composite_artifact_binding, composite_equality_agreement,
     composite_original_eq,
 };
+use filament_contract_codegen::{ClaimDisposition, CompositeBuildError};
 use ix_trace_rs::trace;
-use quire_contract_codegen::{ClaimDisposition, CompositeBuildError};
 use quire_contract_model::CheckedOccurrenceRole;
 
 #[trace("TC-048")]

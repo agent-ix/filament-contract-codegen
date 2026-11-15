@@ -1,7 +1,7 @@
-//! Admission-only QSL fixtures for request-level clause callers.
+//! Admission-only FSL fixtures for request-level clause callers.
 //!
 //! These retain the state-frame fixture's authored domain/source facts, but depend only on
-//! QSL and the strict checked-package reader. No CG facade, replay builder or execution path.
+//! FSL and the strict checked-package reader. No CG facade, replay builder or execution path.
 
 use super::model;
 use qsl_replay::{call_site, ClauseName, DependencyInput, Identifier, SourceIdentity};
@@ -120,7 +120,7 @@ fn domain_document(granted: &[&str]) -> Vec<u8> {
             "post": [],
             "origin": {"source": {
                 "sourceIdentity": format!("ix://{PACKAGE}/spec"),
-                "path": "spec.qspec",
+                "path": "spec.fspec",
                 "startLine": 1,
                 "startColumn": 1,
             }},
@@ -410,7 +410,7 @@ impl Twin {
             &evidence,
         ) {
             CheckedPackageV2ReadResult::Admitted(package) => *package,
-            other => panic!("QSL emitted package is admitted: {other:?}"),
+            other => panic!("FSL emitted package is admitted: {other:?}"),
         };
         let node = package
             .resolved_graph()
@@ -421,7 +421,7 @@ impl Twin {
                     .structural_key(&node.node_id)
                     .is_some_and(|key| matches_site(key, located.site.node.view()))
             })
-            .expect("QSL clause site names an admitted structural node")
+            .expect("FSL clause site names an admitted structural node")
             .node_id
             .clone();
         (package, node)

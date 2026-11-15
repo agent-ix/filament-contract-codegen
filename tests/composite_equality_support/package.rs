@@ -5,7 +5,7 @@
 //! `exact_scalar_support::package`, with `scalar_type`, `composite_type`,
 //! `bounded_domain` and `expression` nodes appended under readable
 //! zero-padded keys. Composite/collection bodies use the encoding
-//! `quire_contract_codegen::composite_equality` documents: `record` and
+//! `filament_contract_codegen::composite_equality` documents: `record` and
 //! `tuple` as an `aggregate` of `binding`/`reference` terms, `option` as a
 //! one-member `aggregate` of a `reference`, `sequence`/`set`/`bag`/
 //! `ordered_set` as one element `reference`, with collection bounds carried by
@@ -17,7 +17,7 @@
 
 use std::collections::BTreeSet;
 
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     CompositeEqualityItem, EqualityOperandDescriptor, EqualityOperatorKind,
 };
 use quire_contract_model::{
@@ -203,7 +203,7 @@ pub fn integer_literal(value: i64) -> Value {
 /// Contract IR (FR-038-AC-17) requires `application.operation`
 /// and `application.result_type` as members; Contract IR's
 /// `validate_operations` checks `operation` against the checked-operation
-/// catalog `quire-verification-contracts` publishes, so `operation` must name a real catalogued identity, not an opaque
+/// catalog `filament-verification-contracts` publishes, so `operation` must name a real catalogued identity, not an opaque
 /// placeholder. `operation` is still not read by this crate's own
 /// generators (they classify a body by `term`/`operator`/`arguments` and the
 /// request item's own descriptor, never by `operation`), so which
@@ -331,7 +331,7 @@ fn parameter_code(type_code: u32) -> u32 {
     PARAMETER_BASE + type_code
 }
 
-/// The body QSL emits for a parameter's `value` node (form `parameter`): an `aggregate` of its
+/// The body FSL emits for a parameter's `value` node (form `parameter`): an `aggregate` of its
 /// `name` (a `text` literal) and its `level` (an `integer` literal) as `binding` members.
 fn parameter_body(name: &str) -> Value {
     aggregate(vec![
@@ -345,7 +345,7 @@ fn reference_to(path: &str) -> Value {
     json!({"term": "reference", "target": node_ref(path)})
 }
 
-/// A `reference` operand to the parameter typed by `type_code`. QSL keys every operand as its
+/// A `reference` operand to the parameter typed by `type_code`. FSL keys every operand as its
 /// own node and puts a `reference` to it in the equality's `arguments`; the generator reads the
 /// operand's type from that node, and Contract IR resolves its family from the node's
 /// `semantic_type`.
@@ -376,7 +376,7 @@ pub fn binary_body_enum() -> Value {
 }
 
 /// The body of a `quire.op.numeric.convert` application: `argument` converted to `target`,
-/// with QSL's `type_argument` member naming the `target` type node as its declaration.
+/// with FSL's `type_argument` member naming the `target` type node as its declaration.
 fn convert_body(argument: Value, target: u32) -> Value {
     application(
         "convert",
@@ -429,7 +429,7 @@ fn application_dependencies(body: &Value) -> Vec<CheckedNodeId> {
 
 /// Contract IR (FR-208 `DeclarationTagRules`/`DeclarationOccurrenceRule`)
 /// forbids `declaration` on `expression`/`relation`/`state`/`temporal`/
-/// `correspondence` nodes and on `value`/`enum_value` and `value`/`parameter` nodes (QSL emits a
+/// `correspondence` nodes and on `value`/`enum_value` and `value`/`parameter` nodes (FSL emits a
 /// parameter with no declaration), and otherwise requires it exactly when the node carries a
 /// `declaration`-role occurrence — which every node built by this module does but a parameter,
 /// whose occurrence role is `expression`. The reader requires each declared
@@ -581,7 +581,7 @@ impl PackageBuilder {
         Self { value }
     }
 
-    /// Add a model-owned object type using the selected QSpec model namespace.
+    /// Add a model-owned object type using the selected FSpec model namespace.
     /// The fixture assigns this model-owned node a stable source path.
     pub fn model_owned_object_type(&mut self, code: u32, identity: &str, node: &str) -> &mut Self {
         let path = key(code);
@@ -792,7 +792,7 @@ impl PackageBuilder {
         self
     }
 
-    /// An equality node `code` whose left operand is a conversion, spelled as QSL spells
+    /// An equality node `code` whose left operand is a conversion, spelled as FSL spells
     /// `convert<T>`: a `quire.op.numeric.convert` `expression` node of its own (node
     /// `CONVERSION_BASE + code`, typed `target`, with the `type_argument` member naming the
     /// `target` type node as its declaration) over the `source`-typed parameter, and a
@@ -993,18 +993,18 @@ fn evidence_for_wire(wire: &Value) -> CheckedPackageEvidence {
             )
             .expect("retain fixture model document");
     }
-    if let Some(qspec_dir) = std::env::var_os("QSPEC_DIR") {
-        let qspec = std::path::PathBuf::from(qspec_dir);
-        crate::checked_package_evidence::retain_selected_extensions(&qspec, wire, &mut evidence);
-        let root = qspec.join("proposals/checked-package-v2");
+    if let Some(fspec_dir) = std::env::var_os("FSPEC_DIR") {
+        let fspec = std::path::PathBuf::from(fspec_dir);
+        crate::checked_package_evidence::retain_selected_extensions(&fspec, wire, &mut evidence);
+        let root = fspec.join("proposals/checked-package-v2");
         if selected_model("acme/orders") {
             evidence
                 .insert_domain_package_document(
                     "acme/orders",
                     std::fs::read(root.join("domain-package-acme-orders.json"))
-                        .expect("read published selected QSpec model package"),
+                        .expect("read published selected FSpec model package"),
                 )
-                .expect("retain selected QSpec model package");
+                .expect("retain selected FSpec model package");
         }
     }
     evidence
@@ -1414,7 +1414,7 @@ fn corpus_package_with_nested_ieee() -> PackageBuilder {
             "composite_type",
             "tuple",
             T_BOOLEAN,
-            // The text position names the `text_bounds` node, as QSL emits a text type: the
+            // The text position names the `text_bounds` node, as FSL emits a text type: the
             // checked operation catalog's leaf rule reads the profile pin from the type chain
             // and refuses a text leaf whose type pins none.
             aggregate(vec![reference(T_INTEGER_BOUNDED), reference(BD_TEXT)]),
@@ -1509,7 +1509,7 @@ fn corpus_package_with_nested_ieee() -> PackageBuilder {
         .code(S_BARE, "state", "snapshot", T_BOOLEAN, aggregate(vec![]));
 
     // IR admits a `temporal_clause` only as a `temporal`-operator application over a declared
-    // `parameter` with one `temporal_profile` law and a `temporal` formula argument (the QSpec
+    // `parameter` with one `temporal_profile` law and a `temporal` formula argument (the FSpec
     // temporal-clause rule), so `T_BARE` is that minimal clause. CG refuses it as an
     // unsupported temporal family. The formula is registered first: the clause's reference to
     // it reads its node id.
@@ -1707,39 +1707,39 @@ pub fn recursive_items_package_from_wire(
     let named_record = |name: &str| -> CheckedNodeId {
         wire["semantic_graph"]["nodes"]
             .as_array()
-            .expect("QSpec graph nodes")
+            .expect("FSpec graph nodes")
             .iter()
             .find(|node| node["declaration"]["qualified_name"] == json!([name]))
             .map(|node| serde_json::from_value(node["node_id"].clone()).expect("record ID"))
-            .expect("QSpec named record")
+            .expect("FSpec named record")
     };
     let list = named_record("List");
     let tree = named_record("Tree");
     let integer = wire["semantic_graph"]["nodes"]
         .as_array()
-        .expect("QSpec graph nodes")
+        .expect("FSpec graph nodes")
         .iter()
         .find(|node| node["node_tag"] == "scalar_type" && node["semantic_form"] == "integer")
         .map(|node| {
             serde_json::from_value::<CheckedNodeId>(node["node_id"].clone()).expect("integer ID")
         })
-        .expect("QSpec integer scalar type");
+        .expect("FSpec integer scalar type");
     let mut builder = PackageBuilder::from_wire(wire);
     builder.code(T_TEXT, "scalar_type", "text", T_TEXT, aggregate(Vec::new()));
     builder.code(
-        T_QSPEC_BOOLEAN,
+        T_FSPEC_BOOLEAN,
         "scalar_type",
         "boolean",
-        T_QSPEC_BOOLEAN,
+        T_FSPEC_BOOLEAN,
         aggregate(Vec::new()),
     );
-    for (code, type_id, name) in [(E_QSPEC_LIST, &list, "list"), (E_QSPEC_TREE, &tree, "tree")] {
+    for (code, type_id, name) in [(E_FSPEC_LIST, &list, "list"), (E_FSPEC_TREE, &tree, "tree")] {
         let parameter = key(3_000 + code);
         builder.node(
             &parameter,
             "value",
             "parameter",
-            &key(T_QSPEC_BOOLEAN),
+            &key(T_FSPEC_BOOLEAN),
             aggregate(vec![
                 bound_member("name", literal("text", name)),
                 bound_member(
@@ -1762,12 +1762,12 @@ pub fn recursive_items_package_from_wire(
         builder.application_node(
             code,
             "binary",
-            &key(T_QSPEC_BOOLEAN),
+            &key(T_FSPEC_BOOLEAN),
             json!({
                 "term": "application",
                 "operator": "binary",
                 "operation": equality_operation("structural"),
-                "result_type": node_ref(&key(T_QSPEC_BOOLEAN)),
+                "result_type": node_ref(&key(T_FSPEC_BOOLEAN)),
                 "arguments": [reference_to(&parameter), reference_to(&parameter)],
             }),
         );
@@ -1775,9 +1775,9 @@ pub fn recursive_items_package_from_wire(
     (builder, list, tree)
 }
 
-/// Compile independently authored recursive declarations through QSL's public
+/// Compile independently authored recursive declarations through FSL's public
 /// replay facade and extend the admitted package with equality items.
-pub fn qsl_recursive_items_package() -> (PackageBuilder, CheckedNodeId, CheckedNodeId) {
+pub fn fsl_recursive_items_package() -> (PackageBuilder, CheckedNodeId, CheckedNodeId) {
     use qsl_replay::{
         compile_package, CompileUnit, DependencyInput, ReplayLimits, SourceIdentity, StageLimits,
     };
@@ -1795,7 +1795,7 @@ pub fn qsl_recursive_items_package() -> (PackageBuilder, CheckedNodeId, CheckedN
         StageLimits::default(),
         ReplayLimits::default(),
     )
-    .expect("QSL compiles the recursive item types");
+    .expect("FSL compiles the recursive item types");
     let read = CheckedPackageV2::read(
         compiled.bytes(),
         quire_contract_model::CheckedPackageReadLimits::bounded(),
@@ -1803,9 +1803,9 @@ pub fn qsl_recursive_items_package() -> (PackageBuilder, CheckedNodeId, CheckedN
     );
     assert!(
         matches!(read, CheckedPackageV2ReadResult::Admitted(_)),
-        "QSL package strict reader: {read:?}"
+        "FSL package strict reader: {read:?}"
     );
-    let wire = serde_json::from_slice(compiled.bytes()).expect("QSL checked package JSON");
+    let wire = serde_json::from_slice(compiled.bytes()).expect("FSL checked package JSON");
     recursive_items_package_from_wire(wire)
 }
 

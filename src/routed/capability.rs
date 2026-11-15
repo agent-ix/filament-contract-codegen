@@ -7,7 +7,7 @@
 //! no catch-all: a kind with no arm does not build, rather than reaching a run
 //! with no settlement and nothing saying so.
 //!
-//! `candidates` is read, never computed. The `quire-spec-language` registry
+//! `candidates` is read, never computed. The `filament-spec-language` registry
 //! computes it under FR-290's candidate-set rule; this module is the consumer
 //! on the far side of the FR-331 envelope.
 
@@ -185,10 +185,10 @@ fn serialize_domain_kind<S: serde::Serializer>(
 }
 
 /// The FR-331 envelope's contract version, the only one this module reads.
-pub const BACKEND_PROVIDER_CONTRACT: &str = "quire.backend-provider/v1";
+pub const BACKEND_PROVIDER_CONTRACT: &str = "filament.backend-provider/v1";
 
 /// The FR-290 vocabulary identity, the only one this module reads.
-pub const CAPABILITY_VOCABULARY: &str = "quire.capability-kind/v1";
+pub const CAPABILITY_VOCABULARY: &str = "filament.capability-kind/v1";
 
 /// The ten FR-290 capability kinds.
 ///
@@ -318,7 +318,7 @@ pub enum Mode {
 
 /// A claim's extent, classified by the boundedness architecture.
 ///
-/// `quire-spec-language#222` owns the representation, the classification and
+/// `filament-spec-language#222` owns the representation, the classification and
 /// the finite-bound predicate; this module reads all three and computes none.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ExtentClassification {
@@ -329,13 +329,13 @@ pub struct ExtentClassification {
     /// It separates `requires-bound` from `unsupported` and is read from #222,
     /// never inferred from the extent.
     pub finite_bound_available: bool,
-    /// Kinds of the item's unbounded domains, supplied by QSL.
+    /// Kinds of the item's unbounded domains, supplied by FSL.
     pub domains: Vec<ExtentDomain>,
     /// Substituted proof bounds, including each explicit kind and numeric bound.
     pub bounds: Vec<ProofBound>,
 }
 
-/// One unbounded domain and its explicit QSL kind.
+/// One unbounded domain and its explicit FSL kind.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ExtentDomain {
     /// Domain identity from the request.
@@ -346,7 +346,7 @@ pub struct ExtentDomain {
 
 /// The registry-owned provider origin projected into CG's in-process descriptor.
 ///
-/// QSL layer R owns this closed vocabulary (FR-288, ADR-029 PV-1). The driver
+/// FSL layer R owns this closed vocabulary (FR-288, ADR-029 PV-1). The driver
 /// maps its registry value exhaustively; CG does not infer it from identity.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ProviderOrigin {
@@ -363,7 +363,7 @@ pub struct BackendDescriptor {
     pub identity: String,
     /// Advertised (kind, mode) pairs.
     pub advertised: Vec<(CapabilityKind, Mode)>,
-    /// Origin supplied by the QSL registry, never derived from identity.
+    /// Origin supplied by the FSL registry, never derived from identity.
     pub origin: ProviderOrigin,
     /// Domain kinds admitted for finite proof bounds by the manifest.
     pub domains: Option<BTreeSet<DomainKind>>,
@@ -1449,13 +1449,13 @@ impl ItemSettlement {
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum BackendKind {
-    /// The Kani backend descriptor, implemented here and in `quire-contract-ir`.
+    /// The Kani backend descriptor, implemented here and in `filament-contract-ir`.
     Kani,
     /// One process provider, identified by its exact registry identity.
     Process(BackendId),
 }
 
-/// A CG-owned backend identity, independent of QSL's Rust identity type.
+/// A CG-owned backend identity, independent of FSL's Rust identity type.
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(transparent)]
 pub struct BackendId(pub String);

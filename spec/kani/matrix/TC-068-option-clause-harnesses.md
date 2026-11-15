@@ -3,7 +3,7 @@ id: TC-068
 title: "Verify option presence and value clause harnesses"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-054
+  - target: ix://agent-ix/filament-contract-codegen/FR-054
     type: verifies
 ---
 # TC-068: Verify option presence and value clause harnesses

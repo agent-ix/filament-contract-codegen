@@ -31,7 +31,7 @@ const CALLS: &str = concat!(
 
 const PATH: &str = "function-owner.native";
 
-/// One genuine QSL emission with the evidence the reader needs to admit it.
+/// One genuine FSL emission with the evidence the reader needs to admit it.
 struct Fixture {
     source: &'static str,
     bytes: Vec<u8>,
@@ -70,7 +70,7 @@ impl Fixture {
         let CheckedPackageV2ReadResult::Admitted(package) =
             CheckedPackageV2::read(&bytes, CheckedPackageReadLimits::bounded(), &evidence)
         else {
-            panic!("the QSL emission must be admitted by Contract IR");
+            panic!("the FSL emission must be admitted by Contract IR");
         };
         Self {
             source,

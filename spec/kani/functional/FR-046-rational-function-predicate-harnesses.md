@@ -3,17 +3,17 @@ id: FR-046
 title: "Generate finite rational function predicate harnesses"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/StR-001
+  - target: ix://agent-ix/filament-contract-codegen/StR-001
     type: satisfies
-  - target: ix://agent-ix/quire-contract-codegen/FR-015
+  - target: ix://agent-ix/filament-contract-codegen/FR-015
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-039
+  - target: ix://agent-ix/filament-contract-codegen/FR-039
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-017
+  - target: ix://agent-ix/filament-contract-codegen/FR-017
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-025
+  - target: ix://agent-ix/filament-contract-codegen/FR-025
     type: depends_on
-  - target: ix://agent-ix/quire-specification/FR-196
+  - target: ix://agent-ix/filament-specification/FR-196
     type: references
 ---
 # FR-046: Generate finite rational function predicate harnesses
@@ -125,7 +125,7 @@ its values are not refused merely because swapping them could also yield another
 Role-swapped schema and substituted backend evidence are separate failure controls.
 
 When submitting a validated parameter to public replay, CG SHALL construct one existing
-`qsl_replay::WitnessValue::Rational` with owner Integer numerator/denominator and use its public
+`fsl_replay::WitnessValue::Rational` with owner Integer numerator/denominator and use its public
 `to_value_text()` canonical serialization for that one original parameter. The function
 adapter must admit this value instead of routing it through its integer-only transcript path.
 The retained physical values are decoded first under
@@ -148,9 +148,9 @@ Rational grouping or version observations.
 
 | ID | Criteria | Verification |
 | --- | --- | --- |
-| FR-046-AC-1 | The genuine source function `rational_commutative(a: Rational[-9,9;1,9], b: Rational[-9,9;1,9]): Boolean` with body `a + b = b + a` selects its whole declaration and complete body through the public QSL admission, strict IR reader/lowering and CG route. Its artifact proves that predicate, not only validity or parity of either addition. Replacing the body by `a + b = a + a` selects the same authored mutation with unchanged parameter domains. | Test |
-| FR-046-AC-2 | Every accepted symbolic argument has canonical constructor/accessor roundtrip equality and lies in its original inclusive component domains. Its two physical I64 bindings retain numerator/denominator roles, original parameter identity and bounds in the FR-025 order. Every semantic value in those domains has exactly one accepted representation. Zero is `0/1`; negative, fractional and boundary values remain reachable. For the original domain there are 111 canonical values per argument and 12,321 argument tuples; admitting all 171 raw component pairs, restricting denominators to one, or clipping an endpoint fails correspondence validation under QSpec FR-196-AC-5. | Test |
-| FR-046-AC-3 | Generated complete-body evaluation over already-admitted arguments preserves the authored full tree and declaration identity, exact owner arithmetic, intermediate values outside the input domains, arbitrary-precision continuation, full typed outcomes, laziness and the body's Meter charge/stop order from entry onward. Native comparison against an independent reference using public owner body operations starts from matching entry Meter state and limits and checks those observations, including each denied body-charge prefix and zero/exact/short budgets. The application's single pre-body FunctionCall charge is excluded at entry, not subtracted after a run or manually copied; comparison neither resets mutated Meter state nor assumes it matches. The reference does not run the generated oracle twice, call internal QSL application APIs or bridge through Runtime. Full-call equivalence remains planned under IR-595 / IR-583 and is not this body comparison. | Test |
+| FR-046-AC-1 | The genuine source function `rational_commutative(a: Rational[-9,9;1,9], b: Rational[-9,9;1,9]): Boolean` with body `a + b = b + a` selects its whole declaration and complete body through the public FSL admission, strict IR reader/lowering and CG route. Its artifact proves that predicate, not only validity or parity of either addition. Replacing the body by `a + b = a + a` selects the same authored mutation with unchanged parameter domains. | Test |
+| FR-046-AC-2 | Every accepted symbolic argument has canonical constructor/accessor roundtrip equality and lies in its original inclusive component domains. Its two physical I64 bindings retain numerator/denominator roles, original parameter identity and bounds in the FR-025 order. Every semantic value in those domains has exactly one accepted representation. Zero is `0/1`; negative, fractional and boundary values remain reachable. For the original domain there are 111 canonical values per argument and 12,321 argument tuples; admitting all 171 raw component pairs, restricting denominators to one, or clipping an endpoint fails correspondence validation under FSpec FR-196-AC-5. | Test |
+| FR-046-AC-3 | Generated complete-body evaluation over already-admitted arguments preserves the authored full tree and declaration identity, exact owner arithmetic, intermediate values outside the input domains, arbitrary-precision continuation, full typed outcomes, laziness and the body's Meter charge/stop order from entry onward. Native comparison against an independent reference using public owner body operations starts from matching entry Meter state and limits and checks those observations, including each denied body-charge prefix and zero/exact/short budgets. The application's single pre-body FunctionCall charge is excluded at entry, not subtracted after a run or manually copied; comparison neither resets mutated Meter state nor assumes it matches. The reference does not run the generated oracle twice, call internal FSL application APIs or bridge through Runtime. Full-call equivalence remains planned under IR-595 / IR-583 and is not this body comparison. | Test |
 | FR-046-AC-4 | Generation introduces no assumption on completion, truth or an absence of undefined/refused/incomplete results. Controls producing each reachable noncompletion retain that typed outcome and cannot become a successful predicate proof; an outcome-based assume mutation is rejected. A completion assertion failure without a replayed false value is not labelled a confirmed semantic false counterexample. | Test |
 | FR-046-AC-5 | The healthy original function receives `Verified` only from an actual successful proof with all required checks and its completion cover satisfied. The wrong-addend mutation produces a substantive failed predicate assertion with actual solver playback of canonical in-domain arguments, and replay of that same authored function completes with Boolean false. A hypothetical witness or cover witness is not substituted for that playback. | Test |
 | FR-046-AC-6 | Each emitted predicate harness has exactly one final completion cover after all predicate assertions, including harnesses with representation constraints. Unsatisfied or unreported completion cover, failed unwind, timeout, memory exhaustion or missing verdict cannot yield `Verified`; classifications retain FR-017 and FR-029 distinctions. | Test |
@@ -164,10 +164,10 @@ Rational grouping or version observations.
 - [FR-014](../../oracle/functional/FR-014-exact-scalar-oracles.md)
   owns scalar oracle semantics; its native or scalar parity evidence is not this
   whole-function proof.
-- [QSpec FR-196](ix://agent-ix/quire-specification/FR-196) owns exact domains,
+- [FSpec FR-196](ix://agent-ix/filament-specification/FR-196) owns exact domains,
   total dispositions and the one-to-one finite encoding obligation.
 - [FR-024](../../replay/functional/FR-024-counterexample-envelope-intake.md)
-  and the QSL-owned function replay route govern witness submission. An owner
+  and the FSL-owned function replay route govern witness submission. An owner
   capability still awaiting delivery remains a dependency, not an invented API.
 - [TC-060](../matrix/TC-060-rational-function-predicate-harnesses.md)
   defines the planned feature verification. This requirement changes none of

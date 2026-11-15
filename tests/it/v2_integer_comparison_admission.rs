@@ -2,11 +2,11 @@
 
 use std::{fmt::Write as _, fs, process::Command};
 
-use ix_trace_rs::trace;
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     admit_v2_integer_comparison, ComparisonOperator, Domain, OperandPosition, Partner,
     V2ComparisonRefusal, V2SelectedClaimKey,
 };
+use ix_trace_rs::trace;
 use quire_contract_model::{
     CheckedComparisonOperator, CheckedComparisonRefusal, CheckedOccurrence, CheckedOccurrenceRole,
     ExecutionPoint, ExecutionPointName,
@@ -42,7 +42,7 @@ pub(super) fn admit_twin(
     let (package, clauses) =
         twin.emitted_package_with_execution_points(&[("BalanceNeverDrops", point)]);
     let [clause] = <[quire_contract_model::CheckedNodeId; 1]>::try_from(clauses)
-        .expect("one QSL-authored clause");
+        .expect("one FSL-authored clause");
     let claim = package
         .resolved_graph()
         .nodes
@@ -57,7 +57,7 @@ pub(super) fn admit_twin(
     (package, clause, claim)
 }
 
-/// Six authored QSL comparisons keep their operator and one shared IR domain.
+/// Six authored FSL comparisons keep their operator and one shared IR domain.
 #[trace("TC-020")]
 #[test]
 fn selected_v2_comparisons_follow_typed_ir_projection() {
@@ -247,7 +247,7 @@ fn v2_comparison_refusals_preserve_selected_key_and_ir_cause() {
 #[trace("FR-008-AC-9", "TC-017")]
 #[test]
 fn v2_accessor_population_and_refusal_fields_agree() {
-    use quire_contract_codegen::{prepare_v2_numeric_population, CensusTag, Population};
+    use filament_contract_codegen::{prepare_v2_numeric_population, CensusTag, Population};
     use quire_contract_model::{
         CheckedComparisonObservation as Observation, CheckedComparisonOperandKind as Kind,
         CheckedComparisonRead as Read,
@@ -414,8 +414,8 @@ fn v2_accessor_population_and_refusal_fields_agree() {
         assert_eq!(refused.path, direct.path);
         assert_eq!(refused.child, direct.child);
         assert_eq!(refused.cause, V2ComparisonRefusal::Ir(direct));
-        let generation = quire_contract_codegen::generate_v2_numeric_strategy(
-            &quire_contract_codegen::V2NumericRequest {
+        let generation = filament_contract_codegen::generate_v2_numeric_strategy(
+            &filament_contract_codegen::V2NumericRequest {
                 package: &package,
                 key: V2SelectedClaimKey {
                     clause: &clause,
@@ -423,7 +423,7 @@ fn v2_accessor_population_and_refusal_fields_agree() {
                     occurrence: claim,
                 },
                 population: Population::Broad,
-                policy: quire_contract_codegen::V2NumericPolicy {
+                policy: filament_contract_codegen::V2NumericPolicy {
                     minimum_accepted_cases: 0,
                     minimum_rejected_cases: 0,
                     maximum_discarded_cases: 0,

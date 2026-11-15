@@ -3,37 +3,37 @@ id: FR-053
 title: "Generate bounded IEEE float scalar operation harnesses"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/StR-001
+  - target: ix://agent-ix/filament-contract-codegen/StR-001
     type: satisfies
-  - target: ix://agent-ix/quire-contract-codegen/FR-014
+  - target: ix://agent-ix/filament-contract-codegen/FR-014
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-015
+  - target: ix://agent-ix/filament-contract-codegen/FR-015
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-016
+  - target: ix://agent-ix/filament-contract-codegen/FR-016
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-017
+  - target: ix://agent-ix/filament-contract-codegen/FR-017
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-025
+  - target: ix://agent-ix/filament-contract-codegen/FR-025
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-028
+  - target: ix://agent-ix/filament-contract-codegen/FR-028
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-029
+  - target: ix://agent-ix/filament-contract-codegen/FR-029
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-039
+  - target: ix://agent-ix/filament-contract-codegen/FR-039
     type: depends_on
-  - target: ix://agent-ix/quire-contract-ir/FR-038
+  - target: ix://agent-ix/filament-contract-ir/FR-038
     type: references
-  - target: ix://agent-ix/quire-contract-codegen/FR-046
+  - target: ix://agent-ix/filament-contract-codegen/FR-046
     type: references
-  - target: ix://agent-ix/quire-contract-codegen/FR-049
+  - target: ix://agent-ix/filament-contract-codegen/FR-049
     type: references
-  - target: ix://agent-ix/quire-contract-codegen/FR-050
+  - target: ix://agent-ix/filament-contract-codegen/FR-050
     type: references
-  - target: ix://agent-ix/quire-contract-codegen/FR-051
+  - target: ix://agent-ix/filament-contract-codegen/FR-051
     type: references
-  - target: ix://agent-ix/quire-contract-codegen/FR-052
+  - target: ix://agent-ix/filament-contract-codegen/FR-052
     type: references
-  - target: ix://agent-ix/quire-specification/FR-196
+  - target: ix://agent-ix/filament-specification/FR-196
     type: references
 ---
 # FR-053: Generate bounded IEEE float scalar operation harnesses
@@ -58,27 +58,27 @@ supported harness is conditional on P1, the criteria about unbounded operands ar
 conditional on P2, and the `sqrt` and `fma` parts of every criterion were conditional on
 P3, which is delivered.
 
-- P1 (ticket IR-1446) is the quire-exact float carrier: a symbolic IEEE operand, and a
+- P1 (ticket IR-1446) is the filament-exact float carrier: a symbolic IEEE operand, and a
   native expression for the comparisons and for add, sub, mul, div, sqrt and fma at
   `binary32` and `binary64` under each of the six rounding modes, with the tractability
   contract of the IR-1436 design review (D4): `Copy`, no allocation, machine width, no
   iterator loop, and none of the owner's `BigInt` or `BigUint` arithmetic. IR-1446 is
   the supplier of the native add, sub, mul, div, sqrt and fma and of the comparisons
-  (quire-exact FR-405). These native operations are host-callable ordinary code, one source
+  (filament-exact FR-405). These native operations are host-callable ordinary code, one source
   for the host and Kani builds and not a `cfg(kani)`-only body, which AC-13 needs. Until
-  IR-1446 lands them, AC-13 cannot run. Support is per operation and width, as quire-exact
+  IR-1446 lands them, AC-13 cannot run. Support is per operation and width, as filament-exact
   FR-405 Behavior 15 gates it: only a combination with an executed Verified verdict is a
-  supported row. A combination whose quire-exact record is a measured table row (timeout,
+  supported row. A combination whose filament-exact record is a measured table row (timeout,
   memory exhaustion or unreliable) is in the table-row state. The float row refuses it at
   generation with the named capability `float.<op>.not_kani_tractable` and no harness (planner
   ruling, IR-260); it is not generated and not run. The five arithmetic rows of IR-1526's
-  tractability table (FR-056, quire-exact FR-405 Behavior 16) are the measured record of that
+  tractability table (FR-056, filament-exact FR-405 Behavior 16) are the measured record of that
   refusal and not its mechanism: a float clause carries no integer operand width, so the
   decider's width match does not select them.
 - P2 (ticket IR-69) is the Contract IR ruling that a `float32` or `float64` is
   unbounded unless a `float_rounding` domain applies (planner ruling, Option A). It adds
   both forms to the `requires_bound` unbounded set in
-  `crates/quire-contract-model/src/checked_package/v2/lower.rs` and moves FR-038 Behavior
+  `crates/filament-contract-model/src/checked_package/v2/lower.rs` and moves FR-038 Behavior
   and FR-038-AC-8 from eight forms to ten. It is not implemented: that predicate returns
   `false` for `ScalarTypeForm::Float32` and `ScalarTypeForm::Float64` on Contract IR main
   at the time of writing, so a package with an unbounded float lowers to `lowered` under
@@ -179,13 +179,13 @@ consumed counters. The expected side of a comparison decides `bit_identical` by 
 equality, `numeric_equal` by "neither operand is NaN and either both are zero or the bits
 are equal", and `total_order` by the totalOrder predicate (`a` precedes or equals `b`).
 The expected side of `add`, `sub`, `mul` and `fma` is the host language's own float operation
-(`+`, `-`, `*` and `mul_add` on `f32` and `f64`), the host reference that quire-exact's own
+(`+`, `-`, `*` and `mul_add` on `f32` and `f64`), the host reference that filament-exact's own
 harnesses use for them. The expected side of `div` and `sqrt` is not the host `/` or `sqrt`:
 Kani's model of those is not bit-exact (it reports `0x800000A9 / 0x9C873333` as other than the
-hardware's `0x1BA00000`), so quire-exact's harnesses bracket the correctly rounded quotient and
+hardware's `0x1BA00000`), so filament-exact's harnesses bracket the correctly rounded quotient and
 root in exact integers (the docstring of `src/native_float/kani_proofs.rs` and TC-953 say so),
 and a CG `div` or `sqrt` harness SHALL do the same. Whether Kani's model of `mul_add` is exact
-is not established, because no quire-exact `fma` harness has returned a verdict. There is no
+is not established, because no filament-exact `fma` harness has returned a verdict. There is no
 second implementation in the carrier crate. A result that is a NaN (a NaN operand, infinity minus infinity, zero
 times infinity, zero over zero, infinity over infinity, the square root of a negative nonzero)
 is decided first by a predicate over the bit patterns, so the host operation never produces
@@ -197,8 +197,8 @@ would-be flags, the ordered charges and the denied charge at a limit) are left t
 host differential. AC-4, AC-5, AC-9 and AC-10 say item by item which half carries each
 output.
 
-What the quire-exact native harnesses evidence, per operation and spelling, is recorded in
-quire-exact TC-953's evidence record (one row per harness: three per arithmetic operation
+What the filament-exact native harnesses evidence, per operation and spelling, is recorded in
+filament-exact TC-953's evidence record (one row per harness: three per arithmetic operation
 and width, covering `nearest-even`, `exact` and the four directed and nearest-away
 spellings, and one per comparison and negation); it is the source this requirement
 follows and is not copied here. At the time of IR-1446 the comparisons and negation are
@@ -206,11 +206,11 @@ Verified at both widths; of the arithmetic operations only the `nearest-even` ha
 `add` and `sub` at both widths and of `mul` at `binary32` are Verified; every other
 arithmetic harness (`mul` at `binary64`, `div`, `sqrt`, `fma`, and the `exact` and directed
 spellings of all of them) is a measured table row. An arithmetic operation and width is a
-supported row only when all three of its harnesses are Verified (quire-exact FR-405
+supported row only when all three of its harnesses are Verified (filament-exact FR-405
 Behavior 15), so under that evidence no arithmetic row is supported and each is refused by
 the seam of P1; the comparisons are supported. The claims below are what a Verified
 combination would prove and never more than its record states. The expected side SHALL share no function with
-the native operations (quire-exact FR-405), not even the decode of a bit pattern (quire-exact
+the native operations (filament-exact FR-405), not even the decode of a bit pattern (filament-exact
 FR-405-AC-9), and it neither calls nor reproduces
 the owner's `BigInt` path. The generated harness evaluates the carrier's native operations,
 so the proof ties them to the host reference and nothing else: it covers the native
@@ -370,7 +370,7 @@ or width-conflicting schema refuses with a typed cause, malformed entries retain
 decode causes, and no replay is attempted for these evidence failures.
 
 When submitting a validated parameter to public replay, CG SHALL construct one
-`qsl_replay::WitnessValue::Float32(u32)` or `WitnessValue::Float64(u64)` holding the exact
+`fsl_replay::WitnessValue::Float32(u32)` or `WitnessValue::Float64(u64)` holding the exact
 bit pattern per parameter, so that a NaN keeps its sign and payload. If the public route is
 unavailable the item is unsupported with no harness. CG introduces no transcript grammar
 or occurrence key.
@@ -383,8 +383,8 @@ parts of AC-1, AC-4, AC-5, AC-9, AC-10, AC-13 and AC-14 were conditional on P3 (
 
 | ID | Criteria | Verification |
 | --- | --- | --- |
-| FR-053-AC-1 | Each admitted `quire.op.ieee.numeric_equal`, `.total_order` and `.bit_identical` node over two distinct parameters of one float width selects a harness naming the operation identity, width and operand forms from the admitted node; the harness proves the carrier's native comparison and the expected side is an independent native expression, not a second call of the oracle. Each `quire.op.ieee.float32` and `float64` `add`, `sub`, `mul`, `div`, `sqrt` and `fma` node selects no harness and is refused with the named capability `float.<op>.not_kani_tractable` carrying its measured disposition (planner ruling: no arithmetic combination has all three quire-exact harnesses Verified). `quire.op.ieee.to_float32`, `.to_float64`, `.from_exact`, `.to_rational`, `.float32.negate`, `.float64.negate` and every other identity select no harness and keep their existing dispositions. A float literal operand is accounted `unsupported` naming `float.literal_operand` (`FloatLiteralOperand`) and an operand that is neither a parameter nor a literal naming `float.operand_not_parameter` (FR-015's `OperandNotSupported`), each with no harness; a same-parameter operand pair, operands of differing widths and a path condition are refused with their own named capabilities. | Test |
-| FR-053-AC-2 | Each operand is drawn as one `i64` bit pattern, `0..=0xFFFF_FFFF` for `float32` and every `i64` for `float64`, built through `IeeeValue::binary32(u32)` or `binary64(u64)`. Every pattern is reachable exactly once, including both zeros, subnormals, both infinities and every NaN sign and payload, and a host enumeration of the stated class-boundary set (both signs; exponent field 0, 1, the bias, the largest finite and all ones; fraction 0, 1, the largest below the quiet bit, the quiet bit, the quiet bit plus one and all ones) at each width, plus the `i64` values 2^32, -1, `i64::MIN` and `i64::MAX` at `float32`, matches the encoding: an in-range pattern is admitted once and decodes to the same bits, and an out-of-range `float32` value is excluded. Each of these fails the correspondence check (QSpec FR-196-AC-5): an assumption of non-negative `float64` bits (point `0x8000000000000000`), an assumption excluding NaN (`QN0`, `SN1`), excluding infinities (`INF+`), excluding subnormals or zero (`SUBMIN`, `Z+`), a `float32` draw left unconstrained above `u32::MAX` (the value 2^32 aliases `Z+`), a `float32` draw decoded as a signed 32-bit value (`0x80000000`), and a decode that canonicalizes a NaN (`SN1` must keep its payload). | Test |
+| FR-053-AC-1 | Each admitted `quire.op.ieee.numeric_equal`, `.total_order` and `.bit_identical` node over two distinct parameters of one float width selects a harness naming the operation identity, width and operand forms from the admitted node; the harness proves the carrier's native comparison and the expected side is an independent native expression, not a second call of the oracle. Each `quire.op.ieee.float32` and `float64` `add`, `sub`, `mul`, `div`, `sqrt` and `fma` node selects no harness and is refused with the named capability `float.<op>.not_kani_tractable` carrying its measured disposition (planner ruling: no arithmetic combination has all three filament-exact harnesses Verified). `quire.op.ieee.to_float32`, `.to_float64`, `.from_exact`, `.to_rational`, `.float32.negate`, `.float64.negate` and every other identity select no harness and keep their existing dispositions. A float literal operand is accounted `unsupported` naming `float.literal_operand` (`FloatLiteralOperand`) and an operand that is neither a parameter nor a literal naming `float.operand_not_parameter` (FR-015's `OperandNotSupported`), each with no harness; a same-parameter operand pair, operands of differing widths and a path condition are refused with their own named capabilities. | Test |
+| FR-053-AC-2 | Each operand is drawn as one `i64` bit pattern, `0..=0xFFFF_FFFF` for `float32` and every `i64` for `float64`, built through `IeeeValue::binary32(u32)` or `binary64(u64)`. Every pattern is reachable exactly once, including both zeros, subnormals, both infinities and every NaN sign and payload, and a host enumeration of the stated class-boundary set (both signs; exponent field 0, 1, the bias, the largest finite and all ones; fraction 0, 1, the largest below the quiet bit, the quiet bit, the quiet bit plus one and all ones) at each width, plus the `i64` values 2^32, -1, `i64::MIN` and `i64::MAX` at `float32`, matches the encoding: an in-range pattern is admitted once and decodes to the same bits, and an out-of-range `float32` value is excluded. Each of these fails the correspondence check (FSpec FR-196-AC-5): an assumption of non-negative `float64` bits (point `0x8000000000000000`), an assumption excluding NaN (`QN0`, `SN1`), excluding infinities (`INF+`), excluding subnormals or zero (`SUBMIN`, `Z+`), a `float32` draw left unconstrained above `u32::MAX` (the value 2^32 aliases `Z+`), a `float32` draw decoded as a signed 32-bit value (`0x80000000`), and a decode that canonicalizes a NaN (`SN1` must keep its payload). | Test |
 | FR-053-AC-3 | A comparison operand whose type reaches no `float_rounding` bound yields source-associated `requires-bound` naming the operand's type node with no harness; this is CG's own check, because Contract IR does not yet raise `requires_bound` for a float (IR-69, which would make the upstream refusal precede it). An operand whose `float_rounding` bound is present but unreadable yields the named `float.rounding_unreadable` with its cause and no harness. No result bound is required, read or reported for a comparison, because a comparison has none, and a `float_rounding` pin narrows no operand domain. An arithmetic node reaches no bound check: it is refused by AC-1 first. | Test |
 | FR-053-AC-4 | For every supported comparison the oracle and native expression agree on the Boolean, ordered charges, the denied next charge and consumed counters, at zero, exact and short budgets at each charge point the operation reaches on that input. For every supported arithmetic operation the harness proves the completed value's bits under `nearest-even` (and the NaN result's sign, quietness and payload and the `invalid` flag under every spelling) and the provenance of a completed result, and that only `exact` refuses (it cannot tell a refusal from a completed result under `exact`, and a limit is not drawn); the result bits under the other spellings, the typed outcome at a limit, the flags other than `invalid`, the ordered charges (including the result-unit charge), the denied next charge and the consumed counters at zero, exact and short budgets are proved by AC-13's host differential and not by the harness. The charge points are: `ieee.operands`, `ieee.exact-intermediate`, `ieee.round` and `ieee.result-retain` as the Behavior list orders them, with the arity of `sqrt` and `fma`. Classification-decided inputs (NaN, infinity, invalid operation, division by zero) charge only `ieee.operands` and `ieee.result-retain`. The reference neither runs the generated oracle twice nor bridges through Runtime. | Test |
 | FR-053-AC-5 | The reachable noncompletions are asserted as the agreed typed outcome and never assumed away. The harness proves that only `exact` refuses and that the generated harness contains no assumption that depends on the outcome (inspected, as FR-046-AC-4); AC-13's host differential asserts `Incomplete` at each charge point an input reaches, with a short budget for each limit kind that point charges (including `work_units`), and under `exact` `Refused(IeeeNotExact)` with the would-be flags for an inexact, overflowing or tiny-and-inexact finite result (`T1`, `MAXF + MAXF`, `SUBMIN x HALF`, `SQ1`), charging no `ieee.result-retain`. A division by zero and an invalid operation under `exact` are `Completed` with their flag and are not refused. No `Undefined` or comparison `Refused` control is drawn, because the owner produces none, and `DistinctIeeeWidths` is not a harness control. No cause is relabelled and a stopped outcome is never proved completed. | Test |
@@ -392,10 +392,10 @@ parts of AC-1, AC-4, AC-5, AC-9, AC-10, AC-13 and AC-14 were conditional on P3 (
 | FR-053-AC-7 | A healthy float operation receives `Verified` only from an actual successful proof with all checks and exactly one final completion cover satisfied. Unsatisfied cover, failed unwind (including an unwind at or below the carrier's division or root loop bound), timeout, memory exhaustion or missing verdict cannot yield `Verified`, and FR-017 and FR-029 classifications are retained. A width, operation and rounding mode whose recorded run exceeds the request's memory or wall-clock ceiling settles `inconclusive` under FR-028, and none is reported verified by a run at a larger ceiling than the request's. | Test |
 | FR-053-AC-8 | Each comparison mutant below fails with actual solver playback of an in-domain input, caught by the listed operators at a point stated in the Behavior control points. (a) `numeric_equal` as bit equality: `numeric_equal`, over (`Z+`, `Z-`), expected true. (b) NaN reflexive in `numeric_equal`: `numeric_equal`, over (`QN0`, `QN0`), expected false. (c) `numeric_equal` ignoring the sign of a nonzero value: `numeric_equal`, over (`ONE`, `MONE`), expected false. (d) `bit_identical` as numeric equality: `bit_identical`, over (`Z+`, `Z-`), expected false, and over (`QN0`, `QN0`), expected true. (e) `bit_identical` canonicalizing a NaN: `bit_identical`, over (`QN1`, `QN2`). (f) `total_order` as signed integer comparison of the raw bits: `total_order`, over (`MONE`, `MTWO`), expected false. (g) `total_order` as unsigned comparison of the raw bits: `total_order`, over (`MONE`, `ONE`), expected true. (h) `total_order` equating the zeros: `total_order`, over (`Z+`, `Z-`), expected false. (i) `total_order` strict instead of precedes-or-equal: `total_order`, over (`ONE`, `ONE`) and (`QN0`, `QN0`), expected true. (j) `total_order` leaving NaN unordered: `total_order`, over (`INF+`, `QN0`) and (`NQN0`, `INF-`), expected true. (k) `total_order` equating all NaNs: `total_order`, over (`QN0`, `SN1`) expected false, and (`NSN1`, `NQN0`) expected false. (l) Operand swap: `total_order` over (`ONE`, `TWO`); a swap in `numeric_equal` and `bit_identical` is equivalent for a symmetric operation and is not claimed. (m) `total_order` key built with the `binary64` sign position at `binary32`: `total_order`, `float32`, over (`MONE`, `ONE`), expected true. | Test |
 | FR-053-AC-9 | Each arithmetic mutant below fails, with actual solver playback of an in-domain input where the Kani harness carries it, or as a failing input of AC-13's host differential where it is marked (host). The harness carries the mutants that change a `nearest-even` result bit pattern, a NaN result, the `invalid` flag or the provenance; it does not carry a mutant that changes only a directed-rounding result, a flag other than `invalid` or a charge, because its expected side (the host float operation, or the exact-integer bracket for `div` and `sqrt`) fixes only those outputs. The mutants are caught by the listed operators at the stated points. (a) One of the four operations in place of another: `add`, `sub`, `mul`, `div`, over (`THREE`, `TWO`), whose four results are 5, 1, 6 and 1.5. (b) Operand swap: `sub` and `div` over (`THREE`, `TWO`); `add` and `mul` only over (`QN1`, `QN2`), where the leftmost NaN payload decides, because their values are symmetric; for `fma`, `(a, c)` and `(b, c)` swaps over (`THREE`, `TWO`, `ONE`) and the `(a, b)` swap only over (`QN1`, `QN2`, `ONE`). (c) A rounding mode in place of another. Harness: a native body that rounds in another mode under a `nearest-even` node, at the points where the two bit patterns differ (the reverse direction is not caught: under a directed node or `exact` the harness checks only NaN-ness and `invalid`, or equality with the `nearest-even` bits). Host: the reverse direction and every pair among the four other modes. The per-operation points of the Behavior list and only for the pairs each separates: `add` over `T1` through `T4` and `sub` over `S1` through `S4` (and `fma` over `T1` through `T4` with the addend as `c`) for every pair of the five modes; `mul` over `M1` and `M1n` for every pair except nearest-even against toward-zero; `div` over `D1`, `Q1` and `Q1n` for every pair; `sqrt` over `SQ1` and `SQ2` for the pairs nearest, toward-zero and toward-positive, with nearest-even against nearest-away and toward-zero against toward-negative not claimed for `sqrt` because each pair is equivalent on every input; and `exact` rounding like a nearest mode instead of refusing, over the operator's inexact point. All of (c) beyond the stated harness direction, and all of (d), are (host). (d) The `exact` refusal reported without its would-be flags, or reported as a rounded value (host): over `T1` for `add` and `fma`, `S1` for `sub`, `M1` for `mul`, `Q1` for `div` and `SQ1` for `sqrt`. (e) Zero sign: a zero sum fixed to `Z+`, over `add(ONE, MONE)` and `sub(ONE, ONE)` under toward-negative where `Z-` is expected (host); the sign of a zero product, quotient or root dropped, over `mul(Z+, MONE)`, `div(Z+, MONE)` and `sqrt(Z-)`. (f) Division by zero reported as `Undefined`, as a NaN or with the wrong sign (harness), or without `divide_by_zero` (host): `div`, over (`ONE`, `Z+`), (`ONE`, `Z-`) and (`Z+`, `Z+`). (g) An invalid operation yielding a payload-preserving or infinite result or no `invalid`: `add(INF+, INF-)`, `mul(INF+, Z+)`, `div(INF+, INF+)`, `sqrt(MONE)`, `sqrt(INF-)`, `fma(INF+, Z+, ONE)`, `fma(INF+, ONE, INF-)`. (h) NaN propagation, for `add`, `sub`, `mul`, `div` and `fma` (with the NaN in each operand position) and for `sqrt` over `SN1` and `NQN0`: the canonical NaN returned instead of the operand's payload, over (`SN1`, `QN2`), expected `0x7FC00001` with `invalid`; `invalid` raised only when the leftmost NaN is signaling, over (`QN2`, `SN1`), expected `QN2` with `invalid`; quieting dropped, over (`SN1`, `ONE`), expected `0x7FC00001`; sign dropped, over (`NQN0`, `ONE`), expected `NQN0` with no flag; the invalid-operation test run before the NaN test, over `fma(INF+, Z+, QN2)`, expected `QN2` with no flag. (i) Overflow, all (host): always rounding to infinity, over `add(MAXF, MAXF)` under toward-zero and toward-negative (expected `MAXF`) and over its negated operands under toward-zero and toward-positive (expected the negated `MAXF`); the `overflow` flag missing, over `add(MAXF, MAXF)` in any mode; a completed value under `exact`, over the same input. (j) Underflow and subnormals: flush-to-zero (harness under `nearest-even`), over `add(SUBMIN, Z+)` (expected `SUBMIN`, no flags); the `underflow` flag missing (host), over `mul(SUBMIN, HALF)` (an exact tie between `Z+` and `SUBMIN`: `Z+` under nearest-even, toward-zero and toward-negative, `SUBMIN` under nearest-away and toward-positive, flags `underflow` and `inexact` in each); the subnormal-to-normal carry mis-encoded, over `add(SUBMAX, SUBMIN)` (expected `NORMMIN`, no flags; harness for the bits under `nearest-even`, host for the flags). (k) `fma` computed as a `mul` followed by an `add` (two roundings): `fma`, over (`0x3F800800`, `0x3F800800`, `0xBF801000`) at `float32` and (`0x3FF0000002000000`, `0x3FF0000002000000`, `0xBFF0000004000000`) at `float64`, whose single-rounding result is exactly 2^-24 (`0x33800000`) and 2^-54 (`0x3C90000000000000`) in every mode, with the two-rounding result differing in every mode. (l) `sqrt` reporting every result inexact, or none (host): `sqrt(FOUR)` (expected `TWO`, no flags, `Completed` under `exact`) and `SQ1`. (m) The wrong width or rounding mode in the result provenance: every operator. | Test |
-| FR-053-AC-10 | Each charge and outcome mutant fails as a failing input of AC-13's host differential, and the Kani harness carries none of them: its expected side fixes no charge and draws no limit (quire-exact's harnesses run a meter that never denies), so the ordered charges, the result-unit charge among them, and a stopped outcome are all AC-13's. (a) A dropped or reordered charge: every operator, with `ieee.exact-intermediate` and `ieee.round` dropped over a finite input. (b) `ieee.exact-intermediate` or `ieee.round` charged on a classification-decided input: every arithmetic operator, over a NaN, infinity or division-by-zero input. (c) A wrong charge amount: the width taken as 64 at `float32` or 32 at `float64`, every operator; the arity taken as two for `sqrt` or `fma`, over those operators. (d) `ieee.result-retain` charged on an `exact` refusal: every arithmetic operator, over its inexact point named in AC-9 (d). (e) A stopped outcome reported completed: every operator. | Test |
+| FR-053-AC-10 | Each charge and outcome mutant fails as a failing input of AC-13's host differential, and the Kani harness carries none of them: its expected side fixes no charge and draws no limit (filament-exact's harnesses run a meter that never denies), so the ordered charges, the result-unit charge among them, and a stopped outcome are all AC-13's. (a) A dropped or reordered charge: every operator, with `ieee.exact-intermediate` and `ieee.round` dropped over a finite input. (b) `ieee.exact-intermediate` or `ieee.round` charged on a classification-decided input: every arithmetic operator, over a NaN, infinity or division-by-zero input. (c) A wrong charge amount: the width taken as 64 at `float32` or 32 at `float64`, every operator; the arity taken as two for `sqrt` or `fma`, over those operators. (d) `ieee.result-retain` charged on an `exact` refusal: every arithmetic operator, over its inexact point named in AC-9 (d). (e) A stopped outcome reported completed: every operator. | Test |
 | FR-053-AC-11 | Counterexample decoding validates the one physical I64 entry of a float parameter (width, little-endian bytes, comment, order, schema role, byte and value-count limits) before grouping, then, for `float32`, the range `0..=0xFFFF_FFFF`. Grouping yields one `WitnessValue::Float32(u32)` or `WitnessValue::Float64(u64)` per parameter through the public replay route for that exact declaration, retaining the bits exactly. Round-trip controls cover `Z-`, `SN1`, `NQN0` and `0x8000000000000000`; a decode through a host float value, or through a checked `i64` to `u64` conversion, fails the control. Missing, duplicate, foreign, role-swapped, width-conflicting and malformed schemas or entries, and a `float32` value above `u32::MAX` or negative, are refused with typed causes and no replay. An unavailable replay capability is reported without claiming acceptance. | Test |
 | FR-053-AC-12 | Run evidence records the operation and source association, operand forms and width, the `float_rounding` result bound and rounding mode (arithmetic only), correspondence, ordered physical bindings and their logical grouping, subject and full ordered backend arguments, the unwind bound and the carrier's loop bounds, every backend option, target (no tool versions are required, QSL-406 and EA-49), dependency cohort including the carrier, limits, the observed peak memory per width, operation and rounding mode, raw checks, cover and playback, exit and typed terminal outcome. No-run, refusal, cover failure, resource exhaustion and semantic falsification remain distinguishable; preparation alone earns no proof result. | Test |
-| FR-053-AC-13 | On the host, the carrier's host-callable native operations (quire-exact FR-405) and the owner's `evaluate_ieee` and `compare_ieee` agree for every supported operation, width and rounding mode on the typed outcome, the result bits, flags and provenance, ordered charges, the denied next charge and consumed counters at zero, exact and short budgets. The inputs are the AC-2 class-boundary set and a stated boundary family: every control point of the Behavior list (whose expected results are first asserted against the shipped owner), the largest and smallest subnormal and normal magnitudes, the exact overflow and underflow thresholds and one unit either side, the rounding ties at the subnormal-to-normal boundary, operand pairs with the largest exponent difference for add and sub, an `fma` whose product overflows and whose addend brings it back in range, an `fma` that cancels exactly, and perfect and imperfect squares including the subnormal range. A native operation that differs from the owner on any of these inputs fails, and the check covers these inputs and not every operand pair. The differential builds every mutant marked (host) in AC-9 and every mutant of AC-10 itself, each paired with the input that fails it, and a mutant no input distinguishes is not admitted. Quire-exact's TC-953 mutant table and `scripts/ir1446_native_float_mutants.py` are a starting set, not the full list (it has, for example, the dropped `overflow` flag, the dropped `ieee.round` charge and `ieee.exact-intermediate` charged on a classification-decided input, and lacks several of the mutants listed here). For `nearest-even`, the `float32` and `float64` results for non-NaN outcomes of `add`, `sub`, `mul`, `div`, `sqrt` and `fma` are also compared with Rust's `f32` and `f64` operators, `sqrt` and `mul_add` on the same inputs, as an independent reference that shares no code with the owner or the carrier; NaN payloads are excluded from that comparison because the host does not fix them. The native operations and the expected side share no code (AC-14). A defect injected into the native bit-pattern decode, rounding step, sticky shift or operand classification is not shared with the expected side, so the proof against the expected side catches it for the outputs the harness covers, and this differential catches it against the unmodified shipped owner too. Until IR-1446 supplies the host-callable native operations this criterion cannot run. | Test |
+| FR-053-AC-13 | On the host, the carrier's host-callable native operations (filament-exact FR-405) and the owner's `evaluate_ieee` and `compare_ieee` agree for every supported operation, width and rounding mode on the typed outcome, the result bits, flags and provenance, ordered charges, the denied next charge and consumed counters at zero, exact and short budgets. The inputs are the AC-2 class-boundary set and a stated boundary family: every control point of the Behavior list (whose expected results are first asserted against the shipped owner), the largest and smallest subnormal and normal magnitudes, the exact overflow and underflow thresholds and one unit either side, the rounding ties at the subnormal-to-normal boundary, operand pairs with the largest exponent difference for add and sub, an `fma` whose product overflows and whose addend brings it back in range, an `fma` that cancels exactly, and perfect and imperfect squares including the subnormal range. A native operation that differs from the owner on any of these inputs fails, and the check covers these inputs and not every operand pair. The differential builds every mutant marked (host) in AC-9 and every mutant of AC-10 itself, each paired with the input that fails it, and a mutant no input distinguishes is not admitted. Filament-exact's TC-953 mutant table and `scripts/ir1446_native_float_mutants.py` are a starting set, not the full list (it has, for example, the dropped `overflow` flag, the dropped `ieee.round` charge and `ieee.exact-intermediate` charged on a classification-decided input, and lacks several of the mutants listed here). For `nearest-even`, the `float32` and `float64` results for non-NaN outcomes of `add`, `sub`, `mul`, `div`, `sqrt` and `fma` are also compared with Rust's `f32` and `f64` operators, `sqrt` and `mul_add` on the same inputs, as an independent reference that shares no code with the owner or the carrier; NaN payloads are excluded from that comparison because the host does not fix them. The native operations and the expected side share no code (AC-14). A defect injected into the native bit-pattern decode, rounding step, sticky shift or operand classification is not shared with the expected side, so the proof against the expected side catches it for the outputs the harness covers, and this differential catches it against the unmodified shipped owner too. Until IR-1446 supplies the host-callable native operations this criterion cannot run. | Test |
 | FR-053-AC-14 | The expected side of every supported operation reaches no function of the carrier's native operations (inspected: its call graph from the harness shows no shared function, the decode included, and the host float operation as the `add`, `sub`, `mul` and `fma` reference and an exact-integer bracket as the `div` and `sqrt` reference). A mutant that makes the expected side call the native operations' rounding step, decode or classification fails the inspection even though it still passes FR-053-AC-1's "not a second call of the oracle". | Inspection |
 
 ## Dependencies
@@ -411,7 +411,7 @@ parts of AC-1, AC-4, AC-5, AC-9, AC-10, AC-13 and AC-14 were conditional on P3 (
   memory evidence; its ordering puts the Meter work (IR-844, IR-241) first.
 - [FR-052](./FR-052-text-scalar-harnesses.md), [FR-051](./FR-051-decimal-scalar-harnesses.md),
   [FR-050](./FR-050-quantity-scalar-harnesses.md), [FR-049](./FR-049-enum-scalar-harnesses.md),
-  [FR-046](./FR-046-rational-function-predicate-harnesses.md) and QSpec FR-196 are the
+  [FR-046](./FR-046-rational-function-predicate-harnesses.md) and FSpec FR-196 are the
   precedent and the finite-encoding obligation this row follows.
 - TC-030's IEEE-float scalar row owns today's `OperationNotRendered` settlement; this
   row supersedes it for the listed operations only when delivered.
@@ -423,23 +423,23 @@ parts of AC-1, AC-4, AC-5, AC-9, AC-10, AC-13 and AC-14 were conditional on P3 (
 
 PARTIAL (IR-260). Scope ruling (planner): the row is the supported combinations, the three
 comparisons `quire.op.ieee.numeric_equal`, `.total_order` and `.bit_identical` at `binary32` and
-`binary64`, which are the combinations whose quire-exact harnesses are Verified (FR-405 Behavior
+`binary64`, which are the combinations whose filament-exact harnesses are Verified (FR-405 Behavior
 15). `generate_float_scalar_harness` (src/kani/generate/float_scalar.rs), routed through
-`generate_routed`, settles a comparison node of a genuine QSL source admitted through Contract IR to
+`generate_routed`, settles a comparison node of a genuine FSL source admitted through Contract IR to
 a harness over `NativeFloat` carriers drawn as one `i64` bit pattern per parameter, or to a typed
 refusal naming a capability. Every arithmetic identity (`add`, `sub`, `mul`, `div`, `sqrt`, `fma`, both
 widths, every rounding spelling) is dispositioned not tractable: a typed refusal
 `float.<op>.not_kani_tractable` with no harness. Five rows of
 `docs/qualification/ir1530-general-route-scalar-table.json` record the measurement; the decider does
 not select them (a float clause has no integer operand width). No arithmetic combination has all
-three of its quire-exact harnesses Verified. The Kani symbolic `f32` division finding (bit-wrong at
+three of its filament-exact harnesses Verified. The Kani symbolic `f32` division finding (bit-wrong at
 `0x800000A9 / 0x9C873333`, correct result `0x1BA00000`) is recorded in
 `docs/qualification/ir260-float-scalar-kani-measurements.md` and in the `div` refusal.
 
-QSL main admits the comparison case (parameters, `=`, `!=`, the relation intrinsics) and arithmetic;
+FSL main admits the comparison case (parameters, `=`, `!=`, the relation intrinsics) and arithmetic;
 no source-admission gap remains for the comparison row. A float literal arrives as a reference to a
 bit-constructor value node and is refused with `float.literal_operand`; an expression operand is
-refused with `float.operand_not_parameter`. QSL types a bare `Float64` as `exact`-pinned, so an
+refused with `float.operand_not_parameter`. FSL types a bare `Float64` as `exact`-pinned, so an
 operand with no `float_rounding` bound reaches the AC-3 check only as hand-edited Contract IR.
 
 Delivered for the comparisons, tagged and passing (`tests/it/float_scalar_harness.rs`, TC-067):
@@ -470,7 +470,7 @@ Delivered for the comparisons, tagged and passing (`tests/it/float_scalar_harnes
   the owner distinguishes on the host.
 - AC-11: one-`i64`-per-parameter decode with the `float32` range check, exact `u64` bits for every
   `i64` including the sign bit, typed refusals for malformed bindings and schemas, an unknown witness
-  width refused, and owner replay of a decoded Kani counterexample through `qsl_replay::replay`.
+  width refused, and owner replay of a decoded Kani counterexample through `fsl_replay::replay`.
 - AC-12: the identity and the run evidence carry the operation, source association, width, ordered
   bindings, every option, target, unwind, solver, limits, raw checks, exactly one satisfied cover and
   the outcome, with no tool-version key; the oracle crate manifest names the carrier dependency; wall
@@ -482,5 +482,5 @@ Delivered for the comparisons, tagged and passing (`tests/it/float_scalar_harnes
 Dispositioned by the refusal ruling, with no arithmetic harness to test: the arithmetic halves of
 AC-4, AC-5, AC-7, AC-9, AC-10, AC-13 and AC-14, the arithmetic requires-bound half of AC-3, and the
 `exact` and directed spelling rows of every arithmetic operation. They are revisited only if
-quire-exact records an all-Verified harness set for an operation (owner: the IR-1446 carrier work,
+filament-exact records an all-Verified harness set for an operation (owner: the IR-1446 carrier work,
 and IR-1526 for the table-row record).

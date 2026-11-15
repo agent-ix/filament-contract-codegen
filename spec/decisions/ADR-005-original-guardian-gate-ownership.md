@@ -3,11 +3,11 @@ id: ADR-005
 title: "Original guardian-gate ownership: failed premises and the product architecture choice"
 type: ADR
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/ADR-007
+  - target: ix://agent-ix/filament-contract-codegen/ADR-007
     type: superseded_by
-  - target: ix://agent-ix/quire-contract-codegen/FR-028
+  - target: ix://agent-ix/filament-contract-codegen/FR-028
     type: relates_to
-  - target: ix://agent-ix/quire-contract-codegen/FR-017
+  - target: ix://agent-ix/filament-contract-codegen/FR-017
     type: relates_to
 ---
 # ADR-005: Original guardian-gate ownership: failed premises and the product architecture choice

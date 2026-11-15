@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Authentic QSL emission, public IR admission, then the constrained family.
+//! Authentic FSL emission, public IR admission, then the constrained family.
 
+use filament_contract_codegen::*;
 use qsl_replay::{
     call_site, ClauseName, DependencyInput, Identifier, SnapshotValue, SourceIdentity,
 };
-use quire_contract_codegen::*;
 use quire_contract_model::{
     CheckedNodeId, CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
     CheckedPackageV2ReadResult, CheckedTerm, StateClauseKind,
@@ -69,7 +69,7 @@ pub(super) fn fixture_source(bytes: Vec<u8>, name: &str, source: String) -> Fixt
         &DependencyInput::default(),
         &ClauseName(Identifier::new("Safe").unwrap()),
     )
-    .expect("authentic QSL clause emission");
+    .expect("authentic FSL clause emission");
     let mut evidence = CheckedPackageEvidence::new();
     evidence.support_feature("quire.value.complete/v1");
     evidence

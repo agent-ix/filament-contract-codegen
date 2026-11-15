@@ -9,7 +9,7 @@ review_set: base
 
 ## Summary
 
-Reviewed the exact FR-015 and TC-025 candidate diff against the base checklist. No applicable AssuranceProfile or review-selection mode exists under `spec/`. A QSL-emitted bounded `Sequence<IntRange>` `forall` package was admitted by Contract IR at f16d0fd in the focused fixture (1 passed); the current fixture does not exercise `exists` admission. Two scoped findings remain: the field-to-claim binding is not grounded by the fixture, and the changed criteria remain untagged in the computed matrix.
+Reviewed the exact FR-015 and TC-025 candidate diff against the base checklist. No applicable AssuranceProfile or review-selection mode exists under `spec/`. A FSL-emitted bounded `Sequence<IntRange>` `forall` package was admitted by Contract IR at f16d0fd in the focused fixture (1 passed); the current fixture does not exercise `exists` admission. Two scoped findings remain: the field-to-claim binding is not grounded by the fixture, and the changed criteria remain untagged in the computed matrix.
 
 ## Findings
 

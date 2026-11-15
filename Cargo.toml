@@ -1,13 +1,13 @@
 [package]
-name = "quire-contract-codegen"
+name = "filament-contract-codegen"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.98.1"
-description = "Deterministic Rust, property-test, proof, and evidence generation from Quire contracts."
+description = "Deterministic Rust, property-test, proof, and evidence generation from Filament contracts."
 authors = ["Peter Krenesky <kreneskyp@gmail.com>"]
 license = "AGPL-3.0-or-later"
 publish = false
-repository = "https://github.com/agent-ix/quire-contract-codegen"
+repository = "https://github.com/agent-ix/filament-contract-codegen"
 
 [workspace]
 
@@ -18,7 +18,7 @@ undocumented_unsafe_blocks = "deny"
 workspace = true
 
 [lib]
-name = "quire_contract_codegen"
+name = "filament_contract_codegen"
 path = "src/lib.rs"
 
 [[bin]]
@@ -31,15 +31,15 @@ ix-trace-rs = { version = "0.1", git = "https://github.com/agent-ix/ix-trace-rs"
 quire-exact = { git = "https://github.com/agent-ix/quire-exact", branch = "main" }
 quire-semantic-value = { git = "https://github.com/agent-ix/quire-semantic-value", branch = "main" }
 quire-contract-ir = { version = "0.1.0", git = "https://github.com/agent-ix/quire-contract-ir", branch = "main" }
-# The model items (`CheckedPackageV2`, `RequirementRef`, ...) come from quire-contract-model, a crate in
-# the same repository and the same lock entry as quire-contract-ir; the IR root crate is named only
+# The model items (`CheckedPackageV2`, `RequirementRef`, ...) come from filament-contract-model, a crate in
+# the same repository and the same lock entry as filament-contract-ir; the IR root crate is named only
 # for its `kani` module (IR AD-006 R3-C2).
 quire-contract-model = { version = "0.1.0", git = "https://github.com/agent-ix/quire-contract-ir", branch = "main" }
 quire-contract-runtime = { version = "0.1.0", git = "https://github.com/agent-ix/quire-contract-runtime", branch = "main" }
-# qsl-replay is the only QSL crate this repository depends on (QSL arch-lint T12-A); the
+# qsl-replay is the only QSL crate this repository depends on (FSL arch-lint T12-A); the
 # replay adapter in src/replay/function.rs builds its requests from `call_site` and the crate's own
 # re-exports and goes through its `replay` entry. Cargo.lock records the selected public source.
-qsl-replay = { version = "0.1.0", git = "https://github.com/agent-ix/quire-spec-language", branch = "main" }
+qsl-replay = { version = "0.1.0", git = "https://github.com/agent-ix/filament-spec-language", branch = "main" }
 quire-eval = { version = "0.1.0", git = "https://github.com/agent-ix/quire-eval", branch = "main" }
 # RFC 8785 encoding for CG artifact JSON, document content hashes, and fixed-shape records;
 # tracks `main` like the other first-party crates.

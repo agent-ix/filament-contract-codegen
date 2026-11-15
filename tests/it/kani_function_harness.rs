@@ -13,14 +13,14 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 
+use filament_contract_codegen::{
+    checked_composite_declarations, checked_function_declarations, generate_kani_function_harness,
+    select_checked_callable, CheckedFunctionResources, CheckedFunctionSource, KaniFunctionRequest,
+};
 use ix_trace_rs::trace;
 use qsl_replay::{
     acquire_checked_closure, CompileUnit, DependencyInput, ReplayLimits, SourceIdentity,
     StageLimits,
-};
-use quire_contract_codegen::{
-    checked_composite_declarations, checked_function_declarations, generate_kani_function_harness,
-    select_checked_callable, CheckedFunctionResources, CheckedFunctionSource, KaniFunctionRequest,
 };
 use quire_contract_model::{
     CheckedNodeId, CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
@@ -90,7 +90,7 @@ fn host_prepared(
     let CheckedPackageV2ReadResult::Admitted(package) =
         CheckedPackageV2::read(&bytes, CheckedPackageReadLimits::bounded(), &evidence)
     else {
-        panic!("Contract IR admits the QSL emission");
+        panic!("Contract IR admits the FSL emission");
     };
     let function = package
         .resolved_graph()
@@ -189,15 +189,15 @@ fn run_probe(label: &str, source: &str, name: &str, probe: &str) -> (String, Str
             let manifest = artifact.contents.replacen(
                 &format!(
                     "name = \"{}\"",
-                    quire_contract_codegen::EXACT_FUNCTION_CRATE_NAME
+                    filament_contract_codegen::EXACT_FUNCTION_CRATE_NAME
                 ),
                 &format!("name = \"{label}\""),
                 1,
             );
             manifest.replace(
-                "quire-contract-codegen = { git = \"https://github.com/agent-ix/quire-contract-codegen\", branch = \"main\" }",
+                "filament-contract-codegen = { git = \"https://github.com/agent-ix/filament-contract-codegen\", branch = \"main\" }",
                 &format!(
-                    "quire-contract-codegen = {{ path = {:?} }}",
+                    "filament-contract-codegen = {{ path = {:?} }}",
                     env!("CARGO_MANIFEST_DIR")
                 ),
             )

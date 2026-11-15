@@ -8,10 +8,10 @@ use std::{
     process::Command,
 };
 
-use ix_trace_rs::trace;
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     generate_bound_oracles, BoundOracleGeneration, BoundStrategyPopulation,
 };
+use ix_trace_rs::trace;
 use quire_contract_model::{ClauseId, ClauseRef, RequirementRef};
 use serde::Deserialize;
 

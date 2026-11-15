@@ -7,7 +7,7 @@ carries no claim.
 ## Method
 
 - Target: the generated scalar crate of one routed `div`, `rem` or `mod` claim, with the general
-  `rt::Integer` carrier (`ScalarIntegerRepresentation::General`), built from QSL source admitted
+  `rt::Integer` carrier (`ScalarIntegerRepresentation::General`), built from FSL source admitted
   through Contract IR (`tests/it/integer_division_harness.rs`, `Shape::generation`).
 - Backend arguments, in order: `-Z function-contracts --harness
   <module>::<proof> --exact --unwind 10 --solver cadical --output-format regular`, with the
@@ -17,7 +17,7 @@ carries no claim.
   `memory.peak`; both the wall time and the peak include the cargo build of the crate.
 - Unwind 10 for every run. A larger unwind only enlarges the formula, so it cannot turn a shape
   that did not finish into one that does.
-- Generator version 0.1.0, kernel (quire-exact) revision
+- Generator version 0.1.0, kernel (filament-exact) revision
   b81e595046c96739ef738a390dbe4b536db26e49, host titan, 2026-11-14. Tool versions are not
   recorded (QSL-406, EA-49).
 - Each harness is the healthy generated harness: two `i64` operands over the operand ranges,

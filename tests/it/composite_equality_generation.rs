@@ -16,7 +16,7 @@ use std::{collections::BTreeSet, fs, ops::Deref, path::PathBuf, process::Command
 
 use crate::common::panic_scan::{non_test_code, panic_tokens_in};
 use crate::scratch_crate::{runtime_dependency, TemporaryDirectory};
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     generate_composite_equality_oracles, ClaimDisposition, CompositeEqualityClaim,
     CompositeEqualityItem, CompositeEqualityLimits, CompositeEqualityOracles,
     CompositeEqualityRefusal, ContractRequestPosition, EqualityOperandDescriptor,
@@ -269,7 +269,8 @@ fn generate_with_context(
         .cloned()
         .map(|node_id| ContractRequestPosition::DriverItem {
             node_id,
-            result_selection: quire_contract_codegen::ContractDriverResultSelection::NotApplicable,
+            result_selection:
+                filament_contract_codegen::ContractDriverResultSelection::NotApplicable,
         })
         .collect::<Vec<_>>();
     roots.extend(
@@ -278,7 +279,7 @@ fn generate_with_context(
             .map(|node_id| ContractRequestPosition::ContextRoot { node_id }),
     );
     // Standalone primitive/early-refusal fixtures need no owner key. The legacy nominal
-    // corpus still requires genuine owner capabilities and remains QSL937 migration work;
+    // corpus still requires genuine owner capabilities and remains FSL937 migration work;
     // its original positive/precise assertions are intentionally not replaced by Missing.
     let output = generate_composite_equality_oracles(
         &admitted,
@@ -358,7 +359,7 @@ fn admitted_profile() -> CompleteLoweringProfileV2 {
     CompleteLoweringProfileV2 {
         reference: quire_contract_model::LoweringProfileRef {
             authority: "agent-ix".into(),
-            identity: "quire.codegen.composite-equality/v1".into(),
+            identity: "filament.codegen.composite-equality/v1".into(),
         },
         required_source_selections: Vec::new(),
         supported_tags: [
@@ -418,13 +419,13 @@ fn tc_029_ac32_direct_control_case_refusal_preserves_healthy_equality_sibling() 
 
     const BOOLEAN: u32 = 930_101;
     const EQUALITY: u32 = 930_102;
-    let qspec = PathBuf::from(std::env::var_os("QSPEC_DIR").expect("published QSpec checkout"));
+    let fspec = PathBuf::from(std::env::var_os("FSPEC_DIR").expect("published FSpec checkout"));
     let wire: serde_json::Value = serde_json::from_slice(
-        &fs::read(qspec.join("proposals/checked-package-v2/fixtures/positive-union-nodes.json"))
-            .expect("read authoritative QSpec fixture"),
+        &fs::read(fspec.join("proposals/checked-package-v2/fixtures/positive-union-nodes.json"))
+            .expect("read authoritative FSpec fixture"),
     )
-    .expect("QSpec fixture JSON");
-    let frame = qsl_replay::WireGraph::of_package_value(&wire).expect("QSpec wire context");
+    .expect("FSpec fixture JSON");
+    let frame = qsl_replay::WireGraph::of_package_value(&wire).expect("FSpec wire context");
     let nodes = wire["semantic_graph"]["nodes"].as_array().unwrap();
     let document_id = |position: usize| {
         frame
@@ -498,7 +499,7 @@ fn tc_029_ac32_direct_control_case_refusal_preserves_healthy_equality_sibling() 
     let (admission, _, ids) = PackageBuilder::from_wire(extended).read_resolved();
     let package = match admission {
         CheckedPackageV2ReadResult::Admitted(package) => *package,
-        other => panic!("extended QSpec fixture should admit: {other:?}"),
+        other => panic!("extended FSpec fixture should admit: {other:?}"),
     };
     let case_id = ids.resolve(&case_id);
     let equality_id = ids.resolve(&code_id(EQUALITY));
@@ -508,7 +509,7 @@ fn tc_029_ac32_direct_control_case_refusal_preserves_healthy_equality_sibling() 
         &CompleteLoweringProfileV2 {
             reference: LoweringProfileRef {
                 authority: "agent-ix".into(),
-                identity: "quire.codegen.composite-equality/v1".into(),
+                identity: "filament.codegen.composite-equality/v1".into(),
             },
             required_source_selections: Vec::new(),
             supported_tags: BTreeSet::from([
@@ -530,7 +531,7 @@ fn tc_029_ac32_direct_control_case_refusal_preserves_healthy_equality_sibling() 
         &ContractDependencies::new(),
     ) {
         ContractPackageReadResult::Admitted(package) => *package,
-        other => panic!("lowered QSpec sibling request should admit: {other:?}"),
+        other => panic!("lowered FSpec sibling request should admit: {other:?}"),
     };
     let case_item = CompositeEqualityItem {
         node_id: case_id.clone(),
@@ -547,7 +548,8 @@ fn tc_029_ac32_direct_control_case_refusal_preserves_healthy_equality_sibling() 
     let requests =
         [case_id.clone(), equality_id.clone()].map(|node_id| ContractRequestPosition::DriverItem {
             node_id,
-            result_selection: quire_contract_codegen::ContractDriverResultSelection::NotApplicable,
+            result_selection:
+                filament_contract_codegen::ContractDriverResultSelection::NotApplicable,
         });
     let combined = generate_composite_equality_oracles(
         &contract,
@@ -634,7 +636,7 @@ fn only_claim(oracles: &FixtureOracles, node: u32) -> &CompositeEqualityClaim {
 
 fn generated(
     claim: &CompositeEqualityClaim,
-) -> &quire_contract_codegen::GeneratedCompositeEqualityClaim {
+) -> &filament_contract_codegen::GeneratedCompositeEqualityClaim {
     match &claim.result {
         ClaimDisposition::Generated(generated) => generated,
         ClaimDisposition::Refused { refusal } => {
@@ -691,12 +693,12 @@ fn tc_029_ac24_recursive_list_and_tree_items_emit_one_oracle_each() {
 
 #[trace("FR-018-AC-24", "FR-018-AC-26", "FR-018-AC-27", "TC-029")]
 #[test]
-fn tc_029_public_qsl_recursive_items_generate_through_reader() {
+fn tc_029_public_fsl_recursive_items_generate_through_reader() {
     super::admitted_composite_equality::assert_authentic_recursive_item_generation();
 }
 
 /// A raw external fixture proves strict-reader admission and original shape only.
-/// It is never rewritten into a package authenticated by a QSL context.
+/// It is never rewritten into a package authenticated by a FSL context.
 fn assert_recursive_fixture_shapes(package: &CheckedPackageV2) {
     use quire_contract_model::CheckedNodeId;
     fn members(node: &CheckedSemanticNodeV2) -> Vec<serde_json::Value> {
@@ -780,11 +782,11 @@ fn assert_recursive_fixture_shapes(package: &CheckedPackageV2) {
 /// separate source-backed control and receives no credit from an unavailable fixture.
 #[trace("FR-018-AC-24", "FR-018-AC-26", "FR-018-AC-27", "TC-029")]
 #[test]
-fn tc_029_authoritative_qspec_recursive_items_generate_through_reader() {
+fn tc_029_authoritative_fspec_recursive_items_generate_through_reader() {
     const FIXTURE: &str = "proposals/checked-package-v2/fixtures/positive-recursive-records.json";
-    let Some(repo) = std::env::var_os("QSPEC_REPO").or_else(|| std::env::var_os("QSPEC_DIR"))
+    let Some(repo) = std::env::var_os("FSPEC_REPO").or_else(|| std::env::var_os("FSPEC_DIR"))
     else {
-        println!("UNAVAILABLE QSpec reader/shape conformance: neither QSPEC_REPO nor QSPEC_DIR is set; no conformance or public-generation credit");
+        println!("UNAVAILABLE FSpec reader/shape conformance: neither FSPEC_REPO nor FSPEC_DIR is set; no conformance or public-generation credit");
         return;
     };
     let output = Command::new("git")
@@ -793,17 +795,17 @@ fn tc_029_authoritative_qspec_recursive_items_generate_through_reader() {
         .arg("show")
         .arg(format!("origin/main:{FIXTURE}"))
         .output()
-        .expect("read authoritative QSpec fixture");
+        .expect("read authoritative FSpec fixture");
     assert!(
         output.status.success(),
-        "git show QSpec fixture: {}",
+        "git show FSpec fixture: {}",
         String::from_utf8_lossy(&output.stderr)
     );
     let mut evidence = quire_contract_model::CheckedPackageEvidence::new();
     evidence.support_feature("quire.value.complete/v1");
     let wire: serde_json::Value =
-        serde_json::from_slice(&output.stdout).expect("QSpec fixture JSON");
-    let canonical = serde_json::to_vec(&wire).expect("canonical QSpec fixture");
+        serde_json::from_slice(&output.stdout).expect("FSpec fixture JSON");
+    let canonical = serde_json::to_vec(&wire).expect("canonical FSpec fixture");
     let read = CheckedPackageV2::read(
         &canonical,
         quire_contract_model::CheckedPackageReadLimits::bounded(),
@@ -811,7 +813,7 @@ fn tc_029_authoritative_qspec_recursive_items_generate_through_reader() {
     );
     assert!(
         matches!(read, CheckedPackageV2ReadResult::Admitted(_)),
-        "original QSpec fixture: {read:?}"
+        "original FSpec fixture: {read:?}"
     );
     if let CheckedPackageV2ReadResult::Admitted(package) = &read {
         assert_recursive_fixture_shapes(package);
@@ -861,7 +863,7 @@ fn tc_029_ac20_byte_ceiling_has_failed_records_and_no_contract_package() {
     let lowered_length = lowered_package_length(
         &measured,
         &requested,
-        &measuring_profile(false, "quire.codegen.composite-equality/v1"),
+        &measuring_profile(false, "filament.codegen.composite-equality/v1"),
     );
     let ceiling = lowered_length - 1;
     assert!(
@@ -1387,7 +1389,7 @@ fn tc_029_ac7_each_family_gets_its_own_distinct_blocker() {
     assert!(matches!(
         refused(only_claim(&oracles, E_CALL)),
         CompositeEqualityRefusal::BlockedOnUpstream {
-            issue: UpstreamBlocker::QuireContractRuntime34,
+            issue: UpstreamBlocker::FilamentContractRuntime34,
             ..
         }
     ));
@@ -1622,7 +1624,7 @@ fn tc_029_ac11_two_operators_over_one_node_get_distinct_symbols_and_are_caller_d
         for claim in &claims {
             assert_eq!(
                 claim.operation.provenance,
-                quire_contract_codegen::CompositeOperationProvenance::CallerDeclared {
+                filament_contract_codegen::CompositeOperationProvenance::CallerDeclared {
                     blocked_on: UpstreamBlocker::OperationIdentityNotConsumed
                 }
             );
@@ -1719,7 +1721,7 @@ fn tc_029_ac12_manifest_is_unpublished_and_charge_free() {
         }
     }
 
-    let directory = TemporaryDirectory::new("quire-composite-equality-oracles");
+    let directory = TemporaryDirectory::new("filament-composite-equality-oracles");
     fs::create_dir_all(directory.path.join("src")).unwrap();
     for artifact in &oracles.artifacts {
         fs::write(directory.path.join(&artifact.path), &artifact.contents).unwrap();
@@ -1826,7 +1828,7 @@ fn tc_029_ac13_declaration_keys_are_the_reached_v2_node_ids() {
         let profile = CompleteLoweringProfileV2 {
             reference: quire_contract_model::LoweringProfileRef {
                 authority: "agent-ix".into(),
-                identity: "quire.codegen.composite-equality/v1".into(),
+                identity: "filament.codegen.composite-equality/v1".into(),
             },
             required_source_selections: Vec::new(),
             supported_tags: CheckedNodeTag::ALL.iter().copied().collect::<BTreeSet<_>>(),
@@ -1866,7 +1868,7 @@ fn genuine_tuple_source(members: &str, extras: &str) -> (CompositeEqualityOracle
 }
 
 /// The corpus tuple `(Int[-100, 100], Text[0, 16; nfc])` names the
-/// `text_bounds` node as its text position, as QSL emits a text type; the generated declaration
+/// `text_bounds` node as its text position, as FSL emits a text type; the generated declaration
 /// is that tuple, read from the bound's own members.
 #[trace("FR-018-AC-16", "TC-029")]
 #[test]

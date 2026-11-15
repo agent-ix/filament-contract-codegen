@@ -10,7 +10,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use quire_contract_codegen::KaniInstallation;
+use filament_contract_codegen::KaniInstallation;
 
 /// One test-only launcher and the stdout it records from the same invocation.
 pub(crate) struct KaniStdoutCapture {

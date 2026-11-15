@@ -1,10 +1,20 @@
 //! Source-backed symbolic collection and graph obligation fixtures.
 //!
-//! QSL emits every admitted package through its public `call_site` facade from
+//! FSL emits every admitted package through its public `call_site` facade from
 //! native source and a test-authored domain model document. No Contract IR
 //! package wire is constructed in this module.
 
 use crate::scratch_crate::{runtime_dependency, write_manifest, TemporaryDirectory};
+use filament_contract_codegen::{
+    classify_kani_run, execute_kani_obligation, negotiate_kani_obligations, run_terminal_value,
+    select_counterexample, settle_v2_collection_precondition_falsification,
+    CollectionElementIdentity, CollectionKindIdentity, CollectionPredicateIdentity,
+    InvalidObligationItem, KaniCollectionObligationHarness, KaniExecutableHarness,
+    KaniExecutionRequest, KaniInstallation, KaniObligationOutcome, KaniObligationRequest,
+    KaniRunOutcome, KaniV2ClauseObligationHarness, ObligationDisposition, ObligationItem,
+    ProofCeilings, ProofDependencyKind, ProofDependencyRequest, ProofDependencyState,
+    ProofReadiness, UnsupportedObligation,
+};
 use ix_trace_rs::trace;
 use qsl_replay::{
     call_site, evaluate_clause, object_reference_witness, replay, write_object_environment,
@@ -14,16 +24,6 @@ use qsl_replay::{
     ModelNormalizationLimits, ObligationIdentity, ObservationLimits, QualifiedName, ReplayLimits,
     ReplayRequestWire, ReplayResult, ReplaySource, RequestTargetWire, ScalarLimits, SelectedObject,
     SnapshotValue, SourceIdentity, SpineLimits, StateEnvironment, WitnessValue,
-};
-use quire_contract_codegen::{
-    classify_kani_run, execute_kani_obligation, negotiate_kani_obligations, run_terminal_value,
-    select_counterexample, settle_v2_collection_precondition_falsification,
-    CollectionElementIdentity, CollectionKindIdentity, CollectionPredicateIdentity,
-    InvalidObligationItem, KaniCollectionObligationHarness, KaniExecutableHarness,
-    KaniExecutionRequest, KaniInstallation, KaniObligationOutcome, KaniObligationRequest,
-    KaniRunOutcome, KaniV2ClauseObligationHarness, ObligationDisposition, ObligationItem,
-    ProofCeilings, ProofDependencyKind, ProofDependencyRequest, ProofDependencyState,
-    ProofReadiness, UnsupportedObligation,
 };
 use quire_contract_model::{
     CheckedMemberType, CheckedModelObjectFields, CheckedNodeId, CheckedNodePathSegment,
@@ -245,7 +245,7 @@ fn model_document_with_step() -> Value {
         "post": [],
         "origin": {"source": {
             "sourceIdentity": SOURCE_ID,
-            "path": "spec.qspec",
+            "path": "spec.fspec",
             "startLine": 1,
             "startColumn": 1
         }},
@@ -258,7 +258,7 @@ fn model_document_with_step() -> Value {
     document
 }
 
-// `deref(input)` is object navigation, admitted under QSL's model layer.
+// `deref(input)` is object navigation, admitted under FSL's model layer.
 fn source_unit_with_body(body: &str) -> String {
     format!(
         "language \"ix:native\" edition \"1-draft\";\n\
@@ -295,7 +295,7 @@ fn emitted() -> Emitted {
 
 fn emitted_from_document_and_body(document: Value, body: &str) -> Emitted {
     try_emitted_from_document_and_body(document, body)
-        .unwrap_or_else(|error| panic!("QSL/IR admits the source-authored fixture: {error}"))
+        .unwrap_or_else(|error| panic!("FSL/IR admits the source-authored fixture: {error}"))
 }
 
 fn collection_identity(
@@ -303,7 +303,7 @@ fn collection_identity(
     operation: &str,
     subject_path: &str,
     unwind: u32,
-) -> quire_contract_codegen::CollectionObligationIdentity {
+) -> filament_contract_codegen::CollectionObligationIdentity {
     let function_id = fixture
         .package
         .resolved_graph()
@@ -482,7 +482,7 @@ fn collection_item_outcome(
     .expect("valid collection request")
 }
 
-/// QSL-admitted collection claims still emit a symbolic V2 harness after finite corpus retirement.
+/// FSL-admitted collection claims still emit a symbolic V2 harness after finite corpus retirement.
 #[trace("FR-015-AC-110", "TC-023", "TC-025")]
 #[test]
 fn collection_claim_uses_the_v2_symbolic_harness_without_a_finite_corpus_request() {
@@ -514,7 +514,7 @@ fn collection_claim_uses_the_v2_symbolic_harness_without_a_finite_corpus_request
 }
 
 fn write_collection_scratch(harness: &KaniCollectionObligationHarness) -> TemporaryDirectory {
-    let scratch = TemporaryDirectory::new("quire-kani-symbolic-domains-collection");
+    let scratch = TemporaryDirectory::new("filament-kani-symbolic-domains-collection");
     let directory = &scratch.path;
     fs::write(directory.join("src/lib.rs"), &harness.rust.contents)
         .expect("write the generated artifact byte for byte");
@@ -537,7 +537,7 @@ fn run_collection_kani(
     installation: &KaniInstallation,
     harness: &KaniCollectionObligationHarness,
     label: &str,
-) -> quire_contract_codegen::KaniExecutionEvidence {
+) -> filament_contract_codegen::KaniExecutionEvidence {
     let scratch = write_collection_scratch(harness);
     let crate_directory = &scratch.path;
     let cancel = quire_exact::Cancel::new();
@@ -623,7 +623,7 @@ fn replay_collection_function(
         &DependencyInput::default(),
         &selection,
     )
-    .expect("the exact source function remains callable by QSL");
+    .expect("the exact source function remains callable by FSL");
 
     let model = EnvironmentModel {
         identity: "ir268.test/domain".to_owned(),
@@ -687,7 +687,7 @@ fn replay_collection_function(
             }],
         }],
     )
-    .expect("QSL writes the environment through its authoritative builder");
+    .expect("FSL writes the environment through its authoritative builder");
 
     let request = ReplayRequestWire {
         package: qsl_replay::ReplayPackage::read(&site.package, u64::MAX).unwrap(),
@@ -716,7 +716,7 @@ fn replay_collection_function(
             environment.provision_document(),
         ],
     };
-    replay(request, ReplayLimits::default()).expect("QSL admits and executes the native replay")
+    replay(request, ReplayLimits::default()).expect("FSL admits and executes the native replay")
 }
 
 fn assert_native_collection_result(
@@ -836,7 +836,7 @@ fn admit_emitted(
         CheckedPackageV2ReadResult::Admitted(package) => *package,
         other => {
             return Err(format!(
-                "QSL's emitted symbolic fixture is not admitted: {other:?}"
+                "FSL's emitted symbolic fixture is not admitted: {other:?}"
             ))
         }
     };
@@ -891,7 +891,7 @@ fn admitted_state_clause_collection_preserves_order_and_uniqueness() {
                 .structural_key(&node.node_id)
                 .is_some_and(|key| node_key_matches(key, fixture.function_key.view()))
         })
-        .expect("selected QSL clause");
+        .expect("selected FSL clause");
     assert_eq!(clause.semantic_form.as_ref(), "state_clause");
     let harness = collection_harness(&fixture, "quire.op.collection.forall");
     assert_eq!(harness.identity.function_id, clause.node_id);
@@ -985,7 +985,8 @@ fn negated_state_clause_quantifier_is_not_an_independent_collection_claim() {
         records[0].disposition,
         ObligationDisposition::Unsupported {
             reason: UnsupportedObligation::CollectionClaimNotRendered {
-                reason: quire_contract_codegen::CollectionUnsupportedReason::UnsupportedClaimShape,
+                reason:
+                    filament_contract_codegen::CollectionUnsupportedReason::UnsupportedClaimShape,
                 ..
             }
         }
@@ -1029,7 +1030,7 @@ fn operation_and_constraint_clauses_do_not_get_standalone_collection_proofs() {
             ObligationDisposition::Unsupported {
                 reason: UnsupportedObligation::CollectionClaimNotRendered {
                     reason:
-                        quire_contract_codegen::CollectionUnsupportedReason::UnsupportedClaimShape,
+                        filament_contract_codegen::CollectionUnsupportedReason::UnsupportedClaimShape,
                     ..
                 }
             }
@@ -1040,7 +1041,7 @@ fn operation_and_constraint_clauses_do_not_get_standalone_collection_proofs() {
 
 #[trace("FR-015-AC-96", "TC-025")]
 #[test]
-fn qsl_emits_and_ir_admits_the_authored_collection_and_reference_shapes() {
+fn fsl_emits_and_ir_admits_the_authored_collection_and_reference_shapes() {
     let fixture = emitted();
     assert!(!fixture.package.name().is_empty());
     let forall = fixture
@@ -1049,14 +1050,14 @@ fn qsl_emits_and_ir_admits_the_authored_collection_and_reference_shapes() {
         .nodes
         .iter()
         .find(|node| application_identity(node) == Some("quire.op.collection.forall"))
-        .expect("QSL lowered the source forall to its catalogued operation");
+        .expect("FSL lowered the source forall to its catalogued operation");
     let exists = fixture
         .package
         .resolved_graph()
         .nodes
         .iter()
         .find(|node| application_identity(node) == Some("quire.op.collection.exists"))
-        .expect("QSL lowered the source exists to its catalogued operation");
+        .expect("FSL lowered the source exists to its catalogued operation");
     let collection_id = argument_target(forall, 0).expect("forall collection operand identity");
     let collection_node = fixture
         .package
@@ -1162,7 +1163,7 @@ fn qsl_emits_and_ir_admits_the_authored_collection_and_reference_shapes() {
                 .structural_key(&node.node_id)
                 .is_some_and(|key| node_key_matches(key, fixture.function_key.view()))
         })
-        .expect("QSL FunctionSite identity names an admitted function node");
+        .expect("FSL FunctionSite identity names an admitted function node");
     let Some(CheckedTerm::Reference { target }) = named_member(function, "body") else {
         panic!("the admitted function body has a target identity");
     };
@@ -1262,7 +1263,7 @@ fn negotiation_renders_the_selected_sequence_claims_deterministically() {
             .nodes
             .iter()
             .find(|node| application_identity(node) == Some(operation))
-            .expect("the selected QSL quantifier exists")
+            .expect("the selected FSL quantifier exists")
             .node_id
             .clone();
         let item = ObligationItem::CollectionClaim {
@@ -1344,7 +1345,7 @@ fn negotiation_renders_the_selected_sequence_claims_deterministically() {
         assert_eq!(harness.identity.subject_path, "crate::unused");
         assert_eq!(
             harness.identity.solver,
-            quire_contract_codegen::KaniSolver::Cadical
+            filament_contract_codegen::KaniSolver::Cadical
         );
         assert_eq!(harness.identity.unwind, 8);
         assert_eq!(harness.identity.field_name, "items");
@@ -1526,7 +1527,7 @@ fn collection_claims_nested_under_not_or_disjunction_are_refused() {
             records[0].disposition,
             ObligationDisposition::Unsupported {
                 reason: UnsupportedObligation::CollectionClaimNotRendered {
-                    reason: quire_contract_codegen::CollectionUnsupportedReason::UnsupportedClaimShape,
+                    reason: filament_contract_codegen::CollectionUnsupportedReason::UnsupportedClaimShape,
                     ..
                 }
             }
@@ -1552,7 +1553,7 @@ fn collection_unwind_must_cover_maximum_length_and_loop_exit() {
         records[0].disposition,
         ObligationDisposition::Unsupported {
             reason: UnsupportedObligation::CollectionClaimNotRendered {
-                reason: quire_contract_codegen::CollectionUnsupportedReason::UnwindBelowCollectionBound {
+                reason: filament_contract_codegen::CollectionUnsupportedReason::UnwindBelowCollectionBound {
                     required: 4,
                     supplied: 3,
                 },
@@ -1892,7 +1893,7 @@ fn precondition_fixture_with_model(document: Value, body: &str) -> Emitted {
         "pre CollectionReady using v on M::Node::step",
         body,
     )
-    .expect("QSL emits and IR admits the authored precondition")
+    .expect("FSL emits and IR admits the authored precondition")
 }
 
 fn precondition_collection_outcome(
@@ -2248,11 +2249,11 @@ fn collection_totality_playback_binds_the_generated_assertion_in_the_default_lan
         harness.identity.module_symbol.as_str(),
         harness.identity.harness_symbol.as_str(),
     );
-    let limits = quire_contract_codegen::WitnessDecodeLimits {
+    let limits = filament_contract_codegen::WitnessDecodeLimits {
         bytes: 4096,
         values: 7,
     };
-    let playback = quire_contract_codegen::parse_assertion_playback(
+    let playback = filament_contract_codegen::parse_assertion_playback(
         &transcript,
         harness.identity.harness_symbol.as_str(),
         harness.identity.module_symbol.as_str(),
@@ -2275,13 +2276,13 @@ fn collection_totality_playback_binds_the_generated_assertion_in_the_default_lan
     );
     assert!(matches!(
         settlement,
-        quire_contract_codegen::ReplaySettlement::CgDefect
+        filament_contract_codegen::ReplaySettlement::CgDefect
     ));
     let changed = transcript.replace(
         "the selected precondition completes a Boolean",
         "a different assertion",
     );
-    let playback = quire_contract_codegen::parse_assertion_playback(
+    let playback = filament_contract_codegen::parse_assertion_playback(
         &changed,
         harness.identity.harness_symbol.as_str(),
         harness.identity.module_symbol.as_str(),
@@ -2293,8 +2294,8 @@ fn collection_totality_playback_binds_the_generated_assertion_in_the_default_lan
         .expect_err("a different assertion is no totality witness");
     assert_eq!(error.code, "cg_witness_assertion_mismatch");
     assert!(matches!(
-        quire_contract_codegen::ReplaySettlement::from(&error),
-        quire_contract_codegen::ReplaySettlement::CgDefect
+        filament_contract_codegen::ReplaySettlement::from(&error),
+        filament_contract_codegen::ReplaySettlement::CgDefect
     ));
 }
 
@@ -2506,7 +2507,7 @@ fn precondition_collection_source_refusals_emit_no_harness() {
     assert!(v2_clause_harnesses.is_empty() && collection_harnesses.is_empty());
     assert!(matches!(&records[0].disposition, ObligationDisposition::Unsupported {
         reason: UnsupportedObligation::CollectionClaimNotRendered {
-            reason: quire_contract_codegen::CollectionUnsupportedReason::UnwindBelowCollectionBound { .. }, ..
+            reason: filament_contract_codegen::CollectionUnsupportedReason::UnwindBelowCollectionBound { .. }, ..
         }
     }));
 
@@ -2632,7 +2633,8 @@ fn precondition_collection_source_refusals_emit_no_harness() {
         &records[0].disposition,
         ObligationDisposition::Unsupported {
             reason: UnsupportedObligation::CollectionClaimNotRendered {
-                reason: quire_contract_codegen::CollectionUnsupportedReason::UnsupportedFieldType,
+                reason:
+                    filament_contract_codegen::CollectionUnsupportedReason::UnsupportedFieldType,
                 ..
             }
         }
@@ -2663,7 +2665,7 @@ fn real_kani_collection_precondition_distinguishes_totality_from_satisfiability(
             &scratch.path,
             &format!(
                 "[package]\nname = \"generated-kani-precondition\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nquire-exact = {{ {} }}\n\n[workspace]\n",
-                runtime_dependency(&["exact"]), quire_contract_codegen::EXACT_DEPENDENCY_SOURCE
+                runtime_dependency(&["exact"]), filament_contract_codegen::EXACT_DEPENDENCY_SOURCE
             ),
         );
         fs::write(
@@ -2689,8 +2691,9 @@ fn real_kani_collection_precondition_distinguishes_totality_from_satisfiability(
     );
     assert_eq!(healthy.outcome, KaniRunOutcome::Verified, "{healthy:?}");
     assert!(healthy.checks.iter().any(|check| {
-        check.status == quire_contract_codegen::KaniCheckStatus::Success
-            && check.class == quire_contract_codegen::KaniCheckClass::from("assertion".to_owned())
+        check.status == filament_contract_codegen::KaniCheckStatus::Success
+            && check.class
+                == filament_contract_codegen::KaniCheckClass::from("assertion".to_owned())
     }));
 
     let impossible = run(
@@ -2719,7 +2722,7 @@ fn real_kani_collection_precondition_distinguishes_totality_from_satisfiability(
             &scratch.path,
             &format!(
                 "[package]\nname = \"generated-kani-precondition-mutant\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nquire-exact = {{ {} }}\n\n[workspace]\n",
-                runtime_dependency(&["exact"]), quire_contract_codegen::EXACT_DEPENDENCY_SOURCE
+                runtime_dependency(&["exact"]), filament_contract_codegen::EXACT_DEPENDENCY_SOURCE
             ),
         );
         fs::write(
@@ -2750,13 +2753,13 @@ fn real_kani_collection_precondition_distinguishes_totality_from_satisfiability(
             output.status.success(),
             Some(&report),
             select_counterexample(&transcript, None),
-            Some(quire_contract_codegen::ObligationKind::Precondition),
+            Some(filament_contract_codegen::ObligationKind::Precondition),
         )
         .unwrap_or_else(|refusal| panic!("{variant}: Kani refused the report: {refusal:?}"));
         let KaniRunOutcome::Falsified { counterexample } = &classified.outcome else {
             panic!("{variant}: mutated oracle must falsify totality: {classified:?}\n{transcript}");
         };
-        let playback = quire_contract_codegen::parse_assertion_playback(
+        let playback = filament_contract_codegen::parse_assertion_playback(
             counterexample,
             "collection precondition",
             variant,
@@ -2767,7 +2770,7 @@ fn real_kani_collection_precondition_distinguishes_totality_from_satisfiability(
         let (decoded, settlement) = settle_v2_collection_precondition_falsification(
             &harness,
             &playback,
-            quire_contract_codegen::WitnessDecodeLimits {
+            filament_contract_codegen::WitnessDecodeLimits {
                 bytes: 64 * 1024,
                 values: 7,
             },
@@ -2806,7 +2809,7 @@ fn real_kani_collection_precondition_distinguishes_totality_from_satisfiability(
             1,
         );
         assert_ne!(wrong_assertion, counterexample.as_str());
-        let wrong_playback = quire_contract_codegen::parse_assertion_playback(
+        let wrong_playback = filament_contract_codegen::parse_assertion_playback(
             &wrong_assertion,
             "collection precondition",
             variant,
@@ -2817,7 +2820,7 @@ fn real_kani_collection_precondition_distinguishes_totality_from_satisfiability(
         let decode_error = settle_v2_collection_precondition_falsification(
             &harness,
             &wrong_playback,
-            quire_contract_codegen::WitnessDecodeLimits {
+            filament_contract_codegen::WitnessDecodeLimits {
                 bytes: 64 * 1024,
                 values: 7,
             },
@@ -2864,7 +2867,8 @@ fn unsupported_set_form_precedes_unique_capacity_refusal() {
         records[0].disposition,
         ObligationDisposition::Unsupported {
             reason: UnsupportedObligation::CollectionClaimNotRendered {
-                reason: quire_contract_codegen::CollectionUnsupportedReason::UnsupportedFieldType,
+                reason:
+                    filament_contract_codegen::CollectionUnsupportedReason::UnsupportedFieldType,
                 ..
             }
         }
@@ -2977,7 +2981,7 @@ fn admitted_unrepresentable_element_endpoint_precedes_unique_capacity() {
         ObligationDisposition::Unsupported {
             reason: UnsupportedObligation::CollectionClaimNotRendered {
                 reason:
-                    quire_contract_codegen::CollectionUnsupportedReason::DomainNotRepresentableInI64,
+                    filament_contract_codegen::CollectionUnsupportedReason::DomainNotRepresentableInI64,
                 ..
             }
         }
@@ -3233,7 +3237,7 @@ fn assert_ordered_set_capacity_refusal(
         &records[0].disposition,
         ObligationDisposition::Unsupported {
             reason: UnsupportedObligation::CollectionClaimNotRendered {
-                reason: quire_contract_codegen::CollectionUnsupportedReason::UniqueElementCapacityExceeded {
+                reason: filament_contract_codegen::CollectionUnsupportedReason::UniqueElementCapacityExceeded {
                     capacity: actual_capacity,
                     declared_maximum: actual_maximum,
                 },
@@ -3299,7 +3303,8 @@ fn unsupported_collection_predicate_is_refused_without_harness() {
         records[0].disposition,
         ObligationDisposition::Unsupported {
             reason: UnsupportedObligation::CollectionClaimNotRendered {
-                reason: quire_contract_codegen::CollectionUnsupportedReason::UnsupportedClaimShape,
+                reason:
+                    filament_contract_codegen::CollectionUnsupportedReason::UnsupportedClaimShape,
                 ..
             }
         }
@@ -3362,7 +3367,7 @@ fn collection_domain_larger_than_the_request_memory_ceiling_is_refused_without_h
         records[0].disposition,
         ObligationDisposition::Unsupported {
             reason: UnsupportedObligation::CollectionClaimNotRendered {
-                reason: quire_contract_codegen::CollectionUnsupportedReason::SymbolicDomainExceedsMemoryCeiling {
+                reason: filament_contract_codegen::CollectionUnsupportedReason::SymbolicDomainExceedsMemoryCeiling {
                     minimum_required_bytes: 32,
                     ceiling_bytes: 31,
                 },
@@ -3399,7 +3404,7 @@ fn canonical_model_wire_rejects_cardinality_above_i64() {
 
 #[trace("FR-015-AC-97", "FR-015-AC-102", "TC-025")]
 #[test]
-fn qsl_admitted_collection_without_an_upper_bound_requires_bound_without_harness() {
+fn fsl_admitted_collection_without_an_upper_bound_requires_bound_without_harness() {
     let mut document = model_document();
     let node = document["types"]
         .as_array_mut()
@@ -3422,7 +3427,7 @@ fn qsl_admitted_collection_without_an_upper_bound_requires_bound_without_harness
         document,
         "forall(item in deref(input).items: item >= 0)",
     )
-    .expect("QSL admits an optional lower bound when the minimum is zero");
+    .expect("FSL admits an optional lower bound when the minimum is zero");
     assert!(matches!(
         fixture.fields.field("items").unwrap().member_type(),
         Some(CheckedMemberType::Collection { bounds: None, .. })
@@ -3530,7 +3535,8 @@ fn unbounded_sequence_of_reference_elements_is_unsupported_not_requires_bound() 
         records[0].disposition,
         ObligationDisposition::Unsupported {
             reason: UnsupportedObligation::CollectionClaimNotRendered {
-                reason: quire_contract_codegen::CollectionUnsupportedReason::UnsupportedFieldType,
+                reason:
+                    filament_contract_codegen::CollectionUnsupportedReason::UnsupportedFieldType,
                 ..
             }
         }
@@ -3540,7 +3546,7 @@ fn unbounded_sequence_of_reference_elements_is_unsupported_not_requires_bound() 
 
 #[trace("FR-015-AC-97", "TC-025")]
 #[test]
-fn qsl_rejects_a_missing_upper_bound_with_a_positive_minimum() {
+fn fsl_rejects_a_missing_upper_bound_with_a_positive_minimum() {
     let mut document = model_document();
     let node = document["types"]
         .as_array_mut()
@@ -3572,7 +3578,7 @@ fn qsl_rejects_a_missing_upper_bound_with_a_positive_minimum() {
 
 #[trace("FR-015-AC-97", "FR-015-AC-102", "TC-025")]
 #[test]
-fn finite_sequence_of_unbounded_integer_elements_requires_bound_when_qsl_admits_it() {
+fn finite_sequence_of_unbounded_integer_elements_requires_bound_when_fsl_admits_it() {
     let mut document = model_document();
     let node = document["types"]
         .as_array_mut()
@@ -3591,7 +3597,7 @@ fn finite_sequence_of_unbounded_integer_elements_requires_bound_when_qsl_admits_
         document,
         "forall(item in deref(input).items: item >= 0) and exists(item in deref(input).items: item = 2)",
     )
-    .unwrap_or_else(|error| panic!("QSL/IR unbounded element source route: {error}"));
+    .unwrap_or_else(|error| panic!("FSL/IR unbounded element source route: {error}"));
     assert!(matches!(
         fixture.fields.field("items").unwrap().member_type(),
         Some(CheckedMemberType::Collection {
@@ -3707,7 +3713,7 @@ fn bounded_sequences_of_string_uuid_and_timestamp_require_element_bounds() {
             document,
             "forall(item in deref(input).items: true)",
         )
-        .unwrap_or_else(|error| panic!("QSL admits Sequence<{expected}>: {error}"));
+        .unwrap_or_else(|error| panic!("FSL admits Sequence<{expected}>: {error}"));
         let CheckedMemberType::Collection { element, .. } = fixture
             .fields
             .field("items")
@@ -3827,7 +3833,7 @@ fn tc_025_real_kani_collection_claim_verifies_and_mutated_claim_falsifies() {
     assert_eq!(healthy_evidence.solver, healthy_harness.identity.solver);
     assert_native_collection_result(&healthy, &[1, 2], CollectionKind::Sequence, true);
 
-    // This is a source-authored claim mutation, recompiled and admitted by QSL, then passed
+    // This is a source-authored claim mutation, recompiled and admitted by FSL, then passed
     // through the same generator. Its counterexample uses the selected field's in-domain 0.
     let mutated = emitted_from_document_and_body(
         model_document(),
@@ -4037,7 +4043,8 @@ fn collection_negotiation_accounts_for_each_supported_or_refused_item() {
         records[1].disposition,
         ObligationDisposition::Unsupported {
             reason: UnsupportedObligation::CollectionClaimNotRendered {
-                reason: quire_contract_codegen::CollectionUnsupportedReason::UnsupportedClaimShape,
+                reason:
+                    filament_contract_codegen::CollectionUnsupportedReason::UnsupportedClaimShape,
                 ..
             }
         }

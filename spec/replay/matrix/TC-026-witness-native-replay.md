@@ -3,9 +3,9 @@ id: TC-026
 title: "Verify bounded witness decoding and native replay"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-016
+  - target: ix://agent-ix/filament-contract-codegen/FR-016
     type: verifies
-  - target: ix://agent-ix/quire-specification/TC-219
+  - target: ix://agent-ix/filament-specification/TC-219
     type: references
 ---
 # TC-026: Verify bounded witness decoding and native replay
@@ -58,7 +58,7 @@ For FR-016-AC-26 to AC-28, build the replay request for a function with two para
 listed in reverse identifier order. Capture the producer's typed structural
 `ObligationIdentity(NodeKey, Option<ModelIdentity>, ordinal)` and verify the request carries it
 unchanged. Compare the selected function occurrence, kind and every parameter identity/domain
-in ascending identifier order against the independently selected obligation record before QSL
+in ascending identifier order against the independently selected obligation record before FSL
 invocation. Refuse a missing argument, unbounded integer and bounded Boolean before replay.
 Build a second function with the same parameters, recompile the first after comment, blank-line
 and source-span edits, change its kind and one argument domain while holding its structural
@@ -77,8 +77,8 @@ its imported identity and proved unit fixed while changing one replay request
 source reference to another valid provisioned source. Also remove, add,
 reorder and change an identity in request entries independently. Compare every
 request entry's identity and complete `sources` list against the admitted
-selection before QSL dispatch. Assert a typed CG dependency-selection mismatch
-refusal and no QSL replay call or verdict for each mismatch, without any
+selection before FSL dispatch. Assert a typed CG dependency-selection mismatch
+refusal and no FSL replay call or verdict for each mismatch, without any
 same-identity source substitution. The unchanged request passes the guard
 (FR-016-AC-30).
 Build a replay
@@ -105,7 +105,7 @@ playback in that run's stdout. A valid replacement after classification fails th
 before replay; healthy verification, the original witness-point replay and its neighbour
 control still pass. In the multi-block selection control, the cover, other-harness and later
 same-harness assertion blocks cannot replace the first eligible target assertion block.
-The request carries the producer's exact typed structural identity and QSL admits the
+The request carries the producer's exact typed structural identity and FSL admits the
 matched request; CG creates no preimage or digest. Distinct functions have distinct nodes;
 comment, blank-line, source-span and unrelated-declaration edits preserving node/model/ordinal
 preserve identity. Different producer ordinals distinguish obligations on one node/model.
@@ -117,7 +117,7 @@ lock wire member (FR-016-AC-29). CG matches each request dependency identity
 and complete source-reference list to the independent admitted selection
 before dispatch. Every request-only mismatch, including another valid
 provisioned source under the same imported identity, yields a typed CG
-selection-mismatch refusal without QSL dispatch or a replay verdict; the
+selection-mismatch refusal without FSL dispatch or a replay verdict; the
 unchanged request passes the guard (FR-016-AC-30).
 A lock whose only defect is a repeated dependency identity is refused with
 `DependencyLockError::Input`, code `invalid_package`, cause `conflicting-definition`, and the
@@ -127,10 +127,10 @@ error has no `Duplicate` variant (AC-24, planned).
 
 FR-016-AC-24 is planned (IR-465): the test that exercises it,
 `tc_026_a_lock_repeating_a_dependency_is_refused`, today expects the `Duplicate` error and changes
-with the code, which deletes the builder's own pre-check and the `Duplicate` variant so QSL's
-constructor refuses. Because QSL checks libraries in supply order (for each, an empty identity,
+with the code, which deletes the builder's own pre-check and the `Duplicate` variant so FSL's
+constructor refuses. Because FSL checks libraries in supply order (for each, an empty identity,
 then a repeated identity, then a shared source owner), a lock with several defects reports
-whichever QSL meets first; AC-24 is therefore limited to a lock whose only defect is the repeated
+whichever FSL meets first; AC-24 is therefore limited to a lock whose only defect is the repeated
 identity.
 
 The old digest controls are retired. Their existing tests are historical
@@ -139,7 +139,7 @@ comparison tests under IR-1079.
 
 Partial. FR-016-AC-9 through AC-11 are implemented and tested in the default suite
 (`tests/it/skeleton_spine.rs`): a falsifying input replays through
-`qsl_replay::replay` and settles the violation, a witness at which the function
+`fsl_replay::replay` and settles the violation, a witness at which the function
 holds and a healthy twin settle `inconclusive` naming both verdicts, and each
 adapter refusal is its own typed error. Its former ignored Kani lane used the retired V1
 `BoundClause` generator and no longer supplies installed-prover evidence. IR-1047 owns the
@@ -162,14 +162,14 @@ to that transcript rests on the `Verified` then `Falsified` outcome assertions. 
 process-stdout test oracle described above is planned under IR-604; its mutation control must
 turn the lane red for a replacement made immediately after `Falsified` classification.
 
-What stays unbacked: the native twin is hand-mirrored QSL source, not derived from the contract or
+What stays unbacked: the native twin is hand-mirrored FSL source, not derived from the contract or
 the Rust subject, and the identity fixture is built directly in the test, so the contract-to-Contract-IR
 and generated-harness steps do not run. The retired installed-Kani spine is absent from the Kani
 lane; NFR-006 still requires `make kani-gate` for a Kani-touching PR. The default suite pins the
 replay end and decoder against a synthetic transcript only. FR-016-AC-6 is covered by tagged witness unit,
 spine, frame, state-clause and bounded-corpus tests; the bounded-corpus test runs in the Kani lane.
 Former FR-016-AC-7 is retired under IR-604 because Kani supplies no scalar-charge,
-consumed-counter or replay-limit counterpart to QSL's accounting result.
+consumed-counter or replay-limit counterpart to FSL's accounting result.
 FR-016-AC-12 is covered by
 `tc_026_an_executor_fault_remains_a_typed_replay_refusal`. FR-029-AC-10 already
 tests the terminal mapping for a fault wrapped in `SpineReplayError::Refused`.
@@ -220,6 +220,6 @@ evidence in `tests/it/skeleton_spine.rs`: the selected dependency is compiled
 and evaluated, a missing selection and an unselected library refuse, and
 shared source-owner controls refuse. The old request's dependency `package_id`
 field and mismatch control do not qualify retired AC-15 or AC-17.
-Replacement AC-29 is planned for the selected QSL wire. AC-30 is planned for
+Replacement AC-29 is planned for the selected FSL wire. AC-30 is planned for
 CG's independent pre-replay comparison with the admitted package/dependency
 source selection.

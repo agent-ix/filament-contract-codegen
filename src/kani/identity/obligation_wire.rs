@@ -1,4 +1,4 @@
-//! The persisted wire form of a state-frame harness's QSL [`ObligationIdentity`]
+//! The persisted wire form of a state-frame harness's FSL [`ObligationIdentity`]
 //! (FR-015-AC-138).
 //!
 //! The pinned `qsl_replay::ObligationIdentity` derives no serde, so this form is CG's own:

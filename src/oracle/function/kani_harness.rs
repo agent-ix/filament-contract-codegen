@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! FR-021-AC-44 and AC-46: the Kani-harness entry (IR-1244).
 //!
-//! The strict reader, QSL's acquisition and callable selection run here, on the host, over the
+//! The strict reader, FSL's acquisition and callable selection run here, on the host, over the
 //! unit's retained bytes. Their outputs are emitted as literal descriptors; the emitted crate's
 //! `cfg(kani)` items rebuild the prepared function from them with the genuine constructors and
-//! run the generated body, so the proof never links the reader or the QSL compiler.
+//! run the generated body, so the proof never links the reader or the FSL compiler.
 
 use qsl_replay::NominalDeclaration;
 use quire_contract_model::{

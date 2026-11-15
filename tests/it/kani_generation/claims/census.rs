@@ -1,5 +1,5 @@
 //! Fail-closed attribution and reachability for current compiled claims.
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     KaniCheckClass, KaniCheckResult, KaniCheckStatus, KaniExecutionEvidence, KaniRunOutcome,
     KaniScalarObligationHarness,
 };
@@ -455,8 +455,8 @@ pub(super) fn controls(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use filament_contract_codegen::KaniCheckLocation;
     use ix_trace_rs::trace;
-    use quire_contract_codegen::KaniCheckLocation;
 
     #[trace("TC-056", "FR-041-AC-2")]
     #[test]

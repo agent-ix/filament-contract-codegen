@@ -123,7 +123,7 @@ pub struct KaniObligationIdentity {
     pub kind: ObligationKind,
     /// The obligation's clause.
     pub clause: ClauseRef,
-    /// Its QSL source span.
+    /// Its FSL source span.
     pub source_span: SourceSpan,
     /// The obligation's oracle followed by every assumed precondition's oracle.
     pub oracles: Vec<EmbeddedOracle>,
@@ -436,7 +436,7 @@ impl V2ClauseSelection {
 
 /// The source-side record of one V2 clause claim, compared field by field against the
 /// independently selected clause before any harness is generated (FR-015-AC-48). None of these
-/// members is part of QSL's structural [`ObligationIdentity`].
+/// members is part of FSL's structural [`ObligationIdentity`].
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct V2ClauseObligationRecord {
     /// The clause's source occurrence: node id, occurrence role and ordinal. The source span is
@@ -450,7 +450,7 @@ pub struct V2ClauseObligationRecord {
     pub state_reads: Vec<V2ClauseRead>,
 }
 
-/// One V2 state-clause claim: QSL's producer-issued structural identity, carried unchanged,
+/// One V2 state-clause claim: FSL's producer-issued structural identity, carried unchanged,
 /// and the separate obligation record it is cross-checked against (FR-015-AC-48).
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct V2ClauseObligationClaim {
@@ -503,7 +503,7 @@ impl V2ClauseObligationClaim {
 pub struct KaniV2ClauseObligationHarness {
     /// Execution identity.
     pub identity: V2ClauseObligationIdentity,
-    /// QSL's producer-issued structural identity, carried unchanged from the claim. It is not
+    /// FSL's producer-issued structural identity, carried unchanged from the claim. It is not
     /// part of the harness identity record (FR-015-AC-47, FR-015-AC-48).
     pub obligation: ObligationIdentity,
     /// Self-contained Rust source.
@@ -634,7 +634,7 @@ impl ScalarIntegerRepresentation {
 }
 
 /// What a V2 scalar obligation harness proves and how it is run. Parallel to [`KaniObligationIdentity`] but for an IR-confirmed exact-scalar claim,
-/// which has no QSL clause or declaration -- a node id and its confirmed operation identity
+/// which has no FSL clause or declaration -- a node id and its confirmed operation identity
 /// stand in their place. Boolean implication additionally calls the compiled runtime subject.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -661,7 +661,7 @@ pub struct ScalarObligationIdentity {
     pub arguments: Vec<ScalarObligationArgument>,
     /// Exact IR evidence for operands ranged by recursive inference.
     pub inferred_operands: Vec<InferredScalarOperand>,
-    /// The QSL occurrence the routed item claims; `None` for a direct FR-015 caller.
+    /// The FSL occurrence the routed item claims; `None` for a direct FR-015 caller.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub requirement_occurrence: Option<RequirementOccurrence>,
     /// The occurrence's path condition, outermost guard first.
@@ -740,7 +740,7 @@ pub struct DivisionScalarIdentity {
     pub result_maximum: i64,
 }
 
-/// Exact predicate forms the bounded-collection Kani renderer preserves from an admitted QSL
+/// Exact predicate forms the bounded-collection Kani renderer preserves from an admitted FSL
 /// quantifier body.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 #[serde(tag = "predicate", rename_all = "snake_case")]
@@ -928,7 +928,7 @@ pub struct CollectionObligationIdentity {
     pub quantifier_operation: String,
     /// Exact predicate node identity.
     pub predicate_id: CheckedNodeId,
-    /// Exact predicate form emitted by QSL.
+    /// Exact predicate form emitted by FSL.
     pub predicate: CollectionPredicateIdentity,
     /// Solver.
     pub solver: KaniSolver,
@@ -1310,7 +1310,7 @@ pub struct StateFrameIdentity {
     pub scope: StateFrameScope,
     /// The property proved.
     pub property: StateFrameProperty,
-    /// QSL's producer-issued structural identity of this role's obligation, carried unchanged
+    /// FSL's producer-issued structural identity of this role's obligation, carried unchanged
     /// from the caller (FR-015-AC-137). It is no input to the harness source or symbols
     /// (FR-015-AC-140) and replay cross-checks it (FR-024-AC-71, FR-024-AC-73). A record
     /// that lacks it is not read as a state-frame identity (FR-015-AC-139).

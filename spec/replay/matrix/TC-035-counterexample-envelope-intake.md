@@ -1,32 +1,32 @@
 ---
 id: TC-035
-title: "Verify counterexample submission in QSL's counterexample envelope"
+title: "Verify counterexample submission in FSL's counterexample envelope"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-024
+  - target: ix://agent-ix/filament-contract-codegen/FR-024
     type: verifies
-  - target: ix://agent-ix/quire-specification/TC-219
+  - target: ix://agent-ix/filament-specification/TC-219
     type: references
 ---
-# TC-035: Verify counterexample submission in QSL's counterexample envelope
+# TC-035: Verify counterexample submission in FSL's counterexample envelope
 
 ## Description
 
-Verify that every counterexample reaches QSL as QSL's counterexample envelope keyed by QSL's
+Verify that every counterexample reaches FSL as FSL's counterexample envelope keyed by FSL's
 obligation identity, that out-of-domain and incomplete counterexamples are refused before any
-replay, that frame counterexamples carry their QSL identities, that minimization keeps only
-failure-preserving envelopes, and that the generator holds no copy of QSL's replay types.
+replay, that frame counterexamples carry their FSL identities, that minimization keeps only
+failure-preserving envelopes, and that the generator holds no copy of FSL's replay types.
 
 ## Test Procedure
 
 1. Build two obligation identities that differ only in `source_span`, then two that differ in
-   obligation kind, then two that differ in one argument binding. Compare their QSL
+   obligation kind, then two that differ in one argument binding. Compare their FSL
    `ObligationIdentity` values.
 2. Decode a Kani counterexample, render it through the adapter rendering function from its decoded
-   values and parameter bindings, and pass the rendered transcript to `qsl_replay::Witness::parse`.
+   values and parameter bindings, and pass the rendered transcript to `fsl_replay::Witness::parse`.
 3. For a parameter with declared domain `[lo, hi]`, submit counterexamples with the value at `lo`,
    `hi`, `lo - 1` and `hi + 1`, and record whether `replay` was called.
-4. Build one `WitnessPacket` per common required member QSL defines, excluding the three alternative
+4. Build one `WitnessPacket` per common required member FSL defines, excluding the three alternative
    replay-target members, each missing only that common member, and submit each. Then submit a
    complete packet whose trace position is present with the value none. With every common member
    present, submit function, frame and state-clause packets with none of `function`,
@@ -35,35 +35,35 @@ failure-preserving envelopes, and that the generator holds no copy of QSL's repl
    Inspect the packet type and construction path to confirm an empty name or old
    `selected_function` placeholder cannot supply the absent selection.
 5. Retired (FR-024-AC-5, IR-890): no corpus `Input`-arm submission is tested.
-6. Submit a function counterexample and a frame counterexample through their respective QSL replay
+6. Submit a function counterexample and a frame counterexample through their respective FSL replay
    paths. Read the function packet and admitted envelope's `function` selection and absent
    `frame_operation` and `state_clause`; read the frame packet and envelope's
    `frame_operation` (`object` and `operation`) and absent `function` and `state_clause`.
    Inspect that neither has a `selected_function` member or
-   alias. For the frame, compare the pair with QSL's validated call-site result, including an
+   alias. For the frame, compare the pair with FSL's validated call-site result, including an
    inherited operation whose selected object differs from its declaring owner; confirm the packet
-   names the declaring owner. When QSL supplies no validated pair, confirm packet construction
+   names the declaring owner. When FSL supplies no validated pair, confirm packet construction
    refuses instead of using the caller's `OperationName`. Confirm the request carries no
    `arguments` or `occurrence_key`, and the packet and payload
-   retain the ADR-017 PF-4 clause, frame, anchor and generated-occurrence identities QSL reports.
+   retain the ADR-017 PF-4 clause, frame, anchor and generated-occurrence identities FSL reports.
 7. Reduce one `Witness`-arm counterexample with a candidate set that holds a
    failure-preserving candidate, an out-of-domain candidate and a verdict-changing candidate.
    Begin with an admitted original failure. Retain the valid equivalent reduction, then propose
    the two invalid reductions from that retained parent, and finally retain another valid
-   reduction. Before each proposal clone each retained QSL envelope and capture each CG record's
+   reduction. Before each proposal clone each retained FSL envelope and capture each CG record's
    revision identity, parent reference, obligation identity and typed replay evidence. Compare
-   the captured values with those read back after each proposal; use QSL envelope equality and
+   the captured values with those read back after each proposal; use FSL envelope equality and
    inspect each retained backend transcript and replay result.
 8. Submit a counterexample through the generator's replay entry point and pass the `Witness`,
    `ReplaySource`, `WitnessEnvelope`, `TerminalRecord` and `ObligationIdentity` values it produces
-   directly to `qsl_replay`'s own functions.
+   directly to `fsl_replay`'s own functions.
 9. Over a unit with two `postcondition` state clauses, replay a violating and a respecting run
-   through `StateClauseReplay::replay`, and call `qsl_replay::replay_state_clause` directly with
+   through `StateClauseReplay::replay`, and call `fsl_replay::replay_state_clause` directly with
    the same request and envelope. Replay once more through `replay_through` with an executor that
    records its arguments and returns a sentinel result.
 10. Read back each clause's packet and request `state_clause`, its payload `observation` and
     absence of payload `clause`, and the envelope's `clause_node` and `occurrence_key`. Compare
-    each selection and identity with the `ClauseSite` that `qsl_replay::call_site` validates for
+    each selection and identity with the `ClauseSite` that `fsl_replay::call_site` validates for
     that clause name. Confirm both other target members are absent and the request carries no
     `arguments` or `occurrence_key`. Request an undeclared clause name.
 11. Read the invocation document and its pre and post snapshots from the raw entries of
@@ -74,13 +74,13 @@ failure-preserving envelopes, and that the generator holds no copy of QSL's repl
     variant and read the selected document values, evaluation and settlement. Omit a referenced
     snapshot, supply it under different labels, and supply two documents with the same two labels,
     first with equal bytes and then with different bytes. Record the typed outcomes and whether
-    the CG request builder or QSL replay was called.
+    the CG request builder or FSL replay was called.
 12. Build the document value of FR-024-AC-53 (unsorted members, escaped characters, a large
     integer, a fractional number and an exponent form) through the state-clause builder and
     `core::canonical`; compare the exact encoded bytes. Separately, take those builder bytes,
-    change only JSON member order and whitespace, and supply the raw variant directly to QSL's
+    change only JSON member order and whitespace, and supply the raw variant directly to FSL's
     `ReplayRequestWire.documents` under the unchanged self-declared identity. Then change one
-    value in the raw variant. Read QSL's admitted typed values and the source of the state-clause
+    value in the raw variant. Read FSL's admitted typed values and the source of the state-clause
     module and `Cargo.toml`.
 13. Submit a playback, and a post state, that binds no value for one declared state field, one
     that binds an undeclared name, and one that binds a field twice.
@@ -91,7 +91,7 @@ failure-preserving envelopes, and that the generator holds no copy of QSL's repl
     operation-contract harness of the mutated-to-debit subject.
 17. Request a replay for an operation that declares a parameter, one that declares a result, and
     one that declares neither.
-18. Capture the QSL producer's exact typed `ObligationIdentity(NodeKey, Option<ModelIdentity>,
+18. Capture the FSL producer's exact typed `ObligationIdentity(NodeKey, Option<ModelIdentity>,
     ordinal)` for a frame and function claim, then compare the envelope and request values. Inspect
     the CG path for an identity preimage, encoder, hash or transcript-derived identity: none may
     supply either value. Compare complete occurrence, kind and sorted parameter identity/domain
@@ -100,7 +100,7 @@ failure-preserving envelopes, and that the generator holds no copy of QSL's repl
 19. Change the frame node, model and producer ordinal independently and compare identities;
     change comments, source span, symbols, path, solver, options and state-field display while
     retaining the structural tuple and compare identities. Compile two grant variants through
-    `qsl_replay::call_site`; if the producer rekeys the frame node, compare the changed identity,
+    `fsl_replay::call_site`; if the producer rekeys the frame node, compare the changed identity,
     otherwise compare the full frame body and require mismatch. For two distinct obligations at
     one node/model, require distinct producer ordinals. Two postcondition claims of one operation
     retain their distinct complete occurrences even when they use one frame obligation.
@@ -130,19 +130,19 @@ failure-preserving envelopes, and that the generator holds no copy of QSL's repl
 28. Submit equal parameter-bound values from two test backend adapters through the same common intake,
     with distinct backend identities and native transcript formats. Inspect the typed assignments,
     opaque obligation identity, declared domains, source/provenance and replay packet members at
-    the adapter boundary, then the complete packet at QSL admission. Separately submit a decode
-    refusal, an out-of-domain assignment, a QSL-refused packet and a native replay verdict
+    the adapter boundary, then the complete packet at FSL admission. Separately submit a decode
+    refusal, an out-of-domain assignment, a FSL-refused packet and a native replay verdict
     disagreement. Send the decode refusal through the adapter outcome's refusal arm, with its
     backend identity, obligation identity and typed cause but no assignments, packet or native
     text; record the common intake's typed result, contract settlement and whether replay ran.
 29. Have the function adapter complete a `WitnessPacket<NoPayload>` from its falsified run and
     decoded witness before invoking CG's function replay intake. Supply the independently
-    selected function claim, admit the packet through QSL, then build a `function` request from
+    selected function claim, admit the packet through FSL, then build a `function` request from
     that envelope. Compare the complete packet and request keys (node, role and ordinal),
     `function` target and `obligation_identity` before and after typed request serialization and
-    readback. Replay a falsified Boolean predicate through QSL and record its reproduced
+    readback. Replay a falsified Boolean predicate through FSL and record its reproduced
     violation. With the selected claim held fixed, omit the producer packet, then substitute a
-    second QSL-admitted packet for another declaration occurrence; neither may build a request.
+    second FSL-admitted packet for another declaration occurrence; neither may build a request.
     Substitute an otherwise admitted `Input`-arm packet and a packet from another package
     revision with the same function node, occurrence and obligation identity; both refuse.
     Inspect that the request builder accepts an admitted envelope and no bare key or call site.
@@ -159,7 +159,7 @@ failure-preserving envelopes, and that the generator holds no copy of QSL's repl
     function `declaration` occurrence. Recheck that frame and state-clause requests from steps 6 and 10 have neither
     `arguments` nor `occurrence_key` while their envelope and payload identities remain.
 31. Remove `occurrence_key` from an otherwise valid serialized `function` request, then also
-    remove one byte-provision entry. Decode both with QSL's public request reader and record
+    remove one byte-provision entry. Decode both with FSL's public request reader and record
     the code, path and phase of each refusal; confirm no replay executor is called.
 32. For each of function contract, operator parity and value parity, hold an independently
     selected claim fixed and replace one producer packet member at a time: `function` target,
@@ -167,11 +167,11 @@ failure-preserving envelopes, and that the generator holds no copy of QSL's repl
     obligation identity. Use a second otherwise valid
     packet when testing the different ordinal of the same node. Record the typed claim-binding
     refusal and confirm no request builder or replay executor runs. Remove the packet occurrence
-    key and check QSL packet admission refuses without a CG default. Check that a packet
+    key and check FSL packet admission refuses without a CG default. Check that a packet
     assembled inside `request_for` from the selected site or `ParityPreimage` cannot satisfy the
     producer-packet input or this substitution control.
 33. Select one admitted CG frame item and retain its package identity, request index and complete
-    frame occurrence. Supply `FrameReplayInputs` with the driver's exact QSL
+    frame occurrence. Supply `FrameReplayInputs` with the driver's exact FSL
     `OperationSite.frame_operation` and its association to that item; compare the packet and
     request target with the supplied value, including an inherited operation. Then hold the CG
     item fixed and omit the target, change only its declaring owner, and change only its operation.
@@ -197,21 +197,21 @@ failure-preserving envelopes, and that the generator holds no copy of QSL's repl
    `selected_function` placeholder cannot supply the absent selection (FR-024-AC-42).
 5. Retired (FR-024-AC-5, IR-890): this step asserts no result.
 6. The function packet and envelope carry only `function`; the frame packet and envelope carry
-   only `frame_operation` with QSL's validated declaring owner's qualified name and operation
-   identifier, including for an inherited operation. If QSL supplies no validated pair, CG
+   only `frame_operation` with FSL's validated declaring owner's qualified name and operation
+   identifier, including for an inherited operation. If FSL supplies no validated pair, CG
    refuses packet construction instead of deriving an owner from the caller's selection;
    neither carries `selected_function` or an alias. The frame request has no `arguments` or
    `occurrence_key`, while the packet and payload retain their PF-4 identity members and every
-   identity QSL reports equals the one submitted (FR-024-AC-6, FR-024-AC-41).
+   identity FSL reports equals the one submitted (FR-024-AC-6, FR-024-AC-41).
 7. Only valid failure-preserving candidates are retained (FR-024-AC-7). The root
-   and both retained revisions refer to their exact QSL envelopes and unchanged obligation;
+   and both retained revisions refer to their exact FSL envelopes and unchanged obligation;
    each child names the actual retained parent. The invalid-domain and verdict-changing proposals
    create no revision. Each prior envelope compares equal to its clone captured before the
-   proposal using QSL's `WitnessEnvelope<P>: Eq`; prior CG record identity, parent, obligation and
+   proposal using FSL's `WitnessEnvelope<P>: Eq`; prior CG record identity, parent, obligation and
    typed evidence fields read back equal to their captured values (FR-024-AC-38,
    FR-024-AC-39). Each retained `Witness` envelope carries its own re-run transcript bound to its
    reduced assignments (FR-024-AC-8, FR-024-AC-40).
-8. Every value is QSL's own `qsl_replay` type and is accepted by `qsl_replay` unchanged
+8. Every value is FSL's own `fsl_replay` type and is accepted by `fsl_replay` unchanged
    (FR-024-AC-10).
 9. `replay` returns the direct `replay_state_clause` result for each run, the two runs' results
    differ, and the sentinel executor's value is returned as it is (FR-024-AC-11).
@@ -221,7 +221,7 @@ failure-preserving envelopes, and that the generator holds no copy of QSL's repl
     `StateClauseReplayError::CallSite` with the executor not called (FR-024-AC-12).
 11. The pre snapshot holds the playback's values and the post snapshot the supplied post-state
     values; each self-declares two labels in `ReplayRequestWire.documents`, the invocation names
-    those labels, and its model names the admitted package identity. QSL evaluates `false` and
+    those labels, and its model names the admitted package identity. FSL evaluates `false` and
     settles a reproduced violation for pre 10/post 9; it evaluates `true` and settles
     inconclusive with cause `Verdicts` for pre 9/post 9 and pre 10/post 10. Every replay selects
     the document whose labels the invocation names. Missing or differently labelled documents
@@ -230,7 +230,7 @@ failure-preserving envelopes, and that the generator holds no copy of QSL's repl
     contains no state document. No document digest is computed or compared (FR-024-AC-52;
     replaces retired AC-13).
 12. The builder's encoded bytes equal `core::canonical`'s exactly. Raw member-order and whitespace
-    variants sent directly to QSL admit the same typed value; a raw value edit changes that value.
+    variants sent directly to FSL admit the same typed value; a raw value edit changes that value.
     The builder is never asked to emit noncanonical bytes. The module names no encoder function of
     `quire_canonical`, no `sha2`, no `ByteDigest::of`, no document-member sort or hand-written
     escaping; it computes no document digest, and `sha2` is absent from
@@ -274,8 +274,8 @@ failure-preserving envelopes, and that the generator holds no copy of QSL's repl
     header names QSL-345 once (FR-024-AC-29).
 27. The forbidden-write playback settles a reproduced violation naming the written field
     (FR-024-AC-30). A parsed playback whose `source_len` or value count exceeds the effective
-    bound returns a typed decode refusal before QSL replay.
-28. Over the QSL-emitted twin package, check `balance` and unread `audit` against
+    bound returns a typed decode refusal before FSL replay.
+28. Over the FSL-emitted twin package, check `balance` and unread `audit` against
     `model_object_fields(&object_id)` and replay them in the order of input `state_fields`;
     endpoints of their 0 to 1000 ranges admit, one outside refuses `OutOfDomain`, a missing
     playback binding returns `MissingField`, and a binding outside the input list returns
@@ -290,7 +290,7 @@ failure-preserving envelopes, and that the generator holds no copy of QSL's repl
     replay despite an apparently valid body range. A selected/read nonempty-body tamper
     instead refuses `StaleNodeKey` during IR admission, before CG replay receives a package;
     do not expect a CG `ModelFields` result from it (IR TC-227). For `None` or out-of-`i64` accessor types
-    QSL cannot emit, use an admitted QSL-emitted graph with selected-model-document override
+    FSL cannot emit, use an admitted FSL-emitted graph with selected-model-document override
     and recomputed digests (FR-024-AC-31, IR-624; gated on
     CG dependency update and implementation).
 29. Generate the frame harness from the emitted package with accessor ranges, assert scope
@@ -309,18 +309,18 @@ failure-preserving envelopes, and that the generator holds no copy of QSL's repl
     read `Inconclusive` with `ReplayRefused`, not a violation or `Verified`. Replay inside the
     range is unaffected, and an unread present `IntRange` within `i64` is never called
     unranged. Build the out-of-`i64` model type through a selected-model-document override
-    with recomputed digests on a QSL-emitted graph (FR-024-AC-35, IR-624).
+    with recomputed digests on a FSL-emitted graph (FR-024-AC-35, IR-624).
 33. Both adapters use the same typed outcome boundary while their native text stays inside each
-    adapter; QSL receives each successful submission's backend, obligation and source without
+    adapter; FSL receives each successful submission's backend, obligation and source without
     reminting. The decode-refusal arm reaches common intake with the original typed cause and no
     successful submission or envelope. The four refusals remain distinct typed evidence failures,
-    never contract success or failure. Decode, domain and QSL admission refusals invoke no replay
+    never contract success or failure. Decode, domain and FSL admission refusals invoke no replay
     (FR-024-AC-36,
     FR-024-AC-37). Kani-specific refusal details follow FR-016.
 34. The function-contract request retains the independently supplied admitted packet's full
     `declaration` key, selected function and obligation identity through typed readback. An
     omitted, other-occurrence, wrong-arm or other-package packet builds no request; no packet is assembled inside the
-    request builder. QSL replay settles the valid falsified predicate as a reproduced violation
+    request builder. FSL replay settles the valid falsified predicate as a reproduced violation
     (FR-024-AC-43).
 35. The operator-parity request retains its own scalar application occurrence, including
     the nonzero ordinal and the difference between occurrences of one node; the value-parity
@@ -335,12 +335,12 @@ failure-preserving envelopes, and that the generator holds no copy of QSL's repl
 37. Each mismatched target, key node, role, ordinal, subject node, package, source arm and
     obligation identity produces a typed claim-binding refusal naming the member, before request
     construction or replay. A packet
-    whose key is absent receives QSL's packet-admission refusal. Two occurrences of one node
+    whose key is absent receives FSL's packet-admission refusal. Two occurrences of one node
     remain distinct, and neither a call site nor `ParityPreimage` can replace an independently
     supplied packet (FR-024-AC-46).
 38. The matching target reaches the frame packet and request unchanged; its associated package
     identity and request index equal the independently selected CG item's values, and its frame
-    occurrence equals both that item and QSL's `OperationSite.frame_occurrence`. QSL's
+    occurrence equals both that item and FSL's `OperationSite.frame_occurrence`. FSL's
     `OperationSite.frame_operation` equals the supplied target, including the inherited
     operation's declaring owner (FR-024-AC-54). Each absent or changed owner/operation target
     yields a typed `ClaimMismatch` naming that member, with no packet, request or replay and no
@@ -356,7 +356,7 @@ failure-preserving envelopes, and that the generator holds no copy of QSL's repl
     observation-form assertion of this step.
 40. (Implemented, IR-1512.) Over an object declaring `balance` and an unread `audit`, replay the `balance` playback with
     no `unread_values` (FR-024-AC-58, FR-024-AC-70). The result is the CG-typed `MissingField`
-    naming `audit`, the executor is uncalled and no document is built, so QSL's `missing-member`
+    naming `audit`, the executor is uncalled and no document is built, so FSL's `missing-member`
     refusal is not reached. Mutation controls: a builder that omits an unread field from the
     snapshot returns `Refused` and fails the variant assertion; a builder that invents a value
     for `audit` settles a result instead of `MissingField` and fails.
@@ -382,7 +382,7 @@ failure-preserving envelopes, and that the generator holds no copy of QSL's repl
     uncalled executor. At unit level, the guard seam that builds the request's documents refuses a domain
     package sharing the snapshot's labels with `DuplicateDocumentIdentity`.
     Then, through `replay_through`, replace the built snapshot document with one declaring a
-    different anchor and call `replay_state_clause`: the result is `Refused` holding QSL's refusal
+    different anchor and call `replay_state_clause`: the result is `Refused` holding FSL's refusal
     (FR-024-AC-62). Mutation control: the invariant builder accepting a postcondition, frame or
     precondition harness fails the `NotInvariantHarness` assertion.
 45. Read the transcript's operation name and the payload's witness member (FR-024-AC-63). Then
@@ -423,7 +423,7 @@ failure-preserving envelopes, and that the generator holds no copy of QSL's repl
     harness's own never refuses and fails the same assertions; a default identity refuses the
     matching case and fails the accept assertion; checking state fields first fails the both-differ
     case; one identity stored for both roles fails the I_f assertion. Then replay the falsified
-    `frame` harness through `FrameReplay::new` against QSL's selected site: with the harness
+    `frame` harness through `FrameReplay::new` against FSL's selected site: with the harness
     carrying the minted identity it is accepted and the request and packet carry it member for
     member (FR-024-AC-74); with the `contract` harness's identity I_c, with an ordinal-only change
     and with a node-only change, it returns `FrameReplayError::ObligationIdentityMismatch` before
@@ -436,7 +436,7 @@ failure-preserving envelopes, and that the generator holds no copy of QSL's repl
     `tc_035_frame_replay_cross_checks_the_minted_identity` and
     `tc_035_the_frame_identity_mismatch_settles_as_a_cg_defect` (`tests/it/state_frame_obligation_identity.rs`). Every mutant named
     above was applied at its site and fails the named assertion; the controls use the identities
-    QSL's selected sites mint (`Twin::minted_role_identities`) for the replay accept cases and
+    FSL's selected sites mint (`Twin::minted_role_identities`) for the replay accept cases and
     hand-written literals for the refusals.
 48. (Implemented, IR-1512.) Over the `balance`/`audit` twin (`Account.balance: Int[-1, 1000]`, unread `audit: Int[0, 1000]`,
     invariant `balance >= 0`, FR-024-AC-69), replay the playback `balance = -1` with `unread_values`
@@ -488,7 +488,7 @@ failure-preserving envelopes, and that the generator holds no copy of QSL's repl
 
 ## Status
 
-Partly implemented. Steps 1 to 8 and 28 are planned: the skeleton spine renders a QSL transcript from decoded
+Partly implemented. Steps 1 to 8 and 28 are planned: the skeleton spine renders a FSL transcript from decoded
 values (`src/replay/function.rs`, TC-026, now through `render_witness`), which is the shape step 2
 checks, but it builds no envelope. Step 8 holds for the decode path: `src/replay/witness.rs` uses
 no Contract IR witness type. The bounded-Kani corpus retains no counterexample packet, so step 5
@@ -500,18 +500,18 @@ FR-024-AC-52 and FR-024-AC-53; the former digest tests of retired AC-13 and AC-1
 back these replacement criteria. Step 16
 is a real-Kani test in the module `kani_obligations_state_clause_replay`, run through the
 `kani_obligations` filter of `make kani`; its subject debits within the declared range, because a
-debit past the floor runs to a post state QSL's snapshot admission refuses.
+debit past the floor runs to a post state FSL's snapshot admission refuses.
 Step 10 (FR-024-AC-12) is planned under IR-965: the current state-clause path still carries
 the old payload selection and has not been tested against the `state_clause` replay target.
 
 The former steps 18 to 21 were implemented for the old digest shape and no longer back replacement AC-47 to AC-51. Steps 22 to 26 (FR-024-AC-25 to AC-29, IR-459) are implemented by `src/replay/obligation.rs`
 and `src/replay/frame.rs`, the `src` unit tests of steps 18 and 26, and the tests of
-`tests/it/kani_obligations_state_frame.rs` over the QSL twin of the state-frame fixture. The twin's
-harness scope is aligned to the node ids QSL names for the twin's compiled unit (`Twin::aligned`),
-because the fixture's checked package is hand-built and its node ids are its own. The package QSL
+`tests/it/kani_obligations_state_frame.rs` over the FSL twin of the state-frame fixture. The twin's
+harness scope is aligned to the node ids FSL names for the twin's compiled unit (`Twin::aligned`),
+because the fixture's checked package is hand-built and its node ids are its own. The package FSL
 itself emits (`call_site`'s package bytes, admitted by the model reader) carries exactly the anchor
 and frame ids `call_site` names (step 25's ids, read from the emitted package); a harness cannot yet
-be generated from that package, because the object type QSL emits has an empty body and the
+be generated from that package, because the object type FSL emits has an empty body and the
 field-range reader finds no member. Step 27's formerly implemented hand-built positive
 must be migrated to the emitted package to meet the restated FR-024-AC-30; that
 criterion is planned with steps 28 to 32 (FR-024-AC-31 to FR-024-AC-35, IR-624). They are
@@ -523,7 +523,7 @@ last case (a clause added on an operation that sorts earlier) is measured on the
 `deposit` and `transfer`: a clause added on `deposit` changes the identity of `transfer`.
 FR-024-AC-36 to FR-024-AC-40, including common typed intake and CG lineage retention, are
 planned. No production minimizer or lineage record is claimed by this test case.
-Steps 29 to 32 and their results 34 to 37 are planned for IR-968. They require QSL's
+Steps 29 to 32 and their results 34 to 37 are planned for IR-968. They require FSL's
 QSL-973 replay-target and STD-264 occurrence-key implementations and authentic admitted
 occurrence-bearing packets; no CG implementation or tagged test coverage is claimed yet.
 Step 47 (FR-024-AC-71 to FR-024-AC-75, FR-015-AC-137 to FR-015-AC-142, IR-1520) is implemented by the identity comparisons in `StateClauseReplayInputs::decode_falsification` and `FrameReplay::new` and covered by the tagged tests of `tests/it/state_frame_obligation_identity.rs`. Steps 40, 48 and 49 (FR-024-AC-58, FR-024-AC-69 and FR-024-AC-70, IR-1512) are implemented by `complete_snapshot` in `src/replay/state_clause/invariant.rs` and covered by `tc_035_unread_declared_field_is_completed_from_the_supplied_value` and `tc_035_each_unread_value_refusal_is_a_distinct_variant_before_any_document` in `tests/it/state_clause_invariant_replay.rs`; the superseded `tc_035_unread_declared_field_ends_refused_with_missing_member` is replaced. Step 46 (FR-024-AC-65 and FR-024-AC-66, IR-1519) is implemented by the identity comparison in `InvariantReplayInputs::decode_falsification` and covered by the tagged tests of `tests/it/state_clause_invariant_replay.rs`. Steps 39 and 41 to 45 (FR-024-AC-57 and FR-024-AC-59 to FR-024-AC-64, IR-1505) are implemented by `StateClauseReplay::new_invariant` and covered by the tagged tests of `tests/it/state_clause_invariant_replay.rs`. Step 33 and result 38 are planned for IR-1255; the public selected-target input and its
@@ -533,7 +533,7 @@ association refusals are not implemented yet.
 
 FR-024-AC-7/8 and AC-36 through AC-40 remain Planned (IR-1316; IR-335): there is no
 production minimizer, common two-backend typed intake or immutable minimization lineage.
-AC-35 remains Planned (IR-1316; IR-624; QSL-642) because the required QSL-produced same-model
+AC-35 remains Planned (IR-1316; IR-624; QSL-642) because the required FSL-produced same-model
 wide-range replay is unavailable; a synthetic admitted-model override is not replay evidence.
 AC-49/51 remain Planned (IR-1316; IR-1079): copied producer identities and field-set checks do
 not establish changed-grant rekeying and held-node full-body rejection. AC-1/14/20/21/24 retain

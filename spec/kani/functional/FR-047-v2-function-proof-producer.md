@@ -3,19 +3,19 @@ id: FR-047
 title: "Produce current-V2 function proof harnesses bound to replay"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/StR-001
+  - target: ix://agent-ix/filament-contract-codegen/StR-001
     type: satisfies
-  - target: ix://agent-ix/quire-contract-codegen/FR-015
+  - target: ix://agent-ix/filament-contract-codegen/FR-015
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-017
+  - target: ix://agent-ix/filament-contract-codegen/FR-017
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-016
+  - target: ix://agent-ix/filament-contract-codegen/FR-016
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-021
+  - target: ix://agent-ix/filament-contract-codegen/FR-021
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-039
+  - target: ix://agent-ix/filament-contract-codegen/FR-039
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-042
+  - target: ix://agent-ix/filament-contract-codegen/FR-042
     type: references
 ---
 # FR-047: Produce current-V2 function proof harnesses bound to replay
@@ -40,7 +40,7 @@ the [FR-021](../../oracle/functional/FR-021-function-application-oracles.md)
 concrete owner-path oracle, the
 [FR-042](../../oracle/functional/FR-042-generated-checked-invariant-causes.md)
 producer guards, or installed-Kani evidence have already passed.
-The QSL FR-485 acquisition/application facade is delivered, but CG's
+The FSL FR-485 acquisition/application facade is delivered, but CG's
 [FR-021](../../oracle/functional/FR-021-function-application-oracles.md)
 concrete consumer and owner-path emitted Rust remain PLANNED under IR-595.
 The existing schedule contains no executable callable. FR-047-AC-1 requires
@@ -54,8 +54,8 @@ that concrete producer to execute; an FR-021 schedule cannot stand in for it.
 - One function claim occurrence, not merely a node id: its selected function
   declaration, claim kind, source occurrence and original request index. The
   declaring owner may be the unit or one explicitly selected dependency.
-  QSL's current `call_site` selects a function in the unit source only; the
-  dependency-owner branch remains PLANNED under IR-1122 until QSL exposes an admitted
+  FSL's current `call_site` selects a function in the unit source only; the
+  dependency-owner branch remains PLANNED under IR-1122 until FSL exposes an admitted
   imported-function site selection with declaring package, function node and
   occurrence from the same source/dependency lock. CG SHALL NOT relabel an
   imported function as a unit function to use the existing constructor.
@@ -91,15 +91,15 @@ that concrete producer to execute; an FR-021 schedule cannot stand in for it.
   context. A refused sibling SHALL NOT change an admitted sibling's output.
 - The admitted context SHALL supply the exact data the driver needs to call
   the PLANNED CG `bind_v2_function_replay(context, identity)` API. That API
-  SHALL select the QSL function site from the retained unit/dependency lock,
+  SHALL select the FSL function site from the retained unit/dependency lock,
   compare the selected package, owner, function and occurrence with the V2
   proof identity before decoding, and return a `BoundV2FunctionReplay` or a
   named typed mismatch. CG's PLANNED `replay_v2_function_counterexample`
-  SHALL accept only that bound result and dispatch through the existing QSL
+  SHALL accept only that bound result and dispatch through the existing FSL
   replay owner, without a new evaluator. The current `ReplayPackage::new`,
   `with_kani_identity` and `replay_counterexample` remain the V1-bound path;
-  their existence does not implement this V2 API. Quire-driver
-  [FR-009](ix://agent-ix/quire-driver/FR-009) owns retention across the run.
+  their existence does not implement this V2 API. Filament-driver
+  [FR-009](ix://agent-ix/filament-driver/FR-009) owns retention across the run.
 
 ## Behavior
 
@@ -130,7 +130,7 @@ that concrete producer to execute; an FR-021 schedule cannot stand in for it.
   selection or mismatch cause before decoding playback. A successful
   `BoundV2FunctionReplay` SHALL refer to the same function occurrence and
   proving identity as the emitted harness. When a dependency owns the selected
-  function, CG SHALL use the QSL imported-function site API owned by IR-1122 and the original
+  function, CG SHALL use the FSL imported-function site API owned by IR-1122 and the original
   dependency lock; until that API exists, it remains Planned and receives
   no success credit.
 - When the selected function's concrete oracle executes in a harness, CG SHALL
@@ -144,11 +144,11 @@ that concrete producer to execute; an FR-021 schedule cannot stand in for it.
 
 | ID | Criteria | Verification |
 |----|----------|--------------|
-| FR-047-AC-1 | An admitted current-V2 function claim selected at one exact occurrence produces one executable Kani harness and persisted V2 identity. The harness drives the generated FR-021 body module directly (`Factory::begin` then `resume(Resume::Start(..))`) over generation-time-decoded prepared data that FR-021's Kani-harness entry derives from the strict-reader-admitted retained `CheckedPackageV2` (FR-039, unmodified), QSL acquisition and QSL selection, bound by FR-021-AC-45's host differential, per FR-021-AC-42 and FR-021-AC-44 through AC-47, with the `ready`/`finish` result-membership guards and the genuine type-environment construction inside the proof and no Kani credit for reader decode or admission (IR-1244); the host owner-path entry `oracle_{symbol}` is `cfg(not(kani))` and its acquisition/selection/registration glue earns no proof credit here. The installed backend verifies a healthy subject with a satisfied cover; a separately admitted body-only mutant at the corresponding authored claim position is falsified with its own identity and retained in-domain assertion playback. A schedule-only or test-built identity is not evidence. PLANNED (IR-1121; CG's IR-595 concrete FR-021 consumer is prerequisite, while QSL FR-485 is delivered). | Test |
+| FR-047-AC-1 | An admitted current-V2 function claim selected at one exact occurrence produces one executable Kani harness and persisted V2 identity. The harness drives the generated FR-021 body module directly (`Factory::begin` then `resume(Resume::Start(..))`) over generation-time-decoded prepared data that FR-021's Kani-harness entry derives from the strict-reader-admitted retained `CheckedPackageV2` (FR-039, unmodified), FSL acquisition and FSL selection, bound by FR-021-AC-45's host differential, per FR-021-AC-42 and FR-021-AC-44 through AC-47, with the `ready`/`finish` result-membership guards and the genuine type-environment construction inside the proof and no Kani credit for reader decode or admission (IR-1244); the host owner-path entry `oracle_{symbol}` is `cfg(not(kani))` and its acquisition/selection/registration glue earns no proof credit here. The installed backend verifies a healthy subject with a satisfied cover; a separately admitted body-only mutant at the corresponding authored claim position is falsified with its own identity and retained in-domain assertion playback. A schedule-only or test-built identity is not evidence. PLANNED (IR-1121; CG's IR-595 concrete FR-021 consumer is prerequisite, while FSL FR-485 is delivered). | Test |
 | FR-047-AC-2 | For two distinct claim occurrences on one node, both outputs retain their own occurrence, original request index and selected declaration; their persisted identities and replay contexts do not cross-bind. A function name or equal body cannot merge them. PLANNED (IR-1121). | Test |
 | FR-047-AC-3 | Unknown claim or declaration, ambiguous occurrence or declaration, and a claim whose selected form is not a function each yield distinguishable typed selection refusals before oracle emission, Kani execution or playback decoding; an unrelated admitted sibling is unchanged. PLANNED (IR-1121). | Test |
 | FR-047-AC-4 | Changing only the admitted package, source owner or source bytes, dependency selection, request index, function declaration, claim occurrence, obligation kind, parameter identity/domain, generated artifact or proof ceiling produces a named typed mismatch or a distinct admitted proof identity; the harness and replay package never bind across those changes. The canonical proof-content identity may bind exact proved content; no tracking hash or source-version pin is introduced. PLANNED (IR-1121). | Test |
-| FR-047-AC-5 | The retained original `ReplayInputs`, selected QSL site and emitted `V2FunctionProofIdentity` bind through CG's planned `bind_v2_function_replay` before decoding. The same bound context and identity admit the planned typed `replay_v2_function_counterexample` for a falsifying Kani transcript; wrong package, source, dependency, request or identity is refused with its named typed cause before native replay. A dependency-owned function selects its actual declaring package and occurrence through an upstream QSL imported-function site API; that branch remains Planned under IR-1122 until the API exists. The V1 `ReplayPackage::new`/`with_kani_identity` path is not evidence for this criterion. PLANNED (IR-1121; IR-1122 imported site API prerequisite). | Test |
+| FR-047-AC-5 | The retained original `ReplayInputs`, selected FSL site and emitted `V2FunctionProofIdentity` bind through CG's planned `bind_v2_function_replay` before decoding. The same bound context and identity admit the planned typed `replay_v2_function_counterexample` for a falsifying Kani transcript; wrong package, source, dependency, request or identity is refused with its named typed cause before native replay. A dependency-owned function selects its actual declaring package and occurrence through an upstream FSL imported-function site API; that branch remains Planned under IR-1122 until the API exists. The V1 `ReplayPackage::new`/`with_kani_identity` path is not evidence for this criterion. PLANNED (IR-1121; IR-1122 imported site API prerequisite). | Test |
 | FR-047-AC-6 | A transcript one byte above the smaller caller/capture byte ceiling, or one decoded value above the smaller value-count ceiling, is refused before native replay. An in-bound transcript decodes values only against the emitted V2 identity's complete ordered domains; missing, extra and out-of-domain values do not become a reproduced failure. FR-016-AC-6's required public decode bounds are a prerequisite and must be used by the V2 entry; the existing bounded V1 decode does not prove V2 wiring. PLANNED (IR-1121). | Test |
 | FR-047-AC-7 | The producer uses one admitted checked package and owner-selected callable for generation and proving, and preserves FR-021's `Undefined`, `Refused`, `Incomplete` and checked-invariant distinctions. The FR-042 wrong-completed-result and genuine environment-construction guards remain their own separately planned producer tests; this criterion does not count an invented fault as coverage of either guard. PLANNED (IR-1121; FR-021/FR-042 prerequisites). | Test and Inspection |
 | FR-047-AC-8 | A `Verified` or `Falsified` verdict for a function claim is retained as proof evidence only together with a recorded pass of FR-021-AC-45's differential for that exact emitted harness (same emitted harness bytes). A missing, failed or not-run differential yields one typed producer refusal (this spec calls it the AC-8 refusal; the IR-1121 coder names it once, in code), distinct from the AC-3 selection refusals and from FR-021-AC-46's generation refusals, and no verdict is reported as evidence. Generation refusals of FR-021-AC-46 pass through unchanged with no harness and no runner invocation. PLANNED (IR-1121; IR-1244 is prerequisite). | Test |
@@ -156,15 +156,15 @@ that concrete producer to execute; an FR-021 schedule cannot stand in for it.
 ## Dependencies
 
 - **Upstream:** [FR-021](../../oracle/functional/FR-021-function-application-oracles.md)
-  concrete admitted V2 oracle (IR-595 CG consumer; QSL FR-485 facade already
+  concrete admitted V2 oracle (IR-595 CG consumer; FSL FR-485 facade already
   delivered), [FR-039](../../core/functional/FR-039-contract-package-consumption.md)
   package admission, and [FR-015](./FR-015-bounded-kani-obligations.md)
   generation, [FR-017](./FR-017-kani-execution-evidence.md) capture, and
   [FR-016-AC-6](../../replay/functional/FR-016-witness-native-replay.md)
   public decode bounds. Imported-function selection additionally needs an
-  upstream QSL function-site API (IR-1122) for the declaring dependency and occurrence;
+  upstream FSL function-site API (IR-1122) for the declaring dependency and occurrence;
   the current unit-only `call_site` cannot supply that branch.
 - **Downstream:** [FR-016](../../replay/functional/FR-016-witness-native-replay.md)
-  typed replay consumer and quire-driver IR-1106/IR-610 E9 composition.
+  typed replay consumer and filament-driver IR-1106/IR-610 E9 composition.
 - **Independent controls:** [FR-042](../../oracle/functional/FR-042-generated-checked-invariant-causes.md)
   retains its own producer-guard tests in TC-057. FR-047 does not close them.

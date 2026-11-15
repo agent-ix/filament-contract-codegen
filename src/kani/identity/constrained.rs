@@ -26,7 +26,7 @@ pub struct ConstrainedFieldIdentity {
     pub domain: SymbolicBounds,
     /// Whether a bounded ordered collection requires uniqueness.
     pub unique: bool,
-    /// Initial value retained using the owning QSL writer.
+    /// Initial value retained using the owning FSL writer.
     #[serde(serialize_with = "serialize_snapshot")]
     pub initial: SnapshotValue,
 }

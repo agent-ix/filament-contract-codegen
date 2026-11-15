@@ -7,8 +7,8 @@ use super::{
     RoutedRequirement,
 };
 use super::{package, proof_ceilings_with_wall_clock};
+use filament_contract_codegen::generate_routed_native;
 use package::Bound;
-use quire_contract_codegen::generate_routed_native;
 use quire_contract_model::{
     CheckedPackageReadLimits, ContractDependencies, ContractPackageReadResult,
     ContractPackageWireV1,

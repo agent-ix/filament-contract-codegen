@@ -43,7 +43,7 @@ fn tc_029_generated_composite_equality_crate_agrees_with_direct_runtime() {
         let mut item = original_item(&package, case.starts_with("conv"));
         let mut items = vec![item.clone()];
         if *case == "record" {
-            item.operator = quire_contract_codegen::EqualityOperatorKind::NotEqual;
+            item.operator = filament_contract_codegen::EqualityOperatorKind::NotEqual;
             items.push(item);
         }
         let oracles = super::admitted_enum_equality::generate_items(
@@ -54,80 +54,80 @@ fn tc_029_generated_composite_equality_crate_agrees_with_direct_runtime() {
         )
         .expect("authentic original agreement package");
         assert_eq!(oracles.claim_map.items.len(), items.len(), "{case}");
-        let aliases: &[(&str, quire_contract_codegen::EqualityOperatorKind)] = match *case {
+        let aliases: &[(&str, filament_contract_codegen::EqualityOperatorKind)] = match *case {
             "record" => &[
                 (
                     "e_record_equal",
-                    quire_contract_codegen::EqualityOperatorKind::Equal,
+                    filament_contract_codegen::EqualityOperatorKind::Equal,
                 ),
                 (
                     "e_record_not_equal",
-                    quire_contract_codegen::EqualityOperatorKind::NotEqual,
+                    filament_contract_codegen::EqualityOperatorKind::NotEqual,
                 ),
             ],
             "tuple" => &[(
                 "e_tuple_equal",
-                quire_contract_codegen::EqualityOperatorKind::Equal,
+                filament_contract_codegen::EqualityOperatorKind::Equal,
             )],
             "option" => &[(
                 "e_option_equal",
-                quire_contract_codegen::EqualityOperatorKind::Equal,
+                filament_contract_codegen::EqualityOperatorKind::Equal,
             )],
             "collection" => &[(
                 "e_collection_equal",
-                quire_contract_codegen::EqualityOperatorKind::Equal,
+                filament_contract_codegen::EqualityOperatorKind::Equal,
             )],
             "recursive" => &[(
                 "e_self_equal",
-                quire_contract_codegen::EqualityOperatorKind::Equal,
+                filament_contract_codegen::EqualityOperatorKind::Equal,
             )],
             "nested" => &[(
                 "e_pair_of_points_equal",
-                quire_contract_codegen::EqualityOperatorKind::Equal,
+                filament_contract_codegen::EqualityOperatorKind::Equal,
             )],
             "text" => &[(
                 "e_text_equal",
-                quire_contract_codegen::EqualityOperatorKind::Equal,
+                filament_contract_codegen::EqualityOperatorKind::Equal,
             )],
             "enum" => &[(
                 "e_enum_equal",
-                quire_contract_codegen::EqualityOperatorKind::Equal,
+                filament_contract_codegen::EqualityOperatorKind::Equal,
             )],
             "conv" => &[(
                 "e_conv_equal",
-                quire_contract_codegen::EqualityOperatorKind::Equal,
+                filament_contract_codegen::EqualityOperatorKind::Equal,
             )],
             "conv_charge" => &[(
                 "e_conv_charge_equal",
-                quire_contract_codegen::EqualityOperatorKind::Equal,
+                filament_contract_codegen::EqualityOperatorKind::Equal,
             )],
             "conv_rat_rat" => &[(
                 "e_conv_rat_rat_equal",
-                quire_contract_codegen::EqualityOperatorKind::Equal,
+                filament_contract_codegen::EqualityOperatorKind::Equal,
             )],
             "conv_rat_int" => &[(
                 "e_conv_rat_int_equal",
-                quire_contract_codegen::EqualityOperatorKind::Equal,
+                filament_contract_codegen::EqualityOperatorKind::Equal,
             )],
             "conv_dec_rat" => &[(
                 "e_conv_dec_rat_equal",
-                quire_contract_codegen::EqualityOperatorKind::Equal,
+                filament_contract_codegen::EqualityOperatorKind::Equal,
             )],
             "conv_dec_dec" => &[(
                 "e_conv_dec_dec_equal",
-                quire_contract_codegen::EqualityOperatorKind::Equal,
+                filament_contract_codegen::EqualityOperatorKind::Equal,
             )],
             "conv_dec_int" => &[(
                 "e_conv_dec_int_equal",
-                quire_contract_codegen::EqualityOperatorKind::Equal,
+                filament_contract_codegen::EqualityOperatorKind::Equal,
             )],
             _ => panic!("the finite source case set is closed"),
         };
         let mut names = String::new();
         for (alias, operator) in aliases {
             let identity = match operator {
-                quire_contract_codegen::EqualityOperatorKind::Equal => "equality.equal",
-                quire_contract_codegen::EqualityOperatorKind::NotEqual => "equality.not_equal",
+                filament_contract_codegen::EqualityOperatorKind::Equal => "equality.equal",
+                filament_contract_codegen::EqualityOperatorKind::NotEqual => "equality.not_equal",
             };
             let claim = oracles
                 .claim_map
@@ -135,7 +135,7 @@ fn tc_029_generated_composite_equality_crate_agrees_with_direct_runtime() {
                 .iter()
                 .find(|claim| claim.operation.identity == identity)
                 .expect("original operation request");
-            let quire_contract_codegen::ClaimDisposition::Generated(generated) = &claim.result
+            let filament_contract_codegen::ClaimDisposition::Generated(generated) = &claim.result
             else {
                 panic!("{case} source refused: {:?}", claim.result)
             };
@@ -177,8 +177,8 @@ pub(super) mod fixture;
 pub(super) fn original_item(
     package: &quire_contract_model::CheckedPackageV2,
     converted: bool,
-) -> quire_contract_codegen::CompositeEqualityItem {
-    use quire_contract_codegen::{
+) -> filament_contract_codegen::CompositeEqualityItem {
+    use filament_contract_codegen::{
         CompositeEqualityItem, EqualityOperandDescriptor, EqualityOperatorKind,
     };
     use quire_contract_model::{ApplicationOperator, CheckedTerm};

@@ -4,15 +4,15 @@ title: "No panic on a generation or analysis path"
 type: NFR
 quality_attribute: reliability
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-014
+  - target: ix://agent-ix/filament-contract-codegen/FR-014
     type: constrains
-  - target: ix://agent-ix/quire-contract-codegen/FR-015
+  - target: ix://agent-ix/filament-contract-codegen/FR-015
     type: constrains
-  - target: ix://agent-ix/quire-contract-codegen/FR-019
+  - target: ix://agent-ix/filament-contract-codegen/FR-019
     type: constrains
-  - target: ix://agent-ix/quire-contract-codegen/FR-021
+  - target: ix://agent-ix/filament-contract-codegen/FR-021
     type: constrains
-  - target: ix://agent-ix/quire-contract-codegen/FR-022
+  - target: ix://agent-ix/filament-contract-codegen/FR-022
     type: constrains
 ---
 # NFR-005: No panic on a generation or analysis path

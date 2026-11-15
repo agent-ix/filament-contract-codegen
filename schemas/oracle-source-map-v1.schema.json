@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://github.com/agent-ix/quire-contract-codegen/schemas/oracle-source-map-v1.schema.json",
-  "title": "Quire generated oracle source map v1",
+  "$id": "https://github.com/agent-ix/filament-contract-codegen/schemas/oracle-source-map-v1.schema.json",
+  "title": "Filament generated oracle source map v1",
   "type": "array",
   "minItems": 1,
   "items": {

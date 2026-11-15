@@ -3,27 +3,27 @@ id: FR-050
 title: "Generate bounded quantity scalar operation harnesses"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/StR-001
+  - target: ix://agent-ix/filament-contract-codegen/StR-001
     type: satisfies
-  - target: ix://agent-ix/quire-contract-codegen/FR-014
+  - target: ix://agent-ix/filament-contract-codegen/FR-014
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-015
+  - target: ix://agent-ix/filament-contract-codegen/FR-015
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-017
+  - target: ix://agent-ix/filament-contract-codegen/FR-017
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-025
+  - target: ix://agent-ix/filament-contract-codegen/FR-025
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-028
+  - target: ix://agent-ix/filament-contract-codegen/FR-028
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-029
+  - target: ix://agent-ix/filament-contract-codegen/FR-029
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-039
+  - target: ix://agent-ix/filament-contract-codegen/FR-039
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-016
+  - target: ix://agent-ix/filament-contract-codegen/FR-016
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-046
+  - target: ix://agent-ix/filament-contract-codegen/FR-046
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-051
+  - target: ix://agent-ix/filament-contract-codegen/FR-051
     type: depends_on
 ---
 # FR-050: Generate bounded quantity scalar operation harnesses
@@ -42,7 +42,7 @@ settles today as `OperationNotRendered`. It is a planned row, not a new IR schem
 unit-id constructor or claim of current Rust support.
 
 One prerequisite is named and is not delivered: (P1) K-EXACT-quantity
-(ticket IR-1443) is the quire-exact carrier giving a symbolic carried-quantity leaf
+(ticket IR-1443) is the filament-exact carrier giving a symbolic carried-quantity leaf
 built from its carrier's physical bindings and a native expression over it. The
 operand form is decided, not awaited (ticket IR-1497): the finite magnitude domain of an operand comes from a carried leaf,
 not from the operand itself, because no other bounded form is finite: Contract IR
@@ -51,7 +51,7 @@ FR-038-AC-73, FR-038-AC-471 and FR-014-AC-60 make every bare exact `unit` or
 (Contract IR FR-038-AC-485 and AC-486) bounds only a rational interval
 `[min, max]`, whose members have unbounded denominators and so form no finite
 domain; and the language refuses a carried quantity as an operand of quantity
-arithmetic or comparison (QSpec FR-142-AC-27, QSL FR-497-AC-2). The one finite form
+arithmetic or comparison (FSpec FR-142-AC-27, FSL FR-497-AC-2). The one finite form
 the language does admit is a `scalar_type`/`carried_quantity` parameter (carrier
 `Int[..]`, `Decimal[..]` with a scale interval, or `Rational[..]` with a denominator
 range) converted to an exact `Quantity<u>` by `quire.op.quantity.convert`, which
@@ -66,8 +66,8 @@ harness) fits the proof ceilings of FR-028, including the per-request memory
 ceiling (16 GiB in the current proof profile), is not known and is measured later
 under IR-1443. If it does not fit, this requirement does not narrow the domain to
 make it fit: a new finite-grid bound form for exact quantity parameters is then the
-fallback. QSpec FR-154 "Unit bounds" does not give one, because it bounds only a
-rational interval, so the fallback is a QSpec change specified under its own
+fallback. FSpec FR-154 "Unit bounds" does not give one, because it bounds only a
+rational interval, so the fallback is a FSpec change specified under its own
 ticket, which does not exist yet.
 
 The compound-unit result forms admitted by FR-014 (PRs #750 through #754) and
@@ -114,11 +114,11 @@ magnitude is computed by the owner's conversion over the drawn leaf. When evalua
 completely before the next, and then the operation, on one Meter; the charges
 are the conversions' in operand order followed by the operation's. Each converted
 operand's unit is the conversion's fixed target unit, recorded through
-`UnitScope::form` and resolved to a QSV `UnitQuantity<'_>` as FR-014-AC-48,
+`UnitScope::form` and resolved to a FSV `UnitQuantity<'_>` as FR-014-AC-48,
 AC-52 and AC-59 state; a unit is never drawn symbolically and CG creates no unit
 id.
 A `pow` exponent is the node's literal integer, never a symbolic value, because the
-QSV power operation fixes the result unit at type time. Representation constraints
+FSV power operation fixes the result unit at type time. Representation constraints
 apply before evaluation, admit every declared leaf value exactly once and do not
 depend on the outcome.
 
@@ -165,7 +165,7 @@ All supported-harness criteria are conditional on P1.
 | FR-050-AC-9 | Counterexample decoding validates every physical binding of the leaf carrier's FR-025 row (FR-025-AC-18: width, order, comment, schema role, byte and entry-count limits, canonical form and original carrier domain) before reconstructing one owner carried quantity per leaf parameter, paired with its fixed source unit, and submits it through the public replay route for that exact declaration. Missing, duplicate, foreign, role-swapped, out-of-domain or noncanonical evidence is refused with a typed cause and no replay; an unavailable replay capability is reported without claiming acceptance. | Test |
 | FR-050-AC-10 | Run evidence records the operation and source association, leaf carrier domains with correspondence, the literal exponent, fixed leaf source units and conversion target units, subject and full ordered backend arguments, unwind bounds, tool versions, target, dependency cohort including the carrier, limits, raw checks, cover and playback, exit and typed terminal outcome. No-run, refusal, cover failure, resource exhaustion and semantic falsification remain distinguishable. | Test |
 | FR-050-AC-11 | Each supported operation node whose operands are composable (a reader-admitted exact `quire.op.quantity.convert` of a `carried_quantity` leaf parameter) selects a harness that draws only the leaf parameters and evaluates the operand conversions in operand order, then the operation, on one Meter. The generated oracle and an independent native expression over the public `convert_quantity` (`QuantityTarget::Exact`) and `evaluate_quantity_unit` or `compare_quantity` agree on completed value, identified result unit, typed outcome, ordered charges (each conversion's in operand order, then the operation's), denied next charge and consumed counters at zero, exact and short budgets, with each converted operand's unit equal to the conversion's fixed target unit. The reference neither reuses the generated conversion oracle nor bridges through Runtime. | Test |
-| FR-050-AC-12 | A conversion-stage stop is the whole outcome and is asserted equal to the native one: an `IllTyped` conversion with zero charges for that conversion (FR-014-AC-49) and every earlier operand conversion's admitted charges and counters unchanged, or an incomplete outcome at a conversion charge under a short budget, leaves the operation unrun with no operation charge and no later operand converted, and is never proved completed. The `IllTyped` case is reachable from a hand-built package the reader admits, because the reader does not check dimensions for a carried-to-exact conversion; real QSL source with such a conversion is refused upstream. Independently of the native comparison, the harness asserts that no conversion-stage outcome is a refusal for an inexact or out-of-domain conversion, because the target is exact: a control substituting a carried `exact` `Int[..]` target for one conversion, over an off-grid leaf (`1 in`, FR-014-AC-64), makes that assertion fail with playback. | Test |
+| FR-050-AC-12 | A conversion-stage stop is the whole outcome and is asserted equal to the native one: an `IllTyped` conversion with zero charges for that conversion (FR-014-AC-49) and every earlier operand conversion's admitted charges and counters unchanged, or an incomplete outcome at a conversion charge under a short budget, leaves the operation unrun with no operation charge and no later operand converted, and is never proved completed. The `IllTyped` case is reachable from a hand-built package the reader admits, because the reader does not check dimensions for a carried-to-exact conversion; real FSL source with such a conversion is refused upstream. Independently of the native comparison, the harness asserts that no conversion-stage outcome is a refusal for an inexact or out-of-domain conversion, because the target is exact: a control substituting a carried `exact` `Int[..]` target for one conversion, over an off-grid leaf (`1 in`, FR-014-AC-64), makes that assertion fail with playback. | Test |
 | FR-050-AC-13 | A leaf's physical bindings are those of its carrier's FR-025 row (FR-025-AC-18): an `Int[..]` carrier has one `i64` inside `[lo, hi]`; a `Decimal[..]` carrier has the coefficient then scale pair of the Decimal row (the raw coefficient may fall outside `[lo, hi]` for the owner's retained form; the scale is within `0..=scale_max` and `u32`), whose lifted bound `max(\|lo\|,\|hi\|) x 10^(scale_max - scale_min)` must fit `i64`; a `Rational[..]` carrier has the numerator then denominator pair of the Rational row, the numerator inside `[n1, n2]`, the denominator inside `[d1, d2]` and the pair canonical. An `Int[..]` endpoint, a Decimal lifted bound or scale endpoint, or a Rational numerator or denominator endpoint that does not fit `i64` (or, for the scale, `u32`) yields `unsupported` retaining it (AC-5), checked per component and before any harness is emitted. The converted magnitude, computed by the owner in unbounded integers, is not subject to the `i64` fit. | Test |
 | FR-050-AC-14 | These composition mutants fail with actual solver playback of an in-domain leaf input, each over a control domain stating its distinguishing point. One operand's conversion skipped (its leaf read as already in the target unit), over a leaf whose source unit scale differs from the target's and a nonzero leaf magnitude, with a nonzero other operand for `mul` and `div`, a literal exponent other than 0 for `pow`, and for a comparison a `cm` leaf of 60 against an `m` leaf of 7/10 (`lt`, `le`, `gt`, `ge`) or a `cm` leaf of 70 against the same `m` leaf (`eq`, `ne`, which are equal only after conversion). The conversion's charges dropped, and separately moved after the operation's charges, under a budget that charges the conversion. A conversion target replaced by a different unit of the same dimension, over a nonzero leaf with a literal exponent other than 0 for `pow`: an arithmetic operation differs in result unit or value, and a comparison whose two operands share one target unit refuses `IllTyped { cause: IllTypedCause::DistinctUnits }` where the unmutated pipeline completes. The assertions of AC-11 are the operators that catch them. | Test |
 
@@ -176,7 +176,7 @@ All supported-harness criteria are conditional on P1.
   this proof.
 - K-EXACT-quantity (IR-1443) is prerequisite P1: it must build an owner carried
   quantity from the leaf carrier's physical bindings (AC-13). IR-1497 decided this
-  carried-leaf composition; it needs no Contract IR or QSpec change, as the language
+  carried-leaf composition; it needs no Contract IR or FSpec change, as the language
   and FR-038 already admit the conversion of a carried parameter.
   IR-1439 is the row's specification ticket and IR-263 the MVP row it serves.
 - The Rational and Decimal leaf encodings are those of

@@ -1,29 +1,29 @@
-//! The QSL twin of the state-frame fixture: the `test/bank` domain package, the native unit
+//! The FSL twin of the state-frame fixture: the `test/bank` domain package, the native unit
 //! whose `post` clause and operation frame produce the checked package used for harnesses, and
 //! the invocation documents of one concrete run.
 //!
 //! The twin's fields, their ranges and the fields its frame grants come from `model`, the same
 //! source the Rust fixture's checked package is built from. The rest is tied to the Rust side only
 //! by names: the model `Bank`, its object `Account` and its operation `deposit`. The request and
-//! envelope that put a run before QSL are built by the crate under test
-//! (`quire_contract_codegen::FrameReplay`), which asks QSL for the node identities a
+//! envelope that put a run before FSL are built by the crate under test
+//! (`filament_contract_codegen::FrameReplay`), which asks FSL for the node identities a
 //! counterexample names. The frame replay is given the falsified harness's identity and its
-//! playback and carries the selected QSL obligation identity, so the twin supplies none.
+//! playback and carries the selected FSL obligation identity, so the twin supplies none.
 
 use super::model;
 
+use filament_contract_codegen::{
+    parse_assertion_playback, DependencyLock, DocumentLabel, FrameReplay, FrameReplayError,
+    FrameReplayInputs, InvariantReplayInputs, LockedSource, ProvidedDocument, ReplayInputs,
+    SelectedFrameItem, SelectedFrameTarget, StateClauseReplayInputs, StateFrameIdentity,
+    StateObjectAddress,
+};
 use qsl_replay::{
     call_site, compile_package_with_execution_points, AnchorKind, CallSiteRefusal, ClaimedChange,
     ClauseName, ClauseSite, DependencyInput, DocumentRef, FrameReplayResult, Identifier,
     OccurrenceKey, OperationName, OperationSite, ReplayLimits, ReplayRefusal, ScalarLimits,
     SelectedAnchor, SelectedObject, SourceIdentity, StageLimits, WitnessEnvelope,
     DEFAULT_REPLAY_INPUT_BYTES,
-};
-use quire_contract_codegen::{
-    parse_assertion_playback, DependencyLock, DocumentLabel, FrameReplay, FrameReplayError,
-    FrameReplayInputs, InvariantReplayInputs, LockedSource, ProvidedDocument, ReplayInputs,
-    SelectedFrameItem, SelectedFrameTarget, StateClauseReplayInputs, StateFrameIdentity,
-    StateObjectAddress,
 };
 use quire_contract_model::{
     CheckedNodeId, CheckedNodePathSegment, CheckedOccurrenceRole, CheckedPackageEvidence,
@@ -59,15 +59,15 @@ pub(crate) fn node_matches_site(id: &CheckedNodeId, key: quire_exact::NodeKeyVie
     path.next().is_none()
 }
 
-const fn unbounded_decode_limits() -> quire_contract_codegen::WitnessDecodeLimits {
-    quire_contract_codegen::WitnessDecodeLimits {
+const fn unbounded_decode_limits() -> filament_contract_codegen::WitnessDecodeLimits {
+    filament_contract_codegen::WitnessDecodeLimits {
         bytes: usize::MAX,
         values: usize::MAX,
     }
 }
 
-pub(crate) const fn frame_decode_limits() -> quire_contract_codegen::WitnessDecodeLimits {
-    quire_contract_codegen::WitnessDecodeLimits {
+pub(crate) const fn frame_decode_limits() -> filament_contract_codegen::WitnessDecodeLimits {
+    filament_contract_codegen::WitnessDecodeLimits {
         bytes: 1_048_576,
         values: 1024,
     }
@@ -159,7 +159,7 @@ fn domain_document(granted: &[&str]) -> Vec<u8> {
             "post": [],
             "origin": {"source": {
                 "sourceIdentity": format!("ix://{PACKAGE}/spec"),
-                "path": "spec.qspec",
+                "path": "spec.fspec",
                 "startLine": 1,
                 "startColumn": 1,
             }},
@@ -263,7 +263,7 @@ pub struct Run {
     /// The concrete-playback text.
     pub playback: String,
     /// The proving run's witness decode limits.
-    pub decode_limits: quire_contract_codegen::WitnessDecodeLimits,
+    pub decode_limits: filament_contract_codegen::WitnessDecodeLimits,
 }
 
 /// The playback block Kani prints for `harness`'s falsified assertion `check`, binding one `i64`
@@ -453,12 +453,12 @@ impl Twin {
         self
     }
 
-    /// QSL-emitted postcondition package whose operation declares one `other` parameter.
+    /// FSL-emitted postcondition package whose operation declares one `other` parameter.
     pub fn with_deposit_parameter() -> Self {
         Self::with_deposit_declaration(true, false)
     }
 
-    /// QSL clause over one `Int[0, 1000]` operation parameter named `other`.
+    /// FSL clause over one `Int[0, 1000]` operation parameter named `other`.
     pub fn with_bounded_other_condition() -> Self {
         let mut twin = Self::with_deposit_parameter();
         let mut domain: Value = serde_json::from_slice(&twin.domain).expect("domain document");
@@ -642,10 +642,10 @@ impl Twin {
             .to_owned()
     }
 
-    /// The `contract` identity QSL's selected clause site mints for `clause`: the identity a
+    /// The `contract` identity FSL's selected clause site mints for `clause`: the identity a
     /// caller supplies for a postcondition harness (FR-024-AC-71).
     pub fn clause_identity(&self, clause: &str) -> qsl_replay::ObligationIdentity {
-        let site = self.clause_site(clause).expect("QSL clause site");
+        let site = self.clause_site(clause).expect("FSL clause site");
         qsl_replay::ObligationIdentity::new(
             site.node,
             None,
@@ -653,19 +653,22 @@ impl Twin {
         )
     }
 
-    /// The identities QSL mints for the two roles of `clause` on `deposit`: the clause site's for
+    /// The identities FSL mints for the two roles of `clause` on `deposit`: the clause site's for
     /// the `contract` role and the operation site's for the `frame` role (FR-024-AC-73).
     pub fn minted_role_identities(
         &self,
         clause: &str,
-    ) -> quire_contract_codegen::StateFrameRoleIdentities {
+    ) -> filament_contract_codegen::StateFrameRoleIdentities {
         let frame = self
             .operation_site("deposit")
-            .expect("QSL operation site")
+            .expect("FSL operation site")
             .obligation_identity()
             .clone();
-        quire_contract_codegen::StateFrameRoleIdentities::new(self.clause_identity(clause), frame)
-            .expect("the clause and frame sites mint distinct identities")
+        filament_contract_codegen::StateFrameRoleIdentities::new(
+            self.clause_identity(clause),
+            frame,
+        )
+        .expect("the clause and frame sites mint distinct identities")
     }
 
     /// This twin with its postcondition replaced by the invariant `BalanceNonnegative` over
@@ -716,12 +719,12 @@ impl Twin {
         self
     }
 
-    /// A QSL invariant over the selected model object's bounded `balance` field.
+    /// A FSL invariant over the selected model object's bounded `balance` field.
     pub fn with_balance_invariant() -> Self {
         Self::with_balance_invariant_condition("self.balance >= 0")
     }
 
-    /// A QSL invariant whose condition can be mutated while its declared field stays fixed.
+    /// A FSL invariant whose condition can be mutated while its declared field stays fixed.
     pub fn with_balance_invariant_condition(condition: &str) -> Self {
         Self::invariant_from(Self::build(&model::GRANTED, &[CLAUSES[0]], 0), condition)
     }
@@ -731,7 +734,7 @@ impl Twin {
         Self::invariant_from(Self::with_field_ranges((-5, 10), (7, 12)), condition)
     }
 
-    /// A QSL invariant whose read field is a selected but unbounded Integer.
+    /// A FSL invariant whose read field is a selected but unbounded Integer.
     pub fn with_unbounded_balance_invariant() -> Self {
         Self::invariant_from(Self::without_balance_range(), "self.balance >= 0")
     }
@@ -758,7 +761,7 @@ impl Twin {
         self
     }
 
-    /// Two QSL preconditions on different operations of `Account`, each reading one state
+    /// Two FSL preconditions on different operations of `Account`, each reading one state
     /// field: `ClauseA` on `deposit` reads `balance` (range `-5..=10`) and `ClauseB` on
     /// `transfer` reads `audit` (range `50..=60`) (FR-015-AC-135).
     pub fn with_preconditions_on_two_operations() -> Self {
@@ -782,7 +785,7 @@ impl Twin {
         Self::with_bounded_other_precondition_condition("other < 1000")
     }
 
-    /// A QSL precondition reading the selected model's own integer field.
+    /// A FSL precondition reading the selected model's own integer field.
     pub fn with_balance_field_precondition() -> Self {
         let mut twin = Self::with_field_ranges((-5, 10), (50, 60));
         let source = String::from_utf8(twin.unit).expect("native unit");
@@ -837,12 +840,12 @@ impl Twin {
         twin
     }
 
-    /// A QSL precondition over two operation parameters with different integer ranges.
+    /// A FSL precondition over two operation parameters with different integer ranges.
     pub fn with_two_bounded_parameter_precondition() -> Self {
         Self::with_two_parameter_precondition((0, 1000), (-5, 10), "other < 1000 and offset > 0")
     }
 
-    /// A QSL precondition `condition` over the operation parameters `other` (range `balance`)
+    /// A FSL precondition `condition` over the operation parameters `other` (range `balance`)
     /// and `offset` (range `audit`).
     pub fn with_two_parameter_precondition(
         balance: (i64, i64),
@@ -897,7 +900,7 @@ impl Twin {
         twin
     }
 
-    /// The same QSL precondition with an unbounded second operation parameter.
+    /// The same FSL precondition with an unbounded second operation parameter.
     pub fn with_unbounded_second_parameter_precondition() -> Self {
         let mut twin = Self::with_two_bounded_parameter_precondition();
         let mut domain: Value = serde_json::from_slice(&twin.domain).expect("domain document");
@@ -996,12 +999,12 @@ impl Twin {
         twin
     }
 
-    /// QSL-emitted postcondition package whose operation declares a Boolean result.
+    /// FSL-emitted postcondition package whose operation declares a Boolean result.
     pub fn with_deposit_result() -> Self {
         Self::with_deposit_declaration(false, true)
     }
 
-    /// QSL postcondition whose condition reads the Boolean value returned by the subject.
+    /// FSL postcondition whose condition reads the Boolean value returned by the subject.
     pub fn with_boolean_result_postcondition(condition: &str) -> Self {
         let mut twin = Self::with_deposit_result();
         let source = String::from_utf8(twin.unit).expect("native unit");
@@ -1033,7 +1036,7 @@ impl Twin {
         twin
     }
 
-    /// QSL postcondition over a bounded operation result and no parameters.
+    /// FSL postcondition over a bounded operation result and no parameters.
     pub fn with_bounded_result_postcondition() -> Self {
         let mut twin = Self::with_deposit_declaration(false, true);
         let mut domain: Value = serde_json::from_slice(&twin.domain).expect("domain document");
@@ -1130,7 +1133,7 @@ impl Twin {
         twin
     }
 
-    /// QSL postcondition with a bounded result and parameter, but no result read.
+    /// FSL postcondition with a bounded result and parameter, but no result read.
     pub fn with_unused_bounded_result_postcondition() -> Self {
         let mut twin = Self::with_bounded_other_condition();
         let mut domain: Value = serde_json::from_slice(&twin.domain).expect("domain document");
@@ -1271,7 +1274,7 @@ impl Twin {
         twin
     }
 
-    /// A selected QSL postcondition with one alternate Boolean balance expression.
+    /// A selected FSL postcondition with one alternate Boolean balance expression.
     pub fn with_balance_condition(condition: &str) -> Self {
         Self::build(&model::GRANTED, &[CLAUSES[0]], 0).balance_condition(condition)
     }
@@ -1289,7 +1292,7 @@ impl Twin {
         self
     }
 
-    /// A bounded literal comparison and an independent clause in one QSL unit.
+    /// A bounded literal comparison and an independent clause in one FSL unit.
     pub fn with_literal_narrow_and_sibling() -> Self {
         let mut twin = Self::build(
             &model::GRANTED,
@@ -1403,7 +1406,7 @@ impl Twin {
         twin
     }
 
-    /// Admit QSL's emitted graph against an unread model range outside `i64`. QSL itself
+    /// Admit FSL's emitted graph against an unread model range outside `i64`. FSL itself
     /// refuses an integer operand past 2^53 before it can emit the package.
     pub fn emitted_package_with_wide_audit_range(
         &self,
@@ -1423,7 +1426,7 @@ impl Twin {
             .find(|constraint| constraint["keyword"] == "max")
             .expect("maximum bound");
         maximum["operands"]["value"] = json!("9223372036854775808");
-        // QSL rejects an authored integer operand above 2^53. The clause graph is
+        // FSL rejects an authored integer operand above 2^53. The clause graph is
         // unchanged; IR reads this selected model document to test the wider bound.
         self.admit_emitted_package(
             clause,
@@ -1452,7 +1455,7 @@ impl Twin {
         self
     }
 
-    /// One QSL-authored numeric clause at the requested state-clause kind. Its condition has
+    /// One FSL-authored numeric clause at the requested state-clause kind. Its condition has
     /// valuations on both sides, so the V2 numeric runner can construct a broad population.
     pub fn numeric_clause(kind: &str, name: &str) -> Self {
         let mut twin = Self::build(&["balance"], &[(name, "deposit", "balance")], 0);
@@ -1501,16 +1504,16 @@ impl Twin {
         .map(|located| located.site)
     }
 
-    /// The checked package QSL compiles from the twin's unit and the node of the clause named
+    /// The checked package FSL compiles from the twin's unit and the node of the clause named
     /// `clause`, both as `qsl_replay::call_site` returns them: the package bytes are read and
     /// admitted by the model reader, with the twin's domain package as the evidence of its model
     /// selection. Nothing here is hand-built, so a harness generated from it carries the node
-    /// ids QSL itself names.
+    /// ids FSL itself names.
     pub fn emitted_package(&self, clause: &str) -> (CheckedPackageV2, CheckedNodeId) {
         self.emitted_package_with_model(clause, None)
     }
 
-    /// Compile one package with QSL-accepted points and locate each authored clause by its
+    /// Compile one package with FSL-accepted points and locate each authored clause by its
     /// admitted claim source region. A point changes the clause node's identity, so an unpointed
     /// `call_site` node id cannot be reused for this package.
     pub fn emitted_package_with_execution_points(
@@ -1532,7 +1535,7 @@ impl Twin {
             StageLimits::default(),
             ReplayLimits::default(),
         )
-        .expect("QSL accepts the authored clause points");
+        .expect("FSL accepts the authored clause points");
         let mut evidence = CheckedPackageEvidence::new();
         evidence
             .insert_domain_package_document(PACKAGE, self.domain.clone())
@@ -1544,7 +1547,7 @@ impl Twin {
             &evidence,
         ) {
             CheckedPackageV2ReadResult::Admitted(package) => *package,
-            other => panic!("QSL's pointed package is admitted: {other:?}"),
+            other => panic!("FSL's pointed package is admitted: {other:?}"),
         };
         let source = std::str::from_utf8(&self.unit).expect("native unit is UTF-8");
         let clauses = points
@@ -1582,7 +1585,7 @@ impl Twin {
                             })
                     })
                     .collect::<Vec<_>>();
-                assert_eq!(matches.len(), 1, "one QSL claim at {name}'s source region");
+                assert_eq!(matches.len(), 1, "one FSL claim at {name}'s source region");
                 let clause = &matches[0].node_id;
                 let node = package
                     .resolved_graph()
@@ -1631,7 +1634,7 @@ impl Twin {
         self.emitted_package_with_model(clause, Some(document.to_string().into_bytes()))
     }
 
-    /// Admit QSL's emitted graph with an unread field declared as a selected model variant.
+    /// Admit FSL's emitted graph with an unread field declared as a selected model variant.
     pub fn emitted_package_with_unread_variant_audit(
         &self,
         clause: &str,
@@ -1690,7 +1693,7 @@ impl Twin {
         &self,
         clause: &str,
         unit: &[u8],
-        qsl_document: &[u8],
+        fsl_document: &[u8],
         selected_document: Vec<u8>,
     ) -> (CheckedPackageV2, CheckedNodeId) {
         let name = ClauseName(Identifier::new(clause).expect("identifier"));
@@ -1699,7 +1702,7 @@ impl Twin {
             self.identity.to_owned(),
             self.identity,
             unit,
-            [qsl_document],
+            [fsl_document],
             &DependencyInput::default(),
             &name,
         )
@@ -1715,7 +1718,7 @@ impl Twin {
             &evidence,
         ) {
             CheckedPackageV2ReadResult::Admitted(package) => *package,
-            other => panic!("QSL's emitted package is admitted: {other:?}"),
+            other => panic!("FSL's emitted package is admitted: {other:?}"),
         };
         let clause_node = package
             .resolved_graph()
@@ -1726,7 +1729,7 @@ impl Twin {
                     .structural_key(&node.node_id)
                     .is_some_and(|key| node_matches_site(key, located.site.node.view()))
             })
-            .expect("QSL clause site names an admitted structural node")
+            .expect("FSL clause site names an admitted structural node")
             .node_id
             .clone();
         (package, clause_node)
@@ -1827,9 +1830,9 @@ impl Twin {
         account: &str,
         field: &str,
         run: &Run,
-        limits: quire_contract_codegen::WitnessDecodeLimits,
+        limits: filament_contract_codegen::WitnessDecodeLimits,
     ) -> Result<FrameReplay, FrameReplayError> {
-        let effective_limits = quire_contract_codegen::WitnessDecodeLimits {
+        let effective_limits = filament_contract_codegen::WitnessDecodeLimits {
             bytes: limits.bytes.min(run.decode_limits.bytes),
             values: limits.values.min(run.decode_limits.values),
         };
@@ -1852,8 +1855,8 @@ impl Twin {
         account: &str,
         field: &str,
         run: &Run,
-        limits: quire_contract_codegen::WitnessDecodeLimits,
-        parse_limits: quire_contract_codegen::WitnessDecodeLimits,
+        limits: filament_contract_codegen::WitnessDecodeLimits,
+        parse_limits: filament_contract_codegen::WitnessDecodeLimits,
     ) -> Result<FrameReplay, FrameReplayError> {
         self.try_frame_replay_with_target_edit(
             ("Account", operation),
@@ -1875,8 +1878,8 @@ impl Twin {
         field: &str,
         run: &Run,
         limits: (
-            quire_contract_codegen::WitnessDecodeLimits,
-            quire_contract_codegen::WitnessDecodeLimits,
+            filament_contract_codegen::WitnessDecodeLimits,
+            filament_contract_codegen::WitnessDecodeLimits,
         ),
         edit: impl FnOnce(&mut Option<SelectedFrameTarget>, &mut OccurrenceKey, &mut CheckedPackageV2),
     ) -> Result<FrameReplay, FrameReplayError> {
@@ -1976,7 +1979,7 @@ impl Twin {
     }
 
     /// The `ClauseSite` `qsl_replay::call_site` returns for the clause named `clause`: the
-    /// identities QSL itself gives it, read directly and not through the crate under test.
+    /// identities FSL itself gives it, read directly and not through the crate under test.
     pub fn clause_site(&self, clause: &str) -> Result<ClauseSite, Box<CallSiteRefusal>> {
         let name = ClauseName(Identifier::new(clause).expect("identifier"));
         call_site(
@@ -2041,7 +2044,7 @@ impl Twin {
             playback: vec![(balance.clone(), playback.0), (audit.clone(), playback.1)],
             post_state: vec![(balance, post.0), (audit, post.1)],
             obligation_identity: {
-                let site = self.clause_site(clause).expect("QSL clause site");
+                let site = self.clause_site(clause).expect("FSL clause site");
                 qsl_replay::ObligationIdentity::new(
                     site.node,
                     None,

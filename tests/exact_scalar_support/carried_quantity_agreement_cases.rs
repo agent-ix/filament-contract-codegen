@@ -6,7 +6,7 @@
 #[macro_use]
 mod support;
 mod generated {
-    pub use quire_exact_scalar_oracles::*;
+    pub use filament_exact_scalar_oracles::*;
     include!(concat!(env!("CARGO_MANIFEST_DIR"), "/names.rs"));
 }
 use ix_trace_rs::trace;
@@ -87,7 +87,7 @@ fn project(
 #[test]
 fn published_carried_values_losses_units_and_accounting_agree() {
     let root =
-        std::path::PathBuf::from(std::env::var_os("QSPEC_DIR").expect("published QSpec checkout"));
+        std::path::PathBuf::from(std::env::var_os("FSPEC_DIR").expect("published FSpec checkout"));
     let vectors: Value = serde_json::from_slice(
         &std::fs::read(root.join("proposals/checked-package-v2/quantity-carrier-vectors.json"))
             .unwrap(),

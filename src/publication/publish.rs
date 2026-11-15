@@ -193,7 +193,7 @@ fn unique_sibling(parent: &Path, name: &str, role: &str) -> Result<PathBuf, Publ
     for _ in 0..1024 {
         let nonce = PUBLICATION_NONCE.fetch_add(1, Ordering::Relaxed);
         let candidate = parent.join(format!(
-            ".{name}.quire-{role}-{}-{nonce}",
+            ".{name}.filament-{role}-{}-{nonce}",
             std::process::id()
         ));
         if !candidate.exists() {
@@ -290,7 +290,7 @@ mod tests {
             .unwrap()
             .filter_map(Result::ok)
             .filter_map(|entry| entry.file_name().into_string().ok())
-            .filter(|name| name.contains(".quire-stage-") || name.contains(".quire-backup-"))
+            .filter(|name| name.contains(".filament-stage-") || name.contains(".filament-backup-"))
             .collect()
     }
 
@@ -407,7 +407,7 @@ mod tests {
         assert_eq!(fs::read_to_string(&developer).unwrap(), "developer-owned\n");
         let recovery = residue(&parent);
         assert_eq!(recovery.len(), 2);
-        for (role, expected) in [(".quire-backup-", old), (".quire-stage-", new)] {
+        for (role, expected) in [(".filament-backup-", old), (".filament-stage-", new)] {
             let path = parent.join(recovery.iter().find(|name| name.contains(role)).unwrap());
             for artifact in expected.artifacts() {
                 assert_eq!(
@@ -520,7 +520,7 @@ mod tests {
             "nested new\n"
         );
         assert_eq!(backups.len(), 1);
-        assert!(backups[0].contains(".quire-backup-"));
+        assert!(backups[0].contains(".filament-backup-"));
         assert_eq!(
             fs::read_to_string(parent.join(&backups[0]).join("src/generated/nested.rs")).unwrap(),
             "nested old\n"
@@ -613,7 +613,7 @@ mod tests {
 
         let parent = temporary("cleanup-symlink");
         let external = parent.join("external");
-        let sibling = parent.join(".generated.quire-stage-raced");
+        let sibling = parent.join(".generated.filament-stage-raced");
         fs::create_dir(&external).unwrap();
         fs::write(external.join("developer.rs"), "developer-owned\n").unwrap();
         symlink(&external, &sibling).unwrap();

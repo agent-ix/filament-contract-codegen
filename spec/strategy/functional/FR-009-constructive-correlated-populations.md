@@ -3,11 +3,11 @@ id: FR-009
 title: "Construct satisfying and violating populations for correlated values"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/StR-001
+  - target: ix://agent-ix/filament-contract-codegen/StR-001
     type: satisfies
-  - target: ix://agent-ix/quire-contract-codegen/FR-008
+  - target: ix://agent-ix/filament-contract-codegen/FR-008
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/interface-001
+  - target: ix://agent-ix/filament-contract-codegen/interface-001
     type: implements
 ---
 # FR-009: Construct satisfying and violating populations for correlated values
@@ -68,7 +68,7 @@ generator never draws a candidate and then filters it out.
 
 | ID | Criteria | Verification |
 |----|----------|--------------|
-| FR-009-AC-1 | PLANNED (IR-364). For the QSL-produced, IR-admitted V2 `VersionUnchanged` selected claim (FR-008-AC-1) over 0..=1000, every `Satisfying` case has post = pre, every `Violating` case has post ≠ pre, and every value lies in 0..=1000. | Test (TC-018) |
+| FR-009-AC-1 | PLANNED (IR-364). For the FSL-produced, IR-admitted V2 `VersionUnchanged` selected claim (FR-008-AC-1) over 0..=1000, every `Satisfying` case has post = pre, every `Violating` case has post ≠ pre, and every value lies in 0..=1000. | Test (TC-018) |
 | FR-009-AC-2 | PLANNED (IR-364). For every V2 comparison operator, every domain of 1, 2, 3, and 4 members, and both a two-read relation and a read-versus-literal relation with the literal at each domain member, the generatable set of each population equals the independently enumerated satisfying or violating set: none missing, none extra. An empty side is refused with `EmptyPopulation` and never produces an empty strategy. | Test (TC-018) |
 | FR-009-AC-3 | PLANNED (IR-364). Generated population source contains no filter, assume, reject, or discard call, and a seeded 10,000-case run of each population records zero discards and zero proptest global rejects. | Test (TC-018) |
 | FR-009-AC-4 | PLANNED (IR-364). For `amount < 0` over 0..=1000, `Satisfying` and `Broad` are refused with `EmptyPopulation` naming `Satisfying`, and `Violating` generates; for `amount >= 0`, `Violating` and `Broad` are refused naming `Violating`; no refused request emits an artifact. | Test (TC-018) |
@@ -89,7 +89,7 @@ generator never draws a candidate and then filters it out.
 
 FR-009-AC-7 is backed by
 `tests/it/v2_numeric_population.rs::selected_v2_literal_mirrors_generate_exact_population_sets`.
-Eight real QSL-produced, IR-admitted comparisons cover `<`, `<=`, `>` and `>=` in read-first and
+Eight real FSL-produced, IR-admitted comparisons cover `<`, `<=`, `>` and `>=` in read-first and
 literal-first mirrored forms over the model-declared four-member domain 0..=3 with literal 1.
 Each side's complete membership is compared with independent Rust predicates. All three emitted
 populations are compiled and checked against those independently enumerated tagged sets using

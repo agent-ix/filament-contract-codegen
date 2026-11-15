@@ -1,7 +1,7 @@
-//! CG-owned solver execution evidence for QSL-authored SMT queries (FR-045).
+//! CG-owned solver execution evidence for FSL-authored SMT queries (FR-045).
 //!
 //! This module classifies only the producer's two associated solver records.
-//! QSL owns the query encoder, inductive method outcome and terminal record.
+//! FSL owns the query encoder, inductive method outcome and terminal record.
 
 use std::{
     ffi::OsString,
@@ -20,7 +20,7 @@ use crate::kani::run::process::{
 /// The per-query resource limit reached by a solver invocation.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ReachedLimit {
-    /// The QSL-authored query exceeds the caller's input byte ceiling.
+    /// The FSL-authored query exceeds the caller's input byte ceiling.
     InputBytes,
     /// The process exceeded its wall-clock deadline.
     WallClock,
@@ -31,7 +31,7 @@ pub enum ReachedLimit {
 /// A solver invocation's observed response or typed non-success.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum SolverStatus {
-    /// The solver answered `sat`; a QSL-owned reconstruction is still required.
+    /// The solver answered `sat`; a FSL-owned reconstruction is still required.
     Sat,
     /// The solver answered `unsat` for this query only.
     Unsat,
@@ -49,7 +49,7 @@ pub enum SolverStatus {
     Cancelled,
 }
 
-/// The exact QSL-owned selection and query bytes requested by the caller.
+/// The exact FSL-owned selection and query bytes requested by the caller.
 ///
 /// The caller supplies authoritative identity types for product, item,
 /// instance and query kind. CG retains them without deriving or hashing an
@@ -64,16 +64,16 @@ pub struct QuerySelection<Product, Item, Instance, Kind> {
     pub instance: Instance,
     /// Induction depth in joint steps.
     pub depth: std::num::NonZeroU64,
-    /// QSL's base or step query kind.
+    /// FSL's base or step query kind.
     pub kind: Kind,
-    /// The exact QSL-authored query bytes sent to the solver.
+    /// The exact FSL-authored query bytes sent to the solver.
     pub query_bytes: Vec<u8>,
 }
 
-/// A QSL selection paired with CG's distinct process-attempt identity.
+/// A FSL selection paired with CG's distinct process-attempt identity.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct QueryAssociation<Product, Item, Instance, Kind> {
-    /// The QSL-owned selection sent to the solver.
+    /// The FSL-owned selection sent to the solver.
     pub selection: QuerySelection<Product, Item, Instance, Kind>,
     attempt: NonZeroU64,
 }
@@ -86,7 +86,7 @@ impl<Product, Item, Instance, Kind> QueryAssociation<Product, Item, Instance, Ki
     }
 }
 
-/// One solver response paired with its QSL-supplied query association.
+/// One solver response paired with its FSL-supplied query association.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct QueryRun<Product, Item, Instance, Kind> {
     /// Exact selection and CG-assigned attempt for this invocation.
@@ -98,7 +98,7 @@ pub struct QueryRun<Product, Item, Instance, Kind> {
 /// The selected child invocation and its associated, interpreted response.
 ///
 /// The process record keeps the actual executable, arguments, limits, completion
-/// and bounded raw streams. The association keeps the exact QSL query bytes.
+/// and bounded raw streams. The association keeps the exact FSL query bytes.
 #[derive(Debug)]
 pub struct SolverExecution<Product, Item, Instance, Kind> {
     /// The typed query identity and non-proof or response status.
@@ -166,9 +166,9 @@ fn next_attempt() -> Result<NonZeroU64, SolverRunError> {
     NonZeroU64::new(value).ok_or(SolverRunError::AttemptExhausted)
 }
 
-/// Invoke the selected solver directly for exactly one QSL-authored query.
+/// Invoke the selected solver directly for exactly one FSL-authored query.
 ///
-/// This records a solver response; it never constructs a QSL outcome.
+/// This records a solver response; it never constructs a FSL outcome.
 pub fn run_solver_query<Product, Item, Instance, Kind>(
     selection: QuerySelection<Product, Item, Instance, Kind>,
     executable: PathBuf,
@@ -253,7 +253,7 @@ fn status_and_tail(stdout: &[u8]) -> Option<(SolverStatus, &[u8])> {
 }
 
 // cvc5 dumps one outer list after the result. Remove only its delimiters;
-// the bytes of its Alethe commands stay unchanged for QSL's checker.
+// the bytes of its Alethe commands stay unchanged for FSL's checker.
 pub(super) fn captured_alethe_proof(stdout: &[u8]) -> Result<Option<&[u8]>, SolverStatus> {
     let Some((status, tail)) = status_and_tail(stdout) else {
         return Err(SolverStatus::MalformedResponse);
@@ -392,12 +392,12 @@ fn sexpr_end(bytes: &[u8], start: usize) -> Option<usize> {
 
 /// CG's assessment of a base/step pair as run evidence only.
 ///
-/// This is not a QSL method outcome or terminal settlement.
+/// This is not a FSL method outcome or terminal settlement.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum PairEvidence {
     /// Both correctly associated solver responses were `unsat`.
     InductionEligible,
-    /// A base `sat` can only be a candidate for QSL reconstruction and replay.
+    /// A base `sat` can only be a candidate for FSL reconstruction and replay.
     BaseSatCandidate,
     /// A `sat` step does not close induction after an `unsat` base.
     StepSatNotClosed,
@@ -409,10 +409,10 @@ pub enum PairEvidence {
     NonProof(SolverStatus),
 }
 
-/// Classify one base/step pair without manufacturing QSL-owned outcomes.
+/// Classify one base/step pair without manufacturing FSL-owned outcomes.
 ///
 /// The expected associations include the exact bytes and query kind. The
-/// QSL-facing caller supplies each identity type. A response from another
+/// FSL-facing caller supplies each identity type. A response from another
 /// run cannot complete this pair, even if its solver status is `unsat`.
 #[must_use]
 pub fn classify_pair<Product: Eq, Item: Eq, Instance: Eq, Kind: Eq>(
@@ -530,5 +530,5 @@ mod proof_tests {
 }
 
 pub mod refinement;
-/// Production preparation and execution of QSL-owned refinement queries.
+/// Production preparation and execution of FSL-owned refinement queries.
 pub mod refinement_driver;

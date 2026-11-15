@@ -13,7 +13,7 @@ type Compare = fn(
     &EnumValue,
     &EnumValue,
     &mut Meter,
-) -> Result<Outcome<bool>, quire_exact_scalar_oracles::OracleStop>;
+) -> Result<Outcome<bool>, filament_exact_scalar_oracles::OracleStop>;
 
 #[ix_trace_rs::trace("TC-024", "FR-014-AC-2")]
 #[ix_trace_rs::trace("TC-024", "FR-014-AC-6")]

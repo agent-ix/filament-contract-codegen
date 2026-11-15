@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Agent-IX
 
-//! FR-057 V2 Kani integer div/rem/mod scalar harnesses over genuine QSL sources admitted through
+//! FR-057 V2 Kani integer div/rem/mod scalar harnesses over genuine FSL sources admitted through
 //! Contract IR and routed through `generate_routed`.
 
 use ix_trace_rs::trace;
@@ -9,7 +9,7 @@ use qsl_replay::{
     admit_integer_division, compile_package_with_integer_division, CompileUnit, DefinitionRole,
     DependencyInput, ReplayLimits, SourceIdentity, StageLimits,
 };
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     KaniScalarObligationHarness, ObligationDisposition, RoutedGeneration, UnsupportedObligation,
 };
 use quire_contract_model::{
@@ -60,7 +60,7 @@ pub(crate) fn compile(text: &str, profile: DivisionProfile) -> CheckedPackageV2 
         StageLimits::default(),
         ReplayLimits::default(),
     )
-    .expect("QSL compiles the division source");
+    .expect("FSL compiles the division source");
     let mut evidence = CheckedPackageEvidence::new();
     evidence.support_feature("quire.value.complete/v1");
     match CheckedPackageV2::read(
@@ -69,7 +69,7 @@ pub(crate) fn compile(text: &str, profile: DivisionProfile) -> CheckedPackageV2 
         &evidence,
     ) {
         CheckedPackageV2ReadResult::Admitted(package) => *package,
-        other => panic!("IR admits the QSL-emitted bytes: {other:?}"),
+        other => panic!("IR admits the FSL-emitted bytes: {other:?}"),
     }
 }
 
@@ -154,7 +154,7 @@ pub(crate) fn routed_nodes(
             .iter()
             .cloned()
             .map(|item| match &input.positions[item.request_index] {
-                quire_contract_codegen::ContractRequestPosition::DriverItem {
+                filament_contract_codegen::ContractRequestPosition::DriverItem {
                     result_selection,
                     ..
                 } => item.with_scalar_selection(&input.package, result_selection.clone()),
@@ -164,7 +164,7 @@ pub(crate) fn routed_nodes(
         let requirements = crate::common::requirements::project(input.source, &input.positions);
         let records = crate::common::requirements::records(&requirements);
         let contexts = kani_context("crate::subject", unwind);
-        return quire_contract_codegen::generate_routed_native(
+        return filament_contract_codegen::generate_routed_native(
             input.source,
             &input.package,
             &input.positions,
@@ -188,7 +188,7 @@ pub(crate) fn harness_of(
 ) -> Result<
     (
         &KaniScalarObligationHarness,
-        quire_contract_codegen::Artifact,
+        filament_contract_codegen::Artifact,
     ),
     String,
 > {
@@ -243,8 +243,8 @@ fn mutate(text: &str, from: &str, to: &str) -> String {
     mutated
 }
 
-/// One division shape. A shape with an inferred result is compiled from QSL source; a shape
-/// with an explicit narrowed result is a reader-admitted fixture, because the QSL range prover
+/// One division shape. A shape with an inferred result is compiled from FSL source; a shape
+/// with an explicit narrowed result is a reader-admitted fixture, because the FSL range prover
 /// does not admit that narrowing.
 pub(crate) struct Shape {
     pub(crate) profile: DivisionProfile,
@@ -748,7 +748,7 @@ fn parts(
     generation: &RoutedGeneration,
     index: usize,
 ) -> (
-    &quire_contract_codegen::ObligationRecord,
+    &filament_contract_codegen::ObligationRecord,
     Option<&KaniScalarObligationHarness>,
 ) {
     kani_parts(&generation.items[index].output)
@@ -799,7 +799,7 @@ fn every_division_claim_of_each_law_generates_one_harness_from_its_own_node() {
             );
             assert_eq!(
                 harness.identity.integer_representation,
-                quire_contract_codegen::ScalarIntegerRepresentation::General
+                filament_contract_codegen::ScalarIntegerRepresentation::General
             );
         }
     }
@@ -1084,7 +1084,7 @@ fn the_harness_identity_records_node_operation_profile_route_ranges_and_backend_
     assert_eq!(identity.node_id, node);
     assert_eq!(identity.operation_identity, "quire.op.integer.div");
     assert_eq!(identity.unwind, 12);
-    assert_eq!(identity.solver, quire_contract_codegen::KaniSolver::Cadical);
+    assert_eq!(identity.solver, filament_contract_codegen::KaniSolver::Cadical);
     let division = identity.division_scalar.as_ref().unwrap();
     assert_eq!(
         division.profile.as_deref(),
@@ -1097,14 +1097,14 @@ fn the_harness_identity_records_node_operation_profile_route_ranges_and_backend_
     assert_eq!(json["divisionScalar"]["resultMinimum"], -8);
     assert_eq!(
         identity.integer_representation,
-        quire_contract_codegen::ScalarIntegerRepresentation::General
+        filament_contract_codegen::ScalarIntegerRepresentation::General
     );
 }
 
 /// The division harness and the manifest its crate builds under, for the run controls.
 fn first_harness() -> (
     KaniScalarObligationHarness,
-    quire_contract_codegen::Artifact,
+    filament_contract_codegen::Artifact,
 ) {
     let package = catalog(DivisionProfile::Floor);
     let generation = routed_node(&package, &body_id(&package, "dv"), 12);
@@ -1116,8 +1116,8 @@ fn first_harness() -> (
 fn run_with_launcher(
     name: &str,
     body: &str,
-    ceilings: quire_contract_codegen::ProofCeilings,
-) -> quire_contract_codegen::KaniExecutionEvidence {
+    ceilings: filament_contract_codegen::ProofCeilings,
+) -> filament_contract_codegen::KaniExecutionEvidence {
     use std::os::unix::fs::PermissionsExt;
     let (mut harness, manifest) = first_harness();
     harness.identity.ceilings = ceilings;
@@ -1133,9 +1133,9 @@ fn run_with_launcher(
     .unwrap();
     std::fs::set_permissions(&launcher, std::fs::Permissions::from_mode(0o755)).unwrap();
     let cancel = quire_exact::Cancel::new();
-    quire_contract_codegen::execute_kani_obligation(&quire_contract_codegen::KaniExecutionRequest {
+    filament_contract_codegen::execute_kani_obligation(&filament_contract_codegen::KaniExecutionRequest {
         cancel: &cancel,
-        installation: &quire_contract_codegen::KaniInstallation::new(launcher),
+        installation: &filament_contract_codegen::KaniInstallation::new(launcher),
         harness: (&harness).into(),
         crate_directory: directory,
         target_directory: &directory.join("target"),
@@ -1149,7 +1149,7 @@ fn run_with_launcher(
 #[trace("TC-071", "FR-057-AC-10")]
 #[test]
 fn an_unsatisfied_cover_an_exhausted_unwind_a_timeout_and_no_verdict_never_verify() {
-    use quire_contract_codegen::{classify_kani_run, KaniInconclusiveReason, KaniRunOutcome};
+    use filament_contract_codegen::{classify_kani_run, KaniInconclusiveReason, KaniRunOutcome};
     let (harness, _) = first_harness();
     let total = harness.rust.contents.matches("kani::cover!(").count();
     assert_eq!(total, 1, "one completion cover");
@@ -1341,9 +1341,9 @@ pub(crate) fn kani_mutants(
 fn run_under_real_kani(
     name: &str,
     harness: &KaniScalarObligationHarness,
-    manifest: &quire_contract_codegen::Artifact,
+    manifest: &filament_contract_codegen::Artifact,
     source: Option<&str>,
-) -> quire_contract_codegen::KaniExecutionEvidence {
+) -> filament_contract_codegen::KaniExecutionEvidence {
     let mut run = harness.clone();
     if let Some(source) = source {
         assert_ne!(run.rust.contents, source, "the mutation changed the source");
@@ -1368,8 +1368,8 @@ fn expect_timed_out(shape: &Shape, name: &str) {
     let evidence = run_under_real_kani(name, harness, &manifest, None);
     assert_eq!(
         evidence.outcome,
-        quire_contract_codegen::KaniRunOutcome::Inconclusive {
-            reason: quire_contract_codegen::KaniInconclusiveReason::TimedOut
+        filament_contract_codegen::KaniRunOutcome::Inconclusive {
+            reason: filament_contract_codegen::KaniInconclusiveReason::TimedOut
         },
         "{name}: a TimedOut shape is a not_tractable row, never a verdict"
     );
@@ -1455,7 +1455,7 @@ fn the_shipped_table_holds_the_measured_division_rows_with_their_route() {
             assert!(row.get(field).is_none(), "{field} in {row}");
         }
     }
-    quire_contract_codegen::TractabilityTable::shipped_general_route_scalar()
+    filament_contract_codegen::TractabilityTable::shipped_general_route_scalar()
         .expect("the embedded table loads with the division rows");
 }
 
@@ -1464,13 +1464,13 @@ fn the_shipped_table_holds_the_measured_division_rows_with_their_route() {
 #[trace("TC-071", "FR-057-AC-9")]
 #[test]
 fn a_division_harness_at_or_above_its_row_width_is_refused_before_kani_and_below_it_runs() {
-    use quire_contract_codegen::{
+    use filament_contract_codegen::{
         execute_kani_obligation_decided, DecidedRunRefusal, IntegerRoute, KaniExecutionRefusal,
         TractabilityTable,
     };
     let table = TractabilityTable::shipped_general_route_scalar().expect("the shipped table");
     let cancel = quire_exact::Cancel::new();
-    let installation = quire_contract_codegen::KaniInstallation::new("/nonexistent/cargo-kani");
+    let installation = filament_contract_codegen::KaniInstallation::new("/nonexistent/cargo-kani");
     let missing = std::path::Path::new("/nonexistent/crate");
     for (function, operation) in [("dv", "div"), ("rm", "rem"), ("md", "mod")] {
         let package = catalog(DivisionProfile::Floor);
@@ -1479,10 +1479,10 @@ fn a_division_harness_at_or_above_its_row_width_is_refused_before_kani_and_below
         fn request<'a>(
             harness: &'a KaniScalarObligationHarness,
             cancel: &'a quire_exact::Cancel,
-            installation: &'a quire_contract_codegen::KaniInstallation,
+            installation: &'a filament_contract_codegen::KaniInstallation,
             missing: &'a std::path::Path,
-        ) -> quire_contract_codegen::KaniExecutionRequest<'a> {
-            quire_contract_codegen::KaniExecutionRequest {
+        ) -> filament_contract_codegen::KaniExecutionRequest<'a> {
+            filament_contract_codegen::KaniExecutionRequest {
                 cancel,
                 installation,
                 harness: harness.into(),
@@ -1627,8 +1627,8 @@ fn general_route_zero_completing_mutant_times_out() {
     let evidence = run_under_real_kani("ir854-mutant-zero", harness, &manifest, Some(mutated));
     assert_eq!(
         evidence.outcome,
-        quire_contract_codegen::KaniRunOutcome::Inconclusive {
-            reason: quire_contract_codegen::KaniInconclusiveReason::TimedOut
+        filament_contract_codegen::KaniRunOutcome::Inconclusive {
+            reason: filament_contract_codegen::KaniInconclusiveReason::TimedOut
         }
     );
 }

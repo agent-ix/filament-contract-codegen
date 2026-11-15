@@ -15,13 +15,13 @@ use std::{
 };
 
 use crate::scratch_crate::TemporaryDirectory;
-use ix_trace_rs::trace;
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     execute_kani_obligation, execute_kani_obligations, Artifact, HarnessSymbol,
     KaniExecutionEvidence, KaniExecutionRequest, KaniInconclusiveReason, KaniInstallation,
     KaniRunOutcome, KaniSolver, ModuleSymbol, StateFrameHarness, StateFrameIdentity,
     StateFrameProperty, StateFrameScope,
 };
+use ix_trace_rs::trace;
 use quire_contract_model::CheckedNodeId;
 use serde_json::json;
 
@@ -128,7 +128,7 @@ struct Lane {
 impl Lane {
     fn new(label: &str, harnesses: &[StateFrameHarness]) -> Self {
         let real = KaniInstallation::discover().expect("cargo-kani is installed");
-        let scratch = TemporaryDirectory::new(&format!("quire-kani-batching-{label}"));
+        let scratch = TemporaryDirectory::new(&format!("filament-kani-batching-{label}"));
         let directory = &scratch.path;
         fs::create_dir_all(directory.join("crate/src")).unwrap();
         let library: String = harnesses

@@ -8,8 +8,8 @@ mod rekey;
 #[path = "../checked_package_support/draft_rows.rs"]
 mod draft_rows;
 
+use filament_contract_codegen::generate_v2_clause_oracle;
 use ix_trace_rs::trace;
-use quire_contract_codegen::generate_v2_clause_oracle;
 use quire_contract_model::{
     CheckedNodeId, CheckedNodeOwner, CheckedPackageEvidence, CheckedPackageReadLimits,
     CheckedPackageV2ReadResult, ContractSourceV1,
@@ -88,9 +88,9 @@ fn public_negated_positive_two_to_63_keeps_its_child_and_owner_call() {
     assert!(generated.source.contains("IntegerArithmetic::Negate"));
 }
 
-// QSL rejects beyond-i128 source literals before CG. These separate IR-reader
+// FSL rejects beyond-i128 source literals before CG. These separate IR-reader
 // controls vary an admitted source package's literal, then ask the owner's public
-// candidate/reader APIs for identities and admission. They are not QSL emission
+// candidate/reader APIs for identities and admission. They are not FSL emission
 // claims for those values and never alter the actual proof fixture.
 fn reader_variant(
     condition: &str,
@@ -253,7 +253,7 @@ fn noncanonical_literal_admission_and_runtime_fallback_remain_distinct() {
     }
 }
 
-// This is a separately labelled IR-reader control, not a QSL-emitted bounded
+// This is a separately labelled IR-reader control, not a FSL-emitted bounded
 // arithmetic claim. Its result type is an existing checked integer range.
 fn bounded_addition_reader_attempt(coherent: bool) -> (CheckedPackageV2ReadResult, CheckedNodeId) {
     let (result, clause) = reader_variant("(self.balance + 1) > 1000", |wire| {
@@ -318,7 +318,7 @@ fn incoherent_arithmetic_result_types_keep_the_owner_type_refusal() {
 #[trace("TC-024", "FR-014-AC-57")]
 #[test]
 fn original_parameter_precondition_regenerates_with_unchanged_proof_semantics() {
-    use quire_contract_codegen::{
+    use filament_contract_codegen::{
         negotiate_kani_obligations, KaniObligationOutcome, KaniObligationRequest, KaniSolver,
         ObligationItem,
     };
@@ -417,7 +417,7 @@ fn coherent_bounded_arithmetic_control_is_decided_by_the_owner_reader() {
 fn reader_admitted_literal_fallbacks_and_bounded_stops_preserve_native_accounting() {
     use std::{fmt::Write as _, fs, process::Command};
 
-    use quire_contract_codegen::{EXACT_DEPENDENCY_SOURCE, SEMANTIC_VALUE_DEPENDENCY_SOURCE};
+    use filament_contract_codegen::{EXACT_DEPENDENCY_SOURCE, SEMANTIC_VALUE_DEPENDENCY_SOURCE};
 
     use super::{scratch_crate, v2_clause_integer_literal_agreement::NATIVE_SUPPORT};
 

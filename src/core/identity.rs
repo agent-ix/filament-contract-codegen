@@ -94,7 +94,7 @@ symbol! {
 /// The two halves are different types, so a swapped pair does not compile:
 ///
 /// ```compile_fail
-/// use quire_contract_codegen::{HarnessPath, HarnessSymbol, ModuleSymbol};
+/// use filament_contract_codegen::{HarnessPath, HarnessSymbol, ModuleSymbol};
 ///
 /// let module = ModuleSymbol::try_from("m").unwrap();
 /// let harness = HarnessSymbol::try_from("check").unwrap();

@@ -3,14 +3,14 @@ id: TC-062
 title: "Retain constrained method boundaries and original evidence"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-048
+  - target: ix://agent-ix/filament-contract-codegen/FR-048
     type: verifies
 ---
 # TC-062: Retain constrained method boundaries and original evidence
 
 ## Description
 
-Exercise the constrained family with authentic QSL emission followed by public IR
+Exercise the constrained family with authentic FSL emission followed by public IR
 admission. Keep constraint selection out of semantic obligation identity, retain
 all canonical state fields and effective operations, and never present constrained
 backend success through an ordinary proof conversion.
@@ -29,12 +29,12 @@ standalone collection constraint unsupported control.
 Run installed bounded-Kani controls for healthy boundary reachability, no-boundary
 completion and seeded boundary safety violations. Use explicit small resource
 ceilings, never the parked 16 GiB collection proof. Independently evaluate the
-bounded reached states through QSL and compare safety/boundary observations. Run
+bounded reached states through FSL and compare safety/boundary observations. Run
 the full local integration target against the stated main baseline before merge.
 
 ## Expected Results
 
 All FR-048 criteria are evidenced by their discriminating controls. Constrained
 results retain original typed evidence and method binding, provide no unconditional
-Verified/Proved fallback, and refuse terminal conversion where QSL's public terminal
+Verified/Proved fallback, and refuse terminal conversion where FSL's public terminal
 representation cannot retain the selected method.

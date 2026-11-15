@@ -9,13 +9,13 @@ pub mod panic_scan;
 /// A matching V2 clause claim for tests that do not exercise FR-015-AC-48.
 pub mod v2_claim;
 
-use quire_contract_codegen::ProofCeilings;
+use filament_contract_codegen::ProofCeilings;
 
 /// Shared explicit proof-resource fixture budgets.
 pub mod proof_ceilings;
 
-/// The driver's projection of QSL requirement records for fixtures that select an `OwnResult`.
+/// The driver's projection of FSL requirement records for fixtures that select an `OwnResult`.
 pub mod requirements;
 
-/// Hand-written QSL obligation identities for the state-frame lane.
+/// Hand-written FSL obligation identities for the state-frame lane.
 pub mod state_frame_identities;

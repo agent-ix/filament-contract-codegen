@@ -2,11 +2,11 @@ use ix_trace_rs::trace;
 use std::{collections::BTreeSet, fmt::Write as _, fs, path::PathBuf, process::Command};
 
 use crate::scratch_crate::{runtime_dependency, write_manifest, TemporaryDirectory};
-use jsonschema::{Draft, JSONSchema};
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     generate_boolean_oracle, GenerationDiagnostic, GenerationErrorCode, GenerationTerminalState,
     OracleRequest, MAX_GENERATED_SOURCE_BYTES,
 };
+use jsonschema::{Draft, JSONSchema};
 use quire_contract_model::{
     AnchorName, BooleanOperator, ClauseId, ComparisonOperator, DeclarationEnvironment,
     ExecutionPoint, Expression, ExpressionKind, IntegerDomain, IntegerType, NumericOperator,
@@ -286,10 +286,10 @@ fn source_symbol(source: &str) -> &str {
 #[trace("TC-001", "TC-006")]
 #[test]
 fn tc_006_generated_oracle_probes_qualify_against_native_llvm_export() {
-    use quire_contract_codegen::{
+    use filament_contract_codegen::{
         classify_clause, parse_llvm_coverage, ClauseCoverage, SourceRegion,
     };
-    let directory = TemporaryDirectory::new("quire-native-vacuity");
+    let directory = TemporaryDirectory::new("filament-native-vacuity");
     let environment = boolean_environment(&["a", "b"]);
     let implication = || {
         boolean_op(
@@ -527,7 +527,7 @@ fn tc_001_boolean_oracle_bundle_is_deterministic_traceable_and_schema_valid() {
         .contents
         .contains("quire_contract_runtime::ClauseId::new(\"clause-main\")"));
 
-    let source_map: Vec<quire_contract_codegen::SourceRegion> =
+    let source_map: Vec<filament_contract_codegen::SourceRegion> =
         serde_json::from_str(&first.source_map.contents).unwrap();
     // Trace: AD-004 L-9, TC-001. RFC 8785 orders `clauseId` before `role`, unlike the
     // former struct-order serializer; the file carries exactly one trailing newline.
@@ -1100,7 +1100,7 @@ fn tc_001_every_implication_has_an_exact_unaliased_consequent_region() {
         expression: &typed,
     })
     .unwrap();
-    let regions: Vec<quire_contract_codegen::SourceRegion> =
+    let regions: Vec<filament_contract_codegen::SourceRegion> =
         serde_json::from_str(&bundle.source_map.contents).unwrap();
     let consequences = regions
         .iter()
@@ -1135,7 +1135,7 @@ fn tc_001_every_implication_has_an_exact_unaliased_consequent_region() {
         expression: &typed_alias,
     })
     .unwrap();
-    let alias_regions: Vec<quire_contract_codegen::SourceRegion> =
+    let alias_regions: Vec<filament_contract_codegen::SourceRegion> =
         serde_json::from_str(&alias_bundle.source_map.contents).unwrap();
     let consequent = alias_regions
         .iter()

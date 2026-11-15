@@ -13,45 +13,45 @@ allow = [
     # `fluent-uri`. Permissive and compatible with AGPL-3.0-or-later.
     "MIT-0",
     # `ar_archive_writer` (a build dependency of `stacker`, reached through the IR
-    # and QSL dependencies). Apache-2.0 plus LLVM's standard exception; still permissive.
+    # and FSL dependencies). Apache-2.0 plus LLVM's standard exception; still permissive.
     "Apache-2.0 WITH LLVM-exception",
 ]
 confidence-threshold = 0.9
 # First-party agent-ix crates are AGPL-3.0-or-later (owner decision 2026-09-14,
-# agent-ix/quire-contract-codegen#45). Exceptions are scoped to this crate and the
-# sibling quire-contract-* crates it consumes so the third-party allow-list stays
+# agent-ix/filament-contract-codegen#45). Exceptions are scoped to this crate and the
+# sibling filament-contract-* crates it consumes so the third-party allow-list stays
 # permissive-only.
 exceptions = [
-    { allow = ["AGPL-3.0-or-later"], crate = "quire-contract-codegen" },
+    { allow = ["AGPL-3.0-or-later"], crate = "filament-contract-codegen" },
     { allow = ["AGPL-3.0-or-later"], crate = "ix-cli-kit" },
     # First-party compile-time macro for production #[implements] markers. Scoped to
     # ix-trace-rs; remove this exception when CG removes those markers and the dependency.
     { allow = ["AGPL-3.0-or-later"], crate = "ix-trace-rs" },
-    { allow = ["AGPL-3.0-or-later"], crate = "quire-contract-ir" },
-    { allow = ["AGPL-3.0-or-later"], crate = "quire-contract-model" },
-    { allow = ["AGPL-3.0-or-later"], crate = "quire-contract-runtime" },
-    { allow = ["AGPL-3.0-or-later"], crate = "quire-verification-contracts" },
-    # quire-spec-language is reached through quire-contract-ir and
+    { allow = ["AGPL-3.0-or-later"], crate = "filament-contract-ir" },
+    { allow = ["AGPL-3.0-or-later"], crate = "filament-contract-model" },
+    { allow = ["AGPL-3.0-or-later"], crate = "filament-contract-runtime" },
+    { allow = ["AGPL-3.0-or-later"], crate = "filament-verification-contracts" },
+    # filament-spec-language is reached through filament-contract-ir and
     # declares AGPL-3.0-or-later, the same first-party decision as above.
-    { allow = ["AGPL-3.0-or-later"], crate = "quire-spec-language" },
-    # IR-254: qsl-replay (the only QSL crate this repository may depend on, per
-    # QSL arch-lint T12-A) and its own transitive closure -- all first-party
+    { allow = ["AGPL-3.0-or-later"], crate = "filament-spec-language" },
+    # IR-254: fsl-replay (the only FSL crate this repository may depend on, per
+    # FSL arch-lint T12-A) and its own transitive closure -- all first-party
     # agent-ix crates under the same AGPL-3.0-or-later decision above.
-    { allow = ["AGPL-3.0-or-later"], crate = "qsl-attrs" },
-    { allow = ["AGPL-3.0-or-later"], crate = "qsl-cst" },
-    { allow = ["AGPL-3.0-or-later"], crate = "qsl-eval" },
-    { allow = ["AGPL-3.0-or-later"], crate = "qsl-forms" },
-    { allow = ["AGPL-3.0-or-later"], crate = "qsl-foundation" },
-    { allow = ["AGPL-3.0-or-later"], crate = "qsl-package" },
-    { allow = ["AGPL-3.0-or-later"], crate = "qsl-replay" },
-    { allow = ["AGPL-3.0-or-later"], crate = "qsl-semantics" },
+    { allow = ["AGPL-3.0-or-later"], crate = "fsl-attrs" },
+    { allow = ["AGPL-3.0-or-later"], crate = "fsl-cst" },
+    { allow = ["AGPL-3.0-or-later"], crate = "fsl-eval" },
+    { allow = ["AGPL-3.0-or-later"], crate = "fsl-forms" },
+    { allow = ["AGPL-3.0-or-later"], crate = "fsl-foundation" },
+    { allow = ["AGPL-3.0-or-later"], crate = "fsl-package" },
+    { allow = ["AGPL-3.0-or-later"], crate = "fsl-replay" },
+    { allow = ["AGPL-3.0-or-later"], crate = "fsl-semantics" },
     { allow = ["AGPL-3.0-or-later"], crate = "quire-canonical" },
     { allow = ["AGPL-3.0-or-later"], crate = "quire-canonical-derive" },
-    { allow = ["AGPL-3.0-or-later"], crate = "quire-checked" },
-    { allow = ["AGPL-3.0-or-later"], crate = "quire-exact" },
-    { allow = ["AGPL-3.0-or-later"], crate = "quire-eval" },
-    { allow = ["AGPL-3.0-or-later"], crate = "quire-semantic-value" },
-    { allow = ["AGPL-3.0-or-later"], crate = "quire-walk" },
+    { allow = ["AGPL-3.0-or-later"], crate = "filament-checked" },
+    { allow = ["AGPL-3.0-or-later"], crate = "filament-exact" },
+    { allow = ["AGPL-3.0-or-later"], crate = "filament-eval" },
+    { allow = ["AGPL-3.0-or-later"], crate = "filament-semantic-value" },
+    { allow = ["AGPL-3.0-or-later"], crate = "filament-walk" },
     { allow = ["AGPL-3.0-or-later"], crate = "quire-rs" },
     # quire-rs 0.50.1 reaches this first-party AGPL crate through its extraction stack.
     { allow = ["AGPL-3.0-or-later"], crate = "quire-rust-extraction" },
@@ -86,15 +86,15 @@ allow-git = [
     "https://github.com/agent-ix/quire-canonical",
     # quire-rs 0.50.1 reaches the first-party parser through quire-rust-extraction.
     "https://github.com/agent-ix/quire-code-rs",
-    "https://github.com/agent-ix/quire-contract-ir",
-    "https://github.com/agent-ix/quire-contract-runtime",
-    "https://github.com/agent-ix/quire-exact",
-    "https://github.com/agent-ix/quire-eval",
+    "https://github.com/agent-ix/filament-contract-ir",
+    "https://github.com/agent-ix/filament-contract-runtime",
+    "https://github.com/agent-ix/filament-exact",
+    "https://github.com/agent-ix/filament-eval",
     "https://github.com/agent-ix/quire-rs",
-    "https://github.com/agent-ix/quire-semantic-value",
-    "https://github.com/agent-ix/quire-spec-language",
-    # Published QSpec qualification vectors used by the model-variant agreement dev dependency.
-    "https://github.com/agent-ix/quire-specification",
-    "https://github.com/agent-ix/quire-verification-contracts",
-    "https://github.com/agent-ix/quire-walk",
+    "https://github.com/agent-ix/filament-semantic-value",
+    "https://github.com/agent-ix/filament-spec-language",
+    # Published FSpec qualification vectors used by the model-variant agreement dev dependency.
+    "https://github.com/agent-ix/filament-specification",
+    "https://github.com/agent-ix/filament-verification-contracts",
+    "https://github.com/agent-ix/filament-walk",
 ]

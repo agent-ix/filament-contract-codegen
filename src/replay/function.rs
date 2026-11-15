@@ -1,12 +1,12 @@
-//! The replay adapter: a decoded Kani falsification goes to QSL's layer-6 `replay` facade, and
-//! QSL's own verdict comes back.
+//! The replay adapter: a decoded Kani falsification goes to FSL's layer-6 `replay` facade, and
+//! FSL's own verdict comes back.
 //!
-//! This module builds the backend-witness transcript in the grammar `qsl-replay` admits from the
+//! This module builds the backend-witness transcript in the grammar `fsl-replay` admits from the
 //! typed values [`decode_falsification`]
 //! returns, binds each value to its parameter by
 //! the parameter's node id, and calls [`qsl_replay::replay`]. The executor recompiles the
 //! request's identity-labelled source and evaluates the selected function itself, so the verdict
-//! is QSL's, not a value this crate supplies.
+//! is FSL's, not a value this crate supplies.
 
 use std::{collections::BTreeMap, fmt};
 
@@ -36,9 +36,9 @@ use crate::{
 #[cfg(test)]
 use crate::replay::witness::unbounded_decode_limits;
 
-/// The Kani identity of a harness whose claim is a selected QSL function's Boolean result.
+/// The Kani identity of a harness whose claim is a selected FSL function's Boolean result.
 ///
-/// Unlike [`KaniObligationIdentity`], this carries no clause or source-span fields: QSL's
+/// Unlike [`KaniObligationIdentity`], this carries no clause or source-span fields: FSL's
 /// [`call_site`] supplies the function node and declaration occurrence used for the typed replay
 /// identity. `module_symbol` is absent for a top-level harness, as the bounded corpus emits.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -74,17 +74,17 @@ impl ReplayHarnessIdentity {
 }
 
 /// The request's `backend` member: the identity of the backend that found the counterexample.
-/// QSL records it and does not interpret it (AD-002); the only backend this crate runs is Kani.
+/// FSL records it and does not interpret it (AD-002); the only backend this crate runs is Kani.
 const BACKEND_IDENTITY: &str = "kani";
 
 /// One parameter of the function the replay selects: the harness argument name a decoded value
-/// carries, and the parameter's structural node identity spelled as QSL names a witness entry.
+/// carries, and the parameter's structural node identity spelled as FSL names a witness entry.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ReplayParameter<'a> {
     /// The harness argument identifier the decoded value is named by.
     pub argument: &'a str,
     /// The parameter's witness entry name: `witness_entry_name` of its node id in the proved
-    /// package. `parameters` slices list these in ascending node id order, the order QSL requires
+    /// package. `parameters` slices list these in ascending node id order, the order FSL requires
     /// of a function witness's entries.
     pub node_id: &'a str,
 }
@@ -97,22 +97,22 @@ pub enum SpineReplayError {
         /// The decoded value's name.
         argument: String,
     },
-    /// The selected scalar Kani harness cannot transcribe this QSL value into its witness text.
+    /// The selected scalar Kani harness cannot transcribe this FSL value into its witness text.
     UnsupportedWitnessValue {
         /// The decoded argument's name.
         argument: String,
     },
     /// The harness or check text would change the transcript's field boundaries.
     FieldDelimiter,
-    /// The transcript this adapter built is not one `qsl-replay` admits.
+    /// The transcript this adapter built is not one `fsl-replay` admits.
     Transcript(MalformedTranscript),
-    /// The QSL executor refused the request before settling a verdict.
+    /// The FSL executor refused the request before settling a verdict.
     Refused(Box<ReplayRefusal>),
     /// A witness-sourced request settled on the input arm.
     WrongArm,
     /// An input-sourced function evaluation returned no Boolean value.
     NoInputValue,
-    /// The typed harness identity was created from a different QSL package/site.
+    /// The typed harness identity was created from a different FSL package/site.
     #[cfg(test)]
     PackageIdentity,
     /// The harness has no function-contract obligation identity.
@@ -144,10 +144,10 @@ impl fmt::Display for SpineReplayError {
             Self::Transcript(cause) => write!(f, "the witness transcript is not admitted: {cause}"),
             Self::Refused(refusal) => write!(f, "the replay was refused: {refusal}"),
             Self::WrongArm => f.write_str("a witness-sourced request settled on the input arm"),
-            Self::NoInputValue => f.write_str("the QSL input evaluation returned no Boolean value"),
+            Self::NoInputValue => f.write_str("the FSL input evaluation returned no Boolean value"),
             #[cfg(test)]
             Self::PackageIdentity => {
-                f.write_str("the harness identity belongs to another QSL package")
+                f.write_str("the harness identity belongs to another FSL package")
             }
             Self::Identity(cause) => write!(f, "the obligation identity was not built: {cause}"),
             Self::Packet(cause) => write!(f, "the producer packet was refused: {cause:?}"),
@@ -168,7 +168,7 @@ impl From<MalformedTranscript> for SpineReplayError {
 ///
 /// `harness` and `check_text` fill the transcript's harness and check fields; `values` are the
 /// decoded arguments, and `parameters` bind each argument name to its node id. A Boolean value
-/// is replayed as the integer `1` or `0`, the encoding QSL admits for a Boolean parameter.
+/// is replayed as the integer `1` or `0`, the encoding FSL admits for a Boolean parameter.
 /// `request` receives the witness source and returns the complete request, whose package
 /// reference, selection and limits are the proving run's.
 ///
@@ -199,13 +199,13 @@ pub fn replay_falsification(
 }
 
 /// The one function that renders a backend-witness transcript (FR-024-AC-2): the assertion block
-/// `qsl-replay` admits, built from decoded values only and never from backend-native text. Each
+/// `fsl-replay` admits, built from decoded values only and never from backend-native text. Each
 /// binding is a name (a parameter node id, or a state field) and the integer decoded for it.
 /// Every transcript this crate passes to [`Witness::parse`] comes from here.
 ///
 /// # Errors
 ///
-/// [`MalformedTranscript`] when `qsl-replay` does not admit the rendered block, as when a field
+/// [`MalformedTranscript`] when `fsl-replay` does not admit the rendered block, as when a field
 /// holds a delimiter.
 pub(crate) fn render_witness<T: fmt::Display>(
     harness: &str,
@@ -254,7 +254,7 @@ fn replay_falsification_through(
             let text = match value {
                 WitnessValue::Integer(integer) => integer.to_string(),
                 WitnessValue::Boolean(boolean) => i128::from(*boolean).to_string(),
-                // A declared enum member travels as QSL's canonical witness value text, which
+                // A declared enum member travels as FSL's canonical witness value text, which
                 // the executor reads back against the parameter's own declaration.
                 WitnessValue::Enum { .. } => value.to_value_text().map_err(|_| {
                     SpineReplayError::UnsupportedWitnessValue {
@@ -288,7 +288,7 @@ fn replay_falsification_through(
             Ok((position, parameter.node_id, text))
         })
         .collect::<Result<Vec<_>, SpineReplayError>>()?;
-    // QSL joins function witness entries by parameter node id and requires ascending id order,
+    // FSL joins function witness entries by parameter node id and requires ascending id order,
     // which `parameters` lists; the entry names' text order is not that order.
     bindings.sort_unstable_by_key(|binding| binding.0);
     let bindings = bindings
@@ -338,7 +338,7 @@ impl LockedSource {
 }
 
 /// One entry of the proved package lock's `dependency_selections`, with the dependency's own lock
-/// source. QSL compiles a library from exactly one source unit.
+/// source. FSL compiles a library from exactly one source unit.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct DependencyLock {
     /// The library identity.
@@ -354,7 +354,7 @@ pub struct DependencyLock {
 /// Replay inputs cannot silently acquire decode bounds (FR-016-AC-6, TC-026):
 ///
 /// ```compile_fail
-/// let _ = quire_contract_codegen::ReplayInputs::default();
+/// let _ = filament_contract_codegen::ReplayInputs::default();
 /// ```
 #[derive(Clone, Debug)]
 pub struct ReplayInputs {
@@ -368,9 +368,9 @@ pub struct ReplayInputs {
     pub dependencies: Vec<DependencyLock>,
     /// The limits the replay run itself is charged against.
     pub accounting_limits: ScalarLimits,
-    /// The proving run's named stage bounds. Omitted names use QSL's published defaults.
+    /// The proving run's named stage bounds. Omitted names use FSL's published defaults.
     pub stage_limits: BTreeMap<String, u64>,
-    /// The configured supplied-value ceilings. Absence selects QSL's published defaults.
+    /// The configured supplied-value ceilings. Absence selects FSL's published defaults.
     pub supplied_limits: Option<SuppliedLimits>,
     /// The proving run's declared finite domains, keyed by their original proof positions.
     pub declared_domains: Vec<DeclaredDomain>,
@@ -378,10 +378,10 @@ pub struct ReplayInputs {
     pub replay_limits: ReplayLimits,
 }
 
-/// Why a lock's dependency selections are not a dependency input QSL admits.
+/// Why a lock's dependency selections are not a dependency input FSL admits.
 #[derive(Debug)]
 pub enum DependencyLockError {
-    /// The selections are no dependency input QSL's `DependencyInput::new` admits: a library
+    /// The selections are no dependency input FSL's `DependencyInput::new` admits: a library
     /// under an empty identity, a repeated identity or two libraries sharing a source owner.
     /// A library sharing the unit's owner is refused later, by the call site, as
     /// [`ReplayPackageError::CallSite`].
@@ -413,9 +413,9 @@ pub enum ReplayPackageError {
     },
     /// The lock's dependency selections are not admitted.
     Dependencies(DependencyLockError),
-    /// QSL could not compile the unit against its dependencies or locate the function in it.
+    /// FSL could not compile the unit against its dependencies or locate the function in it.
     CallSite(Box<CallSiteRefusal>),
-    /// QSL could not spell an admitted parameter's structural witness entry name.
+    /// FSL could not spell an admitted parameter's structural witness entry name.
     WitnessEntryName(NodeWireError),
     /// The producer package could not be retained as a complete raw replay document.
     RawPackage(quire_canonical::ReadError),
@@ -439,7 +439,7 @@ impl std::error::Error for ReplayPackageError {}
 
 impl ReplayInputs {
     /// The lock with its dependencies in the ascending identity order the request carries, and the
-    /// dependency input the same selections make. QSL's `DependencyInput::new` refuses an empty,
+    /// dependency input the same selections make. FSL's `DependencyInput::new` refuses an empty,
     /// repeated or shared-owner selection; this adapter checks none of those itself.
     pub(crate) fn admit(mut self) -> Result<(Self, DependencyInput), DependencyLockError> {
         self.dependencies
@@ -458,7 +458,7 @@ impl ReplayInputs {
         Ok((self, input))
     }
 
-    /// The request QSL replays: this lock's structural package reference, selecting
+    /// The request FSL replays: this lock's structural package reference, selecting
     /// `selected`, replaying `source`, with `documents` provided beside the unit's and the
     /// dependencies' sources.
     pub(crate) fn wire(
@@ -478,7 +478,7 @@ impl ReplayInputs {
                 refinement_internals: dependency.refinement_internals.clone(),
             })
             .collect();
-        // One entry per source identity. QSL binds these bytes to the exact source lock.
+        // One entry per source identity. FSL binds these bytes to the exact source lock.
         let sources = std::iter::once(&self.source)
             .chain(
                 self.dependencies
@@ -514,12 +514,12 @@ impl ReplayInputs {
     }
 }
 
-/// A compiled proving-run package: QSL's selected function and parameter identities joined to
+/// A compiled proving-run package: FSL's selected function and parameter identities joined to
 /// the lock the request repeats.
 #[derive(Clone, Debug)]
 pub struct ReplayPackage {
     inputs: ReplayInputs,
-    /// The exact source refs QSL admitted for each dependency, retained apart from request creation.
+    /// The exact source refs FSL admitted for each dependency, retained apart from request creation.
     selected_dependencies: Vec<DependencyEntryWire>,
     selection: QualifiedName,
     site: CallSite<FunctionSite>,
@@ -529,7 +529,7 @@ pub struct ReplayPackage {
     kani_binding: Option<KaniProofBinding>,
 }
 
-/// The first request dependency that differs from the source selection QSL admitted.
+/// The first request dependency that differs from the source selection FSL admitted.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct DependencySelectionMismatch {
     /// Position in the ascending dependency selection; a missing or extra entry has one absent side.
@@ -552,7 +552,7 @@ impl fmt::Display for DependencySelectionMismatch {
 
 impl std::error::Error for DependencySelectionMismatch {}
 
-/// The retained proving-run identity and the QSL site selected for its hand-mirrored replay.
+/// The retained proving-run identity and the FSL site selected for its hand-mirrored replay.
 #[derive(Clone, Debug)]
 struct KaniProofBinding {
     identity: KaniObligationIdentity,
@@ -589,11 +589,11 @@ pub enum PacketClaimMember {
 /// A producer packet did not admit or bind to the function claim selected for replay.
 #[derive(Debug)]
 pub enum FunctionPacketError {
-    /// QSL refused the packet before a request existed.
+    /// FSL refused the packet before a request existed.
     Admission(WitnessRefusal),
     /// An admitted packet belongs to another claim.
     ClaimMismatch(PacketClaimMember),
-    /// The supplied Kani identity differs from the identity retained with this QSL twin.
+    /// The supplied Kani identity differs from the identity retained with this FSL twin.
     ProvingRunMismatch,
     /// The selected Kani identity did not bind to this function package.
     Identity(ObligationIdentityError),
@@ -604,7 +604,7 @@ pub enum FunctionPacketError {
 impl fmt::Display for FunctionPacketError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Admission(cause) => write!(f, "QSL refused the producer packet: {cause}"),
+            Self::Admission(cause) => write!(f, "FSL refused the producer packet: {cause}"),
             Self::ClaimMismatch(member) => {
                 write!(
                     f,
@@ -612,7 +612,7 @@ impl fmt::Display for FunctionPacketError {
                 )
             }
             Self::ProvingRunMismatch => {
-                f.write_str("the Kani proving-run identity differs from this QSL twin")
+                f.write_str("the Kani proving-run identity differs from this FSL twin")
             }
             Self::Identity(cause) => write!(f, "the selected claim identity failed: {cause}"),
             Self::NoValueParityClaim => {
@@ -639,7 +639,7 @@ impl ReplayPackage {
     /// # Errors
     ///
     /// [`ReplayPackageError`] when the function name is not an identifier, a dependency identity
-    /// repeats, the dependencies are no dependency input, or QSL does not compile the unit or
+    /// repeats, the dependencies are no dependency input, or FSL does not compile the unit or
     /// find the function.
     pub fn new(inputs: ReplayInputs, function: &str) -> Result<Self, ReplayPackageError> {
         let (inputs, dependency_input) =
@@ -744,13 +744,13 @@ impl ReplayPackage {
         execute(request).map_err(|cause| SpineReplayError::Refused(Box::new(cause)))
     }
 
-    /// Retains the independent Kani proving-run identity beside this selected QSL twin before
-    /// any playback is decoded. The caller is responsible for pairing the hand-mirrored QSL
+    /// Retains the independent Kani proving-run identity beside this selected FSL twin before
+    /// any playback is decoded. The caller is responsible for pairing the hand-mirrored FSL
     /// source with the proof it represents; subsequent replays refuse another identity or site.
     ///
     /// # Errors
     ///
-    /// [`ObligationIdentityError`] when the proof arguments do not bind this QSL function.
+    /// [`ObligationIdentityError`] when the proof arguments do not bind this FSL function.
     pub fn with_kani_identity(
         mut self,
         identity: &KaniObligationIdentity,
@@ -786,9 +786,9 @@ impl ReplayPackage {
             .collect()
     }
 
-    /// Binds one real Kani harness identity to this package's QSL-selected function site.
+    /// Binds one real Kani harness identity to this package's FSL-selected function site.
     ///
-    /// The returned identity retains QSL's package, function and declaration identities. Passing
+    /// The returned identity retains FSL's package, function and declaration identities. Passing
     /// it to a different package is rejected by [`replay_harness_counterexample`].
     pub(crate) fn harness_identity(
         &self,
@@ -816,7 +816,7 @@ impl ReplayPackage {
         self.inputs.source.bytes.as_slice() == source
     }
 
-    /// Evaluates this selected Boolean function as a QSL semantic oracle.
+    /// Evaluates this selected Boolean function as a FSL semantic oracle.
     ///
     /// This uses the `Input` arm only to check the renderer's function result. It is not backend
     /// or counterexample evidence; corpus counterexamples must use
@@ -851,7 +851,7 @@ impl ReplayPackage {
     }
 
     /// Evaluates the selected function over positional `arguments` through the owner's `Input`
-    /// arm and returns its Boolean result. This is semantic evaluation by QSL, not backend
+    /// arm and returns its Boolean result. This is semantic evaluation by FSL, not backend
     /// evidence: the arguments name the function's parameters in declaration order, and an enum
     /// argument is a [`WitnessValue::Enum`] the executor checks against the parameter's own
     /// declaration.
@@ -906,7 +906,7 @@ impl ReplayPackage {
     }
 
     /// The complete function-contract replay request from an independently supplied producer
-    /// packet. QSL admits the packet, then CG binds it to this selected function and identity.
+    /// packet. FSL admits the packet, then CG binds it to this selected function and identity.
     ///
     /// The package reference's `dependencies` are the lock's dependency selections, one entry
     /// each, and the byte provision holds the proved unit's source and every dependency source.
@@ -917,7 +917,7 @@ impl ReplayPackage {
     ///
     /// # Errors
     ///
-    /// [`FunctionPacketError`] when `identity` has no function-contract identity, QSL refuses
+    /// [`FunctionPacketError`] when `identity` has no function-contract identity, FSL refuses
     /// the packet, the retained proving-run binding differs, or an admitted packet belongs to
     /// another selected claim.
     pub fn request(
@@ -935,7 +935,7 @@ impl ReplayPackage {
     }
 
     /// Completes a backend witness packet from this checked function selection and the retained
-    /// proving-run identity before [`Self::request`] admits it. The transcript is QSL's already
+    /// proving-run identity before [`Self::request`] admits it. The transcript is FSL's already
     /// parsed witness; it is never interpreted to choose the function or declaration occurrence.
     ///
     /// # Errors
@@ -956,9 +956,9 @@ impl ReplayPackage {
         ))
     }
 
-    /// Completes a value-parity producer packet from QSL's checked claim for this function, the
+    /// Completes a value-parity producer packet from FSL's checked claim for this function, the
     /// generated-code driver's provider identity and the observed canonical input assignments.
-    /// The obligation identity is the one QSL minted at [`call_site`]; the caller supplies none.
+    /// The obligation identity is the one FSL minted at [`call_site`]; the caller supplies none.
     ///
     /// # Errors
     ///
@@ -982,14 +982,14 @@ impl ReplayPackage {
         ))
     }
 
-    /// Builds a value-parity request only after QSL admits the producer packet and its target,
+    /// Builds a value-parity request only after FSL admits the producer packet and its target,
     /// declaration occurrence, subject, `Input` arm, empty declared domains and obligation match
     /// the independently selected checked function claim. The request is built from this checked
     /// package, so a packet cannot select another one. A missing packet has no request path.
     ///
     /// # Errors
     ///
-    /// [`FunctionPacketError`] when QSL refuses the packet or a packet member does not match the
+    /// [`FunctionPacketError`] when FSL refuses the packet or a packet member does not match the
     /// selected claim.
     pub fn value_parity_request(
         &self,
@@ -1136,9 +1136,9 @@ impl ReplayPackage {
 
     /// The typed identity of this selected function result for one non-clause Kani harness.
     ///
-    /// The selected function and declaration occurrence come from QSL's [`call_site`]; each
+    /// The selected function and declaration occurrence come from FSL's [`call_site`]; each
     /// argument is joined by identifier to that site's parameter node. Corpus harnesses prove a
-    /// generated Boolean case predicate, so their QSL result is replayed as a postcondition.
+    /// generated Boolean case predicate, so their FSL result is replayed as a postcondition.
     ///
     /// # Errors
     ///
@@ -1210,23 +1210,23 @@ fn function_packet(
     }
 }
 
-/// Why a retained corpus case could not be replayed against its QSL source.
+/// Why a retained corpus case could not be replayed against its FSL source.
 #[derive(Debug)]
 pub enum BoundedCorpusReplayError {
     /// The retained unit/dependency package did not compile or select the corpus function.
     Package(ReplayPackageError),
     /// The package source did not match the case's retained source bytes.
     SourceMismatch,
-    /// Kani playback could not be decoded or QSL refused the witness request.
+    /// Kani playback could not be decoded or FSL refused the witness request.
     Replay(SpineReplayError),
 }
 
 impl BoundedCorpusCase {
-    /// Replays bounded, parsed Kani counterexample playback against this case's retained QSL package.
+    /// Replays bounded, parsed Kani counterexample playback against this case's retained FSL package.
     ///
     /// The caller parses the complete captured text through [`crate::parse_assertion_playback`].
     /// The package is compiled from the generated unit and imported dependency source each time;
-    /// the harness identity is then tied to QSL's selected function site. The replay checks the
+    /// the harness identity is then tied to FSL's selected function site. The replay checks the
     /// parsed source length and value count against `limits` before native execution.
     // Retain complete dependency mismatch fields inline; boxing adds a fallible allocation.
     #[allow(clippy::result_large_err)]
@@ -1236,8 +1236,8 @@ impl BoundedCorpusCase {
         limits: WitnessDecodeLimits,
     ) -> Result<ReplayVerdict, BoundedCorpusReplayError> {
         let package =
-            compile_corpus_qsl_package(self, limits).map_err(BoundedCorpusReplayError::Package)?;
-        if !package.source_matches(self.artifacts.qsl_source.contents.as_bytes()) {
+            compile_corpus_fsl_package(self, limits).map_err(BoundedCorpusReplayError::Package)?;
+        if !package.source_matches(self.artifacts.fsl_source.contents.as_bytes()) {
             return Err(BoundedCorpusReplayError::SourceMismatch);
         }
         let identity = package
@@ -1250,10 +1250,10 @@ impl BoundedCorpusCase {
     #[cfg(test)]
     // Retain complete dependency mismatch fields inline; boxing adds a fallible allocation.
     #[allow(clippy::result_large_err)]
-    pub(crate) fn qsl_source_matches_case_claim(&self) -> Result<bool, BoundedCorpusReplayError> {
-        let package = compile_corpus_qsl_package(self, unbounded_decode_limits())
+    pub(crate) fn fsl_source_matches_case_claim(&self) -> Result<bool, BoundedCorpusReplayError> {
+        let package = compile_corpus_fsl_package(self, unbounded_decode_limits())
             .map_err(BoundedCorpusReplayError::Package)?;
-        if !package.source_matches(self.artifacts.qsl_source.contents.as_bytes()) {
+        if !package.source_matches(self.artifacts.fsl_source.contents.as_bytes()) {
             return Err(BoundedCorpusReplayError::SourceMismatch);
         }
         let identity = package
@@ -1268,16 +1268,16 @@ impl BoundedCorpusCase {
     #[cfg(test)]
     // Retain complete dependency mismatch fields inline; boxing adds a fallible allocation.
     #[allow(clippy::result_large_err)]
-    pub(crate) fn qsl_identity_rejects_case(
+    pub(crate) fn fsl_identity_rejects_case(
         &self,
         other: &Self,
     ) -> Result<bool, BoundedCorpusReplayError> {
-        let package = compile_corpus_qsl_package(self, unbounded_decode_limits())
+        let package = compile_corpus_fsl_package(self, unbounded_decode_limits())
             .map_err(BoundedCorpusReplayError::Package)?;
         let identity = package
             .harness_identity(None, self.harness_symbol.clone(), Vec::new())
             .map_err(|error| BoundedCorpusReplayError::Replay(SpineReplayError::Identity(error)))?;
-        let other = compile_corpus_qsl_package(other, unbounded_decode_limits())
+        let other = compile_corpus_fsl_package(other, unbounded_decode_limits())
             .map_err(BoundedCorpusReplayError::Package)?;
         Ok(!identity.matches_package(&other))
     }
@@ -1290,12 +1290,12 @@ impl BoundedCorpusCase {
         playback: &Playback<'_>,
         other: &Self,
     ) -> Result<bool, BoundedCorpusReplayError> {
-        let package = compile_corpus_qsl_package(self, unbounded_decode_limits())
+        let package = compile_corpus_fsl_package(self, unbounded_decode_limits())
             .map_err(BoundedCorpusReplayError::Package)?;
         let identity = package
             .harness_identity(None, self.harness_symbol.clone(), Vec::new())
             .map_err(|error| BoundedCorpusReplayError::Replay(SpineReplayError::Identity(error)))?;
-        let other = compile_corpus_qsl_package(other, unbounded_decode_limits())
+        let other = compile_corpus_fsl_package(other, unbounded_decode_limits())
             .map_err(BoundedCorpusReplayError::Package)?;
         replay_harness_counterexample(&identity, playback, &other)
             .map(|verdict| {
@@ -1311,7 +1311,7 @@ impl BoundedCorpusCase {
         &self,
         playback: &Playback<'_>,
     ) -> Result<bool, BoundedCorpusReplayError> {
-        let package = compile_corpus_qsl_package(self, unbounded_decode_limits())
+        let package = compile_corpus_fsl_package(self, unbounded_decode_limits())
             .map_err(BoundedCorpusReplayError::Package)?;
         let Ok(harness) = crate::core::identity::HarnessSymbol::try_from("another_harness") else {
             return Ok(false);
@@ -1330,14 +1330,14 @@ impl BoundedCorpusCase {
     }
 }
 
-fn compile_corpus_qsl_package(
+fn compile_corpus_fsl_package(
     case: &BoundedCorpusCase,
     decode_limits: WitnessDecodeLimits,
 ) -> Result<ReplayPackage, ReplayPackageError> {
     use qsl_replay::{ReplayLimits, ScalarLimits};
     use std::collections::BTreeMap;
 
-    // The producer imports the dependency under this library name in its QSL source.
+    // The producer imports the dependency under this library name in its FSL source.
     const DEPENDENCY_NAME: &str = "ir-453/corpus-dependency";
     // The corpus producer assigns one name to its shared generated source unit.
     const PACKAGE_NAME: &str = "ir-453-corpus";
@@ -1345,7 +1345,7 @@ fn compile_corpus_qsl_package(
     let dependency_source = LockedSource {
         authority: "agent-ix".to_owned(),
         identity: DEPENDENCY_NAME.to_owned(),
-        bytes: case.artifacts.qsl_dependency.contents.as_bytes().to_vec(),
+        bytes: case.artifacts.fsl_dependency.contents.as_bytes().to_vec(),
     };
     let function = "corpus_case";
     ReplayPackage::new(
@@ -1354,8 +1354,8 @@ fn compile_corpus_qsl_package(
             package_name: PACKAGE_NAME.to_owned(),
             source: LockedSource {
                 authority: "agent-ix".to_owned(),
-                identity: case.artifacts.qsl_source.path.clone(),
-                bytes: case.artifacts.qsl_source.contents.as_bytes().to_vec(),
+                identity: case.artifacts.fsl_source.path.clone(),
+                bytes: case.artifacts.fsl_source.contents.as_bytes().to_vec(),
             },
             dependencies: vec![DependencyLock {
                 refinement_internals: None,
@@ -1394,15 +1394,15 @@ pub enum EvidenceFailureCause {
         /// The argument the value is bound to.
         argument: String,
     },
-    /// The selected QSL package/site differs from the one that created this Kani identity.
+    /// The selected FSL package/site differs from the one that created this Kani identity.
     PackageIdentity,
     /// Native replay ran and did not settle a reproduced violation.
     Verdict {
-        /// The settlement QSL reached.
+        /// The settlement FSL reached.
         settlement: WitnessSettlement,
-        /// The category QSL evaluated.
+        /// The category FSL evaluated.
         category: Category,
-        /// QSL's typed disagreement cause: present exactly when the settlement is
+        /// FSL's typed disagreement cause: present exactly when the settlement is
         /// `Inconclusive`.
         disagreement: Option<DisagreementCause>,
     },
@@ -1419,7 +1419,7 @@ pub enum ReplayVerdict {
 }
 
 /// A replay setup refusal, read as the settlement of a falsified run (FR-029): a fault is a
-/// fault, and every other refusal is a refusal on data carrying the code QSL's value supplies.
+/// fault, and every other refusal is a refusal on data carrying the code FSL's value supplies.
 impl<'a> From<&'a CallSiteRefusal> for ReplaySettlement<'a> {
     fn from(refusal: &'a CallSiteRefusal) -> Self {
         match refusal {
@@ -1495,10 +1495,10 @@ impl<'a> From<&'a EvidenceFailureCause> for ReplaySettlement<'a> {
                 disagreement: Some(cause),
                 ..
             } => Self::Disagreement(cause),
-            // QSL settles a disagreement with its cause. A settlement that carries none is a
+            // FSL settles a disagreement with its cause. A settlement that carries none is a
             // reproduction in a category other than `violation` (FR-016-AC-13): the replay
             // agreed with the run yet evaluated no violation. It is neither a refutation nor a
-            // disagreement QSL typed, and no cause is invented for it, so it reads as a defect.
+            // disagreement FSL typed, and no cause is invented for it, so it reads as a defect.
             EvidenceFailureCause::Verdict {
                 disagreement: None, ..
             } => Self::CgDefect,
@@ -1523,7 +1523,7 @@ impl<'a> From<&'a ReplayVerdict> for ReplaySettlement<'a> {
 ///
 /// # Errors
 ///
-/// [`SpineReplayError`] when the adapter cannot build an admitted request or QSL refuses it;
+/// [`SpineReplayError`] when the adapter cannot build an admitted request or FSL refuses it;
 /// those are not verdicts on the evidence.
 // Retain complete dependency mismatch fields inline; boxing adds a fallible allocation.
 #[allow(clippy::result_large_err)]
@@ -1537,13 +1537,13 @@ pub fn replay_counterexample(
     })
 }
 
-/// Replays a corpus harness's real Kani playback against the exact QSL function source retained
-/// by that case. The QSL obligation identity is derived from the package's selected `FunctionSite`,
+/// Replays a corpus harness's real Kani playback against the exact FSL function source retained
+/// by that case. The FSL obligation identity is derived from the package's selected `FunctionSite`,
 /// not from a fabricated clause identity.
 ///
 /// # Errors
 ///
-/// [`SpineReplayError`] when the playback cannot be decoded or QSL refuses the replay request.
+/// [`SpineReplayError`] when the playback cannot be decoded or FSL refuses the replay request.
 // Retain complete dependency mismatch fields inline; boxing adds a fallible allocation.
 #[allow(clippy::result_large_err)]
 pub(crate) fn replay_harness_counterexample(
@@ -1557,7 +1557,7 @@ pub(crate) fn replay_harness_counterexample(
 }
 
 /// [`replay_harness_counterexample`] with an injected executor, for recording the exact typed
-/// request QSL receives in focused tests.
+/// request FSL receives in focused tests.
 // Retain complete dependency mismatch fields inline; boxing adds a fallible allocation.
 #[allow(clippy::result_large_err)]
 pub(crate) fn replay_harness_counterexample_through(
@@ -1629,7 +1629,7 @@ pub(crate) fn replay_harness_counterexample_through(
 }
 
 /// [`replay_counterexample`] with the request handed to `execute` instead of straight to
-/// [`qsl_replay::replay`]: a caller that records or wraps the request QSL receives passes a
+/// [`qsl_replay::replay`]: a caller that records or wraps the request FSL receives passes a
 /// closure that ends in `qsl_replay::replay`. A different or absent retained proving-run binding
 /// yields [`EvidenceFailureCause::PackageIdentity`] before decoding or invoking `execute`.
 ///
@@ -1693,14 +1693,14 @@ pub fn replay_counterexample_through(
     ))
 }
 
-/// Replays a decoded enum comparison counterexample through the owner route: the selected QSL
+/// Replays a decoded enum comparison counterexample through the owner route: the selected FSL
 /// function is evaluated by [`qsl_replay::replay`] over the two declared members the witness
 /// names, and its Boolean result is returned for the caller to compare with the harness's
 /// expectation. `declaration` is the owner's key for the enum the operands are declared with.
 ///
 /// # Errors
 ///
-/// [`SpineReplayError`] when QSL refuses a member or the request, or the function result is not
+/// [`SpineReplayError`] when FSL refuses a member or the request, or the function result is not
 /// a Boolean.
 // Retain complete dependency mismatch fields inline; boxing adds a fallible allocation.
 #[allow(clippy::result_large_err)]
@@ -1719,14 +1719,14 @@ pub fn replay_enum_witness(
     ])
 }
 
-/// Replays a decoded float comparison counterexample through the owner route: the selected QSL
+/// Replays a decoded float comparison counterexample through the owner route: the selected FSL
 /// function is evaluated by [`qsl_replay::replay`] over the exact bit patterns the witness names,
 /// each as `WitnessValue::Float32` or `WitnessValue::Float64` bound by its parameter name, and its
 /// Boolean result is returned for the caller to compare with the harness's expectation.
 ///
 /// # Errors
 ///
-/// [`SpineReplayError`] when a declared parameter has no witness value, QSL refuses a value or the
+/// [`SpineReplayError`] when a declared parameter has no witness value, FSL refuses a value or the
 /// request, or the function result is not a Boolean.
 // Retain complete dependency mismatch fields inline; boxing adds a fallible allocation.
 #[allow(clippy::result_large_err)]
@@ -1763,7 +1763,7 @@ pub fn replay_float_witness(
 
 /// The verdict one witness-arm settlement decides: only an agreement with backend evidence in
 /// the `violation` category reproduces the backend's falsification; every other settlement is
-/// evidence failure, carrying QSL's disagreement cause when it has one.
+/// evidence failure, carrying FSL's disagreement cause when it has one.
 fn verdict_of(
     settlement: WitnessSettlement,
     category: Category,
@@ -1888,9 +1888,9 @@ mod tests {
         package_from_source(UNIT, "f")
     }
 
-    /// The witness-arm adapter renders a declared enum member as the transcript entry QSL's
+    /// The witness-arm adapter renders a declared enum member as the transcript entry FSL's
     /// canonical value text gives it, not as an unsupported value. This checks the rendering and
-    /// the refusal of other kinds only: the declaration key here is a stand-in, so QSL's reading
+    /// the refusal of other kinds only: the declaration key here is a stand-in, so FSL's reading
     /// of a real declaration is covered by the integration test
     /// `a_decoded_witness_replays_through_the_owner_route_as_the_declared_members`, which sends
     /// the owner's own declaration key through `qsl_replay::replay`.
@@ -2019,7 +2019,7 @@ mod tests {
             packet.occurrence_key.as_ref()
         );
         let readback = ReplayRequest::decode(request, package.inputs.replay_limits)
-            .expect("QSL reads the packet-backed request");
+            .expect("FSL reads the packet-backed request");
         assert_eq!(
             readback
                 .replay_target()
@@ -2144,7 +2144,7 @@ mod tests {
     }
 
     /// The value-parity request carries the Input packet's declaration occurrence, target and
-    /// QSL-minted obligation through typed readback and QSL's value-parity report.
+    /// FSL-minted obligation through typed readback and FSL's value-parity report.
     #[trace("FR-024-AC-44", "FR-024-AC-46", "TC-035")]
     #[test]
     fn tc_035_value_parity_request_binds_the_original_checked_claim() {
@@ -2161,7 +2161,7 @@ mod tests {
             .value_parity_packet(&generator, assignments.clone())
             .expect("the function has a value claim");
         let envelope = WitnessEnvelope::reconstruct(packet.clone(), package.inputs.replay_limits)
-            .expect("QSL admits the producer packet");
+            .expect("FSL admits the producer packet");
         assert_eq!(envelope.occurrence_key(), &package.site.site.declaration);
         assert!(
             matches!(envelope.source(), EnvelopeSource::Input(values) if values == &assignments)
@@ -2179,7 +2179,7 @@ mod tests {
         assert!(wire.declared_domains.is_empty());
         assert!(!package.inputs.declared_domains.is_empty());
         let readback = ReplayRequest::decode(wire.clone(), package.inputs.replay_limits)
-            .expect("QSL reads the packet-backed value request");
+            .expect("FSL reads the packet-backed value request");
         assert_eq!(
             readback
                 .replay_target()
@@ -2202,7 +2202,7 @@ mod tests {
         assert!(matches!(report.result(), ValueParityResult::Agrees { .. }));
     }
 
-    /// Configured supplied ceilings reach the value-parity request and QSL's report; an omitted
+    /// Configured supplied ceilings reach the value-parity request and FSL's report; an omitted
     /// configuration produces the same complete object as the explicit defaults.
     #[trace("FR-024-AC-44", "TC-035")]
     #[test]
@@ -2233,7 +2233,7 @@ mod tests {
         let (package, wire) = request_with(Some(selected));
         assert_eq!(wire.supplied_limits, Some(selected));
         let readback = ReplayRequest::decode(wire, package.inputs.replay_limits)
-            .expect("QSL reads the complete supplied limits");
+            .expect("FSL reads the complete supplied limits");
         assert_eq!(readback.supplied_limits(), selected);
     }
 
@@ -2356,7 +2356,7 @@ mod tests {
         ));
     }
 
-    /// A Boolean function has no QSL value claim, so no Input packet or request exists for it,
+    /// A Boolean function has no FSL value claim, so no Input packet or request exists for it,
     /// and a Witness-arm packet from the function path never builds a value-parity request.
     #[trace("FR-024-AC-44", "FR-024-AC-46", "TC-035")]
     #[test]
@@ -2379,7 +2379,7 @@ mod tests {
         ));
     }
 
-    /// The function request carries QSL's selected declaration occurrence.
+    /// The function request carries FSL's selected declaration occurrence.
     /// Packet-sourced provenance is a separate FR-024-AC-43 obligation.
     #[trace("TC-035")]
     #[test]
@@ -2404,7 +2404,7 @@ mod tests {
         );
     }
 
-    /// QSL rejects a missing function occurrence before checking provided bytes.
+    /// FSL rejects a missing function occurrence before checking provided bytes.
     #[trace("FR-024-AC-45", "TC-035")]
     #[test]
     fn tc_035_missing_function_request_occurrence_refuses_before_byte_provision() {
@@ -2509,7 +2509,7 @@ mod tests {
         }
     }
 
-    /// The request carries the QSL-issued identity unchanged when parameter bindings are
+    /// The request carries the FSL-issued identity unchanged when parameter bindings are
     /// provided in either order.
     #[trace("FR-016-AC-26", "FR-016-AC-28", "TC-026")]
     #[test]
@@ -2562,7 +2562,7 @@ mod tests {
         );
     }
 
-    /// QSL's selected function node, rather than parameter text or source position, supplies
+    /// FSL's selected function node, rather than parameter text or source position, supplies
     /// the identity. A second function with the same parameters has another producer identity;
     /// adding a blank line and an unrelated declaration leaves the selected one unchanged.
     #[trace("FR-016-AC-27", "FR-016-AC-28", "TC-026")]
