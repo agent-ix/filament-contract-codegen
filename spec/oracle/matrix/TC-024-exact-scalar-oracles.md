@@ -602,8 +602,11 @@ the sqrt/fma controls of `src/oracle/scalar/derive/tests.rs`.
 ## Integer remainder derivation (IR-854)
 
 This extension verifies FR-014-AC-81. It supplies CG-to-owner agreement evidence
-only; the Kani row for `rem` is FR-057 and TC-071. This section is planned and
-grants no execution credit until its tests run.
+only; the Kani row for `rem` is FR-057 and TC-071. Its tests are
+`remainder_derives_each_law_and_the_generated_oracle_equals_the_owner_over_the_grid`,
+`remainder_inferred_interval_and_explicit_result_refusal` (`tests/it/integer_division_bounds.rs`) and
+`tc_024_a_remainder_without_exactly_one_law_is_not_derivable` plus the identity, descriptor and
+refused-list controls of `src/oracle/scalar/derive/tests.rs`.
 
 1. Through the public FSL facade, emit `x rem y` under each of the truncating,
    floor and Euclidean `integer_division` selections over finite operand

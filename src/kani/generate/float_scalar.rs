@@ -618,6 +618,7 @@ fn render_harness(
         path_condition: Vec::new(),
         guard_inputs: Vec::new(),
         enum_scalar: None,
+        division_scalar: None,
         float_scalar: Some(FloatScalarIdentity {
             operator: operation_identity.to_owned(),
             width: if wide { "float64" } else { "float32" }.to_owned(),

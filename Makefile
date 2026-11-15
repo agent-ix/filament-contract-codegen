@@ -109,6 +109,9 @@ tools:
 
 KANI_LOCK ?= /tmp/agent-e-heavy-build.lock
 # Keep each ignored installed-Kani test module in this lane; kani-scope selects the gate by path.
+# The three integer_division_harness reproducers (about 600 s and 8 GiB each, all expected TimedOut)
+# are deliberately outside this gate; run them by name with --ignored (see
+# docs/qualification/ir854-general-route-division-measurements.md).
 KANI_FILTERS := kani_obligations kani_obligations_symbolic_domains skeleton_spine kani_stdout_capture bounded_kani_corpus kani_generation kani_batching enum_scalar_harness float_scalar_harness
 KANI_TEST := $(CARGO) +$(MSRV) test $(LOCKED) -j 4 --test it --target-dir target-codex-backends -- --ignored --test-threads=1 $(KANI_FILTERS)
 

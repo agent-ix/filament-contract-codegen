@@ -30,7 +30,10 @@ pub(crate) fn integer_scalar_operand_count(identity: &str) -> Option<usize> {
         ScalarKaniOperator::Add
         | ScalarKaniOperator::Subtract
         | ScalarKaniOperator::Multiply
-        | ScalarKaniOperator::Negate => {}
+        | ScalarKaniOperator::Negate
+        | ScalarKaniOperator::Divide
+        | ScalarKaniOperator::Remainder
+        | ScalarKaniOperator::Modulo => {}
     }
     Some(match entry.operands {
         OperandOrder::Unary => 1,

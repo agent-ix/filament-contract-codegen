@@ -41,9 +41,9 @@ caller is filament-driver, `src/provider.rs` and `src/upstream.rs`, wired under 
 change); with no table passed every harness runs, as for generation. The refusal deliberately reuses
 the `V2ClauseNotTractable` arm for that non-V2-clause harness (no second mechanism); it is returned
 wrapped in `DecidedRunRefusal` because `kani::run` may not import generation types. CG embeds the
-measured general-route rows, add from 2 bits and sub from 4 bits (`TractabilityTable::shipped_general_route_scalar`, from
+measured general-route rows, add from 2 bits and sub, div, rem and mod from 4 bits (`TractabilityTable::shipped_general_route_scalar`, from
 `docs/qualification/ir1530-general-route-scalar-table.json`). Widths below a row's
-`max_operand_bits` (2 for add, 4 for sub) on the general route are unmeasured and left to the wall-clock backstop.
+`max_operand_bits` (2 for add, 4 for sub, div, rem and mod) on the general route are unmeasured and left to the wall-clock backstop.
 The shipped scalar table is CG's single shipped record of measured scalar rows for both routes.
 Each row carries its required `route` field, so general-route and native-route rows sit in the same
 file, and each applies only to its own route. The file name and the constructor name keep their

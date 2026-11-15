@@ -361,6 +361,22 @@ impl SourceBuilder {
                     ),
                 }
             }
+            ExactScalarOperation::IntegerRemainder { profile, domain } => {
+                let domain = self.integer_domain(domain)?;
+                let profile = match profile {
+                    DivisionProfile::Truncating => "Truncating",
+                    DivisionProfile::Floor => "Floor",
+                    DivisionProfile::Euclidean => "Euclidean",
+                };
+                Body {
+                    parameters: binary("&rt::Integer"),
+                    output: OracleOutput::Value("rt::Integer"),
+                    prelude: vec![format!("let domain = {domain};")],
+                    call: format!(
+                        "Ok(rt::divide(rt::DivisionProfile::{profile}, rt::DivisionMember::Remainder, left, right, &domain, meter))"
+                    ),
+                }
+            }
             ExactScalarOperation::IntegerModulo { domain } => {
                 let domain = self.integer_domain(domain)?;
                 Body {
@@ -1213,6 +1229,7 @@ mod native_publication_tests {
                     dependencies: Vec::new(),
                     oracle_source: format!("pub fn {symbol}() {{}}\n"),
                     boolean_right_may_stop: false,
+                    division: None,
                 })),
             });
         }

@@ -95,6 +95,7 @@ fn interval(lower: &str, upper: &str) -> IntegerInterval {
 fn domain(item: &ExactScalarItem) -> &IntegerDomain {
     match &item.operation {
         ExactScalarOperation::IntegerDivision { domain, .. }
+        | ExactScalarOperation::IntegerRemainder { domain, .. }
         | ExactScalarOperation::IntegerModulo { domain } => domain,
         other => panic!("expected an integer division/modulo operation: {other:?}"),
     }
@@ -342,7 +343,7 @@ fn case_{index}() {{
     run_generated_native(&native, selected.len(), "integer-division-bounds");
 }
 
-fn run_generated_native(native: &str, count: usize, label: &str) {
+pub(crate) fn run_generated_native(native: &str, count: usize, label: &str) {
     let scratch = scratch_crate::TemporaryDirectory::new(label);
     let manifest = format!("[package]\nname=\"integer-division-derived-native\"\nversion=\"0.0.0\"\nedition=\"2021\"\n[dependencies]\nquire-exact = {{ {EXACT_DEPENDENCY_SOURCE} }}\n[workspace]\n");
     scratch_crate::write_manifest(&scratch.path, &manifest);
@@ -475,6 +476,31 @@ fn reader_integer_operation(
     right: Option<(i64, i64)>,
     narrowed: bool,
 ) -> (CheckedPackageV2, quire_contract_model::CheckedNodeId) {
+    let identity = if profile.is_some() {
+        "quire.op.integer.div"
+    } else {
+        "quire.op.integer.mod"
+    };
+    reader_division_operation(
+        code,
+        identity,
+        profile,
+        left,
+        right,
+        narrowed.then_some((-100, 100)),
+    )
+}
+
+/// A reader-admitted `div`, `rem` or `mod` node over parameters of the given ranges, with an
+/// explicit narrowed result range when `narrow` is given.
+pub(crate) fn reader_division_operation(
+    code: u32,
+    identity: &str,
+    profile: Option<quire_exact::DivisionProfile>,
+    left: Option<(i64, i64)>,
+    right: Option<(i64, i64)>,
+    narrow: Option<(i64, i64)>,
+) -> (CheckedPackageV2, quire_contract_model::CheckedNodeId) {
     use crate::exact_scalar_generation::package as fixture;
     let mut builder = fixture::corpus_package_for_codes(&[fixture::T_INTEGER, fixture::T_TEXT]);
     let integer = fixture::key(fixture::T_INTEGER);
@@ -496,12 +522,9 @@ fn reader_integer_operation(
     let (identity, laws) = if let Some(profile) = profile {
         let definition = fixture::integer_division_definition(profile);
         builder.select_definition(definition.clone());
-        (
-            "quire.op.integer.div",
-            vec![fixture::law("integer_division", definition)],
-        )
+        (identity, vec![fixture::law("integer_division", definition)])
     } else {
-        ("quire.op.integer.mod", Vec::new())
+        (identity, Vec::new())
     };
     builder.application_bounded(
         code + 2,
@@ -516,10 +539,11 @@ fn reader_integer_operation(
         ),
         &[],
     );
-    if narrowed {
-        let bound = builder.bound(&fixture::Bound::Integer(-100, 100));
+    if let Some((lower, upper)) = narrow {
+        let bound = builder.bound(&fixture::Bound::Integer(lower, upper));
         builder.narrow(code + 3, &fixture::key(code + 2), &bound);
     }
+    builder.expression_occurrences();
     let (read, _, ids) = builder.read_resolved();
     let CheckedPackageV2ReadResult::Admitted(package) = read else {
         panic!("IR admits canonical division fixture: {read:?}");
@@ -585,4 +609,222 @@ fn case_{index}() {{
 "#, symbol = claim.symbol).unwrap();
     }
     run_generated_native(&native, 3, "reader-division-derived-bounds");
+}
+
+/// The generated remainder oracle's source for one genuine FSL `x rem y`, after the derived
+/// descriptor is asserted: its profile, its inferred interval and its original operand bounds.
+fn remainder_oracle(
+    parameters: &str,
+    profile: DivisionProfile,
+    lower: &str,
+    upper: &str,
+) -> (String, String) {
+    let package = compiled_with_profile(parameters, "Integer", "x rem y", Some(profile));
+    let item = derived(&package);
+    assert_eq!(
+        item.operation,
+        ExactScalarOperation::IntegerRemainder {
+            profile,
+            domain: IntegerDomain::Bounded(interval(lower, upper)),
+        },
+        "{parameters} under {profile:?}"
+    );
+    let generated = generate_exact_scalar_oracles(&package, &[item]).expect("generate rem oracle");
+    let claim = &generated.claim_map.items[0];
+    assert_eq!(claim.operation.provenance, OperationProvenance::IrConfirmed);
+    assert_eq!(claim.operation.identity, "quire.op.integer.rem");
+    let ClaimDisposition::Generated(claim) = &claim.result else {
+        panic!("a derived remainder generates: {claim:?}")
+    };
+    let operand_bounds = claim.checked_bounds.clone();
+    assert!(
+        !operand_bounds.is_empty() && operand_bounds.len() <= 2,
+        "only the operand bound ids are checked for an inferred interval: {operand_bounds:?}"
+    );
+    for bound in &operand_bounds {
+        let node = package
+            .resolved_graph()
+            .nodes
+            .iter()
+            .find(|node| &node.node_id == bound)
+            .expect("a checked bound is a real graph node");
+        assert_eq!(node.node_tag.as_ref(), "bounded_domain");
+    }
+    (claim.oracle_source.clone(), claim.symbol.clone())
+}
+
+const MIN: &str = "-9223372036854775808";
+const MAX: &str = "9223372036854775807";
+
+/// FR-014-AC-81: `rem` derives under each law with the interval FR-014-AC-81 states, the
+/// generated oracle equals direct owner `divide(.., Remainder, ..)` over the grid, and the two
+/// mutants (`modulo`, and the quotient member) each disagree with the grid.
+#[trace("TC-024", "FR-014-AC-81")]
+#[test]
+fn remainder_derives_each_law_and_the_generated_oracle_equals_the_owner_over_the_grid() {
+    let mut native = String::from(NATIVE_SUPPORT);
+    native.push_str(
+        r#"
+fn domain(lower: &str, upper: &str) -> rt::IntegerDomain {
+    rt::IntegerDomain::Bounded(rt::IntegerInterval::new(lower.parse().unwrap(), upper.parse().unwrap()).unwrap())
+}
+const GRID: [&str; 11] = ["0", "1", "-1", "2", "-2", "7", "-7", "-9223372036854775808", "-9223372036854775807", "9223372036854775807", "3"];
+fn owner(profile: rt::DivisionProfile, a: &str, b: &str, domain: &rt::IntegerDomain) -> rt::Outcome<rt::Integer> {
+    rt::divide(profile, rt::DivisionMember::Remainder, &a.parse().unwrap(), &b.parse().unwrap(), domain, &mut meter())
+}
+"#,
+    );
+    let mut count = 0;
+    for profile in DivisionProfile::ALL {
+        let (lower, upper) = match profile {
+            DivisionProfile::Euclidean => ("0", MAX),
+            _ => ("-9223372036854775807", MAX),
+        };
+        let parameters = format!("x: Int[{MIN}, {MAX}], y: Int[{MIN}, {MAX}]");
+        let (source, symbol) = remainder_oracle(&parameters, profile, lower, upper);
+        let rt_profile = format!("rt::DivisionProfile::{profile:?}");
+        let healthy_call = format!(
+            "rt::divide({rt_profile}, rt::DivisionMember::Remainder, left, right, &domain, meter)"
+        );
+        assert!(source.contains(&healthy_call), "{source}");
+        let quotient = source.replace(
+            "rt::DivisionMember::Remainder",
+            "rt::DivisionMember::Quotient",
+        );
+        let modulo = source.replace(&healthy_call, "rt::modulo(left, right, &domain, meter)");
+        assert_ne!(quotient, source);
+        assert_ne!(modulo, source);
+        let case = count;
+        count += 1;
+        writeln!(native, "mod healthy_{case} {{ {source} }}\nmod quotient_{case} {{ {quotient} }}\nmod modulo_{case} {{ {modulo} }}").unwrap();
+        // The named vectors, truncating / floor / Euclidean.
+        let vectors: &[(&str, &str, &str, &str, &str)] = &[
+            ("-7", "2", "-1", "1", "1"),
+            ("-7", "-2", "-1", "-1", "1"),
+            (MIN, "-1", "0", "0", "0"),
+        ];
+        let column = match profile {
+            DivisionProfile::Truncating => 2,
+            DivisionProfile::Floor => 3,
+            DivisionProfile::Euclidean => 4,
+        };
+        let named = vectors
+            .iter()
+            .map(|vector| {
+                let expected = [vector.2, vector.3, vector.4][column - 2];
+                format!("({:?}, {:?}, {:?})", vector.0, vector.1, expected)
+            })
+            .collect::<Vec<_>>()
+            .join(", ");
+        writeln!(
+            native,
+            r#"
+#[test]
+fn rem_case_{case}() {{
+    let domain = domain({lower:?}, {upper:?});
+    let profile = {rt_profile};
+    for (a, b, expected) in [{named}] {{
+        let outcome = healthy_{case}::{symbol}(&a.parse().unwrap(), &b.parse().unwrap(), &mut meter()).unwrap();
+        assert_eq!(outcome, rt::Outcome::Completed(expected.parse::<rt::Integer>().unwrap()), "{{a}} rem {{b}}");
+    }}
+    let (mut quotient_differs, mut modulo_differs) = (false, false);
+    for a in GRID {{
+        for b in GRID {{
+            let expected = owner(profile, a, b, &domain);
+            let (left, right) = (a.parse().unwrap(), b.parse().unwrap());
+            assert_eq!(healthy_{case}::{symbol}(&left, &right, &mut meter()).unwrap(), expected, "{{a}} rem {{b}}");
+            quotient_differs |= quotient_{case}::{symbol}(&left, &right, &mut meter()).unwrap() != expected;
+            modulo_differs |= modulo_{case}::{symbol}(&left, &right, &mut meter()).unwrap() != expected;
+        }}
+    }}
+    assert!(quotient_differs, "the quotient-member mutant must fail the grid");
+    assert!(modulo_differs || profile == rt::DivisionProfile::Euclidean, "the modulo mutant must fail the grid except under the law it equals");
+    let zero = healthy_{case}::{symbol}(&rt::Integer::one(), &rt::Integer::zero(), &mut meter()).unwrap();
+    assert_eq!(zero, rt::Outcome::Undefined(rt::Undefined::DivisionByZero));
+}}
+"#
+        )
+        .unwrap();
+    }
+    run_generated_native(&native, count, "remainder-derived-oracle");
+}
+
+/// FR-014-AC-81: the inferred interval over small operand bounds, a zero divisor range, and an
+/// explicit narrowed result that excludes members: the remainder outside it is
+/// `Refused(DivisionOutOfDomain { member: Remainder })`.
+#[trace("TC-024", "FR-014-AC-81")]
+#[test]
+fn remainder_inferred_interval_and_explicit_result_refusal() {
+    for profile in DivisionProfile::ALL {
+        let signed = match profile {
+            DivisionProfile::Euclidean => "0",
+            _ => "-3",
+        };
+        for (parameters, lower, upper) in [
+            ("x: Int[-9, 9], y: Int[1, 4]", signed, "3"),
+            ("x: Int[-9, 9], y: Int[-4, -1]", signed, "3"),
+            ("x: Int[-9, 9], y: Int[0, 0]", "0", "0"),
+            (
+                "x: Int[-9, 9], y: Int[-3, 2]",
+                if signed == "0" { "0" } else { "-2" },
+                "2",
+            ),
+        ] {
+            remainder_oracle(parameters, profile, lower, upper);
+        }
+    }
+    let mut native = String::from(NATIVE_SUPPORT);
+    let mut count = 0;
+    for (index, profile) in DivisionProfile::ALL.into_iter().enumerate() {
+        let (package, node) = reader_division_operation(
+            915_000 + 10 * u32::try_from(index).unwrap(),
+            "quire.op.integer.rem",
+            Some(profile),
+            Some((-9, 9)),
+            Some((1, 4)),
+            Some((0, 1)),
+        );
+        let item = derive_exact_scalar_items(&package, &[node])
+            .remove(0)
+            .unwrap();
+        assert_eq!(
+            item.operation,
+            ExactScalarOperation::IntegerRemainder {
+                profile,
+                domain: IntegerDomain::Bounded(interval("0", "1")),
+            },
+            "an explicit result bound stays authoritative"
+        );
+        let generated = generate_exact_scalar_oracles(&package, &[item]).unwrap();
+        let ClaimDisposition::Generated(claim) = &generated.claim_map.items[0].result else {
+            panic!("reader-admitted remainder did not generate");
+        };
+        writeln!(
+            native,
+            "mod generated_{index} {{ {} }}",
+            claim.oracle_source
+        )
+        .unwrap();
+        writeln!(
+            native,
+            r#"
+#[test]
+fn refusal_case_{index}() {{
+    let outcome = generated_{index}::{symbol}(&"7".parse().unwrap(), &"4".parse().unwrap(), &mut meter()).unwrap();
+    match outcome {{
+        rt::Outcome::Refused(rt::Refusal::DivisionOutOfDomain {{ member, .. }}) => assert_eq!(member, rt::DivisionMember::Remainder),
+        other => panic!("{{other:?}}"),
+    }}
+    assert_eq!(
+        generated_{index}::{symbol}(&"8".parse().unwrap(), &"4".parse().unwrap(), &mut meter()).unwrap(),
+        rt::Outcome::Completed(rt::Integer::zero())
+    );
+}}
+"#,
+            symbol = claim.symbol
+        )
+        .unwrap();
+        count += 1;
+    }
+    run_generated_native(&native, count, "remainder-explicit-result");
 }

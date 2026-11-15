@@ -2320,6 +2320,18 @@ fn corpus_operation(expr: &Expression) -> (&'static str, Value) {
                 None,
             ),
         ),
+        Op::IntegerRemainder { profile, .. } => (
+            expr.operator,
+            op_full(
+                "quire.op.integer.rem",
+                vec![law(
+                    "integer_division",
+                    integer_division_definition(*profile),
+                )],
+                None,
+                None,
+            ),
+        ),
         Op::IntegerModulo { .. } => (expr.operator, op("quire.op.integer.mod")),
         Op::RationalArithmetic { operator, .. } => {
             let identity = match operator {
@@ -4364,8 +4376,9 @@ impl PackageBuilder {
     }
 }
 
-/// `x rem 2` over `Int[-5, 5]`: `integer.rem` has no derivable descriptor.
-pub const DERIVE_REM: u32 = 2040;
+/// A `numeric.narrow` conversion of an `Int[-5, 5]` operand: `numeric.narrow` has no derivable
+/// descriptor, so it is the fixture's refused identity.
+pub const DERIVE_REFUSED: u32 = 2040;
 /// `x == 2` over integers.
 pub const DERIVE_INTEGER_EQ: u32 = 2041;
 /// Checked Boolean connective and equality applications.
@@ -4584,26 +4597,23 @@ pub fn derivation_package_with(extra_codes: &[u32]) -> PackageBuilder {
     let rat = builder.bound(&RAT);
     let rem_operand =
         builder.dedicated_operand_tagged("integer", std::slice::from_ref(&int5), "derive-rem");
-    builder.application_bounded(
-        DERIVE_REM,
+    builder.application_code_with(
+        DERIVE_REFUSED,
         "expression",
-        "binary",
-        &key(T_INTEGER),
+        "conversion",
+        &int5,
         application(
-            "binary",
+            "convert",
             op_full(
-                "quire.op.integer.rem",
-                vec![law(
-                    "integer_division",
-                    integer_division_definition(DivisionProfile::Truncating),
-                )],
+                "quire.op.numeric.narrow",
+                Vec::new(),
                 None,
-                None,
+                Some(type_argument_member(&int5)),
             ),
-            &key(T_INTEGER),
-            vec![reference(&rem_operand), literal("integer", "2")],
+            &int5,
+            vec![reference(&rem_operand)],
         ),
-        &[INT5],
+        &[rem_operand.clone(), int5.clone()],
     );
     let eq_operand =
         builder.dedicated_operand_tagged("integer", std::slice::from_ref(&int), "derive-eq");

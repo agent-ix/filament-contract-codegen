@@ -676,6 +676,9 @@ pub struct ScalarObligationIdentity {
     /// The float comparison behind a float scalar harness (FR-053).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub float_scalar: Option<FloatScalarIdentity>,
+    /// The law and result range behind an integer division, remainder or modulo harness (FR-057).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub division_scalar: Option<DivisionScalarIdentity>,
     /// Solver.
     pub solver: KaniSolver,
     /// Loop unwind bound.
@@ -720,6 +723,21 @@ pub struct FloatScalarIdentity {
     pub operands: Vec<CheckedNodeId>,
     /// The operand encoding.
     pub encoding: String,
+}
+
+/// The division a division scalar harness proves (FR-057): the law its oracle and expected side
+/// were rendered from, and the inclusive result range its assertion admits.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DivisionScalarIdentity {
+    /// The `integer_division` law definition identity of `div` and `rem`; absent for `mod`, which
+    /// carries no law.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub profile: Option<String>,
+    /// The inclusive lower bound of the result range.
+    pub result_minimum: i64,
+    /// The inclusive upper bound of the result range.
+    pub result_maximum: i64,
 }
 
 /// Exact predicate forms the bounded-collection Kani renderer preserves from an admitted FSL

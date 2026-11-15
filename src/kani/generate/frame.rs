@@ -190,7 +190,10 @@ impl StateComparison {
             CatalogOperator::Add
             | CatalogOperator::Subtract
             | CatalogOperator::Multiply
-            | CatalogOperator::Negate => return None,
+            | CatalogOperator::Negate
+            | CatalogOperator::Divide
+            | CatalogOperator::Remainder
+            | CatalogOperator::Modulo => return None,
         })
     }
 

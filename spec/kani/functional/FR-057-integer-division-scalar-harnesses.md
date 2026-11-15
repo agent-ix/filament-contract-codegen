@@ -35,16 +35,17 @@ of the following kinds, CG SHALL generate a bounded Kani row:
 The row proves that the claim's generated oracle agrees with an independent
 statement of the operation over every input in the claim's operand domains.
 
-Today these claims get no harness:
+Before IR-854 these claims got no harness:
 
-- A `div` or `mod` claim settles `Unsupported(OperationNotRendered)`. Internally
-  this is `ScalarLoweringRefusal::NoRenderer`, because `ScalarKaniOperator` in
+- A `div` or `mod` claim settled `Unsupported(OperationNotRendered)`. Internally
+  this was `ScalarLoweringRefusal::NoRenderer`, because `ScalarKaniOperator` in
   `src/oracle/operator_catalog.rs` and `ScalarOperation` in
-  `src/kani/generate/scalar.rs` name only add, subtract, multiply and negate
+  `src/kani/generate/scalar.rs` named only add, subtract, multiply and negate
   (`ScalarOperation` also has `Implies`, for Boolean implication).
-- A `rem` claim is `Underived`, because FR-014 refuses `rem` today.
+- A `rem` claim was `Underived`, because FR-014 refused `rem`.
 
-This row replaces those dispositions for `div`, `rem` and `mod`.
+This row replaced those dispositions for `div`, `rem` and `mod`; they now settle
+as AC-1 states.
 
 What each upstream admits, as read on 2026-11-14:
 
@@ -62,7 +63,7 @@ What each upstream admits, as read on 2026-11-14:
   authored with this requirement under the same ticket, makes `rem` derivable:
   a remainder descriptor with its law-selected profile, an oracle calling
   `rt::divide(profile, DivisionMember::Remainder, ..)`, and inferred result
-  intervals. This row renders `rem` once FR-014-AC-81 holds.
+  intervals. FR-014-AC-81 now holds (IR-854), and this row renders `rem`.
 
 The kernel result bridge is filament-exact's single-member division API. The pair
 type `QuotientRemainder` and `Refusal::DivisionPairOutOfDomain` no longer exist
@@ -340,19 +341,65 @@ ships.
   `Undefined::DivisionByZero`, `Refusal::DivisionOutOfDomain` and
   `Refusal::ModuloOutOfDomain`. IR-17 (kernel adoption) is Done.
 - [TC-071](../matrix/TC-071-integer-division-scalar-harnesses.md) defines the
-  planned verification.
+  verification (partly run; see Status).
 
 ## Status
 
-PLANNED (IR-854). No `div`, `rem` or `mod` scalar Kani harness exists yet. A
-`div` claim settles `Unsupported(OperationNotRendered)`, and a `rem` claim is
-`Underived` until FR-014-AC-81. No verdict is claimed for any shape.
+PARTIAL (IR-854; the native-route verdict and the criteria that need a
+tractable shape are owned by IR-1541).
 
-IR-854 is an IR-269 MVP row. IR-598 retires the corpus's ground `div` and `rem`
-check, and IR-854 owns its V2 replacement (this requirement).
+Delivered and tested (TC-071): the `div`, `rem` and `mod` scalar harness under
+each law (FR-057-AC-1), its assertion structure and mapping controls over the
+real oracle and constructed outcomes (AC-2), the independent expected side and
+its inspection (AC-3), the host differential against filament-exact `divide` and
+`modulo` with the named vectors and the swapped-window failure (AC-4), the zero
+divisor, `MIN / -1`, `BoundNotI64` and `MIN rem/mod -1` dispositions (AC-5), the
+native refusal `NativeDivisionPlanUnavailable` with an unchanged sibling (AC-6),
+and the cover and non-`Verified` controls (AC-10). FR-014-AC-81 (the `rem` oracle derivation) is
+implemented.
 
-IR-854 is blocked by IR-1541 (filament-exact native `Integer` Divide and Modulo
-plan, with Kani measurements) only for FR-057-AC-7's native-route `Verified`
-verdict. The spec, the renderer, the expected side, the refusals and the host
-criteria proceed without it, and FR-057-AC-6 governs the native route until the
-plan lands.
+Measured on the general route (AC-7, AC-9; record
+`docs/qualification/ir854-general-route-division-measurements.md`): every
+measured shape ends `TimedOut` at the 600 s wall-clock ceiling with a peak near
+8 GiB, so no general-route shape of `div`, `rem` or `mod` is claimed `Verified`.
+Each operation is a `not_tractable` row of the shipped scalar table at 4 bits
+(`route` general). The constant-divisor shape at 8 bits also did not finish, so
+the rows show no constant/symbolic split and no `divisor_constant` extension is
+added. Shapes the record lists as unmeasured carry no claim.
+
+Partly delivered (PARTIAL):
+
+- AC-9: the three `not_tractable` rows exist and the decided run wrappers refuse
+  at their width, but the measurement record does not cover every listed
+  operation, shape, route and width. Unmeasured: constant divisors at 16, 32 and
+  63 bits, the 8-bit constant divisor for `div` Euclidean and `rem` floor and
+  Euclidean, negative constant divisors for six of the seven operation/law
+  pairs, and every native-route shape (owner IR-1541). The record lists them.
+- AC-11: tested as sibling independence for integer add, subtract, multiply and
+  negate generated with and without a division claim, plus FR-015-AC-115's
+  existing reference-copy equivalence. The before/after comparison for the
+  integer comparisons, Boolean implication, enum comparison and float
+  comparison is not run in this PR; their outputs rest on the existing tests of
+  those operators.
+- AC-12: the generation-time identity (node, operation, profile, result range,
+  unwind, representation, solver option) is tested. The run-time clauses (full
+  ordered backend arguments from a run, raw checks and cover, playback, exit,
+  typed terminal outcome and replay from the retained artifact) need a run that
+  produces a verdict or playback; owner IR-1541 with AC-7 and AC-8.
+
+Not delivered (PARTIAL, owner IR-1541):
+
+- AC-7's native-route `Verified` verdicts and its native minimum (one shape per
+  operation, at least the constant-divisor shape at 8 bits). The native route
+  refuses per AC-6 until the kernel plan exists. The native-route rows are copied
+  into the shipped table by the PR that consumes IR-1541's measurements (AC-9).
+- AC-8's installed-Kani mutant falsification and its playback replay. No
+  general-route shape is tractable, and the one mutant tried on the general route
+  (completing at a zero divisor, over a 5-bit explicit-result fixture) also
+  ended `TimedOut` at 600 s rather than `Falsified`. The mutant set is rendered
+  by `kani_mutants` in `tests/it/integer_division_harness.rs`, ready for the
+  native route. The host controls of AC-2 and AC-4 kill the mapping and window
+  mutants over the real oracle.
+
+IR-854 is an IR-269 MVP row. IR-598 retired the corpus's ground `div` and `rem`
+check, and this requirement is its V2 replacement.

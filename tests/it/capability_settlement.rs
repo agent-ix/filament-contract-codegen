@@ -2056,10 +2056,9 @@ fn kani_source_call_preflight_binds_callee_and_ordered_arguments() {
     ));
 }
 
-fn source_derived_division_refusal() -> UnsupportedObligation {
+fn source_derived_division_disposition() -> filament_contract_codegen::ObligationDisposition {
     use filament_contract_codegen::{
-        negotiate_kani_obligations, KaniObligationOutcome, KaniObligationRequest,
-        ObligationDisposition, ObligationItem,
+        negotiate_kani_obligations, KaniObligationOutcome, KaniObligationRequest, ObligationItem,
     };
     use std::time::Duration;
 
@@ -2087,10 +2086,10 @@ fn source_derived_division_refusal() -> UnsupportedObligation {
         filament_contract_codegen::ClaimDisposition::Generated(generated) => generated,
         other => panic!("derived integer division must generate its upstream oracle: {other:?}"),
     };
-    let checked_bound = generated
-        .checked_bounds
-        .first()
-        .expect("division plan identifies its exact checked bound");
+    assert!(
+        !generated.checked_bounds.is_empty(),
+        "division plan identifies its exact checked bound"
+    );
     let contract = exact_function_fixture::admitted_function_contract(
         &package,
         std::slice::from_ref(&node_id),
@@ -2118,60 +2117,35 @@ fn source_derived_division_refusal() -> UnsupportedObligation {
         KaniObligationOutcome::Emitted { records, .. }
         | KaniObligationOutcome::Rejected { records } => records,
     };
-    match records
+    records
         .into_iter()
         .next()
-        .expect("one refusal record")
+        .expect("one division record")
         .disposition
-    {
-        ObligationDisposition::Unsupported { reason } => {
-            match &reason {
-                UnsupportedObligation::OperationNotRendered {
-                    derived_domains, ..
-                } => {
-                    assert!(
-                        derived_domains.iter().any(|domain| matches!(
-                            domain,
-                            filament_contract_codegen::DerivedDomain::IntegerRange {
-                                bound,
-                                lower,
-                                upper,
-                            } if bound == checked_bound && lower == "-1000" && upper == "1000"
-                        )),
-                        "typed domain must preserve the exact checked bound key, kind, and limits"
-                    );
-                }
-                other => panic!("unexpected integer division refusal: {other:?}"),
-            }
-            reason
-        }
-        other => panic!("integer division must be unsupported by Kani: {other:?}"),
-    }
 }
 
-/// Direct FR-015 classification remains available for checked-source callers.
+/// Direct FR-015 classification renders integer division for checked-source callers.
 #[trace("TC-025")]
 #[test]
-fn direct_fr015_division_keeps_renderer_refusal() {
+fn direct_fr015_division_renders_its_harness() {
     assert!(matches!(
-        source_derived_division_refusal(),
-        UnsupportedObligation::OperationNotRendered { .. }
+        source_derived_division_disposition(),
+        filament_contract_codegen::ObligationDisposition::Supported { .. }
     ));
 }
 
-/// A source-mapped, admitted integer division reaches form classification, rather than
-/// disappearing behind the missing-result guard. The FR-015 refusal wins before mode settlement.
+/// A source-mapped, admitted integer division with a selected narrowed result reaches form
+/// classification, settles on Kani as `Supported`, and routed generation renders a division harness
+/// whose identity carries its law profile and the narrowed result range.
 #[trace(
-    "FR-015-AC-15",
     "FR-019-AC-25",
-    "FR-019-AC-29",
     "FR-019-AC-44",
     "FR-014-AC-55",
     "FR-022-AC-30",
     "TC-030"
 )]
 #[test]
-fn kani_selected_division_preserves_exact_renderer_refusal() {
+fn kani_selected_division_settles_and_renders() {
     use crate::kani_obligations::package;
 
     const DIVISION: u32 = 9_301_101;
@@ -2253,39 +2227,9 @@ fn kani_selected_division_preserves_exact_renderer_refusal() {
         vec![kani(vec![(CapabilityKind::ValueValidity, Mode::Unbounded)])],
         request,
     );
-    let Disposition::Unsupported {
-        cause:
-            Cause::KaniFormRefused {
-                form: identity,
-                refusal,
-                backend,
-            },
-    } = settled.disposition
-    else {
-        panic!("selected integer division must keep its typed FR-015 refusal: {settled:?}")
-    };
-    assert_eq!(
-        identity.family,
-        filament_contract_codegen::KaniFormFamily::Integer
-    );
-    assert_eq!(backend, BackendKind::Kani.identity());
     assert!(
-        matches!(
-            &refusal,
-            UnsupportedObligation::OperationNotRendered {
-                operation_identity,
-                derived_domains,
-            } if operation_identity == "quire.op.integer.div"
-                && derived_domains.iter().any(|domain| matches!(
-                    domain,
-                    filament_contract_codegen::DerivedDomain::IntegerRange {
-                        lower,
-                        upper,
-                        ..
-                    } if lower == "0" && upper == "10"
-                ))
-        ),
-        "wrong division refusal: {refusal:?}"
+        matches!(settled.disposition, Disposition::Supported { .. }),
+        "selected integer division settles on Kani: {settled:?}"
     );
 
     let requirements = crate::common::requirements::project(&plain_source, positions);
@@ -2339,11 +2283,28 @@ fn kani_selected_division_preserves_exact_renderer_refusal() {
     else {
         panic!("selected division must reach the Kani arm")
     };
-    assert_eq!(
-        record.disposition,
-        filament_contract_codegen::ObligationDisposition::Unsupported { reason: refusal }
+    assert!(
+        matches!(
+            record.disposition,
+            filament_contract_codegen::ObligationDisposition::Supported { .. }
+        ),
+        "division renders: {:?}",
+        record.disposition
     );
-    assert!(harness.is_none(), "refused division emits no Kani harness");
+    let harness = harness
+        .as_ref()
+        .expect("rendered division emits a Kani harness");
+    let division = harness
+        .identity
+        .division_scalar
+        .as_ref()
+        .expect("a division harness records its division identity");
+    assert!(division.profile.is_some(), "div carries its law profile");
+    assert_eq!(
+        (division.result_minimum, division.result_maximum),
+        (0, 10),
+        "the selected narrowed result range"
+    );
 
     let roots = positions
         .iter()

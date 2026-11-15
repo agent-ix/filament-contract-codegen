@@ -681,6 +681,34 @@ fn scalar_decoder_rejects_playback_above_its_limit_after_a_loose_parse() {
     );
 }
 
+/// The decoder accepts the two-operand division identities of the catalog's scalar projection
+/// (it only checks arity and ranges); a one-operand schema for them is an arity mismatch.
+#[trace("FR-032-AC-3")]
+#[test]
+fn decoder_accepts_division_identities_with_their_operand_arity() {
+    let valid = transcript(&sum(), &[3, 17]);
+    for operation in [
+        "quire.op.integer.div",
+        "quire.op.integer.rem",
+        "quire.op.integer.mod",
+    ] {
+        let mut division = sum();
+        division.operation_identity = operation.to_owned();
+        assert_eq!(
+            decode_from_transcript(&division, &valid).expect("division decodes"),
+            vec![3, 17],
+            "{operation}"
+        );
+        let mut wrong_arity = division.clone();
+        wrong_arity.arguments.pop();
+        refusal(
+            &wrong_arity,
+            &valid,
+            "cg_scalar_witness_schema_arity_mismatch",
+        );
+    }
+}
+
 #[trace("FR-032-AC-3")]
 #[test]
 fn unsupported_operator_and_invalid_persisted_schema_refuse_typed_playback() {
@@ -688,7 +716,6 @@ fn unsupported_operator_and_invalid_persisted_schema_refuse_typed_playback() {
     let valid = transcript(&identity, &[3, 17]);
     for operation in [
         "quire.op.boolean.implies",
-        "quire.op.integer.div",
         "quire.op.integer.lt",
         "quire.op.integer.eq",
         "unknown",
