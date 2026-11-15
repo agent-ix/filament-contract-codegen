@@ -53,3 +53,14 @@ Gate, all at FSPEC_DIR filament-specification 17d49a98 (pulled at 03:59, before 
 - Native (`composite_shadow_native`, --nocapture): exhaustive 2916 / 2916 / 36 / 36 / 64, sampled 80 at cap 100, all agreeing; mutants disagree on 2916 (opposite operator), 108 (absent = null), 9 (extra pair), 2592 (`ConstructionRefused` `MissingField` on `c`), 126 (`Refused`), as TC-025 records.
 - Structural: `layout::l_2_*`, `cover_last::tc_025_*` (composite.rs spells no `kani::` text; draws and cover come from `render::shadow`), `role_parity`, `no_generation_panics`: 18 of 18 pass. No pin, compat layer or Cargo change in the diff; every new test carries `#[trace]`.
 
+## Dispositions
+
+Round 1, at 43651581 (fix c3e0ad13 plus a merge of origin/main 2847dbb4).
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-001 | fixed | FR-028-AC-18 now reads "Implemented for the composite closure (IR-264 PR3)": `closure_reader` value_bearing with independent check FR-018-AC-23 and `member_order` order_only (both in `composite.rs` shared_helpers), the three closure-reader mutants caught by the independent read and the member-order permutation Verified under Kani; both tests now carry `#[trace("TC-039", "FR-028-AC-18")]`; it states that the undischarged-abstraction refusal is exercised on the stand-in only. tests.md row and TC-039 (step 17 added) agree. |
+| FND-002 | fixed | FR-015 line 57 now "Implemented in part (IR-264 PR3; see the PARTIAL criteria)", line 769 "IR-264 (PR3; PARTIAL criteria noted on them)", FR-028 line 34 names the composite family as PR3 with AC-17 and AC-23 still partial. |
+| FND-003 | fixed | FR-015-AC-75 now records the misalignment mutant on a two-Boolean record (`l.f0 == r.f1`), Falsified by the verdict check after the healthy record verifies; the self-comparison substitute is gone (code-review FND-001). |
+
+Round 1 gate at 43651581, FSPEC_DIR 17d49a98: the merge resolution (`git diff-tree --cc`) keeps the PR's `pub(super)` exports and takes main's renamed crates (`filament_contract_model`, `filament_exact`, `fsl-replay`) in every new file, sound. `cargo fmt --check` clean; `clippy --all-targets -D warnings` clean; `cargo deny check` ok; `make spec` exit 0; whole `--lib` 604 passed / 0 failed; whole `--test it` 1126 passed / 0 failed / 120 ignored; Kani lane `composite_shadow_kani` 5 / 5 (misalignment healthy Verified 0.2 s, mutant Falsified 0.4 s at the verdict assertion only; the other five mutants Falsified; six healthy rows Verified 0.2-0.3 s).

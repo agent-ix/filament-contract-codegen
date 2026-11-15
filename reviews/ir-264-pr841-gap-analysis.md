@@ -51,3 +51,12 @@ Gate, all at FSPEC_DIR filament-specification 17d49a98 (pulled at 03:59, before 
 - Native (`composite_shadow_native`, --nocapture): exhaustive 2916 / 2916 / 36 / 36 / 64, sampled 80 at cap 100, all agreeing; mutants disagree on 2916 (opposite operator), 108 (absent = null), 9 (extra pair), 2592 (`ConstructionRefused` `MissingField` on `c`), 126 (`Refused`), as TC-025 records.
 - Structural: `layout::l_2_*`, `cover_last::tc_025_*` (composite.rs spells no `kani::` text; draws and cover come from `render::shadow`), `role_parity`, `no_generation_panics`: 18 of 18 pass. No pin, compat layer or Cargo change in the diff; every new test carries `#[trace]`.
 
+## Dispositions
+
+Round 1, at 43651581 (fix c3e0ad13 plus a merge of origin/main 2847dbb4).
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-001 | fixed | FR-015-AC-73's PARTIAL now lists exactly what is exercised (unbounded integer, both i64 overflow sides, recursion, text/enum/rational/decimal/float/collection, the real union item, an FR-018 refusal), states that the family names are fed as recorded type names so only the echo is shown, and lists as not exercised and unowned: `reference`, `quantity`, sequence/set/bag/ordered set as separate rows, and the same-request clause. TC-025 and tests.md agree. |
+
+Round 1 gate at 43651581, FSPEC_DIR 17d49a98: the merge resolution (`git diff-tree --cc`) keeps the PR's `pub(super)` exports and takes main's renamed crates (`filament_contract_model`, `filament_exact`, `fsl-replay`) in every new file, sound. `cargo fmt --check` clean; `clippy --all-targets -D warnings` clean; `cargo deny check` ok; `make spec` exit 0; whole `--lib` 604 passed / 0 failed; whole `--test it` 1126 passed / 0 failed / 120 ignored; Kani lane `composite_shadow_kani` 5 / 5 (misalignment healthy Verified 0.2 s, mutant Falsified 0.4 s at the verdict assertion only; the other five mutants Falsified; six healthy rows Verified 0.2-0.3 s).
