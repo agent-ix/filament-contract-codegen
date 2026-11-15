@@ -108,3 +108,11 @@ byte-identical to round 2. No semantic change slipped in.
 | ID | Severity | Summary | Refs |
 |---|---|---|---|
 | FND-005 | medium | `cargo fmt --check` fails on the merged head, only in this PR's new file: the rename lengthened lines and moved the `filament_contract_codegen` import, which rustfmt now orders before `ix_trace_rs`; origin/main ef26c8cb is fmt-clean. Run `cargo fmt` on `tests/it/integer_division_harness.rs` and commit. | tests/it/integer_division_harness.rs:4-14, tests/it/integer_division_harness.rs:1087, tests/it/integer_division_harness.rs:1136-1144 |
+
+Round 2, checked at 37080cf1 (`git diff 6644a0da 37080cf1`: rustfmt of
+`tests/it/integer_division_harness.rs`, whitespace, line breaks and one trailing comma only, plus
+the SR copy); `cargo fmt --check` clean.
+
+| FND | outcome | reason |
+|---|---|---|
+| FND-005 | fixed | `cargo fmt --check` exits 0; the `filament_contract_codegen` import now precedes `ix_trace_rs` and the long `assert_eq!` and `execute_kani_obligation` calls are wrapped. |
