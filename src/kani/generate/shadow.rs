@@ -35,8 +35,12 @@ mod tests;
 /// The family name a stand-in shadow records.
 pub const TWO_LEAF_FAMILY: &str = "two_leaf_equality";
 
-/// The stand-in family's size budget: the pair nodes a closure may have.
-pub const SHADOW_PAIR_NODE_BUDGET: u32 = 4;
+/// The shadow families' size budget: the pair nodes a closure may have.
+///
+/// Set by measurement (TC-025): a mixed closure of 128 pair nodes verifies in under a minute and
+/// stays well inside the 16 GiB memory ceiling the default identity records, while 192 nodes
+/// needs most of it, so the next size is not offered.
+pub const SHADOW_PAIR_NODE_BUDGET: u32 = 128;
 
 /// The module the shadow, the expectation and their shared helpers live in.
 pub const SHADOW_MODULE: &str = "shadow_two_leaf";

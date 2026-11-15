@@ -776,3 +776,133 @@ pub(super) fn matrix_covered(matrix: &str, criterion: &str) -> bool {
             listed.contains(&wanted) && cells[4].starts_with('✅')
         })
 }
+
+/// FR-028-AC-13 for the composite family: the unmutated source names no crate but `core`,
+/// `alloc`, `std` and `kani`, holds no stub and assumes only its drawn domain; each spliced
+/// fault fails the check it breaks.
+#[trace("TC-039", "FR-028-AC-13")]
+#[test]
+fn tc_039_the_composite_shadow_source_has_no_runtime_path_no_stub_and_no_assumption_beyond_its_domain(
+) {
+    let corpus = corpus();
+    let healthy = generate(&corpus, FLAGS_EQUAL).rust.contents;
+    let drawn = check_shadow_source(&healthy, Some("abstraction")).expect("the source passes");
+    assert_eq!(drawn.len(), 6);
+    assert!(!healthy.contains("kani::stub"));
+
+    let uses = "    use super::shadow_composite::{expectation, shadow};\n";
+    let body = "        let (verdict, pairs) = shadow(";
+    assert!(healthy.contains(uses) && healthy.contains(body));
+    let faults: [(&str, &str, &str, &str); 7] = [
+        (
+            "a runtime type imported",
+            "    use filament_contract_runtime::Outcome;\n",
+            "",
+            "ForeignCrate",
+        ),
+        (
+            "an exact value imported",
+            "    use filament_exact::Value;\n",
+            "",
+            "ForeignCrate",
+        ),
+        (
+            "a runtime path inline",
+            "",
+            "        let _ = filament_exact::Value::default();\n",
+            "ForeignCrate",
+        ),
+        ("a stub", "    #[kani::stub(shadow, shadow)]\n", "", "Stub"),
+        (
+            "a verified stub",
+            "    #[kani::stub_verified(shadow)]\n",
+            "",
+            "Stub",
+        ),
+        (
+            "an assumption relating two drawn values",
+            "",
+            "        kani::assume(a_a == b_a);\n",
+            "Assumption",
+        ),
+        (
+            "a one-sided assumption",
+            "",
+            "        kani::assume(a_b >= 0_i64);\n",
+            "Assumption",
+        ),
+    ];
+    for (label, before_proof, in_body, kind) in faults {
+        let mutated = healthy
+            .replace(uses, &format!("{uses}{before_proof}"))
+            .replace(body, &format!("{in_body}{body}"));
+        assert_ne!(mutated, healthy, "{label} changes the source");
+        let violation = check_shadow_source(&mutated, Some("abstraction")).expect_err(label);
+        assert!(
+            format!("{violation:?}").contains(kind),
+            "{label}: {violation:?} must name {kind}"
+        );
+    }
+}
+
+/// FR-015-AC-75, the closure reader: a fault of the closure that the shadow, its expectation and
+/// the production oracle all share verifies and agrees with itself, so only the independent read
+/// of FR-018-AC-23 catches it. The shadow generated from each faulty closure records that
+/// closure in its identity, and the read of the package fails on exactly what the identity holds.
+#[trace("TC-025", "FR-015-AC-75")]
+#[test]
+fn tc_025_a_closure_reader_mutant_is_caught_by_the_independent_read_not_by_the_shadow() {
+    let corpus = corpus();
+    let healthy = generate(&corpus, FLAGS_EQUAL);
+    let package_claim = super::composite_equality_closure::generated(&corpus, FLAGS_EQUAL);
+    let read_of = |harness: &KaniShadowHarness| {
+        let composite = harness.identity.composite.as_ref().unwrap();
+        let mut claim = package_claim.clone();
+        claim.declaration_closure = composite.declarations.clone();
+        claim.operand_types = composite.operand_types.clone();
+        super::composite_equality_closure::check_against_package(&corpus.package, &claim)
+    };
+    assert_eq!(
+        read_of(&healthy),
+        Ok(()),
+        "the unmutated closure passes the read"
+    );
+
+    type Fault = (&'static str, fn(&mut Vec<RecordedMember>));
+    let faults: [Fault; 3] = [
+        ("dropped member", |members| {
+            members.pop();
+        }),
+        ("bound narrowed by one", |members| {
+            members[1].value_type = RecordedType::Int {
+                lower: "0".to_owned(),
+                upper: "1".to_owned(),
+            };
+        }),
+        ("optional read as required", |members| {
+            members[2].presence = RecordedPresence::Required;
+        }),
+    ];
+    let base = entry(&corpus, FLAGS_EQUAL);
+    let ClaimDisposition::Generated(original) = &base.result else {
+        panic!("generated entry");
+    };
+    for (label, fault) in faults {
+        let mut members = original.declaration_closure[0].members.clone();
+        fault(&mut members);
+        assert_ne!(members, original.declaration_closure[0].members, "{label}");
+        let faulty = with_record(&base, members);
+        let harness =
+            generate_composite_shadow(&item_of(&faulty, "subject")).unwrap_or_else(|error| {
+                panic!("{label}: the faulty closure still generates: {error:?}")
+            });
+        assert_ne!(
+            harness.identity, healthy.identity,
+            "{label}: the identity records it"
+        );
+        assert!(
+            read_of(&harness).is_err(),
+            "{label} must fail the independent read"
+        );
+    }
+}
