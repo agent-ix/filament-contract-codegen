@@ -12,17 +12,17 @@
 //! them, and FSL refuses a snapshot that names an object type, population or relationship the
 //! recompiled package does not declare.
 
-use qsl_replay::{
+use filament_contract_model::{
+    CheckedCollectionKind, CheckedMemberType, CheckedNodeId, CheckedOccurrence,
+    CheckedOccurrenceRole, CheckedPackageV2,
+};
+use filament_exact::Origin;
+use fsl_replay::{
     call_site, AnchorKind, ClauseName, ClauseSelectionInput, EnvelopeSource, ObligationIdentity,
     QualifiedName, ReplayPackage, ReplaySource, ReplayTargetMembers, RequestTargetWire,
     SelectedAnchor, SelectedObject, StateClauseCounterexample, WitnessPacket, WitnessValue,
 };
 use quire_canonical::FixedShape;
-use quire_contract_model::{
-    CheckedCollectionKind, CheckedMemberType, CheckedNodeId, CheckedOccurrence,
-    CheckedOccurrenceRole, CheckedPackageV2,
-};
-use quire_exact::Origin;
 use serde::Serialize;
 use std::collections::BTreeMap;
 
@@ -506,7 +506,7 @@ impl StateClauseReplay {
                 let values =
                     field_values(package, &declaration, &name, &witness, &address.population)?;
                 let document = serde_json::json!({
-                    "format": "quire.state.snapshot/v1",
+                    "format": "filament.state.snapshot/v1",
                     "identity": preimage_value(&IdentityMember::from(&snapshot_label)).map_err(document_encode)?,
                     "observation": "current",
                     "anchor": {"kind": anchor_member.kind, "name": anchor_member.name},
@@ -527,7 +527,7 @@ impl StateClauseReplay {
                 encode_document(&document)
             }
             None => encode_document(&GraphSnapshotDocument {
-                format: "quire.state.snapshot/v1",
+                format: "filament.state.snapshot/v1",
                 identity: (&snapshot_label).into(),
                 observation: "current",
                 anchor: anchor_member,
@@ -612,8 +612,8 @@ impl StateClauseReplay {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use filament_exact::Role;
     use ix_trace_rs::trace;
-    use quire_exact::Role;
 
     fn claim(ordinal: u64) -> CheckedOccurrence {
         CheckedOccurrence {

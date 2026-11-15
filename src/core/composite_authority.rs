@@ -1,6 +1,6 @@
 //! Sealed generation authority shared by producers and replay without reversing AD-004.
 use super::artifact::Artifact;
-use quire_contract_model::{CheckedNodeId, CheckedPackageV2};
+use filament_contract_model::{CheckedNodeId, CheckedPackageV2};
 use std::sync::Arc;
 
 pub(crate) mod sealed {

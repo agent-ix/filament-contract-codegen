@@ -4,13 +4,14 @@
 //! This module builds the backend-witness transcript in the grammar `fsl-replay` admits from the
 //! typed values [`decode_falsification`]
 //! returns, binds each value to its parameter by
-//! the parameter's node id, and calls [`qsl_replay::replay`]. The executor recompiles the
+//! the parameter's node id, and calls [`fsl_replay::replay`]. The executor recompiles the
 //! request's identity-labelled source and evaluates the selected function itself, so the verdict
 //! is FSL's, not a value this crate supplies.
 
 use std::{collections::BTreeMap, fmt};
 
-use qsl_replay::{
+use filament_semantic_value::{catalog::Category, supplied_stop::SuppliedLimits};
+use fsl_replay::{
     call_site, replay, witness_entry_name, BackendId, CallSite, CallSiteRefusal,
     CanonicalAssignment, DeclaredDomain, DependencyEntryWire, DependencyInput,
     DependencyInputRefusal, DisagreementCause, EnvelopeSource, FunctionSite, Identifier,
@@ -20,7 +21,6 @@ use qsl_replay::{
     SuppliedLibrary, ValueParitySite, Witness, WitnessArmResult, WitnessEnvelope, WitnessPacket,
     WitnessRefusal, WitnessSettlement, WitnessValue,
 };
-use quire_semantic_value::{catalog::Category, supplied_stop::SuppliedLimits};
 
 use crate::{
     kani::generate::corpus::bounded_kani_corpus::BoundedCorpusCase,
@@ -164,7 +164,7 @@ impl From<MalformedTranscript> for SpineReplayError {
     }
 }
 
-/// Replays one decoded falsification through [`qsl_replay::replay`].
+/// Replays one decoded falsification through [`fsl_replay::replay`].
 ///
 /// `harness` and `check_text` fill the transcript's harness and check fields; `values` are the
 /// decoded arguments, and `parameters` bind each argument name to its node id. A Boolean value
@@ -222,7 +222,7 @@ pub(crate) fn render_witness<T: fmt::Display>(
     ))
 }
 
-/// What executes a built request: [`qsl_replay::replay`], or a caller's wrapper around it.
+/// What executes a built request: [`fsl_replay::replay`], or a caller's wrapper around it.
 type Execute<'a> = &'a mut dyn FnMut(ReplayRequestWire) -> Result<ReplayResult, SpineReplayError>;
 
 // Retain complete dependency mismatch fields inline; boxing adds a fallible allocation.
@@ -302,7 +302,8 @@ fn replay_falsification_through(
         Ok(
             ReplayResult::Input(_)
             | ReplayResult::ObservedTemporal(_)
-            | ReplayResult::ModelGraph(_),
+            | ReplayResult::ModelGraph(_)
+            | ReplayResult::ProtocolAnalysis(_),
         ) => Err(SpineReplayError::WrongArm),
         Err(refusal) => Err(refusal),
     }
@@ -346,7 +347,7 @@ pub struct DependencyLock {
     /// The dependency's lock source.
     pub source: LockedSource,
     /// Original optional internal-step rows from this dependency lock.
-    pub refinement_internals: Option<Vec<quire_contract_model::CheckedRefinementInternal>>,
+    pub refinement_internals: Option<Vec<filament_contract_model::CheckedRefinementInternal>>,
 }
 
 /// Everything about the proving run a replay request repeats.
@@ -463,7 +464,7 @@ impl ReplayInputs {
     /// dependencies' sources.
     pub(crate) fn wire(
         &self,
-        package: qsl_replay::ReplayPackage,
+        package: fsl_replay::ReplayPackage,
         replay_target: RequestTargetWire,
         source: ReplaySource,
         obligation_identity: ObligationIdentity,
@@ -523,7 +524,7 @@ pub struct ReplayPackage {
     selected_dependencies: Vec<DependencyEntryWire>,
     selection: QualifiedName,
     site: CallSite<FunctionSite>,
-    raw_package: qsl_replay::ReplayPackage,
+    raw_package: fsl_replay::ReplayPackage,
     /// Each parameter's name and witness entry name, in ascending node id order.
     parameters: Vec<(String, String)>,
     kani_binding: Option<KaniProofBinding>,
@@ -681,7 +682,7 @@ impl ReplayPackage {
                 Ok((name.as_str().to_owned(), entry_name))
             })
             .collect::<Result<Vec<_>, ReplayPackageError>>()?;
-        let raw_package = qsl_replay::ReplayPackage::read(&site.package, u64::MAX)
+        let raw_package = fsl_replay::ReplayPackage::read(&site.package, u64::MAX)
             .map_err(ReplayPackageError::RawPackage)?;
         Ok(Self {
             inputs,
@@ -841,12 +842,13 @@ impl ReplayPackage {
             replay(request, self.inputs.replay_limits)
         })? {
             ReplayResult::Input(result) => match result.value() {
-                Some(qsl_replay::EvaluatedValue::Boolean(value)) => Ok(value),
+                Some(fsl_replay::EvaluatedValue::Boolean(value)) => Ok(value),
                 None => Err(SpineReplayError::NoInputValue),
             },
             ReplayResult::Witness(_)
             | ReplayResult::ObservedTemporal(_)
-            | ReplayResult::ModelGraph(_) => Err(SpineReplayError::WrongArm),
+            | ReplayResult::ModelGraph(_)
+            | ReplayResult::ProtocolAnalysis(_) => Err(SpineReplayError::WrongArm),
         }
     }
 
@@ -896,12 +898,13 @@ impl ReplayPackage {
             replay(request, self.inputs.replay_limits)
         })? {
             ReplayResult::Input(result) => match result.value() {
-                Some(qsl_replay::EvaluatedValue::Boolean(value)) => Ok(value),
+                Some(fsl_replay::EvaluatedValue::Boolean(value)) => Ok(value),
                 _ => Err(SpineReplayError::NoInputValue),
             },
             ReplayResult::Witness(_)
             | ReplayResult::ObservedTemporal(_)
-            | ReplayResult::ModelGraph(_) => Err(SpineReplayError::WrongArm),
+            | ReplayResult::ModelGraph(_)
+            | ReplayResult::ProtocolAnalysis(_) => Err(SpineReplayError::WrongArm),
         }
     }
 
@@ -1199,7 +1202,7 @@ fn function_packet(
         obligation_identity: Some(claim.obligation),
         occurrence_key: Some(claim.occurrence),
         clause_node: Some(claim.subject),
-        replay_target: qsl_replay::ReplayTargetMembers::function(package.selection.clone()),
+        replay_target: fsl_replay::ReplayTargetMembers::function(package.selection.clone()),
         profile_selections: Some(Vec::new()),
         run_limits: Some(package.inputs.accounting_limits),
         declared_domains: Some(declared_domains),
@@ -1334,7 +1337,7 @@ fn compile_corpus_fsl_package(
     case: &BoundedCorpusCase,
     decode_limits: WitnessDecodeLimits,
 ) -> Result<ReplayPackage, ReplayPackageError> {
-    use qsl_replay::{ReplayLimits, ScalarLimits};
+    use fsl_replay::{ReplayLimits, ScalarLimits};
     use std::collections::BTreeMap;
 
     // The producer imports the dependency under this library name in its FSL source.
@@ -1629,8 +1632,8 @@ pub(crate) fn replay_harness_counterexample_through(
 }
 
 /// [`replay_counterexample`] with the request handed to `execute` instead of straight to
-/// [`qsl_replay::replay`]: a caller that records or wraps the request FSL receives passes a
-/// closure that ends in `qsl_replay::replay`. A different or absent retained proving-run binding
+/// [`fsl_replay::replay`]: a caller that records or wraps the request FSL receives passes a
+/// closure that ends in `fsl_replay::replay`. A different or absent retained proving-run binding
 /// yields [`EvidenceFailureCause::PackageIdentity`] before decoding or invoking `execute`.
 ///
 /// # Errors
@@ -1694,7 +1697,7 @@ pub fn replay_counterexample_through(
 }
 
 /// Replays a decoded enum comparison counterexample through the owner route: the selected FSL
-/// function is evaluated by [`qsl_replay::replay`] over the two declared members the witness
+/// function is evaluated by [`fsl_replay::replay`] over the two declared members the witness
 /// names, and its Boolean result is returned for the caller to compare with the harness's
 /// expectation. `declaration` is the owner's key for the enum the operands are declared with.
 ///
@@ -1720,7 +1723,7 @@ pub fn replay_enum_witness(
 }
 
 /// Replays a decoded float comparison counterexample through the owner route: the selected FSL
-/// function is evaluated by [`qsl_replay::replay`] over the exact bit patterns the witness names,
+/// function is evaluated by [`fsl_replay::replay`] over the exact bit patterns the witness names,
 /// each as `WitnessValue::Float32` or `WitnessValue::Float64` bound by its parameter name, and its
 /// Boolean result is returned for the caller to compare with the harness's expectation.
 ///
@@ -1793,16 +1796,16 @@ mod tests {
         abi::{KaniBindingRole, KaniIntegerBounds, KaniPrimitiveType},
         identity::ObligationBinding,
     };
-    use ix_trace_rs::trace;
-    use qsl_replay::{
+    use filament_contract_model::{IntegerDomain, OverflowPolicy};
+    use filament_exact::PathSegment;
+    use fsl_replay::{
         NoPayload, NodeKey, OccurrenceKey, ReplayRequest, ReplayRequestRefusal,
         ReplayTargetMembers, WitnessPacket,
     };
-    use quire_contract_model::{IntegerDomain, OverflowPolicy};
-    use quire_exact::PathSegment;
+    use ix_trace_rs::trace;
 
     const UNIT: &str = "language \"ix:native\" edition \"1-draft\";\n\
-        profile v = \"quire.value.complete/v1\";\n\
+        profile v = \"filament.value.complete/v1\";\n\
         function f using v(a: Int[0, 9], b: Int[0, 9]): Boolean pure { a <= b }\n";
 
     fn fixture_node(name: &str) -> NodeKey {
@@ -1893,14 +1896,14 @@ mod tests {
     /// the refusal of other kinds only: the declaration key here is a stand-in, so FSL's reading
     /// of a real declaration is covered by the integration test
     /// `a_decoded_witness_replays_through_the_owner_route_as_the_declared_members`, which sends
-    /// the owner's own declaration key through `qsl_replay::replay`.
+    /// the owner's own declaration key through `fsl_replay::replay`.
     #[trace("TC-063", "FR-049-AC-10")]
     #[test]
     // Retain complete dependency mismatch fields inline; boxing adds a fallible allocation.
     #[allow(clippy::result_large_err)]
     fn an_enum_witness_value_is_rendered_into_the_transcript_text() {
         let package = package_from_source(
-            "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\n\
+            "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\n\
              ordered enum Level { LOW, MID }\n\
              function lt using v(a: Level, b: Level): Boolean pure { a < b }\n",
             "lt",
@@ -2048,7 +2051,7 @@ mod tests {
         let mut wrong_occurrence = producer_packet(&package, obligation.clone());
         wrong_occurrence.occurrence_key = Some(OccurrenceKey::new(
             package.site.site.function.clone(),
-            qsl_replay::Origin::new(qsl_replay::Role::new("declaration"), 1),
+            fsl_replay::Origin::new(fsl_replay::Role::new("declaration"), 1),
         ));
         assert!(matches!(
             package.request_from_packet(wrong_occurrence, obligation.clone()),
@@ -2106,7 +2109,7 @@ mod tests {
     }
 
     const VALUE_UNIT: &str = "language \"ix:native\" edition \"1-draft\";\n\
-        profile v = \"quire.value.complete/v1\";\n\
+        profile v = \"filament.value.complete/v1\";\n\
         function f using v(x: Int[0, 9]): Integer pure { x + 1 }\n\
         function g using v(x: Int[0, 9]): Integer pure { x + 2 }\n";
 
@@ -2120,7 +2123,7 @@ mod tests {
     /// A proving-run domain for the function's parameter, which a value-parity request must not
     /// carry.
     fn proving_run_domain(package: &ReplayPackage) -> DeclaredDomain {
-        use qsl_replay::{DomainKey, DomainKind, FiniteBound, Integer, ProofBound};
+        use fsl_replay::{DomainKey, DomainKind, FiniteBound, Integer, ProofBound};
         let bound = FiniteBound::integer_range(Integer::from(0_i64), Integer::from(9_i64))
             .expect("a valid range");
         let key = DomainKey::Node {
@@ -2148,7 +2151,7 @@ mod tests {
     #[trace("FR-024-AC-44", "FR-024-AC-46", "TC-035")]
     #[test]
     fn tc_035_value_parity_request_binds_the_original_checked_claim() {
-        use qsl_replay::{
+        use fsl_replay::{
             replay_value_parity, Integer, ScalarOutcome, Value, ValueClaim, ValueParityResult,
         };
 
@@ -2268,7 +2271,7 @@ mod tests {
         let mut alternate = packet.clone();
         alternate.occurrence_key = Some(OccurrenceKey::new(
             package.site.site.function.clone(),
-            qsl_replay::Origin::new(qsl_replay::Role::new("declaration"), 1),
+            fsl_replay::Origin::new(fsl_replay::Role::new("declaration"), 1),
         ));
         assert!(matches!(
             refused(alternate),
@@ -2280,7 +2283,7 @@ mod tests {
         let mut wrong_role = packet.clone();
         wrong_role.occurrence_key = Some(OccurrenceKey::new(
             package.site.site.function.clone(),
-            qsl_replay::Origin::new(qsl_replay::Role::new("expression"), 0),
+            fsl_replay::Origin::new(fsl_replay::Role::new("expression"), 0),
         ));
         assert!(matches!(
             refused(wrong_role),
@@ -2292,7 +2295,7 @@ mod tests {
         let mut wrong_node = packet.clone();
         wrong_node.occurrence_key = Some(OccurrenceKey::new(
             fixture_node("other-node"),
-            qsl_replay::Origin::new(qsl_replay::Role::new("declaration"), 0),
+            fsl_replay::Origin::new(fsl_replay::Role::new("declaration"), 0),
         ));
         assert!(matches!(
             refused(wrong_node),
@@ -2429,7 +2432,7 @@ mod tests {
                 &refusal,
                 ReplayRequestRefusal::MissingOccurrenceKey
             ));
-            assert_eq!(refusal.code(), qsl_replay::Code::InvalidRuntimeInput);
+            assert_eq!(refusal.code(), fsl_replay::Code::InvalidRuntimeInput);
             assert_eq!(refusal.cause(), Some("missing-member"));
             assert_eq!(refusal.pointer(), Some("/replay/occurrence_key"));
         }
@@ -2597,7 +2600,7 @@ mod tests {
     #[test]
     fn only_a_reproduced_violation_reproduces() {
         use WitnessSettlement::{Inconclusive, ReproducedWithEvaluatedWitness as Reproduced};
-        let category: quire_semantic_value::catalog::Category = Category::Violation;
+        let category: filament_semantic_value::catalog::Category = Category::Violation;
         assert_eq!(
             verdict_of(Reproduced, category, None),
             ReplayVerdict::Reproduced

@@ -78,7 +78,7 @@ fn conversion_preserves_original_causes_and_rejects_malformed_or_cross_method_ev
     let bindings = support::bindings(&f);
     let request = support::request(&f, &initial, &bindings);
     let method = support::emit_method(&request).unwrap();
-    let healthy = qsl_replay::ClauseEvaluation::Completed(true);
+    let healthy = fsl_replay::ClauseEvaluation::Completed(true);
     let observation = ConstrainedOwnerObservation {
         method: method.identity(),
         safety: Ok(&healthy),
@@ -119,8 +119,8 @@ fn conversion_preserves_original_causes_and_rejects_malformed_or_cross_method_ev
     }
 
     for source in [
-        quire_contract_ir::kani::KaniCancellationSource::Requested,
-        quire_contract_ir::kani::KaniCancellationSource::Deadline,
+        filament_contract_ir::kani::KaniCancellationSource::Requested,
+        filament_contract_ir::kani::KaniCancellationSource::Deadline,
     ] {
         backend.backend.outcome = KaniRunOutcome::Cancelled { source };
         let result = classify_constrained_method(&backend, &observation).unwrap();
@@ -176,18 +176,18 @@ fn conversion_preserves_original_causes_and_rejects_malformed_or_cross_method_ev
     let incomplete = support::owner_evaluation(&f, "Safe", 0, false, 0, zero);
     assert!(matches!(
         incomplete,
-        qsl_replay::ClauseEvaluation::Incomplete(_)
+        fsl_replay::ClauseEvaluation::Incomplete(_)
     ));
     let undefined =
         support::owner_evaluation(&partial, "Limit0", 0, false, 0, request.evaluator_limits);
     assert!(matches!(
         undefined,
-        qsl_replay::ClauseEvaluation::Undefined { .. }
+        fsl_replay::ClauseEvaluation::Undefined { .. }
     ));
     let refusal = support::owner_evaluation(&f, "Missing", 0, false, 0, request.evaluator_limits);
     assert!(matches!(
         refusal,
-        qsl_replay::ClauseEvaluation::Refused(qsl_replay::ClauseRefusal::MissingClause { .. })
+        fsl_replay::ClauseEvaluation::Refused(fsl_replay::ClauseRefusal::MissingClause { .. })
     ));
     backend.backend.outcome = KaniRunOutcome::Falsified {
         counterexample: "unit conversion report".into(),
@@ -209,10 +209,9 @@ fn conversion_preserves_original_causes_and_rejects_malformed_or_cross_method_ev
             matches!(result.owner().constraint,Some(Ok(retained)) if std::ptr::eq(retained,original))
         );
     }
-    let fault = quire_eval::CallFailure::Fault(quire_semantic_value::catalog::InternalFault::new(
-        "owner-stage",
-        "owner-invariant",
-    ));
+    let fault = filament_eval::CallFailure::Fault(
+        filament_semantic_value::catalog::InternalFault::new("owner-stage", "owner-invariant"),
+    );
     let failed = ConstrainedOwnerObservation {
         safety: Err(&fault),
         playback: backend.playback(),
@@ -228,7 +227,7 @@ fn conversion_preserves_original_causes_and_rejects_malformed_or_cross_method_ev
     for boundary_status in [KaniCheckStatus::Satisfied, KaniCheckStatus::Unsatisfiable] {
         let mut complete = evidence(method.identity());
         complete.backend.checks[2].status = boundary_status;
-        let owner_fault = qsl_replay::ClauseEvaluation::Refused(qsl_replay::ClauseRefusal::Fault {
+        let owner_fault = fsl_replay::ClauseEvaluation::Refused(fsl_replay::ClauseRefusal::Fault {
             stage: "original-stage",
             invariant: "original-invariant",
         });

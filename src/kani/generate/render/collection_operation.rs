@@ -26,16 +26,16 @@ fn primitive_type(domain: &CollectionElementIdentity) -> &'static str {
 
 fn bounds_type(bounds: &SymbolicBounds) -> Option<String> {
     match bounds {
-        SymbolicBounds::Boolean => Some("quire_exact::ValueType::Boolean".into()),
-        SymbolicBounds::Integer { minimum, maximum } => Some(format!("quire_exact::ValueType::Int(quire_exact::IntegerInterval::new(quire_exact::Integer::from({}), quire_exact::Integer::from({})).expect(\"checked interval\"))", i64_literal(*minimum), i64_literal(*maximum))),
+        SymbolicBounds::Boolean => Some("filament_exact::ValueType::Boolean".into()),
+        SymbolicBounds::Integer { minimum, maximum } => Some(format!("filament_exact::ValueType::Int(filament_exact::IntegerInterval::new(filament_exact::Integer::from({}), filament_exact::Integer::from({})).expect(\"checked interval\"))", i64_literal(*minimum), i64_literal(*maximum))),
         SymbolicBounds::Sequence { .. } => None,
     }
 }
 
 fn domain_check(value: &str, bounds: &SymbolicBounds) -> Option<String> {
     match bounds {
-        SymbolicBounds::Boolean => Some(format!("matches!({value}, quire_exact::Value::Boolean(_))")),
-        SymbolicBounds::Integer { minimum, maximum } => Some(format!("matches!({value}, quire_exact::Value::Integer(value) if value >= &quire_exact::Integer::from({}) && value <= &quire_exact::Integer::from({}))", i64_literal(*minimum), i64_literal(*maximum))),
+        SymbolicBounds::Boolean => Some(format!("matches!({value}, filament_exact::Value::Boolean(_))")),
+        SymbolicBounds::Integer { minimum, maximum } => Some(format!("matches!({value}, filament_exact::Value::Integer(value) if value >= &filament_exact::Integer::from({}) && value <= &filament_exact::Integer::from({}))", i64_literal(*minimum), i64_literal(*maximum))),
         SymbolicBounds::Sequence { .. } => None,
     }
 }
@@ -54,7 +54,7 @@ fn draw_scalar(source: &mut String, name: &str, domain: &SymbolicBounds) -> Opti
     match domain {
         SymbolicBounds::Boolean => {
             writeln!(source, "let {name}: bool = kani::any();").ok()?;
-            Some(format!("quire_exact::Value::Boolean({name})"))
+            Some(format!("filament_exact::Value::Boolean({name})"))
         }
         SymbolicBounds::Integer { minimum, maximum } => {
             writeln!(
@@ -65,7 +65,7 @@ fn draw_scalar(source: &mut String, name: &str, domain: &SymbolicBounds) -> Opti
             )
             .ok()?;
             Some(format!(
-                "quire_exact::Value::Integer(quire_exact::Integer::from({name}))"
+                "filament_exact::Value::Integer(filament_exact::Integer::from({name}))"
             ))
         }
         SymbolicBounds::Sequence { .. } => None,
@@ -87,8 +87,8 @@ fn collection_schema(source: &mut String, field: &CollectionObjectFieldIdentity)
         CollectionKindIdentity::Sequence => "Sequence",
         CollectionKindIdentity::OrderedSet => "OrderedSet",
     };
-    writeln!(source, "fn type_{}() -> quire_exact::CollectionType {{ quire_exact::CollectionType::new(quire_exact::CollectionKind::{kind}, {ty}, Some(quire_exact::CardinalityBound::new({minimum_length}, {maximum_length}).expect(\"checked cardinality\"))) }}", field.slot).ok()?;
-    writeln!(source, "fn admit_{}(ty: &quire_exact::ValueType, value: &quire_exact::Value) -> Result<(), quire_exact::ConstructionCause> {{\nif ty == &{ty} && {check} {{ Ok(()) }} else {{ Err(quire_exact::ConstructionCause::TypeMismatch) }}\n}}", field.slot).ok()?;
+    writeln!(source, "fn type_{}() -> filament_exact::CollectionType {{ filament_exact::CollectionType::new(filament_exact::CollectionKind::{kind}, {ty}, Some(filament_exact::CardinalityBound::new({minimum_length}, {maximum_length}).expect(\"checked cardinality\"))) }}", field.slot).ok()?;
+    writeln!(source, "fn admit_{}(ty: &filament_exact::ValueType, value: &filament_exact::Value) -> Result<(), filament_exact::ConstructionCause> {{\nif ty == &{ty} && {check} {{ Ok(()) }} else {{ Err(filament_exact::ConstructionCause::TypeMismatch) }}\n}}", field.slot).ok()?;
     Some(())
 }
 
@@ -103,12 +103,13 @@ fn draw_field(source: &mut String, field: &CollectionObjectFieldIdentity) -> Opt
             let (ty, conversion, assumption) = match element.as_ref() {
                 SymbolicBounds::Boolean => (
                     "bool",
-                    "quire_exact::Value::Boolean(item)".to_owned(),
+                    "filament_exact::Value::Boolean(item)".to_owned(),
                     String::new(),
                 ),
                 SymbolicBounds::Integer { minimum, maximum } => (
                     "i64",
-                    "quire_exact::Value::Integer(quire_exact::Integer::from(item))".to_owned(),
+                    "filament_exact::Value::Integer(filament_exact::Integer::from(item))"
+                        .to_owned(),
                     format!(
                         "kani::assume(item >= {} && item <= {});",
                         i64_literal(*minimum),
@@ -124,7 +125,7 @@ fn draw_field(source: &mut String, field: &CollectionObjectFieldIdentity) -> Opt
                     writeln!(source, "for prior in 0..index {{ kani::assume(item != {name}_items[prior as usize]); }}").ok()?;
                 }
             }
-            writeln!(source, "{name}_occurrences.push({conversion});\n}}\nlet {name} = match quire_exact::build_typed_prestate(&type_{name}(), {name}_occurrences, &mut meter(), Some(&mut admit_{name})) {{\nOk(quire_exact::Outcome::Completed(value)) => value, _ => panic!(\"the complete admitted prestate must construct\"),\n}};").ok()?;
+            writeln!(source, "{name}_occurrences.push({conversion});\n}}\nlet {name} = match filament_exact::build_typed_prestate(&type_{name}(), {name}_occurrences, &mut meter(), Some(&mut admit_{name})) {{\nOk(filament_exact::Outcome::Completed(value)) => value, _ => panic!(\"the complete admitted prestate must construct\"),\n}};").ok()?;
         }
         bounds => {
             let value = draw_scalar(source, &format!("{name}_input"), bounds)?;
@@ -137,11 +138,11 @@ fn draw_field(source: &mut String, field: &CollectionObjectFieldIdentity) -> Opt
 fn predicate(predicate: &CollectionPredicateIdentity) -> String {
     match predicate {
         CollectionPredicateIdentity::IntegerGreaterOrEqual { threshold } => format!(
-            "integer(item) >= &quire_exact::Integer::from({})",
+            "integer(item) >= &filament_exact::Integer::from({})",
             i64_literal(*threshold)
         ),
         CollectionPredicateIdentity::IntegerEqual { value } => format!(
-            "integer(item) == &quire_exact::Integer::from({})",
+            "integer(item) == &filament_exact::Integer::from({})",
             i64_literal(*value)
         ),
         CollectionPredicateIdentity::BooleanNotEqual { value } => {
@@ -157,8 +158,8 @@ fn quantifier(
     state: &str,
 ) -> Option<String> {
     let method = match operation {
-        "quire.op.collection.forall" => "all",
-        "quire.op.collection.exists" => "any",
+        "filament.op.collection.forall" => "all",
+        "filament.op.collection.exists" => "any",
         _ => return None,
     };
     Some(format!(
@@ -196,13 +197,13 @@ fn emit(
     let path = spec.path();
     let mut source = format!("// SPDX-License-Identifier: MIT OR Apache-2.0\n#[cfg(kani)]\nmod {} {{\nuse super::*;\n#[derive(Clone)]\nstruct CgObjectState {{\n", path.module);
     for field in &operation.identity.fields {
-        writeln!(source, "{}: quire_exact::Value,", field.slot).ok()?;
+        writeln!(source, "{}: filament_exact::Value,", field.slot).ok()?;
     }
-    source.push_str("}\nfn integer(value: &quire_exact::Value) -> &quire_exact::Integer { match value { quire_exact::Value::Integer(value) => value, _ => panic!(\"checked integer field\") } }\nfn boolean(value: &quire_exact::Value) -> bool { match value { quire_exact::Value::Boolean(value) => *value, _ => panic!(\"checked Boolean field\") } }\nfn collection(value: &quire_exact::Value) -> &quire_exact::CollectionValue { match value { quire_exact::Value::Collection(value) => value, _ => panic!(\"checked collection field\") } }\nfn meter() -> quire_exact::Meter { quire_exact::Meter::new(quire_exact::ScalarLimits { integer_bits:u64::MAX, decimal_digits:u64::MAX, scale_expansion:u64::MAX, text_input_bytes:u64::MAX, text_scalars:u64::MAX, normalized_scalars:u64::MAX, unit_edges:u64::MAX, value_occurrences:u64::MAX, work_units:u64::MAX, result_units:u64::MAX }) }\n");
+    source.push_str("}\nfn integer(value: &filament_exact::Value) -> &filament_exact::Integer { match value { filament_exact::Value::Integer(value) => value, _ => panic!(\"checked integer field\") } }\nfn boolean(value: &filament_exact::Value) -> bool { match value { filament_exact::Value::Boolean(value) => *value, _ => panic!(\"checked Boolean field\") } }\nfn collection(value: &filament_exact::Value) -> &filament_exact::CollectionValue { match value { filament_exact::Value::Collection(value) => value, _ => panic!(\"checked collection field\") } }\nfn meter() -> filament_exact::Meter { filament_exact::Meter::new(filament_exact::ScalarLimits { integer_bits:u64::MAX, decimal_digits:u64::MAX, scale_expansion:u64::MAX, text_input_bytes:u64::MAX, text_scalars:u64::MAX, normalized_scalars:u64::MAX, unit_edges:u64::MAX, value_occurrences:u64::MAX, work_units:u64::MAX, result_units:u64::MAX }) }\n");
     for field in &operation.identity.fields {
         collection_schema(&mut source, field)?;
     }
-    source.push_str("fn structural_equal(left: &quire_exact::Value, right: &quire_exact::Value) -> bool { match quire_exact::planned_equality(left, right, &mut meter()) { quire_exact::Outcome::Completed(value) => value, _ => panic!(\"the admitted collection equality must complete\") } }\n");
+    source.push_str("fn structural_equal(left: &filament_exact::Value, right: &filament_exact::Value) -> bool { match filament_exact::planned_equality(left, right, &mut meter()) { filament_exact::Outcome::Completed(value) => value, _ => panic!(\"the admitted collection equality must complete\") } }\n");
     let mut oracle_parameters = vec![
         "state: &CgObjectState".to_owned(),
         "pre: &CgObjectState".to_owned(),
@@ -287,7 +288,7 @@ fn emit(
         for field in &operation.identity.fields {
             match &field.bounds {
                 SymbolicBounds::Sequence { .. } => {
-                    writeln!(source, "assert!(matches!(quire_exact::inspect_typed_poststate(&type_{}(), &post.{}, &mut meter(), Some(&mut admit_{})), Ok(quire_exact::Outcome::Completed(_))), \"every produced collection retains its admitted type and domain\");", field.slot, field.slot, field.slot).ok()?;
+                    writeln!(source, "assert!(matches!(filament_exact::inspect_typed_poststate(&type_{}(), &post.{}, &mut meter(), Some(&mut admit_{})), Ok(filament_exact::Outcome::Completed(_))), \"every produced collection retains its admitted type and domain\");", field.slot, field.slot, field.slot).ok()?;
                 }
                 bounds => {
                     writeln!(source, "assert!({}, \"every produced field retains its admitted type and domain\");", domain_check(&format!("&post.{}", field.slot), bounds)?).ok()?;

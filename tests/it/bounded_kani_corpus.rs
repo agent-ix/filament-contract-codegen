@@ -14,15 +14,15 @@ use filament_contract_codegen::{
     ProofDependencyState, ProofReadiness, ReplayVerdict, WitnessDecodeLimits,
     CORPUS_PROOF_GRAPH_SCHEMA,
 };
-use ix_trace_rs::trace;
-use jsonschema::{Draft, JSONSchema};
-use quire_contract_ir::kani::{
+use filament_contract_ir::kani::{
     CapabilityDisposition, CapabilityEntry, DispatchIndex, FiniteInput, FiniteObject,
     FiniteReference, KaniOutcome, KaniOutcomeKind, KaniProfile, ModuleDescriptor,
     PopulationCompleteness, ProfileSelection, ResourceBounds, SemanticFamily,
 };
+use ix_trace_rs::trace;
+use jsonschema::{Draft, JSONSchema};
 
-use quire_contract_model::{std001_code, Std001Code};
+use filament_contract_model::{std001_code, Std001Code};
 
 fn typed_playback(transcript: &str, limits: WitnessDecodeLimits) -> Playback<'_> {
     parse_assertion_playback(
@@ -50,7 +50,7 @@ fn tc_023_pre_run_case_cannot_expose_a_certifiable_kani_outcome() {
 fn fixture() -> (
     KaniProfile,
     DispatchIndex,
-    quire_contract_ir::kani::ValidatedFiniteInput,
+    filament_contract_ir::kani::ValidatedFiniteInput,
 ) {
     let selection = ProfileSelection {
         profile: "kani-bounded/1".to_owned(),
@@ -482,7 +482,7 @@ fn classify_corpus(
     generated: &filament_contract_codegen::BoundedCorpusCase,
     harness_filter: &str,
 ) -> KaniRunOutcome {
-    let directory = TemporaryDirectory::new("quire-codegen-bounded-kani");
+    let directory = TemporaryDirectory::new("filament-codegen-bounded-kani");
     fs::write(
         directory.path.join("src/lib.rs"),
         format!(

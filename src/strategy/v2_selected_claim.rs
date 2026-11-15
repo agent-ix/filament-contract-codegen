@@ -3,7 +3,7 @@
 
 //! V2 strategy claim selection through the admitted package (FR-011-AC-13).
 
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedExecutionPointError, CheckedNodeId, CheckedOccurrence, CheckedPackageV2, ExecutionPoint,
 };
 

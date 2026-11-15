@@ -10,18 +10,18 @@ use filament_contract_codegen::{
 };
 use ix_trace_rs::trace;
 
-fn foreign_context() -> qsl_replay::AdmittedCompilation {
-    qsl_replay::compile_admitted(
-        qsl_replay::CompileUnit {
-            source: qsl_replay::SourceIdentity::new("test", "foreign-composites.native"),
+fn foreign_context() -> fsl_replay::AdmittedCompilation {
+    fsl_replay::compile_admitted(
+        fsl_replay::CompileUnit {
+            source: fsl_replay::SourceIdentity::new("test", "foreign-composites.native"),
             package_name: "foreign-composites".to_owned(),
             path: "foreign-composites.native",
             bytes: fixture::SOURCE.as_bytes(),
         },
         [],
-        &qsl_replay::DependencyInput::default(),
-        qsl_replay::StageLimits::default(),
-        qsl_replay::ReplayLimits::default(),
+        &fsl_replay::DependencyInput::default(),
+        fsl_replay::StageLimits::default(),
+        fsl_replay::ReplayLimits::default(),
     )
     .expect("independent foreign source compiles")
 }
@@ -174,7 +174,7 @@ fn genuine_record_tuple_closure_and_native_oracles_use_original_owner_keys() {
 #[trace("FR-018-AC-10", "FR-018-AC-11", "TC-029")]
 #[test]
 fn same_shaped_record_and_tuple_names_keep_distinct_repeatable_owner_identities() {
-    let dependencies = qsl_replay::DependencyInput::default();
+    let dependencies = fsl_replay::DependencyInput::default();
     let compiled = fixture::compile(fixture::SOURCE, &dependencies);
     let fresh = fixture::compile(fixture::SOURCE, &dependencies);
     let declarations = compiled.context().composites().collect::<Vec<_>>();
@@ -206,12 +206,12 @@ fn same_shaped_record_and_tuple_names_keep_distinct_repeatable_owner_identities(
 /// Retain source, complete package and capability together; no expressions are appended or rekeyed.
 pub(super) fn assert_authentic_recursive_item_generation() {
     let source = concat!(
-        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\n",
+        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\n",
         "record List { next: List?; }\nrecord Tree { kids: Sequence<Tree>[0, 3]; }\n",
         "function list_same using v(a: List,b: List): Boolean pure { a = b }\n",
         "function tree_same using v(a: Tree,b: Tree): Boolean pure { a = b }\n",
     );
-    let compiled = fixture::compile(source, &qsl_replay::DependencyInput::default());
+    let compiled = fixture::compile(source, &fsl_replay::DependencyInput::default());
     let package = checked(&compiled, &[]);
     let batch = ["list_same", "tree_same"].map(|function| direct_source_item(&package, function));
     let both = generate_items(&package, Some(compiled.context()), &batch, &[])
@@ -246,7 +246,7 @@ pub(super) fn assert_authentic_recursive_item_generation() {
                     .eq([name])
             })
             .expect("genuine recursive source declaration");
-        assert_eq!(actual.form(), qsl_replay::AdmittedCompositeForm::Record);
+        assert_eq!(actual.form(), fsl_replay::AdmittedCompositeForm::Record);
         assert_eq!(
             actual.node().to_string(),
             compiled
@@ -288,7 +288,7 @@ pub(super) fn assert_authentic_recursive_item_generation() {
         let recipe = "lookup_composite_key(_context, ";
         assert!(lib.contains(&format!("sv::CompositeDeclaration::new({recipe}")));
         assert!(lib.contains(&format!(
-            "&[{name:?}], qsl_replay::AdmittedCompositeForm::Record)?"
+            "&[{name:?}], fsl_replay::AdmittedCompositeForm::Record)?"
         )));
         assert!(lib.contains(&format!("sv::FieldDeclaration::new({field:?}, {{")));
         assert!(lib.contains("exact::ValueType::Composite(lookup_composite_key(_context, "));
@@ -422,7 +422,7 @@ fn genuine_composite_host_generation_preserves_closure_and_capability_ordering()
 fn genuine_union_host_generation_closes_nested_owner_declarations() {
     let compiled = fixture::compile(
         fixture::UNION_SOURCE,
-        &qsl_replay::DependencyInput::default(),
+        &fsl_replay::DependencyInput::default(),
     );
     let package = checked(&compiled, &[]);
     let items = ["shape_same", "other_same", "wrap_same", "healthy"]
@@ -578,7 +578,7 @@ fn genuine_union_capability_refusals_preserve_the_healthy_sibling() {
     assert!(lib.contains("environment.seal_union_verified(key, declaration.node().clone(), members.iter().map(|member| member.member().clone()).collect())"));
     assert!(
         lib.contains("lookup_composite_key(_context,")
-            && lib.contains("qsl_replay::AdmittedCompositeForm::Union")
+            && lib.contains("fsl_replay::AdmittedCompositeForm::Union")
     );
     assert!(!lib.contains("NodeKey::from_"));
 }
@@ -586,7 +586,7 @@ fn genuine_union_capability_refusals_preserve_the_healthy_sibling() {
 #[trace("FR-018-AC-39", "FR-018-AC-42", "TC-029")]
 #[test]
 fn source_context_comparison_distinguishes_checked_term_sidecar_presence() {
-    use quire_contract_model::{
+    use filament_contract_model::{
         encode_checked_package_v2, CheckedPackageEvidence, CheckedPackageReadLimits,
         CheckedPackageSidecarsRef, CheckedPackageSourceCorrespondenceRef, CheckedPackageV2,
         CheckedPackageV2ReadResult,
@@ -616,6 +616,7 @@ fn source_context_comparison_distinguishes_checked_term_sidecar_presence() {
             temporal_clause_names: original.temporal_clause_names(),
             schedulability_claims: original.schedulability_claim_rows(),
             operation_effects: original.operation_effect_rows(),
+            operation_bodies: original.operation_body_rows(),
         },
         original.capability_report(),
         original.diagnostics(),
@@ -623,7 +624,7 @@ fn source_context_comparison_distinguishes_checked_term_sidecar_presence() {
     )
     .expect("encode a package without its checked-term sidecar");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     let without_data =
         match CheckedPackageV2::read(&bytes, CheckedPackageReadLimits::bounded(), &evidence) {
             CheckedPackageV2ReadResult::Admitted(package) => package,
@@ -639,18 +640,18 @@ fn source_context_comparison_distinguishes_checked_term_sidecar_presence() {
 #[trace("FR-018-AC-2", "FR-018-AC-8", "FR-018-AC-17", "TC-029")]
 #[test]
 fn genuine_union_reconstruction_compiles_and_prepares_typed_members() {
-    let source = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nunion Shape { Empty, Flag(Boolean) }\nfunction f using v(a: Shape,b: Shape): Boolean pure { a = b }\n";
-    let compiled = qsl_replay::compile_admitted(
-        qsl_replay::CompileUnit {
-            source: qsl_replay::SourceIdentity::new("test", "union.native"),
+    let source = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nunion Shape { Empty, Flag(Boolean) }\nfunction f using v(a: Shape,b: Shape): Boolean pure { a = b }\n";
+    let compiled = fsl_replay::compile_admitted(
+        fsl_replay::CompileUnit {
+            source: fsl_replay::SourceIdentity::new("test", "union.native"),
             package_name: "union-identifier".to_owned(),
             path: "union.native",
             bytes: source.as_bytes(),
         },
         [],
-        &qsl_replay::DependencyInput::default(),
-        qsl_replay::StageLimits::default(),
-        qsl_replay::ReplayLimits::default(),
+        &fsl_replay::DependencyInput::default(),
+        fsl_replay::StageLimits::default(),
+        fsl_replay::ReplayLimits::default(),
     )
     .expect("genuine union source");
     let package = checked(&compiled, &[]);

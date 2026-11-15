@@ -11,16 +11,16 @@ use crate::core::contract_package::{
     PackageItems,
 };
 use crate::oracle::claim::ClaimDisposition;
-use ix_trace_rs::trace;
-use qsl_replay::{
-    compile_package, CompileUnit, DependencyInput, ReplayLimits, SourceIdentity, StageLimits,
-};
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedNodeId, CheckedNodeTag, CheckedOccurrenceRole, CheckedPackageEvidence,
     CheckedPackageReadLimits, CheckedPackageV2, CheckedPackageV2ReadResult, CheckedSemanticNodeV2,
     CheckedTerm, ContractDependencies, ContractOccurrenceKeyV1, ContractPackageReadResult,
     ContractPackageV1, ContractPackageWireV1,
 };
+use fsl_replay::{
+    compile_package, CompileUnit, DependencyInput, ReplayLimits, SourceIdentity, StageLimits,
+};
+use ix_trace_rs::trace;
 
 fn application_identity(node: &CheckedSemanticNodeV2) -> Option<&str> {
     let CheckedTerm::Application { operation, .. } = &node.body else {
@@ -54,7 +54,7 @@ fn admitted_source(source: &str) -> CheckedPackageV2 {
     )
     .expect("FSL compiles genuine scalar source");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     match CheckedPackageV2::read(
         compiled.bytes(),
         CheckedPackageReadLimits::bounded(),
@@ -104,7 +104,7 @@ fn admitted_case(
 ) {
     let mut source = String::from(
         "language \"ix:native\" edition \"1-draft\";\n\
-             profile v = \"quire.value.complete/v1\";\n",
+             profile v = \"filament.value.complete/v1\";\n",
     );
     for index in 0..requests {
         source.push_str(&format!(
@@ -123,7 +123,7 @@ fn admitted_case(
         .resolved_graph()
         .nodes
         .iter()
-        .filter(|node| application_identity(node) == Some("quire.op.integer.add"))
+        .filter(|node| application_identity(node) == Some("filament.op.integer.add"))
         .collect::<Vec<_>>();
     assert_eq!(applications.len(), requests);
     let mut positions = Vec::new();
@@ -133,7 +133,7 @@ fn admitted_case(
             .nodes
             .iter()
             .filter(|node| {
-                application_identity(node) == Some("quire.op.numeric.narrow")
+                application_identity(node) == Some("filament.op.numeric.narrow")
                     && first_reference(node) == Some(&application.node_id)
             })
             .collect::<Vec<_>>();

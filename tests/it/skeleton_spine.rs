@@ -17,20 +17,20 @@ use filament_contract_codegen::{
     Playback, ReplayInputs, ReplayPackage, ReplayPackageError, ReplayParameter, ReplayVerdict,
     SpineReplayError, WitnessDecodeLimits,
 };
-use qsl_replay::{
+use filament_contract_model::{
+    ClauseId, ClauseRef, IntegerDomain, OverflowPolicy, RequirementRef, SourceSpan,
+};
+use filament_semantic_value::catalog::{Category, InternalFault};
+use fsl_replay::{
     CallSiteRefusal, CanonicalAssignment, Code, DeclaredDomain, DependencyInputRefusal,
     DependencySelectionsCause, DisagreementCause, DomainKey, DomainKind, FiniteBound, Integer,
     ProofBound, ReplayLimits, ReplayRefusal, ReplayRequestRefusal, ReplaySource, ScalarLimits,
     Verdict, WitnessSettlement, DEFAULT_REPLAY_INPUT_BYTES,
 };
-use qsl_replay::{Witness, WitnessValue};
-use quire_contract_model::{
-    ClauseId, ClauseRef, IntegerDomain, OverflowPolicy, RequirementRef, SourceSpan,
-};
-use quire_semantic_value::catalog::{Category, InternalFault};
+use fsl_replay::{Witness, WitnessValue};
 use serde_json::json;
 
-const PROFILE: &str = "profile v = \"quire.value.complete/v1\";\n";
+const PROFILE: &str = "profile v = \"filament.value.complete/v1\";\n";
 const AUTHORITY: &str = "agent-ix";
 const IDENTITY: &str = "test:skeleton-spine";
 const FUNCTION: &str = "balance_never_grows";
@@ -101,7 +101,7 @@ fn inputs(source: &str, dependencies: Vec<DependencyLock>) -> ReplayInputs {
 
 /// Build a request for a selected function by binding the direct test identity to its parameters.
 /// `ReplayPackage::request` derives the identity slot from that binding.
-fn request_of(package: &ReplayPackage, source: ReplaySource) -> qsl_replay::ReplayRequestWire {
+fn request_of(package: &ReplayPackage, source: ReplaySource) -> fsl_replay::ReplayRequestWire {
     let mut identity = spine_identity();
     let template = identity.arguments[0].clone();
     identity.arguments = package
@@ -117,7 +117,9 @@ fn request_of(package: &ReplayPackage, source: ReplaySource) -> qsl_replay::Repl
         ReplaySource::Input(_) => {
             Witness::parse("<<<assertion|h|c|>>>").expect("the fixture witness parses")
         }
-        ReplaySource::ObservedTemporal(_) | ReplaySource::ModelGraph(_) => {
+        ReplaySource::ObservedTemporal(_)
+        | ReplaySource::ModelGraph(_)
+        | ReplaySource::ProtocolAnalysis(_) => {
             panic!("the fixture requires a function replay source")
         }
     };
@@ -155,7 +157,7 @@ fn compile_native_twin(source: &str, function: &str) -> ReplayPackage {
 fn replay_against(
     native: &str,
     values: &[(String, WitnessValue)],
-) -> Result<qsl_replay::WitnessArmResult, SpineReplayError> {
+) -> Result<fsl_replay::WitnessArmResult, SpineReplayError> {
     let package = compile_native_twin(native, FUNCTION);
     replay_falsification(
         "module::proof",
@@ -222,7 +224,7 @@ fn success() -> Verdict {
 /// supplies the verdict.
 /// The structural node key a parameter's witness entry name spells: the name is the compact JSON
 /// of the node id, which holds no percent escape for the identifiers these fixtures use.
-fn node_key_of_entry_name(name: &str) -> qsl_replay::NodeKey {
+fn node_key_of_entry_name(name: &str) -> fsl_replay::NodeKey {
     // Witness entry names spell structural keys, not checked-package wire IDs.
     #[derive(serde::Deserialize)]
     #[serde(deny_unknown_fields)]
@@ -237,16 +239,16 @@ fn node_key_of_entry_name(name: &str) -> qsl_replay::NodeKey {
         Text(String),
         Node(Entry),
     }
-    fn convert(entry: Entry) -> qsl_replay::NodeKey {
+    fn convert(entry: Entry) -> fsl_replay::NodeKey {
         let path = entry
             .path
             .into_iter()
             .map(|segment| match segment {
-                Segment::Text(text) => quire_exact::PathSegment::Text(text),
-                Segment::Node(node) => quire_exact::PathSegment::Node(convert(node)),
+                Segment::Text(text) => filament_exact::PathSegment::Text(text),
+                Segment::Node(node) => filament_exact::PathSegment::Node(convert(node)),
             })
             .collect();
-        qsl_replay::NodeKey::new(entry.package, path, entry.ordinal)
+        fsl_replay::NodeKey::new(entry.package, path, entry.ordinal)
             .expect("witness structural key")
     }
     convert(serde_json::from_str(name).expect("a witness entry name spells a structural key"))
@@ -409,7 +411,7 @@ fn tc_026_each_adapter_refusal_is_its_own_typed_error() {
                 serde_json::from_slice(wire.package.bytes()).unwrap();
             document["lock"]["sources"] = serde_json::json!([]);
             wire.package =
-                qsl_replay::ReplayPackage::read(&serde_json::to_vec(&document).unwrap(), u64::MAX)
+                fsl_replay::ReplayPackage::read(&serde_json::to_vec(&document).unwrap(), u64::MAX)
                     .unwrap();
             wire
         },
@@ -479,9 +481,9 @@ fn tc_026_the_request_package_reference_carries_the_lock_dependencies() {
     let declared = DeclaredDomain::new(
         ProofBound::new(
             DomainKey::Node {
-                node: qsl_replay::NodeKey::new(
+                node: fsl_replay::NodeKey::new(
                     "skeleton-spine",
-                    vec![quire_exact::PathSegment::Text("domain".to_owned())],
+                    vec![filament_exact::PathSegment::Text("domain".to_owned())],
                     0,
                 )
                 .expect("a structural node id"),
@@ -510,7 +512,7 @@ fn tc_026_the_request_package_reference_carries_the_lock_dependencies() {
     // The backend member is the identity string alone.
     assert_eq!(wire.backend, "kani");
     // Destructure without `..` to keep the selected wire shape explicit.
-    let qsl_replay::DependencyEntryWire {
+    let fsl_replay::DependencyEntryWire {
         identity,
         sources,
         refinement_internals,
@@ -612,7 +614,7 @@ fn importing_inputs(library: &LockedSource) -> (ReplayInputs, DependencyLock) {
 fn replay_q(
     package: &ReplayPackage,
     x: i64,
-) -> Result<qsl_replay::WitnessArmResult, SpineReplayError> {
+) -> Result<fsl_replay::WitnessArmResult, SpineReplayError> {
     replay_falsification(
         "module::proof",
         "q",
@@ -624,7 +626,7 @@ fn replay_q(
 }
 
 /// A unit that imports a locked dependency compiles with it and replays through
-/// `qsl_replay::replay`: the dependency's `big` is evaluated, so `x = 3` (not big) reproduces the
+/// `fsl_replay::replay`: the dependency's `big` is evaluated, so `x = 3` (not big) reproduces the
 /// proved violation and `x = 7` (big) does not.
 #[trace("FR-016-AC-14", "TC-026")]
 #[test]
@@ -679,7 +681,7 @@ fn tc_026_a_changed_dependency_selection_is_refused_before_replay() {
     let mut missing = base.clone();
     missing.dependencies.pop();
     let mut extra = base.clone();
-    extra.dependencies.push(qsl_replay::DependencyEntryWire {
+    extra.dependencies.push(fsl_replay::DependencyEntryWire {
         refinement_internals: None,
         identity: "test/other".to_owned(),
         sources: vec![(AUTHORITY.to_owned(), "lib-other".to_owned())],
@@ -1214,7 +1216,7 @@ fn tc_035_public_function_domain_boundaries_stop_before_replay() {
             &package,
             |wire| {
                 calls += 1;
-                qsl_replay::replay(wire, ReplayLimits::default())
+                fsl_replay::replay(wire, ReplayLimits::default())
             },
         );
         if expected_domain_failure {

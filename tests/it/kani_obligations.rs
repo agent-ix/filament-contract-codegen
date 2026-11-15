@@ -45,14 +45,14 @@ use filament_contract_codegen::{
     ObligationRecord, ObligationSubject, OperationProvenance, UnsupportedObligation,
     UpstreamBlocker, MAX_OBLIGATION_ITEMS, MAX_OBLIGATION_UNWIND,
 };
+use filament_contract_model::{
+    CheckedNodeId, CheckedPackageReadLimits, CheckedPackageV2, ContractDependencies,
+    ContractPackageReadResult, ContractPackageV1, ContractPackageWireV1,
+};
 use ix_trace_rs::trace;
 use package::{
     application, bounded, code_id, corpus_package_for_codes, golden_items, id, integer_add, key,
     op, reference, Bound, MISSING, MODEL, STATE, T_BOOLEAN, T_INTEGER, UNBOUNDED, V_BOOLEAN,
-};
-use quire_contract_model::{
-    CheckedNodeId, CheckedPackageReadLimits, CheckedPackageV2, ContractDependencies,
-    ContractPackageReadResult, ContractPackageV1, ContractPackageWireV1,
 };
 use serde_json::json;
 
@@ -186,7 +186,7 @@ fn scalar_package_with_occurrences(
             &key(T_INTEGER),
             application(
                 "binary",
-                op("quire.op.integer.add"),
+                op("filament.op.integer.add"),
                 &key(T_INTEGER),
                 // A `reference(V_INTEGER)` pair here would be byte-identical
                 // to corpus code 1001's own `integer.add` body (same
@@ -275,11 +275,11 @@ pub(crate) fn admitted_scalar_claims(
     let mut profile = routed_contract_lowering_profile();
     profile.reference.identity = "filament.codegen.kani-direct-test/v1".into();
     profile.supported_tags.extend([
-        quire_contract_model::CheckedNodeTag::Model,
-        quire_contract_model::CheckedNodeTag::Relation,
-        quire_contract_model::CheckedNodeTag::State,
-        quire_contract_model::CheckedNodeTag::Temporal,
-        quire_contract_model::CheckedNodeTag::Protocol,
+        filament_contract_model::CheckedNodeTag::Model,
+        filament_contract_model::CheckedNodeTag::Relation,
+        filament_contract_model::CheckedNodeTag::State,
+        filament_contract_model::CheckedNodeTag::Temporal,
+        filament_contract_model::CheckedNodeTag::Protocol,
     ]);
     let lowered = checked.lower(&requested, &profile);
     match ContractPackageWireV1::read(
@@ -294,7 +294,7 @@ pub(crate) fn admitted_scalar_claims(
 
 fn claim_index(
     claim_map: &ClaimMap<ExactScalarClaim>,
-    node_id: &quire_contract_model::CheckedNodeId,
+    node_id: &filament_contract_model::CheckedNodeId,
 ) -> usize {
     claim_map
         .items
@@ -389,7 +389,7 @@ pub(super) fn boolean_implies_scalar() -> (
         &key(T_BOOLEAN),
         application(
             "binary",
-            op("quire.op.boolean.implies"),
+            op("filament.op.boolean.implies"),
             &key(T_BOOLEAN),
             vec![reference(&key(V_BOOLEAN)), reference(&key(V_BOOLEAN))],
         ),
@@ -413,7 +413,7 @@ fn tc_025_boolean_implication_harness_keeps_subject_oracle_and_native_independen
     assert!(source.contains("let right: bool = kani::any();"));
     assert!(source.contains("let native = !left || right;"));
     assert!(source.contains(
-        "let subject = quire_contract_runtime::operators::implies_short_circuit(left, || right);"
+        "let subject = filament_contract_runtime::operators::implies_short_circuit(left, || right);"
     ));
     assert!(source.contains("assert!(subject == native"));
     assert!(source.contains("Ok(rt::Outcome::Completed(value)) => *value == native"));
@@ -456,7 +456,8 @@ fn tc_025_boolean_implication_subject_mutation_is_falsified_with_false_left() {
         filament_contract_codegen::KaniCheckStatus::Satisfied
     );
 
-    let subject_call = "quire_contract_runtime::operators::implies_short_circuit(left, || right)";
+    let subject_call =
+        "filament_contract_runtime::operators::implies_short_circuit(left, || right)";
     let parsed = syn::parse_file(&harness.rust.contents).expect("generated Rust parses");
     let call_count = parsed
         .items
@@ -480,7 +481,7 @@ fn tc_025_boolean_implication_subject_mutation_is_falsified_with_false_left() {
             let syn::Expr::Call(call) = expression else { return false };
             let syn::Expr::Path(path) = &*call.func else { return false };
             path.path.segments.iter().map(|segment| segment.ident.to_string()).collect::<Vec<_>>()
-                == ["quire_contract_runtime", "operators", "implies_short_circuit"]
+                == ["filament_contract_runtime", "operators", "implies_short_circuit"]
                 && call.args.len() == 2
         })
         .count();
@@ -573,7 +574,7 @@ pub(crate) fn boolean_operation_package() -> (CheckedPackageV2, CheckedNodeId) {
         &key(T_BOOLEAN),
         application(
             "binary",
-            op("quire.op.boolean.and"),
+            op("filament.op.boolean.and"),
             &key(T_BOOLEAN),
             vec![reference(&key(V_BOOLEAN)), reference(&key(V_BOOLEAN))],
         ),
@@ -623,7 +624,7 @@ fn scalar_records(
 #[test]
 fn tc_025_symbolic_bounds_equal_ir_domains_and_every_option_is_identity() {
     // A V2 claim's domain is read from its IR bound, inclusive at both ends. Node 1001 is
-    // `quire.op.integer.add`, IR-confirmed and renderable, so it reaches a real Kani harness --
+    // `filament.op.integer.add`, IR-confirmed and renderable, so it reaches a real Kani harness --
     // not a typed refusal. Both operands reference computed call wrappers with the admitted `[-1000, 1000]`
     // domain. Their referenced literal children do not turn those calls into constants; the
     // per-operand bounded ranges are TC-033's.
@@ -648,7 +649,7 @@ fn tc_025_symbolic_bounds_equal_ir_domains_and_every_option_is_identity() {
     ));
     assert_eq!(scalar_harnesses.len(), 1);
     let identity = &scalar_harnesses[0].identity;
-    assert_eq!(identity.operation_identity, "quire.op.integer.add");
+    assert_eq!(identity.operation_identity, "filament.op.integer.add");
     assert_eq!(identity.solver, KaniSolver::Cadical);
     assert_eq!(identity.unwind, 4);
     assert_eq!(
@@ -790,7 +791,7 @@ fn tc_025_scalar_harness_asserts_the_native_arithmetic_relation() {
     let (_, scalar_harnesses) =
         emitted_scalar(negotiate_kani_obligations(&request(&items, "crate::subject")).unwrap());
     let source = &scalar_harnesses[0].rust.contents;
-    let graph = qsl_replay::WireGraph::new(
+    let graph = fsl_replay::WireGraph::new(
         scalar
             .resolved_graph()
             .nodes
@@ -805,7 +806,7 @@ fn tc_025_scalar_harness_asserts_the_native_arithmetic_relation() {
         &scalar_harnesses[0].rust.path,
         source,
         &[&format!(
-            "// Obligation: exact-scalar {} `quire.op.integer.add`",
+            "// Obligation: exact-scalar {} `filament.op.integer.add`",
             message_safe_label(&node_key.to_string())
         )],
     );
@@ -884,19 +885,19 @@ fn tc_025_scalar_harness_asserts_the_native_arithmetic_relation() {
 fn tc_025_every_rendered_operation_states_its_own_native_relation() {
     const EXACT: [(&str, &str); 4] = [
         (
-            "quire.op.integer.add",
+            "filament.op.integer.add",
             "let exact: i128 = i128::from(left_native) + i128::from(right_native);",
         ),
         (
-            "quire.op.integer.sub",
+            "filament.op.integer.sub",
             "let exact: i128 = i128::from(left_native) - i128::from(right_native);",
         ),
         (
-            "quire.op.integer.mul",
+            "filament.op.integer.mul",
             "let exact: i128 = i128::from(left_native) * i128::from(right_native);",
         ),
         (
-            "quire.op.integer.negate",
+            "filament.op.integer.negate",
             "let exact: i128 = -i128::from(operand_native);",
         ),
     ];
@@ -1167,7 +1168,7 @@ fn tc_025_a_quantity_conversion_claim_is_unrendered_with_no_harness() {
         assert!(
             matches!(unsupported(record), UnsupportedObligation::OperationNotRendered {
             operation_identity, ..
-        } if operation_identity == "quire.op.quantity.convert")
+        } if operation_identity == "filament.op.quantity.convert")
         );
     }
 }
@@ -1176,10 +1177,10 @@ fn tc_025_a_quantity_conversion_claim_is_unrendered_with_no_harness() {
 /// `UnknownNodeKind` tests below to hand-assemble a claim map entry `generate_exact_scalar_oracles`
 /// would never itself produce.
 const RENDERED_OPERATIONS: [&str; 4] = [
-    "quire.op.integer.add",
-    "quire.op.integer.sub",
-    "quire.op.integer.mul",
-    "quire.op.integer.negate",
+    "filament.op.integer.add",
+    "filament.op.integer.sub",
+    "filament.op.integer.mul",
+    "filament.op.integer.negate",
 ];
 
 /// IR-81: a V2 scalar-claim item's graph node that is present, but is neither the one recognized
@@ -1379,7 +1380,7 @@ fn tc_025_a_claim_naming_a_node_absent_from_the_graph_is_refused_not_silently_su
 }
 
 /// Every V2 scalar claim FR-014 generates has an IR-confirmed operation. The four
-/// `IntegerArithmetic` identities this generator knows how to render (`quire.op.integer.{add,sub,
+/// `IntegerArithmetic` identities this generator knows how to render (`filament.op.integer.{add,sub,
 /// mul,negate}`) each reach a real Kani harness; every other confirmed family is refused as
 /// `OperationNotRendered` -- known, honestly-named debt, never the old `CallerDeclaredOperation`
 /// lie (that provenance is unreachable here: every one of these claims' nodes was successfully
@@ -1388,13 +1389,13 @@ fn tc_025_a_claim_naming_a_node_absent_from_the_graph_is_refused_not_silently_su
 #[test]
 fn tc_025_every_confirmed_operation_is_rendered_or_honestly_refused() {
     const RENDERED: [&str; 7] = [
-        "quire.op.integer.add",
-        "quire.op.integer.sub",
-        "quire.op.integer.mul",
-        "quire.op.integer.negate",
-        "quire.op.integer.div",
-        "quire.op.integer.rem",
-        "quire.op.integer.mod",
+        "filament.op.integer.add",
+        "filament.op.integer.sub",
+        "filament.op.integer.mul",
+        "filament.op.integer.negate",
+        "filament.op.integer.div",
+        "filament.op.integer.rem",
+        "filament.op.integer.mod",
     ];
     let mut generated_count = 0;
     let mut rendered_count = 0;
@@ -1488,7 +1489,7 @@ fn admitted_integer_division_renders_its_division_harness() {
         .items
         .iter()
         .find(|claim| {
-            claim.operation.identity == "quire.op.integer.div"
+            claim.operation.identity == "filament.op.integer.div"
                 && matches!(claim.result, ClaimDisposition::Generated(_))
         })
         .expect("the admitted corpus generates an integer division oracle");
@@ -1518,7 +1519,7 @@ fn admitted_integer_division_renders_its_division_harness() {
     assert!(harnesses[0].identity.division_scalar.is_some());
     assert_eq!(
         harnesses[0].identity.operation_identity,
-        "quire.op.integer.div"
+        "filament.op.integer.div"
     );
 }
 
@@ -1526,7 +1527,7 @@ fn admitted_integer_division_renders_its_division_harness() {
 /// no harness") stayed true in code once IR-217 widened `IrConfirmed`, but the test above that is
 /// still traced to it was repurposed to check the render-or-honestly-refuse split over an
 /// all-confirmed corpus, so no test anywhere produced `UnsupportedObligation::CallerDeclaredOperation`
-/// any more. This restores a real case: node 1004 is `quire.op.integer.mul`; naming `Add` against
+/// any more. This restores a real case: node 1004 is `filament.op.integer.mul`; naming `Add` against
 /// it, with the identical `[-1000,1000]` domain, passes every `check_item` shape and bound check
 /// (see `exact_scalar_generation.rs`'s own
 /// `tc_024_operator_confusion_within_one_shape_is_not_silently_confirmed`) but is not confirmed,
@@ -1562,7 +1563,7 @@ fn tc_025_a_caller_declared_operation_is_refused_with_no_harness() {
             vec![filament_contract_codegen::RequirementGuard {
                 occurrence: filament_contract_codegen::RequirementOccurrence {
                     node_id: mismatched.clone(),
-                    role: quire_contract_model::CheckedOccurrenceRole::Expression,
+                    role: filament_contract_model::CheckedOccurrenceRole::Expression,
                     ordinal: 0,
                 },
                 holds: true,
@@ -1611,7 +1612,7 @@ fn tc_033_an_unsatisfiable_bound_precedes_the_guard_refusal() {
             vec![filament_contract_codegen::RequirementGuard {
                 occurrence: filament_contract_codegen::RequirementOccurrence {
                     node_id: node.clone(),
-                    role: quire_contract_model::CheckedOccurrenceRole::Expression,
+                    role: filament_contract_model::CheckedOccurrenceRole::Expression,
                     ordinal: 0,
                 },
                 holds: true,
@@ -1825,7 +1826,7 @@ fn tc_025_every_item_is_accounted_before_any_harness_is_exposed() {
 #[trace("FR-017-AC-2", "TC-027")]
 #[test]
 fn tc_027_a_missing_launcher_is_refused_before_anything_runs() {
-    let cancel = quire_exact::Cancel::new();
+    let cancel = filament_exact::Cancel::new();
     let (harness, manifest) = routed_scalar_increment();
     let scratch = write_scalar_crate("missing-launcher", &manifest, &harness.rust.contents);
     let directory = &scratch.path;
@@ -1854,7 +1855,7 @@ fn tc_027_a_missing_launcher_is_refused_before_anything_runs() {
 #[cfg(unix)]
 #[test]
 fn tc_027_non_executable_launchers_are_refused_before_anything_runs() {
-    let cancel = quire_exact::Cancel::new();
+    let cancel = filament_exact::Cancel::new();
     use std::os::unix::fs::PermissionsExt;
 
     let (harness, manifest) = routed_scalar_increment();
@@ -1935,7 +1936,7 @@ fn write_script_launcher(path: &Path, body: &str) {
 #[cfg(unix)]
 #[test]
 fn tc_043_the_terminal_value_of_no_verdict_evidence_ignores_its_diagnostics() {
-    let cancel = quire_exact::Cancel::new();
+    let cancel = filament_exact::Cancel::new();
     let (harness, manifest) = routed_scalar_increment();
     let scratch = write_scalar_crate("no-verdict", &manifest, &harness.rust.contents);
     let directory = &scratch.path;
@@ -1965,7 +1966,7 @@ fn tc_043_the_terminal_value_of_no_verdict_evidence_ignores_its_diagnostics() {
     assert_eq!(record.stderr.text, "error: unexpected argument\n");
     assert_eq!(record.phase, KaniFailurePhase::Launcher);
     let terminal = run_terminal_value(&evidence, None).unwrap();
-    assert_eq!(terminal, qsl_replay::TerminalValue::Failed);
+    assert_eq!(terminal, fsl_replay::TerminalValue::Failed);
     evidence.diagnostics = Some(record);
     let wire = serde_json::to_value(&evidence).unwrap();
     assert_eq!(wire["diagnostics"]["phase"], "launcher");
@@ -1982,7 +1983,7 @@ fn tc_043_the_terminal_value_of_no_verdict_evidence_ignores_its_diagnostics() {
 #[test]
 #[ignore = "kani lane: run serially through `make kani`"]
 fn tc_027_real_kani_non_compiling_crate_is_no_verdict_with_phase_compile() {
-    let cancel = quire_exact::Cancel::new();
+    let cancel = filament_exact::Cancel::new();
     let installation = KaniInstallation::discover().expect("cargo-kani is installed");
     let (harness, manifest) = routed_scalar_increment();
     let source = format!("{}\n{BROKEN_ITEM}", harness.rust.contents);
@@ -2061,22 +2062,22 @@ fn tc_027_real_kani_non_compiling_crate_is_no_verdict_with_phase_compile() {
 #[cfg(unix)]
 #[test]
 fn cbmc_failure_terminal_value_reads_the_retained_cause() {
-    let cancel = quire_exact::Cancel::new();
+    let cancel = filament_exact::Cancel::new();
     let (harness, manifest) = routed_scalar_increment();
     let scratch = write_scalar_crate("cbmc-failure", &manifest, &harness.rust.contents);
     let directory = &scratch.path;
     fs::create_dir_all(directory.join("target")).unwrap();
     for (status, expected) in [
-        ("exit_code_64", qsl_replay::TerminalValue::Failed),
+        ("exit_code_64", fsl_replay::TerminalValue::Failed),
         (
             "out_of_memory",
-            qsl_replay::TerminalValue::Incomplete(qsl_replay::IncompleteCause::ResourceExhausted),
+            fsl_replay::TerminalValue::Incomplete(fsl_replay::IncompleteCause::ResourceExhausted),
         ),
         (
             "timeout",
-            qsl_replay::TerminalValue::Incomplete(qsl_replay::IncompleteCause::TimedOut),
+            fsl_replay::TerminalValue::Incomplete(fsl_replay::IncompleteCause::TimedOut),
         ),
-        ("cbmc_exploded", qsl_replay::TerminalValue::Failed),
+        ("cbmc_exploded", fsl_replay::TerminalValue::Failed),
     ] {
         let report = json!({
             "metadata": { "version": "1.0" },
@@ -2129,7 +2130,7 @@ fn cbmc_failure_terminal_value_reads_the_retained_cause() {
 #[test]
 #[ignore = "kani lane: run serially through `make kani`"]
 fn tc_027_real_kani_unknown_cbmc_option_keeps_exit_code_64_as_the_failure_cause() {
-    let cancel = quire_exact::Cancel::new();
+    let cancel = filament_exact::Cancel::new();
     let installation = KaniInstallation::discover().expect("cargo-kani is installed");
     let (harness, manifest) = routed_scalar_increment();
     let scratch = write_scalar_crate("unknown-cbmc-option", &manifest, &harness.rust.contents);
@@ -2165,7 +2166,7 @@ fn tc_027_real_kani_unknown_cbmc_option_keeps_exit_code_64_as_the_failure_cause(
     );
     assert_eq!(
         run_terminal_value(&evidence, None),
-        Ok(qsl_replay::TerminalValue::Failed)
+        Ok(fsl_replay::TerminalValue::Failed)
     );
     let record = evidence
         .diagnostics
@@ -2261,7 +2262,7 @@ fn native_scalar_increment_keeps_original_profile_and_checked_capacity() {
         panic!("one checked Add plan");
     };
     assert_eq!(operation.node_id, native.identity.node_id);
-    assert_eq!(operation.operation_identity, "quire.op.integer.add");
+    assert_eq!(operation.operation_identity, "filament.op.integer.add");
     let endpoints = |interval: &filament_contract_codegen::NativeIntegerIntervalDecision| {
         (
             interval.lower.parse::<i128>().unwrap(),
@@ -2487,7 +2488,7 @@ pub(crate) fn run_scalar_under_real_kani(
     harness: &KaniScalarObligationHarness,
     manifest: &filament_contract_codegen::Artifact,
 ) -> filament_contract_codegen::KaniExecutionEvidence {
-    let cancel = quire_exact::Cancel::new();
+    let cancel = filament_exact::Cancel::new();
     let installation = KaniInstallation::discover().expect("cargo-kani is installed");
     let scratch = write_scalar_crate(name, manifest, &harness.rust.contents);
     let crate_directory = &scratch.path;
@@ -2504,7 +2505,7 @@ pub(crate) fn run_scalar_under_real_kani(
 }
 
 pub(crate) fn verify_routed_scalar_harness_real_kani() {
-    let cancel = quire_exact::Cancel::new();
+    let cancel = filament_exact::Cancel::new();
     let (harness, manifest) = native_scalar_increment();
     let evidence = run_scalar_under_real_kani("scalar-real", &harness, &manifest);
     assert_eq!(evidence.outcome, KaniRunOutcome::Verified);
@@ -2567,11 +2568,11 @@ pub(crate) fn verify_routed_scalar_harness_real_kani() {
 #[test]
 #[ignore = "kani lane: run serially through make kani"]
 fn tc_027_attested_scalar_receipt_binds_real_proof_and_native_result() {
-    use quire_exact::{ChargePoint, LimitKind, Outcome};
+    use filament_exact::{ChargePoint, LimitKind, Outcome};
     let (harness, artifacts) = native_scalar_increment_with_artifacts();
     let operands = [4_i64, 1_i64];
     let limits = attested_scalar_limits();
-    let cancel = quire_exact::Cancel::new();
+    let cancel = filament_exact::Cancel::new();
     let installation = KaniInstallation::discover().expect("cargo-kani is installed");
     let target = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("kani-scalar-attested");
     let receipt = execute_kani_scalar_native(&KaniScalarNativeRequest {
@@ -2663,7 +2664,7 @@ fn tc_027_attested_scalar_subtraction_fixture_has_two_bounded_operands() {
 #[test]
 #[ignore = "kani lane: run serially through make kani"]
 fn tc_027_attested_scalar_subtraction_receipts_bind_both_operand_orders() {
-    use quire_exact::Outcome;
+    use filament_exact::Outcome;
 
     let (harness, artifacts) = native_scalar_binary_subtraction_with_artifacts();
     assert_eq!(harness.identity.arguments.len(), 2);
@@ -2673,7 +2674,7 @@ fn tc_027_attested_scalar_subtraction_receipts_bind_both_operand_orders() {
         .iter()
         .all(|argument| argument.minimum == 0 && argument.maximum == 9));
     let limits = attested_scalar_limits();
-    let cancel = quire_exact::Cancel::new();
+    let cancel = filament_exact::Cancel::new();
     let installation = KaniInstallation::discover().expect("cargo-kani is installed");
     let target = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("kani-scalar-attested-orders");
 
@@ -2790,8 +2791,8 @@ fn assert_retained_scalar_content(
     assert!(receipt.cleanup_diagnostic().is_none());
 }
 
-fn attested_scalar_limits() -> quire_exact::ScalarLimits {
-    quire_exact::ScalarLimits {
+fn attested_scalar_limits() -> filament_exact::ScalarLimits {
+    filament_exact::ScalarLimits {
         integer_bits: 10000,
         decimal_digits: 10001,
         scale_expansion: 10002,
@@ -2812,7 +2813,7 @@ fn tc_027_attested_scalar_rejects_preflight_mismatches_without_launch() {
     use filament_contract_codegen::{KaniScalarNativeError, KaniScalarNativeRequest};
 
     let (harness, valid_artifacts) = routed_scalar_increment_with_artifacts();
-    let cancel = quire_exact::Cancel::new();
+    let cancel = filament_exact::Cancel::new();
     let control_scratch = TemporaryDirectory::new("filament-kani-obligations-preflight");
     let control_directory = &control_scratch.path;
     let launcher = control_directory.join("fake-cargo-kani");
@@ -3017,7 +3018,7 @@ fn tc_025_scalar_harness_falsifies_a_mutated_oracle_arithmetic() {
     };
     assert!(counterexample.contains(mutated.identity.harness_symbol.as_str()));
     assert_ne!(evidence.exit_code, Some(0));
-    let message = "the oracle must complete with exactly the native quire.op.integer.add result";
+    let message = "the oracle must complete with exactly the native filament.op.integer.add result";
     assert!(
         counterexample.contains("Check for `assertion`") && counterexample.contains(message),
         "the failing check must be the generated `sound` assertion, got {counterexample}"
@@ -3047,7 +3048,7 @@ fn run_ac35_native(
 #[test]
 #[ignore = "kani lane: run serially through `make kani`"]
 fn tc_033_native_guarded_harness_reports_cover_unsatisfied_and_verified() {
-    let infeasible = run_ac35_native("ac35-lt", "<", "quire.op.integer.lt", None);
+    let infeasible = run_ac35_native("ac35-lt", "<", "filament.op.integer.lt", None);
     assert_eq!(
         infeasible.outcome,
         KaniRunOutcome::CoverUnsatisfied {
@@ -3056,7 +3057,7 @@ fn tc_033_native_guarded_harness_reports_cover_unsatisfied_and_verified() {
         },
         "{infeasible:?}"
     );
-    let feasible = run_ac35_native("ac35-gt", ">", "quire.op.integer.gt", None);
+    let feasible = run_ac35_native("ac35-gt", ">", "filament.op.integer.gt", None);
     assert_eq!(feasible.outcome, KaniRunOutcome::Verified, "{feasible:?}");
 }
 
@@ -3070,7 +3071,7 @@ fn tc_033_native_guarded_harness_mutants_are_detected() {
     let a = run_ac35_native(
         "ac35-mut-a",
         ">",
-        "quire.op.integer.gt",
+        "filament.op.integer.gt",
         Some((plan, "nx::NativeIntegerOperation::Multiply {")),
     );
     assert!(
@@ -3081,7 +3082,7 @@ fn tc_033_native_guarded_harness_mutants_are_detected() {
     let b = run_ac35_native(
         "ac35-mut-b",
         ">",
-        "quire.op.integer.gt",
+        "filament.op.integer.gt",
         Some((
             exact,
             "i128::from(left_native) + i128::from(right_native) + 1;",
@@ -3095,7 +3096,7 @@ fn tc_033_native_guarded_harness_mutants_are_detected() {
     let c = run_ac35_native(
         "ac35-mut-c",
         "<",
-        "quire.op.integer.lt",
+        "filament.op.integer.lt",
         Some((assumption, "")),
     );
     assert_eq!(c.outcome, KaniRunOutcome::Verified, "{c:?}");
@@ -3125,7 +3126,7 @@ fn tc_027_scalar_limits_is_available_at_codegen_root_with_request_type_identity(
         result_units: 1000,
     };
     let _typed_accessor = request_limits;
-    let _kernel_limits: quire_exact::ScalarLimits = limits;
+    let _kernel_limits: filament_exact::ScalarLimits = limits;
 }
 
 /// The structural key as a generated message renders it: `%` and the characters that would

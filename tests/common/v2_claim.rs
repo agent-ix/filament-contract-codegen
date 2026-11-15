@@ -5,9 +5,11 @@ use filament_contract_codegen::{
     ObligationKind, RequirementOccurrence, UnsupportedObligation, V2ClauseObligationClaim,
     V2ClauseObligationRecord,
 };
-use qsl_replay::ObligationIdentity;
-use quire_contract_model::{CheckedNodeId, CheckedNodePathSegment, CheckedPackageV2, CheckedTerm};
-use quire_exact::{NodeKey, PathSegment};
+use filament_contract_model::{
+    CheckedNodeId, CheckedNodePathSegment, CheckedPackageV2, CheckedTerm,
+};
+use filament_exact::{NodeKey, PathSegment};
+use fsl_replay::ObligationIdentity;
 
 /// The key CG's resolver yields for `clause`: the package's structural key for the node,
 /// rebuilt as a `NodeKey` (FR-015-AC-135). Fixtures that are not exercising the binding use it.
@@ -100,7 +102,7 @@ fn bare_claim(package: &CheckedPackageV2, clause: &CheckedNodeId) -> V2ClauseObl
     let occurrence = entry.map_or_else(
         || RequirementOccurrence {
             node_id: clause.clone(),
-            role: quire_contract_model::CheckedOccurrenceRole::Expression,
+            role: filament_contract_model::CheckedOccurrenceRole::Expression,
             ordinal: 0,
         },
         |entry| RequirementOccurrence {
@@ -112,10 +114,12 @@ fn bare_claim(package: &CheckedPackageV2, clause: &CheckedNodeId) -> V2ClauseObl
     let kind = match package.term(clause) {
         Some(CheckedTerm::Application { operation, .. }) => {
             match operation.state_clause_kind().ok().flatten() {
-                Some(quire_contract_model::StateClauseKind::Postcondition) => {
+                Some(filament_contract_model::StateClauseKind::Postcondition) => {
                     ObligationKind::Postcondition
                 }
-                Some(quire_contract_model::StateClauseKind::Invariant) => ObligationKind::Invariant,
+                Some(filament_contract_model::StateClauseKind::Invariant) => {
+                    ObligationKind::Invariant
+                }
                 _ => ObligationKind::Precondition,
             }
         }

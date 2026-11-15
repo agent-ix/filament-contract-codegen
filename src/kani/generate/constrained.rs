@@ -13,7 +13,7 @@ use crate::{
         generate_v2_clause_native_oracle_with_view, generate_v2_clause_oracle_with_view,
     },
 };
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedMemberType, CheckedNodeId, CheckedPackageV2, CheckedTerm, ContractSourceV1,
     StateClauseKind,
 };
@@ -78,8 +78,8 @@ fn domain(member: &CheckedMemberType) -> Result<SymbolicBounds, ConstrainedMetho
         }
         CheckedMemberType::Collection {
             kind:
-                quire_contract_model::CheckedCollectionKind::Sequence
-                | quire_contract_model::CheckedCollectionKind::OrderedSet,
+                filament_contract_model::CheckedCollectionKind::Sequence
+                | filament_contract_model::CheckedCollectionKind::OrderedSet,
             element,
             bounds: Some((lower, upper)),
         } if lower <= upper
@@ -101,11 +101,11 @@ fn binding_domain(
     use crate::kani::identity::CollectionKindIdentity as K;
     let collection_kind = match member {
         CheckedMemberType::Collection {
-            kind: quire_contract_model::CheckedCollectionKind::Sequence,
+            kind: filament_contract_model::CheckedCollectionKind::Sequence,
             ..
         } => Some(K::Sequence),
         CheckedMemberType::Collection {
-            kind: quire_contract_model::CheckedCollectionKind::OrderedSet,
+            kind: filament_contract_model::CheckedCollectionKind::OrderedSet,
             ..
         } => Some(K::OrderedSet),
         _ => None,
@@ -191,7 +191,7 @@ pub(super) fn lower(
             unique: matches!(
                 member,
                 CheckedMemberType::Collection {
-                    kind: quire_contract_model::CheckedCollectionKind::OrderedSet,
+                    kind: filament_contract_model::CheckedCollectionKind::OrderedSet,
                     ..
                 }
             ),
@@ -276,7 +276,10 @@ pub(super) fn lower(
         };
         let (Some(context), Some(name)) = (
             crate::core::ir::checked_term::reference(context),
-            crate::core::ir::checked_term::literal(name, quire_contract_model::LiteralKind::Text),
+            crate::core::ir::checked_term::literal(
+                name,
+                filament_contract_model::LiteralKind::Text,
+            ),
         ) else {
             return Err(R::Condition);
         };

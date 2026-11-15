@@ -179,13 +179,13 @@ are deleted. Shared canonical-preimage, dependency, refusal, collision,
 emission-order and ceiling checks use retained graph requests. Graph
 source-backed replay, cover controls, schema, census validation and the
 retained graph corpus generator remain. The admitted
-`quire.op.integer.div` test requires `Unsupported(OperationNotRendered)` with no
-harness; the separate `quire.op.integer.rem` test requires an `Underived`, refused
+`filament.op.integer.div` test requires `Unsupported(OperationNotRendered)` with no
+harness; the separate `filament.op.integer.rem` test requires an `Underived`, refused
 claim with no generated scalar family or harness. Amended by IR-854 (landed):
 FR-014-AC-81 and FR-057 superseded both tests. `div` and `rem` settle as FR-057
 states (`admitted_integer_division_renders_its_division_harness` in
 `tests/it/kani_obligations.rs`), and the underived control moved to
-`quire.op.numeric.narrow`, an identity FR-014 still refuses.
+`filament.op.numeric.narrow`, an identity FR-014 still refuses.
 
 The removed finite-input `i128` arithmetic procedures included checked
 add/subtract/multiply/divide/remainder admission and range/refusal behavior,

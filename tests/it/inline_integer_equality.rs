@@ -6,27 +6,27 @@ use filament_contract_codegen::{
     ClaimDisposition, CompositeEqualityItem, CompositeEqualityRefusal, EqualityOperandDescriptor,
     EqualityOperatorKind,
 };
+use filament_contract_model::{CheckedNodeTag, CheckedTerm, LiteralKind};
 use ix_trace_rs::trace;
-use quire_contract_model::{CheckedNodeTag, CheckedTerm, LiteralKind};
 
 const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\n\
-    profile v = \"quire.value.complete/v1\";\n\
+    profile v = \"filament.value.complete/v1\";\n\
     function literal_equal using v(): Boolean pure { 2 = 2 }\n";
 
 #[trace("FR-018-AC-47", "TC-029")]
 #[test]
 fn genuine_inline_integer_literals_generate_and_wrong_descriptor_refuses() {
-    let compiled = qsl_replay::compile_admitted(
-        qsl_replay::CompileUnit {
-            source: qsl_replay::SourceIdentity::new("test", "inline-integer-equality.native"),
+    let compiled = fsl_replay::compile_admitted(
+        fsl_replay::CompileUnit {
+            source: fsl_replay::SourceIdentity::new("test", "inline-integer-equality.native"),
             package_name: "inline-integer-equality".to_owned(),
             path: "inline-integer-equality.native",
             bytes: SOURCE.as_bytes(),
         },
         [],
-        &qsl_replay::DependencyInput::default(),
-        qsl_replay::StageLimits::default(),
-        qsl_replay::ReplayLimits::default(),
+        &fsl_replay::DependencyInput::default(),
+        fsl_replay::StageLimits::default(),
+        fsl_replay::ReplayLimits::default(),
     )
     .expect("genuine FSL source compiles");
     let package = checked(&compiled, &[]);

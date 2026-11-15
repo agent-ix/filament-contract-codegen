@@ -18,13 +18,13 @@ use filament_contract_codegen::{
     StateClausePlaybackError, StateClauseReplay, StateClauseReplayError, StateClauseReplayInputs,
     StateComparison, StateFrameIdentity, StateFrameProperty, StateObjectAddress,
 };
-use qsl_replay::{
+use filament_semantic_value::catalog::Category;
+use fsl_replay::{
     replay_state_clause, CallSiteRefusal, ClauseName, ClauseSelectionInput, DisagreementCause,
     DomainKey, DomainKind, EvaluatedValue, FiniteBound, Identifier, Integer, ReplayRequestWire,
     ReplayResult, ReplayTargetMembers, StateClauseReplayResult, TerminalValue, Verdict,
     WitnessEnvelope, WitnessPacket, WitnessRefusal, WitnessSettlement,
 };
-use quire_semantic_value::catalog::Category;
 use serde_json::{json, Value};
 
 use super::kani_obligations_state_frame::{
@@ -551,7 +551,7 @@ fn inputs<'a>(
     twin.state_clause_inputs(&fixture.package, &fixture.clause, BALANCE, pre, post)
 }
 
-/// What `qsl_replay::replay_state_clause` returns for the request and envelope `replay` holds,
+/// What `fsl_replay::replay_state_clause` returns for the request and envelope `replay` holds,
 /// called directly.
 fn direct(replay: StateClauseReplay) -> StateClauseReplayResult {
     let replay_limits = replay.replay_limits();
@@ -565,7 +565,7 @@ const VIOLATING: ((i64, i64), (i64, i64)) = ((5, 0), (4, 0));
 /// The respecting run over the same pre state: the crediting subject takes `balance` to 6.
 const RESPECTING: ((i64, i64), (i64, i64)) = ((5, 0), (6, 0));
 
-fn witness_arm(result: &StateClauseReplayResult) -> &qsl_replay::WitnessArmResult {
+fn witness_arm(result: &StateClauseReplayResult) -> &fsl_replay::WitnessArmResult {
     let ReplayResult::Witness(arm) = result.result() else {
         panic!("a witness-sourced replay settles on the witness arm");
     };
@@ -805,8 +805,8 @@ fn documents(wire: &ReplayRequestWire) -> Documents {
             continue;
         };
         match document.get("format").and_then(Value::as_str) {
-            Some("quire.state.invocation/v1") => found.0 = Some(document),
-            Some("quire.state.snapshot/v1") => match document.get("observation") {
+            Some("filament.state.invocation/v1") => found.0 = Some(document),
+            Some("filament.state.snapshot/v1") => match document.get("observation") {
                 Some(Value::String(role)) if role == "pre" => found.1 = Some(document),
                 Some(Value::String(role)) if role == "post" => found.2 = Some(document),
                 other => panic!("an unknown snapshot role: {other:?}"),
@@ -1151,7 +1151,7 @@ fn tc_035_the_envelope_declares_each_ranged_field_and_the_transcript_names_the_p
     let operation = candidate.operation.to_string();
     let replay = StateClauseReplay::new(candidate).expect("the replay is built");
 
-    let Some(qsl_replay::EnvelopeSource::Witness(witness)) = &replay.packet.source else {
+    let Some(fsl_replay::EnvelopeSource::Witness(witness)) = &replay.packet.source else {
         panic!("the envelope is on the witness arm");
     };
     assert_eq!(
@@ -1230,7 +1230,7 @@ fn tc_035_a_violating_run_reproduces_and_a_respecting_run_is_inconclusive() {
         let replay = built(&twin, &fixture, BALANCE, pre, post);
         assert!(matches!(
             replay.packet.source,
-            Some(qsl_replay::EnvelopeSource::Witness(_))
+            Some(fsl_replay::EnvelopeSource::Witness(_))
         ));
         let payload = replay.packet.family_payload.as_ref().expect("a payload");
         assert!(payload.witness.is_none());
@@ -1444,7 +1444,7 @@ fn tc_035_real_kani_state_clause_counterexample_replays_through_qsl() {
     assert_eq!(replay.packet.obligation_identity, Some(expected_identity));
     assert!(matches!(
         replay.packet.source,
-        Some(qsl_replay::EnvelopeSource::Witness(_))
+        Some(fsl_replay::EnvelopeSource::Witness(_))
     ));
     let result = replay.replay().expect("the replay settles");
     let arm = witness_arm(&result);

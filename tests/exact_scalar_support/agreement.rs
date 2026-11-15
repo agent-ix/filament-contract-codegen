@@ -12,7 +12,7 @@
 //! This crate checks generated==direct owner execution only and claims no agreement with the FSL
 //! value authority (FR-014-AC-47); that comparison for the quantity vectors is
 //! owned by filament-integration IR-842.
-//! FSL arch-lint T12-A confines this crate to `qsl_replay`'s public API.
+//! FSL arch-lint T12-A confines this crate to `fsl_replay`'s public API.
 //! The admitted source supplies nominal metadata; comparisons still execute
 //! value-level operators directly, without replaying a FSL value witness.
 //!
@@ -401,21 +401,21 @@ impl GraphSpec {
 pub mod rt_side {
     use std::collections::BTreeMap;
 
-    pub use quire_contract_runtime::scalar::{
+    pub use filament_contract_runtime::scalar::{
         evaluate_boolean_short_circuit, ShortCircuitConnective,
     };
-    pub use quire_exact::*;
-    pub use quire_semantic_value::quantity::{
+    pub use filament_exact::*;
+    pub use filament_semantic_value::quantity::{
         compare_quantity, convert_quantity, evaluate_quantity_unit, Conversion, ConvertedValue,
         IdentifiedUnit, QuantityOperation, QuantityRefusal, QuantityTarget, QuantityUnit,
         UnitQuantity, UnitScope, UnitTable,
     };
-    pub use quire_semantic_value::unit::{
+    pub use filament_semantic_value::unit::{
         CompoundUnit, DimensionNode, NominalDeclaration, Unit, UnitGraph, UnitNode,
     };
 
-    pub use quire_semantic_value::enumeration::{compare_enum, EnumDeclaration, EnumValue};
-    pub use quire_semantic_value::semantic_node::{InvalidSemanticGraph, SemanticGraphCause};
+    pub use filament_semantic_value::enumeration::{compare_enum, EnumDeclaration, EnumValue};
+    pub use filament_semantic_value::semantic_node::{InvalidSemanticGraph, SemanticGraphCause};
 
     /// The runtime's `InjectedDenial::occurrence` is `NonZeroU64`
     /// (`agent-ix/filament-contract-runtime#20`). Every caller in this crate
@@ -464,7 +464,7 @@ pub mod rt_side {
                 .iter()
                 .filter(|d| d.owner == owner)
                 .collect::<Vec<_>>();
-            let mut source = String::from("language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\n");
+            let mut source = String::from("language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\n");
             for d in &dimensions {
                 if d.terms.is_empty() {
                     writeln!(source, "dimension {};", d.declaration).unwrap();
@@ -514,17 +514,17 @@ pub mod rt_side {
                 source.push_str(";\n");
             }
             source.push_str("function fixture using v(): Boolean pure { true }\n");
-            let compiled = qsl_replay::compile_admitted(
-                qsl_replay::CompileUnit {
-                    source: qsl_replay::SourceIdentity::new("agent-ix", owner),
+            let compiled = fsl_replay::compile_admitted(
+                fsl_replay::CompileUnit {
+                    source: fsl_replay::SourceIdentity::new("agent-ix", owner),
                     package_name: owner.to_owned(),
                     path: "fixture.native",
                     bytes: source.as_bytes(),
                 },
                 [],
-                &qsl_replay::DependencyInput::default(),
-                qsl_replay::StageLimits::default(),
-                qsl_replay::ReplayLimits::default(),
+                &fsl_replay::DependencyInput::default(),
+                fsl_replay::StageLimits::default(),
+                fsl_replay::ReplayLimits::default(),
             )
             .unwrap_or_else(|error| panic!("named owner fixture failed: {error:?}\n{source}"));
             let context = compiled.context();
@@ -625,25 +625,25 @@ pub mod rt_side {
         members: &[&str],
     ) -> Result<Enum, InvalidSemanticGraph> {
         use std::sync::{Mutex, OnceLock};
-        static ENUMS: OnceLock<Mutex<BTreeMap<String, qsl_replay::AdmittedEnum>>> = OnceLock::new();
+        static ENUMS: OnceLock<Mutex<BTreeMap<String, fsl_replay::AdmittedEnum>>> = OnceLock::new();
         let source = format!(
-            "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\n{}enum {declaration} {{ {} }}\n",
+            "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\n{}enum {declaration} {{ {} }}\n",
             if ordered { "ordered " } else { "" },
             members.join(", ")
         );
         let mut enums = ENUMS.get_or_init(Mutex::default).lock().unwrap();
         let admitted = enums.entry(source.clone()).or_insert_with(|| {
-            let compiled = qsl_replay::compile_admitted(
-                qsl_replay::CompileUnit {
-                    source: qsl_replay::SourceIdentity::new("agent-ix", "example-model"),
+            let compiled = fsl_replay::compile_admitted(
+                fsl_replay::CompileUnit {
+                    source: fsl_replay::SourceIdentity::new("agent-ix", "example-model"),
                     package_name: "example-model".to_owned(),
                     path: "enum.native",
                     bytes: source.as_bytes(),
                 },
                 [],
-                &qsl_replay::DependencyInput::default(),
-                qsl_replay::StageLimits::default(),
-                qsl_replay::ReplayLimits::default(),
+                &fsl_replay::DependencyInput::default(),
+                fsl_replay::StageLimits::default(),
+                fsl_replay::ReplayLimits::default(),
             )
             .expect("genuine enum source");
             let admitted = compiled

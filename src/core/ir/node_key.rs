@@ -3,8 +3,8 @@
 
 //! Convert an admitted IR node identity to the exact structural key used by FSL.
 
-use quire_contract_model::{CheckedNodeId, CheckedNodePathSegment, CheckedOperandEntry};
-use quire_exact::{NodeKey, PathSegment};
+use filament_contract_model::{CheckedNodeId, CheckedNodePathSegment, CheckedOperandEntry};
+use filament_exact::{NodeKey, PathSegment};
 
 /// Rebuild an admitted structural identity without recursing through nested operands.
 pub(crate) fn checked_node_key(id: &CheckedNodeId) -> Option<NodeKey> {
@@ -58,7 +58,7 @@ pub(crate) fn checked_node_key(id: &CheckedNodeId) -> Option<NodeKey> {
 }
 
 /// Resolve identities in the node table of an already checked producer document.
-pub(crate) fn producer_node_keys(bytes: &[u8]) -> Option<qsl_replay::WireGraph> {
+pub(crate) fn producer_node_keys(bytes: &[u8]) -> Option<fsl_replay::WireGraph> {
     let document: serde_json::Value = serde_json::from_slice(bytes).ok()?;
     let ids = document
         .get("semantic_graph")?
@@ -70,7 +70,7 @@ pub(crate) fn producer_node_keys(bytes: &[u8]) -> Option<qsl_replay::WireGraph> 
     let rows: Vec<Vec<CheckedOperandEntry>> =
         serde_json::from_value(document.get("semantic_graph")?.get("operand_rows")?.clone())
             .ok()?;
-    qsl_replay::WireGraph::with_operand_rows(&ids, &rows).ok()
+    fsl_replay::WireGraph::with_operand_rows(&ids, &rows).ok()
 }
 
 /// Emit a typed IR identity without recursion or a digest adaptation.
@@ -103,19 +103,19 @@ pub(crate) fn render_checked_node_id(key: &CheckedNodeId) -> Option<String> {
                 });
                 for segment in segments.iter().rev() {
                     match segment {
-                        quire_contract_model::CheckedNodePathSegment::Name(text) => {
+                        filament_contract_model::CheckedNodePathSegment::Name(text) => {
                             pending.push(Step::Text(text))
                         }
-                        quire_contract_model::CheckedNodePathSegment::Node(child) => {
+                        filament_contract_model::CheckedNodePathSegment::Node(child) => {
                             pending.push(Step::Visit(child, false))
                         }
-                        quire_contract_model::CheckedNodePathSegment::Operand(slot) => {
+                        filament_contract_model::CheckedNodePathSegment::Operand(slot) => {
                             pending.push(Step::Operand(*slot))
                         }
-                        quire_contract_model::CheckedNodePathSegment::Index(index) => {
+                        filament_contract_model::CheckedNodePathSegment::Index(index) => {
                             pending.push(Step::Index(*index))
                         }
-                        quire_contract_model::CheckedNodePathSegment::Dependency {
+                        filament_contract_model::CheckedNodePathSegment::Dependency {
                             package,
                             node,
                         } => pending.push(Step::Dependency(package, *node)),
@@ -123,16 +123,16 @@ pub(crate) fn render_checked_node_id(key: &CheckedNodeId) -> Option<String> {
                 }
             }
             Step::Text(text) => rendered.push(format!(
-                "quire_contract_model::CheckedNodePathSegment::Name({text:?}.into())"
+                "filament_contract_model::CheckedNodePathSegment::Name({text:?}.into())"
             )),
             Step::Operand(slot) => rendered.push(format!(
-                "quire_contract_model::CheckedNodePathSegment::Operand({slot})"
+                "filament_contract_model::CheckedNodePathSegment::Operand({slot})"
             )),
             Step::Index(index) => rendered.push(format!(
-                "quire_contract_model::CheckedNodePathSegment::Index({index})"
+                "filament_contract_model::CheckedNodePathSegment::Index({index})"
             )),
             Step::Dependency(package, node) => rendered.push(format!(
-                "quire_contract_model::CheckedNodePathSegment::Dependency {{ package: {package:?}.into(), node: {node} }}"
+                "filament_contract_model::CheckedNodePathSegment::Dependency {{ package: {package:?}.into(), node: {node} }}"
             )),
             Step::Finish {
                 package,
@@ -142,8 +142,8 @@ pub(crate) fn render_checked_node_id(key: &CheckedNodeId) -> Option<String> {
             } => {
                 let start = rendered.len().checked_sub(len)?;
                 let path = rendered.split_off(start).join(", ");
-                let expression = format!("quire_contract_model::CheckedNodeId {{ package: {package:?}.into(), path: vec![{path}], ordinal: {ordinal} }}");
-                rendered.push(if root { expression } else { format!("quire_contract_model::CheckedNodePathSegment::Node(std::sync::Arc::new({expression}))") });
+                let expression = format!("filament_contract_model::CheckedNodeId {{ package: {package:?}.into(), path: vec![{path}], ordinal: {ordinal} }}");
+                rendered.push(if root { expression } else { format!("filament_contract_model::CheckedNodePathSegment::Node(std::sync::Arc::new({expression}))") });
             }
         }
     }

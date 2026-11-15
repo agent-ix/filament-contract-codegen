@@ -3,7 +3,7 @@
 
 //! Complete V2 numeric source and map publication for one selected checked claim.
 
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedClauseComparison, CheckedComparisonRefusal, CheckedExecutionPointError,
     CheckedExecutionPointRefusal, CheckedNodeId, CheckedOccurrence, CheckedPackageV2,
     ContractSourceV1, ExecutionPoint,
@@ -463,27 +463,27 @@ fn generate_with_control(
 
 fn render_runner(
     identity: &V2NumericIdentity,
-    kind: &quire_contract_model::CheckedComparisonClauseKind,
+    kind: &filament_contract_model::CheckedComparisonClauseKind,
     population: &super::v2_population::V2NumericPopulation,
     request: &V2NumericRequest<'_>,
 ) -> String {
     let (runtime_kind, failed_kind, failure_kind, outcome) = match kind {
-        quire_contract_model::CheckedComparisonClauseKind::Precondition => (
+        filament_contract_model::CheckedComparisonClauseKind::Precondition => (
             "Precondition",
             "RejectedPrecondition",
             "Precondition",
             "Rejected",
         ),
-        quire_contract_model::CheckedComparisonClauseKind::Postcondition => (
+        filament_contract_model::CheckedComparisonClauseKind::Postcondition => (
             "Postcondition",
             "FailedPostcondition",
             "Postcondition",
             "Failed",
         ),
-        quire_contract_model::CheckedComparisonClauseKind::Invariant => {
+        filament_contract_model::CheckedComparisonClauseKind::Invariant => {
             ("Invariant", "FailedPostcondition", "Contract", "Failed")
         }
-        quire_contract_model::CheckedComparisonClauseKind::Constraint => {
+        filament_contract_model::CheckedComparisonClauseKind::Constraint => {
             ("Invariant", "FailedPostcondition", "Contract", "Failed")
         }
     };
@@ -505,29 +505,29 @@ fn render_runner(
     } else {
         "None"
     };
-    let failure_field = if *kind == quire_contract_model::CheckedComparisonClauseKind::Precondition
-    {
-        "rejection"
-    } else {
-        "failure"
-    };
+    let failure_field =
+        if *kind == filament_contract_model::CheckedComparisonClauseKind::Precondition {
+            "rejection"
+        } else {
+            "failure"
+        };
     let minimum_accepted = request.policy.minimum_accepted_cases;
     let minimum_rejected = request.policy.minimum_rejected_cases;
     let maximum_discarded = request.policy.maximum_discarded_cases;
     format!(
         r#"
 /// Exact selected V2 requirement and admitted package revision.
-pub const V2_NUMERIC_IDENTITY: quire_contract_runtime::ContractIdentity<'static> =
-    quire_contract_runtime::ContractIdentity::new(
-        quire_contract_runtime::RequirementId::new({requirement:?}),
-        quire_contract_runtime::RevisionId::new({revision:?}),
+pub const V2_NUMERIC_IDENTITY: filament_contract_runtime::ContractIdentity<'static> =
+    filament_contract_runtime::ContractIdentity::new(
+        filament_contract_runtime::RequirementId::new({requirement:?}),
+        filament_contract_runtime::RevisionId::new({revision:?}),
     );
 /// The selected checked clause, independent of its occurrence key.
-pub const V2_NUMERIC_CLAUSE: quire_contract_runtime::ClauseId<'static> =
-    quire_contract_runtime::ClauseId::new({clause:?});
+pub const V2_NUMERIC_CLAUSE: filament_contract_runtime::ClauseId<'static> =
+    filament_contract_runtime::ClauseId::new({clause:?});
 /// The exact point retained by Contract IR for this selected claim.
-pub const V2_NUMERIC_POINT: quire_contract_runtime::ExecutionPoint<'static> =
-    quire_contract_runtime::ExecutionPoint::new({point:?});
+pub const V2_NUMERIC_POINT: filament_contract_runtime::ExecutionPoint<'static> =
+    filament_contract_runtime::ExecutionPoint::new({point:?});
 
 /// Complete exact accounting from one selected V2 campaign.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -578,7 +578,7 @@ pub enum V2NumericCampaignError {{
         /// Immutable expected relation side.
         expected: {expectation},
         /// Actual runtime verdict kind.
-        observed: quire_contract_runtime::VerdictKind,
+        observed: filament_contract_runtime::VerdictKind,
     }},
     /// Required accepted verdict floor was not met.
     BelowAcceptedFloor {{ /// Retained accounting.
@@ -597,7 +597,7 @@ pub enum V2NumericCampaignError {{
 
 /// Read exact rate-bearing counters from a runtime snapshot.
 pub fn v2_numeric_summary_from_snapshot(
-    snapshot: &quire_contract_runtime::CampaignSnapshot<'_>,
+    snapshot: &filament_contract_runtime::CampaignSnapshot<'_>,
 ) -> V2NumericSummary {{
     let counts = snapshot.counts();
     V2NumericSummary {{
@@ -607,12 +607,12 @@ pub fn v2_numeric_summary_from_snapshot(
     }}
 }}
 
-fn v2_numeric_summary(report: &quire_contract_runtime::CampaignReport<'static>) -> V2NumericSummary {{
+fn v2_numeric_summary(report: &filament_contract_runtime::CampaignReport<'static>) -> V2NumericSummary {{
     v2_numeric_summary_from_snapshot(&report.snapshot())
 }}
 
 fn v2_numeric_conclude(
-    report: &quire_contract_runtime::CampaignReport<'static>,
+    report: &filament_contract_runtime::CampaignReport<'static>,
     framework_error: Option<String>,
 ) -> Result<V2NumericSummary, V2NumericCampaignError> {{
     let summary = v2_numeric_summary(report);
@@ -633,35 +633,35 @@ fn v2_numeric_conclude(
 
 fn v2_numeric_evaluate(
     case: &{case_type},
-    report: &mut quire_contract_runtime::CampaignReport<'static>,
+    report: &mut filament_contract_runtime::CampaignReport<'static>,
 ) -> Result<(), V2NumericCampaignError> {{
     let Some(holds) = oracle_numeric(case.primary, {partner_case}) else {{
         return Err(V2NumericCampaignError::InvalidCaseShape {{ summary: v2_numeric_summary(report) }});
     }};
-    let failure = quire_contract_runtime::FailureDetail::new(
-        V2_NUMERIC_CLAUSE, quire_contract_runtime::FailureKind::{failure_kind}, 0, None,
+    let failure = filament_contract_runtime::FailureDetail::new(
+        V2_NUMERIC_CLAUSE, filament_contract_runtime::FailureKind::{failure_kind}, 0, None,
     );
-    let outcome = if holds {{ quire_contract_runtime::ClauseOutcome::Passed }}
-        else {{ quire_contract_runtime::ClauseOutcome::{outcome} }};
-    let observations = [quire_contract_runtime::Observation::new(
+    let outcome = if holds {{ filament_contract_runtime::ClauseOutcome::Passed }}
+        else {{ filament_contract_runtime::ClauseOutcome::{outcome} }};
+    let observations = [filament_contract_runtime::Observation::new(
         V2_NUMERIC_CLAUSE,
-        quire_contract_runtime::ClauseKind::{runtime_kind},
+        filament_contract_runtime::ClauseKind::{runtime_kind},
         outcome,
         if holds {{ None }} else {{ Some(failure) }},
     )];
-    let context = quire_contract_runtime::VerdictContext::new(
+    let context = filament_contract_runtime::VerdictContext::new(
         V2_NUMERIC_IDENTITY, V2_NUMERIC_POINT, &observations,
     );
-    let verdict = if holds {{ quire_contract_runtime::Verdict::passed(context) }}
-        else {{ quire_contract_runtime::Verdict::{failed_kind} {{ context, {failure_field}: failure }} }};
+    let verdict = if holds {{ filament_contract_runtime::Verdict::passed(context) }}
+        else {{ filament_contract_runtime::Verdict::{failed_kind} {{ context, {failure_field}: failure }} }};
     let observed = verdict.kind();
     if report.record_verdict(&verdict).is_err() {{
         return Err(V2NumericCampaignError::IdentityMismatch {{ summary: v2_numeric_summary(report) }});
     }}
     let expected = if matches!(case.expected, {expectation}::Holds) {{
-        quire_contract_runtime::VerdictKind::Passed
+        filament_contract_runtime::VerdictKind::Passed
     }} else {{
-        quire_contract_runtime::VerdictKind::{failed_kind}
+        filament_contract_runtime::VerdictKind::{failed_kind}
     }};
     if observed != expected {{
         return Err(V2NumericCampaignError::ConformanceMismatch {{
@@ -675,7 +675,7 @@ fn v2_numeric_evaluate(
 /// Run the selected constructive population with no subject or global rejects.
 pub fn run_v2_numeric_population(
     runner: &mut proptest::test_runner::TestRunner,
-    report: &mut quire_contract_runtime::CampaignReport<'static>,
+    report: &mut filament_contract_runtime::CampaignReport<'static>,
 ) -> Result<V2NumericSummary, V2NumericCampaignError> {{
     let strategy = {strategy}();
     let report = core::cell::RefCell::new(report);
@@ -714,7 +714,7 @@ pub fn run_v2_numeric_population(
 
 /// Evaluate every tagged in-domain census case exactly once in census order.
 pub fn run_v2_numeric_census(
-    report: &mut quire_contract_runtime::CampaignReport<'static>,
+    report: &mut filament_contract_runtime::CampaignReport<'static>,
 ) -> Result<V2NumericSummary, V2NumericCampaignError> {{
     for census in &IN_DOMAIN_CENSUS {{
         let case = {case_type} {{
@@ -748,7 +748,7 @@ mod native_twin;
 #[cfg(test)]
 mod tests {
 
-    use quire_contract_model::{
+    use filament_contract_model::{
         CheckedOccurrenceRole, CheckedPackageV2, ExecutionPoint, ExecutionPointName,
     };
 
@@ -758,7 +758,7 @@ mod tests {
     };
     use crate::strategy::bound::population::Population;
 
-    fn fixture() -> (CheckedPackageV2, quire_contract_model::CheckedNodeId) {
+    fn fixture() -> (CheckedPackageV2, filament_contract_model::CheckedNodeId) {
         let (package, clauses) =
             native_twin::Twin::new().emitted_package_with_execution_points(&[(
                 "BalanceNeverDrops",

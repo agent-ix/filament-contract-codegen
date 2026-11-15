@@ -3,7 +3,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::checked_term::{application, reference};
-use quire_contract_model::{
+use filament_contract_model::{
     ApplicationOperator, CheckedMemberType, CheckedNodeId, CheckedNodeKind, CheckedPackageV2,
     CheckedSemanticNodeV2, CheckedTerm, LiteralKind,
 };
@@ -42,20 +42,20 @@ pub(crate) enum ClauseTerm {
     Binder {
         binder: usize,
     },
-    /// `quire.op.control.let`: the value is evaluated once, outside the binder's scope, and the
+    /// `filament.op.control.let`: the value is evaluated once, outside the binder's scope, and the
     /// body reads it by `binder`.
     Let {
         binder: usize,
         value: Box<ClauseTerm>,
         body: Box<ClauseTerm>,
     },
-    /// `quire.op.control.if`: only the selected branch is evaluated.
+    /// `filament.op.control.if`: only the selected branch is evaluated.
     If {
         condition: Box<ClauseTerm>,
         then: Box<ClauseTerm>,
         other: Box<ClauseTerm>,
     },
-    /// `quire.op.control.case` over an arity-0 union operation parameter drawn as a member index:
+    /// `filament.op.control.case` over an arity-0 union operation parameter drawn as a member index:
     /// one arm body per member in declaration order, only the selected arm is evaluated.
     Case {
         scrutinee: ClauseInput,
@@ -64,9 +64,9 @@ pub(crate) enum ClauseTerm {
 }
 
 /// Control identities the clause readers lower.
-pub(crate) const CONTROL_LET: &str = "quire.op.control.let";
-pub(crate) const CONTROL_IF: &str = "quire.op.control.if";
-pub(crate) const CONTROL_CASE: &str = "quire.op.control.case";
+pub(crate) const CONTROL_LET: &str = "filament.op.control.let";
+pub(crate) const CONTROL_IF: &str = "filament.op.control.if";
+pub(crate) const CONTROL_CASE: &str = "filament.op.control.case";
 
 pub(crate) struct ClauseCondition {
     pub(crate) term: ClauseTerm,
@@ -175,7 +175,7 @@ impl Reader<'_, '_> {
                     }
                     let boolean = self.nodes.kind(&node.semantic_type)
                         == Some(CheckedNodeKind::ScalarType(
-                            quire_contract_model::ScalarTypeForm::Boolean,
+                            filament_contract_model::ScalarTypeForm::Boolean,
                         ));
                     let bound = if boolean {
                         (0, 1)
@@ -260,7 +260,7 @@ impl Reader<'_, '_> {
             } => {
                 let identity = operation.identity()?;
                 match identity {
-                    "quire.op.state.pre" if args.len() == 1 => {
+                    "filament.op.state.pre" if args.len() == 1 => {
                         let read = self.term_body(&args[0])?;
                         let CheckedTerm::Application {
                             operation,
@@ -270,7 +270,7 @@ impl Reader<'_, '_> {
                         else {
                             return None;
                         };
-                        if operation.identity()? != "quire.op.record.project" {
+                        if operation.identity()? != "filament.op.record.project" {
                             return None;
                         }
                         let [deref] = arguments.as_slice() else {
@@ -278,7 +278,7 @@ impl Reader<'_, '_> {
                         };
                         self.field(&read, deref, ClauseInputSide::Pre)
                     }
-                    "quire.op.record.project" if args.len() == 1 => {
+                    "filament.op.record.project" if args.len() == 1 => {
                         self.field(value, &args[0], side)
                     }
                     CONTROL_LET => self.let_term(args, side),
@@ -413,7 +413,11 @@ impl Reader<'_, '_> {
         if result_type != declaration {
             return None;
         }
-        let [subject] = application(&deref, ApplicationOperator::Deref, "quire.op.model.deref")?
+        let [subject] = application(
+            &deref,
+            ApplicationOperator::Deref,
+            "filament.op.model.deref",
+        )?
         else {
             return None;
         };
@@ -487,7 +491,7 @@ pub(crate) fn read_clause(
     let [parameters, _anchor, condition] = application(
         package.term(id)?,
         ApplicationOperator::StateClause,
-        "quire.op.state.clause",
+        "filament.op.state.clause",
     )?
     else {
         return None;

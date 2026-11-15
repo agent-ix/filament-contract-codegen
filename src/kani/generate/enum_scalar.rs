@@ -8,12 +8,12 @@
 //! proof an operand is `from_index(tag, ordered, index, count)` over one symbolic `i64`
 //! constrained to `0..count`; the proof holds no variant list and no heap value.
 
-use qsl_replay::AdmittedContext;
-use quire_contract_model::{CheckedNodeId, CheckedPackageV2, CheckedTerm};
-use quire_exact::{
+use filament_contract_model::{CheckedNodeId, CheckedPackageV2, CheckedTerm};
+use filament_exact::{
     compare_native_enum, ComparisonOperator, EnumMember, EnumShape, IllTypedCause, Meter,
     NativeEnum, NativeEnumRefusal, Outcome,
 };
+use fsl_replay::AdmittedContext;
 
 use super::{
     outcome::UnsupportedObligation,
@@ -39,7 +39,7 @@ pub struct EnumScalarRequest<'a> {
     pub source: &'a CheckedPackageV2,
     /// The owner route's admitted context for that package, when one accompanies the request.
     pub context: Option<&'a AdmittedContext>,
-    /// The `quire.op.enum.*` application node.
+    /// The `filament.op.enum.*` application node.
     pub node_id: &'a CheckedNodeId,
     /// Resource ceilings the backend must run under.
     pub ceilings: ProofCeilings,
@@ -160,12 +160,16 @@ impl EnumCapability {
 /// The comparison operators of the enum family, with the native Rust operator each is proved
 /// against.
 const OPERATORS: [(&str, ComparisonOperator, &str); 6] = [
-    ("quire.op.enum.eq", ComparisonOperator::Equal, "=="),
-    ("quire.op.enum.ne", ComparisonOperator::NotEqual, "!="),
-    ("quire.op.enum.lt", ComparisonOperator::Less, "<"),
-    ("quire.op.enum.le", ComparisonOperator::LessOrEqual, "<="),
-    ("quire.op.enum.gt", ComparisonOperator::Greater, ">"),
-    ("quire.op.enum.ge", ComparisonOperator::GreaterOrEqual, ">="),
+    ("filament.op.enum.eq", ComparisonOperator::Equal, "=="),
+    ("filament.op.enum.ne", ComparisonOperator::NotEqual, "!="),
+    ("filament.op.enum.lt", ComparisonOperator::Less, "<"),
+    ("filament.op.enum.le", ComparisonOperator::LessOrEqual, "<="),
+    ("filament.op.enum.gt", ComparisonOperator::Greater, ">"),
+    (
+        "filament.op.enum.ge",
+        ComparisonOperator::GreaterOrEqual,
+        ">=",
+    ),
 ];
 
 /// Settle one enum comparison: refuse it, or generate its harness.
@@ -520,7 +524,7 @@ fn render_text(
     body.push(Statement::Forget("meter".to_owned()));
     body.push(Statement::Forget("outcome".to_owned()));
     let oracle_source =
-        "use quire_exact as rt;\nuse quire_exact::compare_native_enum;\n".to_owned();
+        "use filament_exact as rt;\nuse filament_exact::compare_native_enum;\n".to_owned();
     let spec = HarnessSpec::new(
         format!(
             "enum-scalar {} `{operation_identity}`",
@@ -544,7 +548,7 @@ fn render_text(
         ceilings: request.ceilings,
         node_id: request.node_id.clone(),
         operation_identity: operation_identity.to_owned(),
-        oracle_symbol: "quire_exact::compare_native_enum".to_owned(),
+        oracle_symbol: "filament_exact::compare_native_enum".to_owned(),
         module_symbol: spec.path().module.clone(),
         harness_symbol: spec.path().harness.clone(),
         arguments: ["left", "right"]
@@ -593,17 +597,17 @@ fn render_text(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ix_trace_rs::trace;
-    use qsl_replay::{
-        compile_admitted, CompileUnit, DependencyInput, ReplayLimits, SourceIdentity, StageLimits,
-    };
-    use quire_contract_model::{
+    use filament_contract_model::{
         CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2ReadResult,
     };
-    use quire_exact::VariantId;
+    use filament_exact::VariantId;
+    use fsl_replay::{
+        compile_admitted, CompileUnit, DependencyInput, ReplayLimits, SourceIdentity, StageLimits,
+    };
+    use ix_trace_rs::trace;
 
     const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\n\
-profile v = \"quire.value.complete/v1\";\n\
+profile v = \"filament.value.complete/v1\";\n\
 ordered enum Level { LOW, MID, HIGH }\n\
 enum Color { RED, GREEN }\n\
 function lt using v(a: Level, b: Level): Boolean pure { a < b }\n\
@@ -625,7 +629,7 @@ function same using v(a: Color, b: Color): Boolean pure { a = b }\n";
         )
         .expect("the source compiles");
         let mut evidence = CheckedPackageEvidence::new();
-        evidence.support_feature("quire.value.complete/v1");
+        evidence.support_feature("filament.value.complete/v1");
         let CheckedPackageV2ReadResult::Admitted(package) = CheckedPackageV2::read(
             compiled.package().bytes(),
             CheckedPackageReadLimits::bounded(),
@@ -757,11 +761,11 @@ function same using v(a: Color, b: Color): Boolean pure { a = b }\n";
     }
 
     /// The compiled corpus: its checked package and the admitted compilation.
-    fn corpus() -> (CheckedPackageV2, qsl_replay::AdmittedCompilation) {
+    fn corpus() -> (CheckedPackageV2, fsl_replay::AdmittedCompilation) {
         compile(SOURCE, "enum-scalar")
     }
 
-    fn compile(source: &str, name: &str) -> (CheckedPackageV2, qsl_replay::AdmittedCompilation) {
+    fn compile(source: &str, name: &str) -> (CheckedPackageV2, fsl_replay::AdmittedCompilation) {
         let compiled = compile_admitted(
             CompileUnit {
                 source: SourceIdentity::new("test", "enum-scalar.native"),
@@ -776,7 +780,7 @@ function same using v(a: Color, b: Color): Boolean pure { a = b }\n";
         )
         .expect("the source compiles");
         let mut evidence = CheckedPackageEvidence::new();
-        evidence.support_feature("quire.value.complete/v1");
+        evidence.support_feature("filament.value.complete/v1");
         let CheckedPackageV2ReadResult::Admitted(package) = CheckedPackageV2::read(
             compiled.package().bytes(),
             CheckedPackageReadLimits::bounded(),
@@ -828,7 +832,7 @@ function same using v(a: Color, b: Color): Boolean pure { a = b }\n";
     #[test]
     fn a_generator_that_mints_a_key_in_shape_and_members_is_refused_end_to_end() {
         let (package, compiled) = corpus();
-        let node = comparison(&package, "quire.op.enum.lt");
+        let node = comparison(&package, "filament.op.enum.lt");
         let request = request(&package, Some(compiled.context()), &node);
         assert!(matches!(
             generate_with_mint(&request, |owner| (
@@ -910,7 +914,7 @@ function same using v(a: Color, b: Color): Boolean pure { a = b }\n";
             }
         ));
         let (_, foreign) = compile(SOURCE, "other");
-        let node = comparison(&package, "quire.op.enum.lt");
+        let node = comparison(&package, "filament.op.enum.lt");
         let EnumScalarOutcome::Refused(EnumScalarRefusal::Unsupported { capability, .. }) =
             generate_enum_scalar_harness(&request(&package, Some(foreign.context()), &node))
         else {
@@ -929,7 +933,7 @@ function same using v(a: Color, b: Color): Boolean pure { a = b }\n";
             ("a = b", "IllTyped(TypeMismatch)"),
         ] {
             let source = format!(
-                "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nenum Color {{ RED, GREEN }}\nordered enum Level {{ LOW, MID }}\nfunction f using v(a: {}, b: {}): Boolean pure {{ {body} }}\n",
+                "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nenum Color {{ RED, GREEN }}\nordered enum Level {{ LOW, MID }}\nfunction f using v(a: {}, b: {}): Boolean pure {{ {body} }}\n",
                 if body == "a < b" { "Color" } else { "Level" },
                 "Color",
             );

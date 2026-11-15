@@ -8,7 +8,7 @@
 
 use std::collections::BTreeSet;
 
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedNodeId, CheckedNodeTag, CheckedPackageReadLimits, CheckedPackageV2,
     CompleteLoweringProfileV2, CompleteLoweringRecordV2,
 };
@@ -31,7 +31,7 @@ pub fn limits_under(bytes: u64) -> CheckedPackageReadLimits {
 /// fixtures then assert the ceiling one byte below it refuses and the length itself does not.
 pub fn measuring_profile(require_bounds: bool, identity: &str) -> CompleteLoweringProfileV2 {
     CompleteLoweringProfileV2 {
-        reference: quire_contract_model::LoweringProfileRef {
+        reference: filament_contract_model::LoweringProfileRef {
             authority: "agent-ix".into(),
             identity: identity.into(),
         },

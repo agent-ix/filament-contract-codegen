@@ -24,7 +24,7 @@ mod rekey;
 #[path = "../checked_package_support/draft_rows.rs"]
 mod draft_rows;
 
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedNodeId, CheckedNodeOwner, CheckedPackageEvidence, CheckedPackageReadLimits,
     CheckedPackageV2, CheckedPackageV2ReadResult, CheckedTerm,
 };
@@ -115,7 +115,7 @@ pub(crate) fn negotiate_condition(
 fn bounded_addition(twin: &Twin) -> (CheckedPackageV2, CheckedNodeId) {
     let (package, clause) = twin.emitted_package("BalanceNeverDrops");
     let mut wire = json!({
-        "contract_version": "quire.checked-package/v2",
+        "contract_version": "filament.checked-package/v2",
         "name": package.name(),
         "lock": package.lock(),
         "semantic_graph": package.graph(),
@@ -123,7 +123,7 @@ fn bounded_addition(twin: &Twin) -> (CheckedPackageV2, CheckedNodeId) {
         "capability_report": package.capability_report(),
         "diagnostics": package.diagnostics(),
     });
-    let frame = qsl_replay::WireGraph::of_package_value(&wire).expect("original holding rows");
+    let frame = fsl_replay::WireGraph::of_package_value(&wire).expect("original holding rows");
     let nodes = wire["semantic_graph"]["nodes"].as_array().unwrap().clone();
     let bound_position = nodes
         .iter()
@@ -137,7 +137,7 @@ fn bounded_addition(twin: &Twin) -> (CheckedPackageV2, CheckedNodeId) {
     let package_name = wire["name"].as_str().unwrap().to_owned();
     let mut changed = 0;
     for (position, node) in nodes.iter().enumerate() {
-        if node["body"]["operation"]["identity"] != "quire.op.integer.add" {
+        if node["body"]["operation"]["identity"] != "filament.op.integer.add" {
             continue;
         }
         let mut node = frame.document_value_in_row(position, node).unwrap();
@@ -167,7 +167,7 @@ fn bounded_addition(twin: &Twin) -> (CheckedPackageV2, CheckedNodeId) {
     evidence
         .insert_domain_package_document(selected_model, document.bytes.clone())
         .unwrap();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     let resolved = rekey::resolve_wire(&wire, &evidence, CheckedPackageReadLimits::bounded());
     let CheckedPackageV2ReadResult::Admitted(constructed) = resolved.outcome else {
         panic!("the bounded addition is admitted: {:?}", resolved.outcome)
@@ -294,7 +294,7 @@ fn tc_025_a_let_binding_a_non_native_value_is_a_typed_control_refusal_and_spares
                     V2ClauseControlReason::LetValueNotNativeScalar,
                     "{family}"
                 );
-                assert_eq!(operation_identity, "quire.op.control.let", "{family}");
+                assert_eq!(operation_identity, "filament.op.control.let", "{family}");
                 assert_eq!(node_id, clause, "{family}: the clause node");
                 let Some(CheckedTerm::Application { operation, .. }) =
                     package.term(&control_node_id)
@@ -303,7 +303,7 @@ fn tc_025_a_let_binding_a_non_native_value_is_a_typed_control_refusal_and_spares
                 };
                 assert_eq!(
                     operation.identity(),
-                    Some("quire.op.control.let"),
+                    Some("filament.op.control.let"),
                     "{family}"
                 );
             }
@@ -318,7 +318,7 @@ fn tc_025_the_first_refusal_the_walk_meets_decides() {
     // An unsupported operator met before a failing control.
     assert_eq!(
         operator_refusal(r#"result = (("a" = "a") and (let q = "a" in true))"#),
-        "quire.op.string.eq"
+        "filament.op.string.eq"
     );
     // A failing control met before an unsupported operator: the control's shape check runs on
     // entering its node, before its operands are walked.

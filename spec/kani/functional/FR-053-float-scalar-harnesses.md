@@ -45,18 +45,20 @@ parameters typed `float32` or `float64`, and the planned prerequisites below are
 available, CG SHALL generate a bounded Kani harness that proves the generated IEEE
 oracle of [FR-014](../../oracle/functional/FR-014-exact-scalar-oracles.md) agrees
 with an independent native expression of the same operation over every symbolic
-operand bit pattern. The operations are the comparisons `quire.op.ieee.numeric_equal`,
-`.total_order` and `.bit_identical`, the arithmetic `quire.op.ieee.float32.add`,
-`.sub`, `.mul`, `.div` and the `float64` forms, and the planned `quire.op.ieee.float32.sqrt`,
+operand bit pattern. The operations are the comparisons `filament.op.ieee.numeric_equal`,
+`.total_order` and `.bit_identical`, the arithmetic `filament.op.ieee.float32.add`,
+`.sub`, `.mul`, `.div` and the `float64` forms, and the planned `filament.op.ieee.float32.sqrt`,
 `.fma` and the `float64` forms. This is the IEEE float row of the IR-269 scalar renderer
 that TC-030's IEEE-float scalar row settles today as `OperationNotRendered`, and the
-specification part of the row that IR-260 implements. It is a planned row, not a new
+specification part of the row that this requirement implements. It is not a new
 IR schema, a new oracle or a claim of current Rust support.
 
-Three prerequisites are named; P3 (IR-1502) is delivered and P1 and P2 are not. Every criterion that describes a
-supported harness is conditional on P1, the criteria about unbounded operands are
-conditional on P2, and the `sqrt` and `fma` parts of every criterion were conditional on
-P3, which is delivered.
+Three prerequisites are named; P2 and P3 (IR-1502) are delivered, and P1 is delivered for the
+comparisons, the only supported harnesses. Every criterion that describes a supported harness
+needs P1's comparison natives (present in filament-exact); the arithmetic natives of P1 (IR-1446,
+in progress) condition only the arithmetic rows, which this requirement refuses today. The criteria
+about unbounded operands depend on P2 (delivered), and the `sqrt` and `fma` parts of every
+criterion were conditional on P3, which is delivered.
 
 - P1 (ticket IR-1446) is the filament-exact float carrier: a symbolic IEEE operand, and a
   native expression for the comparisons and for add, sub, mul, div, sqrt and fma at
@@ -65,41 +67,37 @@ P3, which is delivered.
   iterator loop, and none of the owner's `BigInt` or `BigUint` arithmetic. IR-1446 is
   the supplier of the native add, sub, mul, div, sqrt and fma and of the comparisons
   (filament-exact FR-405). These native operations are host-callable ordinary code, one source
-  for the host and Kani builds and not a `cfg(kani)`-only body, which AC-13 needs. Until
-  IR-1446 lands them, AC-13 cannot run. Support is per operation and width, as filament-exact
+  for the host and Kani builds and not a `cfg(kani)`-only body, which AC-13 needs. AC-13 runs
+  today for the comparisons, whose natives are shipped; the arithmetic half of AC-13 cannot run
+  until IR-1446 lands the arithmetic natives, and no arithmetic row is supported before then. Support is per operation and width, as filament-exact
   FR-405 Behavior 15 gates it: only a combination with an executed Verified verdict is a
   supported row. A combination whose filament-exact record is a measured table row (timeout,
   memory exhaustion or unreliable) is in the table-row state. The float row refuses it at
   generation with the named capability `float.<op>.not_kani_tractable` and no harness (planner
-  ruling, IR-260); it is not generated and not run. The five arithmetic rows of IR-1526's
+  ruling); it is not generated and not run. The five arithmetic rows of IR-1526's
   tractability table (FR-056, filament-exact FR-405 Behavior 16) are the measured record of that
   refusal and not its mechanism: a float clause carries no integer operand width, so the
   decider's width match does not select them.
-- P2 (ticket IR-69) is the Contract IR ruling that a `float32` or `float64` is
-  unbounded unless a `float_rounding` domain applies (planner ruling, Option A). It adds
-  both forms to the `requires_bound` unbounded set in
-  `crates/filament-contract-model/src/checked_package/v2/lower.rs` and moves FR-038 Behavior
-  and FR-038-AC-8 from eight forms to ten. It is not implemented: that predicate returns
-  `false` for `ScalarTypeForm::Float32` and `ScalarTypeForm::Float64` on Contract IR main
-  at the time of writing, so a package with an unbounded float lowers to `lowered` under
-  a bounds-required profile today. Until P2 lands, AC-3's unpinned-operand refusal is
-  CG's own defensive check and nothing upstream backs it.
+- P2 is the Contract IR ruling that a `float32` or `float64` is unbounded unless a
+  `float_rounding` domain applies. It is delivered: both forms are in the `requires_bound`
+  unbounded set, so Contract IR refuses a package with an unbounded float under a
+  bounds-required profile, and AC-3's unpinned-operand refusal is that Contract IR record.
 - P3 (ticket IR-1502) is the FR-014 extension that derives and generates an oracle
-  for `quire.op.ieee.float32.sqrt`, `.float64.sqrt`, `.float32.fma` and `.float64.fma`.
+  for `filament.op.ieee.float32.sqrt`, `.float64.sqrt`, `.float32.fma` and `.float64.fma`.
   Delivered under IR-1502: FR-014 derives and generates these four identities
   (FR-014-AC-72..80, tagged and run under TC-024). The owner supports both (`IeeeOperation::SquareRoot`,
   `IeeeOperation::FusedMultiplyAdd`), and Contract IR catalogues both identities, so
   CG's descriptor, derivation and renderer are those of FR-014. This row's proof of
-  them still depends on P1.
+  them depends on the P1 arithmetic natives, which are not delivered, so the row refuses them.
 
-The CG float ABI, the decoder and the replay grouping are IR-260's own implementation
+The CG float ABI, the decoder and the replay grouping are this requirement's own implementation
 work under this requirement, not prerequisites. The IR-1436 review orders the Meter
 tractability work (IR-844, IR-241) before the carriers because every owner oracle
 charges a Meter; that ordering is context and adds no criterion here.
 
-Outside this requirement: `quire.op.ieee.to_float32` and `.to_float64` (width
-conversions, a different operation kind), `quire.op.ieee.from_exact`,
-`quire.op.ieee.to_rational`, `quire.op.ieee.float32.negate`, `quire.op.ieee.float64.negate` and every other identity FR-014
+Outside this requirement: `filament.op.ieee.to_float32` and `.to_float64` (width
+conversions, a different operation kind), `filament.op.ieee.from_exact`,
+`filament.op.ieee.to_rational`, `filament.op.ieee.float32.negate`, `filament.op.ieee.float64.negate` and every other identity FR-014
 refuses or does not derive keep their FR-014 dispositions and, for a claim, TC-030's.
 A float literal operand and an operand that is not a parameter are outside this row
 (AC-1).
@@ -377,15 +375,17 @@ or occurrence key.
 
 ## Acceptance Criteria
 
-All supported-harness criteria are conditional on P1 (IR-1446). The unpinned-operand
-refusal of AC-3 is CG's own check; P2 (IR-69) would add the upstream refusal ahead of it. The `sqrt` and `fma`
-parts of AC-1, AC-4, AC-5, AC-9, AC-10, AC-13 and AC-14 were conditional on P3 (IR-1502), which is delivered; they remain conditional on P1.
+The supported-harness criteria (the comparisons) rest on P1's delivered comparison natives; the
+arithmetic halves wait on the P1 arithmetic natives (IR-1446, in progress) and are dispositioned
+by the refusal ruling. The unpinned-operand
+refusal of AC-3 is the Contract IR `requires_bound` record, which CG reports. The `sqrt` and `fma`
+parts of AC-1, AC-4, AC-5, AC-9, AC-10, AC-13 and AC-14 were conditional on P3 (IR-1502), which is delivered; they remain conditional on the P1 arithmetic natives and are refused until then.
 
 | ID | Criteria | Verification |
 | --- | --- | --- |
-| FR-053-AC-1 | Each admitted `quire.op.ieee.numeric_equal`, `.total_order` and `.bit_identical` node over two distinct parameters of one float width selects a harness naming the operation identity, width and operand forms from the admitted node; the harness proves the carrier's native comparison and the expected side is an independent native expression, not a second call of the oracle. Each `quire.op.ieee.float32` and `float64` `add`, `sub`, `mul`, `div`, `sqrt` and `fma` node selects no harness and is refused with the named capability `float.<op>.not_kani_tractable` carrying its measured disposition (planner ruling: no arithmetic combination has all three filament-exact harnesses Verified). `quire.op.ieee.to_float32`, `.to_float64`, `.from_exact`, `.to_rational`, `.float32.negate`, `.float64.negate` and every other identity select no harness and keep their existing dispositions. A float literal operand is accounted `unsupported` naming `float.literal_operand` (`FloatLiteralOperand`) and an operand that is neither a parameter nor a literal naming `float.operand_not_parameter` (FR-015's `OperandNotSupported`), each with no harness; a same-parameter operand pair, operands of differing widths and a path condition are refused with their own named capabilities. | Test |
+| FR-053-AC-1 | Each admitted `filament.op.ieee.numeric_equal`, `.total_order` and `.bit_identical` node over two distinct parameters of one float width selects a harness naming the operation identity, width and operand forms from the admitted node; the harness proves the carrier's native comparison and the expected side is an independent native expression, not a second call of the oracle. Each `filament.op.ieee.float32` and `float64` `add`, `sub`, `mul`, `div`, `sqrt` and `fma` node selects no harness and is refused with the named capability `float.<op>.not_kani_tractable` carrying its measured disposition (planner ruling: no arithmetic combination has all three filament-exact harnesses Verified). `filament.op.ieee.to_float32`, `.to_float64`, `.from_exact`, `.to_rational`, `.float32.negate`, `.float64.negate` and every other identity select no harness and keep their existing dispositions. A float literal operand is accounted `unsupported` naming `float.literal_operand` (`FloatLiteralOperand`) and an operand that is neither a parameter nor a literal naming `float.operand_not_parameter` (FR-015's `OperandNotSupported`), each with no harness; a same-parameter operand pair, operands of differing widths and a path condition are refused with their own named capabilities. | Test |
 | FR-053-AC-2 | Each operand is drawn as one `i64` bit pattern, `0..=0xFFFF_FFFF` for `float32` and every `i64` for `float64`, built through `IeeeValue::binary32(u32)` or `binary64(u64)`. Every pattern is reachable exactly once, including both zeros, subnormals, both infinities and every NaN sign and payload, and a host enumeration of the stated class-boundary set (both signs; exponent field 0, 1, the bias, the largest finite and all ones; fraction 0, 1, the largest below the quiet bit, the quiet bit, the quiet bit plus one and all ones) at each width, plus the `i64` values 2^32, -1, `i64::MIN` and `i64::MAX` at `float32`, matches the encoding: an in-range pattern is admitted once and decodes to the same bits, and an out-of-range `float32` value is excluded. Each of these fails the correspondence check (FSpec FR-196-AC-5): an assumption of non-negative `float64` bits (point `0x8000000000000000`), an assumption excluding NaN (`QN0`, `SN1`), excluding infinities (`INF+`), excluding subnormals or zero (`SUBMIN`, `Z+`), a `float32` draw left unconstrained above `u32::MAX` (the value 2^32 aliases `Z+`), a `float32` draw decoded as a signed 32-bit value (`0x80000000`), and a decode that canonicalizes a NaN (`SN1` must keep its payload). | Test |
-| FR-053-AC-3 | A comparison operand whose type reaches no `float_rounding` bound yields source-associated `requires-bound` naming the operand's type node with no harness; this is CG's own check, because Contract IR does not yet raise `requires_bound` for a float (IR-69, which would make the upstream refusal precede it). An operand whose `float_rounding` bound is present but unreadable yields the named `float.rounding_unreadable` with its cause and no harness. No result bound is required, read or reported for a comparison, because a comparison has none, and a `float_rounding` pin narrows no operand domain. An arithmetic node reaches no bound check: it is refused by AC-1 first. | Test |
+| FR-053-AC-3 | A comparison operand whose type reaches no `float_rounding` bound yields source-associated `requires-bound` naming the operand's type node with no harness; Contract IR raises `requires_bound` for a float operand with no `float_rounding` bound, and CG reports that record's type node rather than applying a check of its own. An operand whose `float_rounding` bound is present but unreadable yields the named `float.rounding_unreadable` with its cause and no harness. No result bound is required, read or reported for a comparison, because a comparison has none, and a `float_rounding` pin narrows no operand domain. An arithmetic node reaches no bound check: it is refused by AC-1 first. | Test |
 | FR-053-AC-4 | For every supported comparison the oracle and native expression agree on the Boolean, ordered charges, the denied next charge and consumed counters, at zero, exact and short budgets at each charge point the operation reaches on that input. For every supported arithmetic operation the harness proves the completed value's bits under `nearest-even` (and the NaN result's sign, quietness and payload and the `invalid` flag under every spelling) and the provenance of a completed result, and that only `exact` refuses (it cannot tell a refusal from a completed result under `exact`, and a limit is not drawn); the result bits under the other spellings, the typed outcome at a limit, the flags other than `invalid`, the ordered charges (including the result-unit charge), the denied next charge and the consumed counters at zero, exact and short budgets are proved by AC-13's host differential and not by the harness. The charge points are: `ieee.operands`, `ieee.exact-intermediate`, `ieee.round` and `ieee.result-retain` as the Behavior list orders them, with the arity of `sqrt` and `fma`. Classification-decided inputs (NaN, infinity, invalid operation, division by zero) charge only `ieee.operands` and `ieee.result-retain`. The reference neither runs the generated oracle twice nor bridges through Runtime. | Test |
 | FR-053-AC-5 | The reachable noncompletions are asserted as the agreed typed outcome and never assumed away. The harness proves that only `exact` refuses and that the generated harness contains no assumption that depends on the outcome (inspected, as FR-046-AC-4); AC-13's host differential asserts `Incomplete` at each charge point an input reaches, with a short budget for each limit kind that point charges (including `work_units`), and under `exact` `Refused(IeeeNotExact)` with the would-be flags for an inexact, overflowing or tiny-and-inexact finite result (`T1`, `MAXF + MAXF`, `SUBMIN x HALF`, `SQ1`), charging no `ieee.result-retain`. A division by zero and an invalid operation under `exact` are `Completed` with their flag and are not refused. No `Undefined` or comparison `Refused` control is drawn, because the owner produces none, and `DistinctIeeeWidths` is not a harness control. No cause is relabelled and a stopped outcome is never proved completed. | Test |
 | FR-053-AC-6 | An arithmetic node in a request with supported comparison siblings is refused with `float.<op>.not_kani_tractable` and no harness, each supported sibling is generated exactly as it is alone, and per-item accounting is total under FR-039. An unsupported operand form keeps its own named disposition. A float leaf of a composite remains FR-015's `ShadowFamilyNotBuilt`, which the float row does not rewrite (no control for it runs under this requirement). | Test |
@@ -406,7 +406,7 @@ parts of AC-1, AC-4, AC-5, AC-9, AC-10, AC-13 and AC-14 were conditional on P3 (
   FR-014 derives `sqrt` and `fma` (FR-014-AC-72..80, delivered under IR-1502, which was
   P3).
 - The float carrier (IR-1446) is prerequisite P1, the Contract IR float
-  `requires_bound` ruling (IR-69) is P2, and the FR-014 `sqrt` and `fma` derivation
+  `requires_bound` ruling is P2, and the FR-014 `sqrt` and `fma` derivation
   (IR-1502) is P3. The IR-1436 design review (D4) fixes the carrier contract and gates the
   memory evidence; its ordering puts the Meter work (IR-844, IR-241) first.
 - [FR-052](./FR-052-text-scalar-harnesses.md), [FR-051](./FR-051-decimal-scalar-harnesses.md),
@@ -421,8 +421,8 @@ parts of AC-1, AC-4, AC-5, AC-9, AC-10, AC-13 and AC-14 were conditional on P3 (
 
 ## Status
 
-PARTIAL (IR-260). Scope ruling (planner): the row is the supported combinations, the three
-comparisons `quire.op.ieee.numeric_equal`, `.total_order` and `.bit_identical` at `binary32` and
+Implemented. Scope ruling (planner): the row is the supported combinations, the three
+comparisons `filament.op.ieee.numeric_equal`, `.total_order` and `.bit_identical` at `binary32` and
 `binary64`, which are the combinations whose filament-exact harnesses are Verified (FR-405 Behavior
 15). `generate_float_scalar_harness` (src/kani/generate/float_scalar.rs), routed through
 `generate_routed`, settles a comparison node of a genuine FSL source admitted through Contract IR to
@@ -451,7 +451,7 @@ Delivered for the comparisons, tagged and passing (`tests/it/float_scalar_harnes
   the class-boundary set at both widths with the `float32` out-of-range draws, and the seven
   correspondence mutants (two as source mutations of the generated assumptions, five as models of
   the mutated assumption or decode), each failing at its named point.
-- AC-3: the operand `requires-bound` (CG's own check) and the unreadable-rounding refusal, on
+- AC-3: the operand `requires-bound` raised by Contract IR and reported with the operand's type node, and the unreadable-rounding refusal, on
   hand-edited Contract IR, and the pinned sibling unchanged. The hand-edited package cannot be routed (Contract IR lowers it to an empty lowered set, so no admitted routing input exists), so the routed mapping to the `requires-bound` disposition is covered at the `FloatScalarRefusal::into_disposition` seam only.
 - AC-4 and AC-13 (comparisons): the native comparison equals the shipped owner's `compare_ieee` over
   the class-boundary set and the control points, on the typed outcome, the meter, the denied charge

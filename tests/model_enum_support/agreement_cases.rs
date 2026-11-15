@@ -6,8 +6,8 @@ mod generated {
     include!(concat!(env!("CARGO_MANIFEST_DIR"), "/names.rs"));
 }
 
-use quire_exact::{ComparisonOperator, LimitKind, Meter, Outcome, ScalarLimits};
-use quire_semantic_value::enumeration::{compare_enum, EnumValue};
+use filament_exact::{ComparisonOperator, LimitKind, Meter, Outcome, ScalarLimits};
+use filament_semantic_value::enumeration::{compare_enum, EnumValue};
 
 type Compare = fn(
     &EnumValue,

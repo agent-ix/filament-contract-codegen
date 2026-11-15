@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! The selected native-integer contract and actual checked interval decisions (AD-006).
 
-use quire_contract_model::CheckedNodeId;
-use quire_exact::NativeIntegerInterval;
+use filament_contract_model::CheckedNodeId;
+use filament_exact::NativeIntegerInterval;
 use serde::Serialize;
 
 /// CG's selected operator-capacity contract, independently of Git provenance.

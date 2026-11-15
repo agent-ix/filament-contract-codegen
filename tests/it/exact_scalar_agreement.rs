@@ -24,10 +24,10 @@ use std::{
 /// constraints from this repository's manifest use its seeded dependency
 /// resolution before the locked native test.
 const AGREEMENT_DEV_DEPENDENCIES: &str = concat!(
-    "qsl-replay = { version = \"=0.1.0\", git = \"https://github.com/agent-ix/filament-spec-language\", branch = \"main\" }\n",
+    "fsl-replay = { version = \"=0.1.0\", git = \"https://github.com/agent-ix/filament-spec-language\", branch = \"main\" }\n",
     "serde_json = \"=1.0.151\"\nsha2 = \"=0.10.9\"\n",
     "ix-trace-rs = { version = \"0.1\", git = \"https://github.com/agent-ix/ix-trace-rs\", branch = \"main\" }\n",
-    "quire-exact = { git = \"https://github.com/agent-ix/quire-exact\", branch = \"main\", features = [\"test-support\"] }\n",
+    "filament-exact = { git = \"https://github.com/agent-ix/filament-exact\", branch = \"main\", features = [\"test-support\"] }\n",
 );
 
 /// Writes `artifacts` (path, contents) as a crate at `<target tmp>/<label>`,
@@ -589,7 +589,7 @@ fn tc_024_generated_scalar_crate_agrees_with_direct_runtime() {
     }
     assert!(!cohorts.is_empty(), "bounded scalar corpus has no cohorts");
     let mut root = String::from(
-        "use quire_exact as rt;\n\
+        "use filament_exact as rt;\n\
          /// Why a generated oracle stopped before an operator outcome.\n\
          #[derive(Clone, Copy, Debug, Eq, PartialEq)]\n\
          pub enum OracleStop {\n",
@@ -856,7 +856,7 @@ fn carried_quantity_vectors_compile_and_agree_with_owner() {
                 .iter()
                 .find(|node| node.node_id == items[0].node_id)
                 .unwrap();
-            let quire_contract_model::CheckedTerm::Application { operation, .. } =
+            let filament_contract_model::CheckedTerm::Application { operation, .. } =
                 &operation_node.body
             else {
                 panic!("conversion application")
@@ -872,18 +872,21 @@ fn carried_quantity_vectors_compile_and_agree_with_owner() {
                 .iter()
                 .find(|node| &node.node_id == target_id)
                 .unwrap();
-            let quire_contract_model::CheckedTerm::Aggregate { members } = &target_node.body else {
+            let filament_contract_model::CheckedTerm::Aggregate { members } = &target_node.body
+            else {
                 panic!("carried target aggregate")
             };
-            let member_target = |name: &str| -> &quire_contract_model::CheckedNodeId {
+            let member_target = |name: &str| -> &filament_contract_model::CheckedNodeId {
                 members
                     .iter()
                     .find_map(|member| match member {
-                        quire_contract_model::CheckedTerm::Binding {
+                        filament_contract_model::CheckedTerm::Binding {
                             name: actual,
                             value,
                         } if actual.as_ref() == name => match value.as_ref() {
-                            quire_contract_model::CheckedTerm::Reference { target } => Some(target),
+                            filament_contract_model::CheckedTerm::Reference { target } => {
+                                Some(target)
+                            }
                             _ => None,
                         },
                         _ => None,

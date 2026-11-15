@@ -4,11 +4,11 @@ use filament_contract_codegen::{
     generate_v2_numeric_strategy, Population, V2NumericBundle, V2NumericErrorCode, V2NumericPolicy,
     V2NumericRequest, V2SelectedClaimKey,
 };
-use ix_trace_rs::trace;
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedNodeId, CheckedOccurrence, CheckedOccurrenceRole, CheckedPackageV2, ExecutionPoint,
     ExecutionPointName,
 };
+use ix_trace_rs::trace;
 
 use super::kani_obligations_state_frame::native_twin::Twin;
 

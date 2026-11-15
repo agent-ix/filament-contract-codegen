@@ -62,7 +62,7 @@ evidence. The locked IR revision admits `structural.ne`. Falsified same-artifact
 native execution, playback reconstruction, generated-family and proof-strength controls remain
 planned. FSL's public composite witness, parity and verified-shadow interfaces are delivered.
 The literal constructor controls use admitted one-field `Integer` records. A FSL-emitted
-`Int[0, 9]` record literal inserts a `quire.op.numeric.narrow` conversion child (IR-691), and
+`Int[0, 9]` record literal inserts a `filament.op.numeric.narrow` conversion child (IR-691), and
 `sequence[]` inserts an expression-constructor descendant. IR-651 refuses expression-bearing
 literal graphs as `NonliteralGraphValue`; bounded-field and collection-constructor literals remain
 gated and are not counted as positive coverage.

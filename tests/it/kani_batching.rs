@@ -21,8 +21,8 @@ use filament_contract_codegen::{
     KaniRunOutcome, KaniSolver, ModuleSymbol, StateFrameHarness, StateFrameIdentity,
     StateFrameProperty, StateFrameScope,
 };
+use filament_contract_model::CheckedNodeId;
 use ix_trace_rs::trace;
-use quire_contract_model::CheckedNodeId;
 use serde_json::json;
 
 /// Budget for a real run: a ceiling against a genuine hang, not a performance target.
@@ -122,7 +122,7 @@ struct Lane {
     crate_directory: PathBuf,
     installation: KaniInstallation,
     counts: PathBuf,
-    cancel: quire_exact::Cancel,
+    cancel: filament_exact::Cancel,
 }
 
 impl Lane {
@@ -163,7 +163,7 @@ impl Lane {
             _scratch: scratch,
             installation: KaniInstallation::new(launcher),
             counts,
-            cancel: quire_exact::Cancel::new(),
+            cancel: filament_exact::Cancel::new(),
         }
     }
 

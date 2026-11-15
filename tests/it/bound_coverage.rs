@@ -4,8 +4,8 @@ use filament_contract_codegen::{
     analyze_bound_coverage, generate_bound_oracles, ArtifactBytes, BoundCoverageInputs,
     BoundOracleGeneration,
 };
+use filament_contract_model::{BoundPackage, EXECUTABLE_PROJECTION_FORMAT};
 use ix_trace_rs::trace;
-use quire_contract_model::{BoundPackage, EXECUTABLE_PROJECTION_FORMAT};
 use serde_json::{json, Value};
 
 fn span() -> Value {

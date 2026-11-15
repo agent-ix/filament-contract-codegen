@@ -3,7 +3,7 @@
 
 //! Direct integer comparison admission from Contract IR's clause-context accessor (FR-008).
 
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedClauseComparison, CheckedComparisonError, CheckedComparisonOperandKind,
     CheckedComparisonOperator, CheckedComparisonPath, CheckedComparisonRead, CheckedNodeId,
     CheckedOccurrence, CheckedPackageV2,
@@ -111,10 +111,10 @@ fn operand_value(
                 V2ComparisonRefusal::OutsideI64,
                 path,
                 match &operand.identity {
-                    quire_contract_model::CheckedComparisonOperandIdentity::GraphChild(id) => {
+                    filament_contract_model::CheckedComparisonOperandIdentity::GraphChild(id) => {
                         Some(id.clone())
                     }
-                    quire_contract_model::CheckedComparisonOperandIdentity::InlineLiteral {
+                    filament_contract_model::CheckedComparisonOperandIdentity::InlineLiteral {
                         ..
                     } => None,
                 },

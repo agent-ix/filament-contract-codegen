@@ -21,7 +21,7 @@ Record behind FR-032-AC-3, AC-4, AC-5, AC-7 and AC-8 (TC-047, real-Kani half). T
 5. The observer is the cfg(test) CG helper, not the driver. It observes the same staged bytes natively: `observe_staged_native_for_test` stages the plan's
    package, builds the observer and runs the staged oracle once at the decoded vector, with no proof. The
    observation (`x - 1`, differing from exact `x + 1`) completes the plan.
-6. The genuine `qsl_replay::replay_operator_parity` returns `Diverged`; `CompletedScalarReplay::settlement` gives
+6. The genuine `fsl_replay::replay_operator_parity` returns `Diverged`; `CompletedScalarReplay::settlement` gives
    `ScalarSettlement::Parity(Diverged)`; `scalar_run_terminal_value` over the real falsified evidence gives
    `TerminalValue::Failed`.
 

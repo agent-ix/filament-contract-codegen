@@ -18,7 +18,7 @@ selection must preserve its admitted `[0,1000]` parameter domain and all
 intermediate predicates, with the genuine harness's existing solver and unwind.
 That route is a separate integration slice from the three scalar proofs.
 
-The published `quire-exact` API is `NativeInteger`, `NativeIntegerInterval`,
+The published `filament-exact` API is `NativeInteger`, `NativeIntegerInterval`,
 `NativeIntegerOperation::{Add,Subtract,Multiply,Negate}`,
 `NativeIntegerPlan::new`, `plan.admit`, and
 `evaluate_native_integer_arithmetic`. `NativeIntegerPlan` derives the complete

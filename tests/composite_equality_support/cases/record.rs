@@ -147,7 +147,7 @@ fn tc_029_ac8_check_type_guards_the_oracle() {
         )
         .unwrap(),
     ] {
-        let quire_semantic_value::declaration::TypeCheckError::Refused(expected) = empty
+        let filament_semantic_value::declaration::TypeCheckError::Refused(expected) = empty
             .try_check_type(&rt_side::composite_type(R_POINT))
             .expect_err("the actual Point key is absent") else { panic!("semantic missing-key refusal"); };
         let expected = expected.cause;
@@ -156,7 +156,7 @@ fn tc_029_ac8_check_type_guards_the_oracle() {
         assert_eq!(
             outcome,
             rt::Outcome::Refused(rt::Refusal::CheckedInvariant {
-                cause: quire_exact::CheckedInvariantCause::GeneratedTypeCheckRejected {
+                cause: filament_exact::CheckedInvariantCause::GeneratedTypeCheckRejected {
                     cause: expected
                 },
             })
@@ -242,7 +242,7 @@ fn mismatched_real_prepared_bindings_use_descriptor_cause_before_charging() {
     assert_eq!(
         generated::oracle_e_record_equal(&prepared, &left, &left, &mut meter),
         rt::Outcome::Refused(rt::Refusal::CheckedInvariant {
-            cause: quire_exact::CheckedInvariantCause::GeneratedDescriptorReconstructionFailed
+            cause: filament_exact::CheckedInvariantCause::GeneratedDescriptorReconstructionFailed
         })
     );
     assert!(meter.admitted_charges().is_empty());
@@ -266,7 +266,7 @@ fn actual_equality_check_rejection_preserves_its_original_typed_payload() {
     assert_eq!(
         generated::record_with_boolean_comparison(&left, &rt::Value::Boolean(true), &mut meter),
         rt::Outcome::Refused(rt::Refusal::CheckedInvariant {
-            cause: quire_exact::CheckedInvariantCause::GeneratedEqualityCheckRejected {
+            cause: filament_exact::CheckedInvariantCause::GeneratedEqualityCheckRejected {
                 cause: expected
             }
         })

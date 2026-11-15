@@ -89,17 +89,17 @@ use crate::core::profile::equality_oracle_crate_manifest;
 use crate::oracle::checked_graph::{CheckedGraph as Graph, GraphBody};
 use crate::oracle::claim::{ClaimDisposition, ClaimMap, OracleGenerationError, UpstreamBlocker};
 use crate::oracle::direct_unsupported_form;
-use quire_contract_model::{
+use filament_contract_model::{
     encode_checked_package_v2, ApplicationOperator, CheckedNodeId, CheckedNodeTag,
     CheckedPackageSidecarsRef, CheckedPackageSourceCorrespondenceRef, CheckedPackageV2,
     CheckedSemanticNodeV2, CheckedSourceMapEntry, CheckedTerm, ContractFeatureRecordV1,
     ContractPackageV1, ContractSourceV1,
 };
-use quire_exact::{
+use filament_exact::{
     self as exact, CardinalityBound, CollectionKind, CollectionType, DecimalType, IllTypedCause,
     IntegerInterval, NodeKey, Presence, RoundingMode, TextProfile, ValueType,
 };
-use quire_semantic_value::declaration::{
+use filament_semantic_value::declaration::{
     self as sv, CompositeDeclaration, CompositeShape, EqualityOperand, EqualitySchedule,
     FieldDeclaration, TypeEnvironment,
 };
@@ -142,7 +142,7 @@ impl Default for CompositeEqualityLimits {
 pub const COMPOSITE_EQUALITY_CRATE_NAME: &str = "filament-composite-equality-oracles";
 
 /// The grammar's equality operators, mirroring
-/// `quire_contract_runtime::exact::EqualityOperator`. Declaration order is
+/// `filament_contract_runtime::exact::EqualityOperator`. Declaration order is
 /// its rank: `Equal` before `NotEqual`, per the descriptor key.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -240,7 +240,7 @@ pub struct CompositeOperationClaim {
     pub provenance: CompositeOperationProvenance,
 }
 
-/// A serializable mirror of `quire_exact::IllTypedCause`.
+/// A serializable mirror of `filament_exact::IllTypedCause`.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum IllTypedCauseKind {
@@ -297,7 +297,7 @@ impl TryFrom<IllTypedCause> for IllTypedCauseKind {
     }
 }
 
-/// A serializable mirror of `quire_contract_runtime::exact::RecursionEdges`.
+/// A serializable mirror of `filament_contract_runtime::exact::RecursionEdges`.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum RecursionEdgesKind {
@@ -318,7 +318,7 @@ impl TryFrom<sv::RecursionEdges> for RecursionEdgesKind {
     }
 }
 
-/// A serializable mirror of `quire_semantic_value::declaration::DeclarationCause`.
+/// A serializable mirror of `filament_semantic_value::declaration::DeclarationCause`.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum DeclarationRefusalCause {
@@ -789,6 +789,7 @@ pub(crate) fn encode_original_package(
             temporal_clause_names: original.temporal_clause_names(),
             schedulability_claims: original.schedulability_claim_rows(),
             operation_effects: original.operation_effect_rows(),
+            operation_bodies: original.operation_body_rows(),
         },
         original.capability_report(),
         original.diagnostics(),
@@ -814,7 +815,7 @@ pub(crate) fn encode_original_package(
 pub fn generate_composite_equality_oracles(
     package: &ContractPackageV1,
     original: Option<&CheckedPackageV2>,
-    admitted: Option<&qsl_replay::AdmittedContext>,
+    admitted: Option<&fsl_replay::AdmittedContext>,
     requested: &[ContractRequestPosition],
     positions: &[usize],
     items: &[CompositeEqualityItem],
@@ -862,7 +863,7 @@ pub fn generate_composite_equality_oracles(
         ));
     }
     let graph = Graph::new(package);
-    let source_frame = qsl_replay::WireGraph::new(
+    let source_frame = fsl_replay::WireGraph::new(
         source
             .resolved_graph()
             .nodes
@@ -910,7 +911,7 @@ pub fn generate_composite_equality_oracles(
 
     let mut bounds_by_type: BTreeMap<
         &CheckedNodeId,
-        Vec<&CheckedSemanticNodeV2<quire_contract_model::CheckedJson>>,
+        Vec<&CheckedSemanticNodeV2<filament_contract_model::CheckedJson>>,
     > = BTreeMap::new();
     for node in package.wire().semantic_graph.nodes.iter() {
         if CheckedNodeTag::from_wire(&node.node_tag) == Some(CheckedNodeTag::BoundedDomain) {
@@ -1340,7 +1341,7 @@ impl From<OracleGenerationError> for ItemCheckError {
 }
 
 fn check_item<Body: GraphBody>(
-    admitted: Option<&qsl_replay::AdmittedContext>,
+    admitted: Option<&fsl_replay::AdmittedContext>,
     graph: &Graph<'_, Body>,
     bounds_by_type: &BTreeMap<&CheckedNodeId, Vec<&CheckedSemanticNodeV2<Body>>>,
     node: &CheckedSemanticNodeV2<Body>,
@@ -1457,7 +1458,7 @@ fn check_item<Body: GraphBody>(
 }
 
 fn admit_environment(
-    admitted: Option<&qsl_replay::AdmittedContext>,
+    admitted: Option<&fsl_replay::AdmittedContext>,
     composites: Vec<CompositeDeclaration>,
     bindings: &BTreeMap<NodeKey, admitted::CompositeBinding>,
 ) -> Result<TypeEnvironment, ItemCheckError> {
@@ -1613,7 +1614,7 @@ struct TypeClosure {
     in_progress: BTreeSet<NodeKey>,
     work_consumed: u64,
     work_limit: u64,
-    enum_members: quire_semantic_value::enumeration::EnumMemberIndex,
+    enum_members: filament_semantic_value::enumeration::EnumMemberIndex,
     enums: Vec<admitted::EnumBinding>,
     composite_bindings: BTreeMap<NodeKey, admitted::CompositeBinding>,
     node_keys: std::sync::Arc<BTreeMap<CheckedNodeId, NodeKey>>,
@@ -1685,7 +1686,7 @@ fn is_option_node<Body>(node: &CheckedSemanticNodeV2<Body>) -> bool {
 /// Resolve `type_id` to a `ValueType`, registering every reachable
 /// nominal composite declaration into `closure`.
 fn resolve_type<Body: GraphBody>(
-    admitted: Option<&qsl_replay::AdmittedContext>,
+    admitted: Option<&fsl_replay::AdmittedContext>,
     graph: &Graph<'_, Body>,
     bounds_by_type: &BTreeMap<&CheckedNodeId, Vec<&CheckedSemanticNodeV2<Body>>>,
     closure: &mut TypeClosure,
@@ -1701,7 +1702,7 @@ fn resolve_type<Body: GraphBody>(
 /// nodes that bound it for this reference (every one over the scalar, or the one the member
 /// names); `type_id` is the member's type node, for refusals.
 fn resolve_scalar<Body: GraphBody>(
-    admitted: Option<&qsl_replay::AdmittedContext>,
+    admitted: Option<&fsl_replay::AdmittedContext>,
     graph: &Graph<'_, Body>,
     closure: &mut TypeClosure,
     bounds: &[&CheckedSemanticNodeV2<Body>],
@@ -1813,7 +1814,7 @@ fn resolve_scalar<Body: GraphBody>(
 // Rendering
 // ---------------------------------------------------------------------------
 
-const SOURCE_HEADER: &str = "// @generated by filament-contract-codegen composite equality oracles. Do not edit.\n// The prepared capability retains genuine owner context and an admitted private enum index.\n// The oracle remains the implementation under test: it calls FSV checking/evaluation directly.\nuse quire_semantic_value::declaration as sv;\nuse quire_exact as exact;\n\n/// A generated numeric, text, cardinality or enum descriptor failed reconstruction.\n#[derive(Clone, Copy, Debug, Eq, PartialEq)]\npub enum ReconstructionError {\n    /// Canonical integer spelling failed to parse.\n    Integer,\n    /// Interval endpoints are invalid.\n    Interval,\n    /// Rational bounds are invalid.\n    Rational,\n    /// Decimal bounds are invalid.\n    Decimal,\n    /// Text bounds are invalid.\n    Text,\n    /// Cardinality endpoints are invalid.\n    Cardinality,\n    /// Genuine enum keys could not reconstruct the declared enum.\n    Enum,\n    /// Genuine composite metadata disagrees with its retained lookup recipe.\n    Composite,\n}\n\n/// A constructor failed without publishing a partial prepared capability.\n#[derive(Clone, Debug, Eq, PartialEq)]\npub enum EnvironmentError {\n    /// Reached nominal declaration requires its genuine owner capability.\n    MissingAdmittedContext {\n        /// Structural declaration identity awaiting lookup.\n        declaration: quire_contract_model::CheckedNodeId,\n    },\n    /// The immutable context does not name the original checked package.\n    ContextPackageMismatch {\n        /// Expected original package name.\n        expected_name: &'static str,\n        /// Actual context package name.\n        actual_name: String,\n    },\n    /// The admitted context differs from the complete original checked package.\n    ContextPackageContentMismatch,\n    /// Genuine lookup retained the owner's Unknown/Foreign/WrongKind distinction.\n    Lookup(qsl_replay::AdmittedLookupRefusal),\n    /// Semantic refusal and resource failure remain owner-typed and distinct.\n    Declaration(sv::EnvironmentFailure),\n    /// Native owner comparison-type traversal failure, retained without projection.\n    TypeCheck(sv::TypeCheckError),\n    /// A non-lookup descriptor reconstruction failed.\n    Reconstruction(ReconstructionError),\n}\n\nimpl From<ReconstructionError> for EnvironmentError {\n    fn from(cause: ReconstructionError) -> Self { Self::Reconstruction(cause) }\n}\n\n/// An opaque item-bound environment prepared from a genuine admitted context.\npub struct PreparedEqualityEnvironment<'ctx> {\n    context: Option<&'ctx qsl_replay::AdmittedContext>,\n    expected_name: &'static str,\n    binding: &'static str,\n    requires_context: bool,\n    environment: sv::TypeEnvironment,\n    enum_members: quire_semantic_value::enumeration::EnumMemberIndex,\n    left_source: exact::ValueType,\n    left_target: Option<exact::ValueType>,\n    right_source: exact::ValueType,\n    right_target: Option<exact::ValueType>,\n    type_refusal: Option<exact::IllTyped>,\n}\n\nfn comparison_type_refusal(\n    environment: &sv::TypeEnvironment, left: &exact::ValueType, right: &exact::ValueType,\n) -> Result<Option<exact::IllTyped>, EnvironmentError> {\n    for comparison in [left, right] {\n        match environment.try_check_type(comparison) {\n            Ok(()) => {},\n            Err(sv::TypeCheckError::Refused(refusal)) => return Ok(Some(refusal)),\n            Err(error @ (sv::TypeCheckError::Allocation(_) | sv::TypeCheckError::Capacity(_))) => {\n                return Err(EnvironmentError::TypeCheck(error));\n            },\n        }\n    }\n    Ok(None)\n}\n";
+const SOURCE_HEADER: &str = "// @generated by filament-contract-codegen composite equality oracles. Do not edit.\n// The prepared capability retains genuine owner context and an admitted private enum index.\n// The oracle remains the implementation under test: it calls FSV checking/evaluation directly.\nuse filament_semantic_value::declaration as sv;\nuse filament_exact as exact;\n\n/// A generated numeric, text, cardinality or enum descriptor failed reconstruction.\n#[derive(Clone, Copy, Debug, Eq, PartialEq)]\npub enum ReconstructionError {\n    /// Canonical integer spelling failed to parse.\n    Integer,\n    /// Interval endpoints are invalid.\n    Interval,\n    /// Rational bounds are invalid.\n    Rational,\n    /// Decimal bounds are invalid.\n    Decimal,\n    /// Text bounds are invalid.\n    Text,\n    /// Cardinality endpoints are invalid.\n    Cardinality,\n    /// Genuine enum keys could not reconstruct the declared enum.\n    Enum,\n    /// Genuine composite metadata disagrees with its retained lookup recipe.\n    Composite,\n}\n\n/// A constructor failed without publishing a partial prepared capability.\n#[derive(Clone, Debug, Eq, PartialEq)]\npub enum EnvironmentError {\n    /// Reached nominal declaration requires its genuine owner capability.\n    MissingAdmittedContext {\n        /// Structural declaration identity awaiting lookup.\n        declaration: filament_contract_model::CheckedNodeId,\n    },\n    /// The immutable context does not name the original checked package.\n    ContextPackageMismatch {\n        /// Expected original package name.\n        expected_name: &'static str,\n        /// Actual context package name.\n        actual_name: String,\n    },\n    /// The admitted context differs from the complete original checked package.\n    ContextPackageContentMismatch,\n    /// Genuine lookup retained the owner's Unknown/Foreign/WrongKind distinction.\n    Lookup(fsl_replay::AdmittedLookupRefusal),\n    /// Semantic refusal and resource failure remain owner-typed and distinct.\n    Declaration(sv::EnvironmentFailure),\n    /// Native owner comparison-type traversal failure, retained without projection.\n    TypeCheck(sv::TypeCheckError),\n    /// A non-lookup descriptor reconstruction failed.\n    Reconstruction(ReconstructionError),\n}\n\nimpl From<ReconstructionError> for EnvironmentError {\n    fn from(cause: ReconstructionError) -> Self { Self::Reconstruction(cause) }\n}\n\n/// An opaque item-bound environment prepared from a genuine admitted context.\npub struct PreparedEqualityEnvironment<'ctx> {\n    context: Option<&'ctx fsl_replay::AdmittedContext>,\n    expected_name: &'static str,\n    binding: &'static str,\n    requires_context: bool,\n    environment: sv::TypeEnvironment,\n    enum_members: filament_semantic_value::enumeration::EnumMemberIndex,\n    left_source: exact::ValueType,\n    left_target: Option<exact::ValueType>,\n    right_source: exact::ValueType,\n    right_target: Option<exact::ValueType>,\n    type_refusal: Option<exact::IllTyped>,\n}\n\nfn comparison_type_refusal(\n    environment: &sv::TypeEnvironment, left: &exact::ValueType, right: &exact::ValueType,\n) -> Result<Option<exact::IllTyped>, EnvironmentError> {\n    for comparison in [left, right] {\n        match environment.try_check_type(comparison) {\n            Ok(()) => {},\n            Err(sv::TypeCheckError::Refused(refusal)) => return Ok(Some(refusal)),\n            Err(error @ (sv::TypeCheckError::Allocation(_) | sv::TypeCheckError::Capacity(_))) => {\n                return Err(EnvironmentError::TypeCheck(error));\n            },\n        }\n    }\n    Ok(None)\n}\n";
 
 /// One emitted reconstruction helper: its name, its source, and the names of the helpers its
 /// source calls. A helper is emitted only when the rendered functions call it, or when an
@@ -1827,11 +1828,11 @@ struct ReconstructionHelper {
 
 /// The reconstruction helpers, callees before callers.
 const RECONSTRUCTION_HELPERS: &[ReconstructionHelper] = &[
-    ReconstructionHelper { name: "lookup_composite_key", source: "\nfn lookup_composite_key(\n    context: Option<&qsl_replay::AdmittedContext>,\n    key: quire_contract_model::CheckedNodeId, qualified: &[&str], form: qsl_replay::AdmittedCompositeForm,\n) -> Result<exact::NodeKey, EnvironmentError> {\n    let context = context.ok_or(EnvironmentError::MissingAdmittedContext { declaration: key.clone() })?;\n    let admitted = context.composite_declaration(&context.wire_graph().key(&key).map_err(|_| ReconstructionError::Composite)?).map_err(EnvironmentError::Lookup)?;\n    if admitted.form() != form || !admitted.qualified_name().iter()\n        .map(|part| part.as_str()).eq(qualified.iter().copied())\n    { return Err(ReconstructionError::Composite.into()); }\n    Ok(admitted.key().clone())\n}\n", calls: &[] },
-    ReconstructionHelper { name: "rebuild_union", source: "\nfn rebuild_union(\n    context: Option<&qsl_replay::AdmittedContext>, key: quire_contract_model::CheckedNodeId, qualified: &[&str],\n    payloads: Vec<Vec<exact::ValueType>>,\n) -> Result<sv::CompositeShape, EnvironmentError> {\n    let actual = lookup_composite_key(context, key.clone(), qualified, qsl_replay::AdmittedCompositeForm::Union)?;\n    let context = context.ok_or(EnvironmentError::MissingAdmittedContext { declaration: key.clone() })?;\n    let declaration = context.composite_declaration(&context.wire_graph().key(&key).map_err(|_| ReconstructionError::Composite)?).map_err(EnvironmentError::Lookup)?;\n    if declaration.key() != &actual { return Err(ReconstructionError::Composite.into()); }\n    let members = declaration.union_members().ok_or(ReconstructionError::Composite)?;\n    if members.len() != payloads.len() { return Err(ReconstructionError::Composite.into()); }\n    let mut rebuilt = Vec::with_capacity(members.len());\n    for (member, payload) in members.iter().zip(payloads) {\n        if member.payload() != payload { return Err(ReconstructionError::Composite.into()); }\n        rebuilt.push(sv::UnionMemberDeclaration::resolved(exact::Identifier::new(member.identifier()).map_err(|_| ReconstructionError::Composite)?, payload));\n    }\n    Ok(sv::CompositeShape::Union(rebuilt))\n}\n", calls: &["lookup_composite_key"] },
-    ReconstructionHelper { name: "seal_union", source: "\nfn seal_union(\n    context: Option<&qsl_replay::AdmittedContext>, environment: &mut sv::TypeEnvironment,\n    key: exact::NodeKey, declaration_key: quire_contract_model::CheckedNodeId,\n) -> Result<(), EnvironmentError> {\n    let context = context.ok_or(EnvironmentError::MissingAdmittedContext { declaration: declaration_key.clone() })?;\n    let declaration = context.composite_declaration(&context.wire_graph().key(&declaration_key).map_err(|_| ReconstructionError::Composite)?).map_err(EnvironmentError::Lookup)?;\n    if declaration.key() != &key { return Err(ReconstructionError::Composite.into()); }\n    let members = declaration.union_members().ok_or(ReconstructionError::Composite)?;\n    environment.seal_union_verified(key, declaration.node().clone(), members.iter().map(|member| member.member().clone()).collect())\n        .map_err(EnvironmentError::Declaration)\n}\n", calls: &[] },
-    ReconstructionHelper { name: "lookup_enum_case", source: "\nfn lookup_enum_case<'ctx>(\n    context: Option<&'ctx qsl_replay::AdmittedContext>,\n    declaration: &quire_contract_model::CheckedNodeId, case: &exact::Identifier,\n) -> Result<&'ctx qsl_replay::AdmittedEnumCase, EnvironmentError> {\n    let context = context.ok_or(EnvironmentError::MissingAdmittedContext { declaration: declaration.clone() })?;\n    context.enum_case(&context.wire_graph().key(declaration).map_err(|_| ReconstructionError::Enum)?, case).map_err(EnvironmentError::Lookup)\n}\n", calls: &[] },
-    ReconstructionHelper { name: "rebuild_enum", source: "\nfn rebuild_enum(\n    context: Option<&qsl_replay::AdmittedContext>,\n    enum_members: &mut quire_semantic_value::enumeration::EnumMemberIndex,\n    key: quire_contract_model::CheckedNodeId, qualified: &[&str], ordered: bool,\n) -> Result<exact::ValueType, EnvironmentError> {\n    let context = context.ok_or(EnvironmentError::MissingAdmittedContext { declaration: key.clone() })?;\n    let admitted = context.enum_declaration(&context.wire_graph().key(&key).map_err(|_| ReconstructionError::Enum)?).map_err(EnvironmentError::Lookup)?;\n    if admitted.is_ordered() != ordered\n        || !admitted.qualified_name().iter().map(|part| part.as_str()).eq(qualified.iter().copied())\n    { return Err(ReconstructionError::Enum.into()); }\n    let declaration = quire_semantic_value::enumeration::EnumDeclaration::new(\n        admitted.key().clone(), admitted.is_ordered(),\n        admitted.cases().iter().map(|case| case.case().as_str().to_owned()).collect(),\n    ).map_err(|_| ReconstructionError::Enum)?;\n    let mut variants = Vec::with_capacity(admitted.cases().len());\n    for case in admitted.cases() {\n        let selected = lookup_enum_case(Some(context), &key, case.case())?;\n        let value = declaration.member(selected.case().as_str(), selected.key().clone())\n            .map_err(|_| ReconstructionError::Enum)?;\n        variants.push(value.variant());\n        enum_members.record(value);\n    }\n    Ok(exact::ValueType::Enum(exact::EnumShape::new(ordered, variants)))\n}\n", calls: &["lookup_enum_case"] },
+    ReconstructionHelper { name: "lookup_composite_key", source: "\nfn lookup_composite_key(\n    context: Option<&fsl_replay::AdmittedContext>,\n    key: filament_contract_model::CheckedNodeId, qualified: &[&str], form: fsl_replay::AdmittedCompositeForm,\n) -> Result<exact::NodeKey, EnvironmentError> {\n    let context = context.ok_or(EnvironmentError::MissingAdmittedContext { declaration: key.clone() })?;\n    let admitted = context.composite_declaration(&context.wire_graph().key(&key).map_err(|_| ReconstructionError::Composite)?).map_err(EnvironmentError::Lookup)?;\n    if admitted.form() != form || !admitted.qualified_name().iter()\n        .map(|part| part.as_str()).eq(qualified.iter().copied())\n    { return Err(ReconstructionError::Composite.into()); }\n    Ok(admitted.key().clone())\n}\n", calls: &[] },
+    ReconstructionHelper { name: "rebuild_union", source: "\nfn rebuild_union(\n    context: Option<&fsl_replay::AdmittedContext>, key: filament_contract_model::CheckedNodeId, qualified: &[&str],\n    payloads: Vec<Vec<exact::ValueType>>,\n) -> Result<sv::CompositeShape, EnvironmentError> {\n    let actual = lookup_composite_key(context, key.clone(), qualified, fsl_replay::AdmittedCompositeForm::Union)?;\n    let context = context.ok_or(EnvironmentError::MissingAdmittedContext { declaration: key.clone() })?;\n    let declaration = context.composite_declaration(&context.wire_graph().key(&key).map_err(|_| ReconstructionError::Composite)?).map_err(EnvironmentError::Lookup)?;\n    if declaration.key() != &actual { return Err(ReconstructionError::Composite.into()); }\n    let members = declaration.union_members().ok_or(ReconstructionError::Composite)?;\n    if members.len() != payloads.len() { return Err(ReconstructionError::Composite.into()); }\n    let mut rebuilt = Vec::with_capacity(members.len());\n    for (member, payload) in members.iter().zip(payloads) {\n        if member.payload() != payload { return Err(ReconstructionError::Composite.into()); }\n        rebuilt.push(sv::UnionMemberDeclaration::resolved(exact::Identifier::new(member.identifier()).map_err(|_| ReconstructionError::Composite)?, payload));\n    }\n    Ok(sv::CompositeShape::Union(rebuilt))\n}\n", calls: &["lookup_composite_key"] },
+    ReconstructionHelper { name: "seal_union", source: "\nfn seal_union(\n    context: Option<&fsl_replay::AdmittedContext>, environment: &mut sv::TypeEnvironment,\n    key: exact::NodeKey, declaration_key: filament_contract_model::CheckedNodeId,\n) -> Result<(), EnvironmentError> {\n    let context = context.ok_or(EnvironmentError::MissingAdmittedContext { declaration: declaration_key.clone() })?;\n    let declaration = context.composite_declaration(&context.wire_graph().key(&declaration_key).map_err(|_| ReconstructionError::Composite)?).map_err(EnvironmentError::Lookup)?;\n    if declaration.key() != &key { return Err(ReconstructionError::Composite.into()); }\n    let members = declaration.union_members().ok_or(ReconstructionError::Composite)?;\n    environment.seal_union_verified(key, declaration.node().clone(), members.iter().map(|member| member.member().clone()).collect())\n        .map_err(EnvironmentError::Declaration)\n}\n", calls: &[] },
+    ReconstructionHelper { name: "lookup_enum_case", source: "\nfn lookup_enum_case<'ctx>(\n    context: Option<&'ctx fsl_replay::AdmittedContext>,\n    declaration: &filament_contract_model::CheckedNodeId, case: &exact::Identifier,\n) -> Result<&'ctx fsl_replay::AdmittedEnumCase, EnvironmentError> {\n    let context = context.ok_or(EnvironmentError::MissingAdmittedContext { declaration: declaration.clone() })?;\n    context.enum_case(&context.wire_graph().key(declaration).map_err(|_| ReconstructionError::Enum)?, case).map_err(EnvironmentError::Lookup)\n}\n", calls: &[] },
+    ReconstructionHelper { name: "rebuild_enum", source: "\nfn rebuild_enum(\n    context: Option<&fsl_replay::AdmittedContext>,\n    enum_members: &mut filament_semantic_value::enumeration::EnumMemberIndex,\n    key: filament_contract_model::CheckedNodeId, qualified: &[&str], ordered: bool,\n) -> Result<exact::ValueType, EnvironmentError> {\n    let context = context.ok_or(EnvironmentError::MissingAdmittedContext { declaration: key.clone() })?;\n    let admitted = context.enum_declaration(&context.wire_graph().key(&key).map_err(|_| ReconstructionError::Enum)?).map_err(EnvironmentError::Lookup)?;\n    if admitted.is_ordered() != ordered\n        || !admitted.qualified_name().iter().map(|part| part.as_str()).eq(qualified.iter().copied())\n    { return Err(ReconstructionError::Enum.into()); }\n    let declaration = filament_semantic_value::enumeration::EnumDeclaration::new(\n        admitted.key().clone(), admitted.is_ordered(),\n        admitted.cases().iter().map(|case| case.case().as_str().to_owned()).collect(),\n    ).map_err(|_| ReconstructionError::Enum)?;\n    let mut variants = Vec::with_capacity(admitted.cases().len());\n    for case in admitted.cases() {\n        let selected = lookup_enum_case(Some(context), &key, case.case())?;\n        let value = declaration.member(selected.case().as_str(), selected.key().clone())\n            .map_err(|_| ReconstructionError::Enum)?;\n        variants.push(value.variant());\n        enum_members.record(value);\n    }\n    Ok(exact::ValueType::Enum(exact::EnumShape::new(ordered, variants)))\n}\n", calls: &["lookup_enum_case"] },
     ReconstructionHelper {
         name: "rebuild_integer",
         source: "\n\
@@ -2004,7 +2005,7 @@ fn render_item(generated: &CheckedItem) -> Result<RenderedItem, RenderError> {
     };
     let mut union_seals = String::new();
     for (key, binding) in &generated.composite_bindings {
-        if binding.form == qsl_replay::AdmittedCompositeForm::Union {
+        if binding.form == fsl_replay::AdmittedCompositeForm::Union {
             let handle = render_composite_key(key, &generated.composite_bindings)?;
             let declaration = render_checked_node_id(&binding.node)
                 .ok_or(OracleGenerationError::InvalidPlanState)?;
@@ -2189,7 +2190,7 @@ impl SourceBuilder {
         {
             if composites.is_empty() {
                 self.append_function(format!(
-                    "\nfn composites_{symbol}(_context: Option<&qsl_replay::AdmittedContext>, _enum_members: &mut quire_semantic_value::enumeration::EnumMemberIndex) -> Result<Vec<sv::CompositeDeclaration>, EnvironmentError> {{\n    Ok(Vec::new())\n}}\n"
+                    "\nfn composites_{symbol}(_context: Option<&fsl_replay::AdmittedContext>, _enum_members: &mut filament_semantic_value::enumeration::EnumMemberIndex) -> Result<Vec<sv::CompositeDeclaration>, EnvironmentError> {{\n    Ok(Vec::new())\n}}\n"
                 ))?;
             } else {
                 self.inline_composite_subjects
@@ -2199,7 +2200,7 @@ impl SourceBuilder {
                     .map(|(_, value)| format!("    declarations.push({value});\n"))
                     .collect::<String>();
                 self.append_function(format!(
-                    "\nfn composites_{symbol}(_context: Option<&qsl_replay::AdmittedContext>, _enum_members: &mut quire_semantic_value::enumeration::EnumMemberIndex) -> Result<Vec<sv::CompositeDeclaration>, EnvironmentError> {{\n    let mut declarations = Vec::with_capacity({});\n{declarations}    Ok(declarations)\n}}\n",
+                    "\nfn composites_{symbol}(_context: Option<&fsl_replay::AdmittedContext>, _enum_members: &mut filament_semantic_value::enumeration::EnumMemberIndex) -> Result<Vec<sv::CompositeDeclaration>, EnvironmentError> {{\n    let mut declarations = Vec::with_capacity({});\n{declarations}    Ok(declarations)\n}}\n",
                     composites.len()
                 ))?;
             }
@@ -2245,15 +2246,15 @@ impl SourceBuilder {
                 )?;
             }
             self.append_function(format!(
-                "\nfn composites_{symbol}(_context: Option<&qsl_replay::AdmittedContext>, _enum_members: &mut quire_semantic_value::enumeration::EnumMemberIndex) -> Result<Vec<sv::CompositeDeclaration>, EnvironmentError> {{\n    let mut declarations = Vec::new();\n    let chunks: &[fn(Option<&qsl_replay::AdmittedContext>, &mut quire_semantic_value::enumeration::EnumMemberIndex) -> Result<Vec<sv::CompositeDeclaration>, EnvironmentError>] = &[\n{chunk_functions}    ];\n    for chunk in chunks {{\n        declarations.extend(chunk(_context, _enum_members)?);\n    }}\n    Ok(declarations)\n}}\n"
+                "\nfn composites_{symbol}(_context: Option<&fsl_replay::AdmittedContext>, _enum_members: &mut filament_semantic_value::enumeration::EnumMemberIndex) -> Result<Vec<sv::CompositeDeclaration>, EnvironmentError> {{\n    let mut declarations = Vec::new();\n    let chunks: &[fn(Option<&fsl_replay::AdmittedContext>, &mut filament_semantic_value::enumeration::EnumMemberIndex) -> Result<Vec<sv::CompositeDeclaration>, EnvironmentError>] = &[\n{chunk_functions}    ];\n    for chunk in chunks {{\n        declarations.extend(chunk(_context, _enum_members)?);\n    }}\n    Ok(declarations)\n}}\n"
             ))?;
         }
 
         self.append_function(format!(
-            "\nfn left_source_{symbol}(_context: Option<&qsl_replay::AdmittedContext>, _enum_members: &mut quire_semantic_value::enumeration::EnumMemberIndex) -> Result<exact::ValueType, EnvironmentError> {{\n    Ok({left_source})\n}}\n\
-             fn left_target_{symbol}(_context: Option<&qsl_replay::AdmittedContext>, _enum_members: &mut quire_semantic_value::enumeration::EnumMemberIndex) -> Result<Option<exact::ValueType>, EnvironmentError> {{\n    Ok({left_target})\n}}\n\
-             fn right_source_{symbol}(_context: Option<&qsl_replay::AdmittedContext>, _enum_members: &mut quire_semantic_value::enumeration::EnumMemberIndex) -> Result<exact::ValueType, EnvironmentError> {{\n    Ok({right_source})\n}}\n\
-             fn right_target_{symbol}(_context: Option<&qsl_replay::AdmittedContext>, _enum_members: &mut quire_semantic_value::enumeration::EnumMemberIndex) -> Result<Option<exact::ValueType>, EnvironmentError> {{\n    Ok({right_target})\n}}\n"
+            "\nfn left_source_{symbol}(_context: Option<&fsl_replay::AdmittedContext>, _enum_members: &mut filament_semantic_value::enumeration::EnumMemberIndex) -> Result<exact::ValueType, EnvironmentError> {{\n    Ok({left_source})\n}}\n\
+             fn left_target_{symbol}(_context: Option<&fsl_replay::AdmittedContext>, _enum_members: &mut filament_semantic_value::enumeration::EnumMemberIndex) -> Result<Option<exact::ValueType>, EnvironmentError> {{\n    Ok({left_target})\n}}\n\
+             fn right_source_{symbol}(_context: Option<&fsl_replay::AdmittedContext>, _enum_members: &mut filament_semantic_value::enumeration::EnumMemberIndex) -> Result<exact::ValueType, EnvironmentError> {{\n    Ok({right_source})\n}}\n\
+             fn right_target_{symbol}(_context: Option<&fsl_replay::AdmittedContext>, _enum_members: &mut filament_semantic_value::enumeration::EnumMemberIndex) -> Result<Option<exact::ValueType>, EnvironmentError> {{\n    Ok({right_target})\n}}\n"
         ))?;
 
         let package = self
@@ -2262,7 +2263,7 @@ impl SourceBuilder {
             .ok_or(OracleGenerationError::InvalidPlanState)?;
         let package_name = package.as_ref();
         self.append_function(format!(
-"\n/// Prepare this item's descriptors and environment from the original package context.\npub fn environment_{symbol}<'ctx>(context: Option<&'ctx qsl_replay::AdmittedContext>) -> Result<PreparedEqualityEnvironment<'ctx>, EnvironmentError> {{\n    if let Some(context) = context {{\n    let actual = context.package_name();\n    if actual.as_str() != {package_name:?} {{\n        return Err(EnvironmentError::ContextPackageMismatch {{\n            expected_name: {package_name:?}, actual_name: actual.to_string(),\n        }});\n    }}\n    if EXPECTED_PACKAGE_BYTES != Some(context.package_bytes()) {{\n        return Err(EnvironmentError::ContextPackageContentMismatch);\n    }}\n    }}\n    let mut enum_members = quire_semantic_value::enumeration::EnumMemberIndex::default();\n    let composites = composites_{symbol}(context, &mut enum_members)?;\n    let environment = sv::TypeEnvironment::new(composites, core::iter::empty::<sv::ObjectTypeDeclaration>())\n        .map_err(EnvironmentError::Declaration)?;\n    let environment = match context {{\n        Some(context) => environment.with_units(context.unit_table().clone()),\n        None => environment,\n    }};\n{union_seals}    let left_source = left_source_{symbol}(context, &mut enum_members)?;\n    let left_target = left_target_{symbol}(context, &mut enum_members)?;\n    let right_source = right_source_{symbol}(context, &mut enum_members)?;\n    let right_target = right_target_{symbol}(context, &mut enum_members)?;\n    let left_comparison = match &left_target {{ Some(target) => target, None => &left_source }};\n    let right_comparison = match &right_target {{ Some(target) => target, None => &right_source }};\n    let type_refusal = comparison_type_refusal(&environment, left_comparison, right_comparison)?;\n    Ok(PreparedEqualityEnvironment {{\n        context, expected_name: {package_name:?},\n        binding: {symbol:?}, requires_context: {requires_context}, environment, enum_members,\n        left_source, left_target, right_source, right_target, type_refusal,\n    }})\n}}\n", package_name = package_name))?;
+"\n/// Prepare this item's descriptors and environment from the original package context.\npub fn environment_{symbol}<'ctx>(context: Option<&'ctx fsl_replay::AdmittedContext>) -> Result<PreparedEqualityEnvironment<'ctx>, EnvironmentError> {{\n    if let Some(context) = context {{\n    let actual = context.package_name();\n    if actual.as_str() != {package_name:?} {{\n        return Err(EnvironmentError::ContextPackageMismatch {{\n            expected_name: {package_name:?}, actual_name: actual.to_string(),\n        }});\n    }}\n    if EXPECTED_PACKAGE_BYTES != Some(context.package_bytes()) {{\n        return Err(EnvironmentError::ContextPackageContentMismatch);\n    }}\n    }}\n    let mut enum_members = filament_semantic_value::enumeration::EnumMemberIndex::default();\n    let composites = composites_{symbol}(context, &mut enum_members)?;\n    let environment = sv::TypeEnvironment::new(composites, core::iter::empty::<sv::ObjectTypeDeclaration>())\n        .map_err(EnvironmentError::Declaration)?;\n    let environment = match context {{\n        Some(context) => environment.with_units(context.unit_table().clone()),\n        None => environment,\n    }};\n{union_seals}    let left_source = left_source_{symbol}(context, &mut enum_members)?;\n    let left_target = left_target_{symbol}(context, &mut enum_members)?;\n    let right_source = right_source_{symbol}(context, &mut enum_members)?;\n    let right_target = right_target_{symbol}(context, &mut enum_members)?;\n    let left_comparison = match &left_target {{ Some(target) => target, None => &left_source }};\n    let right_comparison = match &right_target {{ Some(target) => target, None => &right_source }};\n    let type_refusal = comparison_type_refusal(&environment, left_comparison, right_comparison)?;\n    Ok(PreparedEqualityEnvironment {{\n        context, expected_name: {package_name:?},\n        binding: {symbol:?}, requires_context: {requires_context}, environment, enum_members,\n        left_source, left_target, right_source, right_target, type_refusal,\n    }})\n}}\n", package_name = package_name))?;
         self.append_function(format!(
 "\n/// Environment-checked oracle for `{operation}`.\npub fn oracle_{symbol}(\n    prepared: &PreparedEqualityEnvironment<'_>, left: &exact::Value,\n    right: &exact::Value, meter: &mut exact::Meter,\n) -> exact::Outcome<bool> {{\n    let context_mismatch = match prepared.context {{\n        Some(context) => {{ let actual = context.package_name();\n            actual.as_str() != {package_name:?}\n                || EXPECTED_PACKAGE_BYTES != Some(context.package_bytes()) }},\n        None => prepared.requires_context,\n    }};\n    if prepared.binding != {symbol:?} || prepared.expected_name != {package_name:?}\n        || prepared.requires_context != {requires_context} || context_mismatch\n    {{\n        return exact::Outcome::Refused(exact::Refusal::CheckedInvariant {{ cause: exact::CheckedInvariantCause::GeneratedDescriptorReconstructionFailed }});\n    }}\n    let environment = &prepared.environment;\n    if let Some(refusal) = &prepared.type_refusal {{\n        return exact::Outcome::Refused(exact::Refusal::CheckedInvariant {{ cause: exact::CheckedInvariantCause::GeneratedTypeCheckRejected {{ cause: refusal.cause }} }});\n    }}\n    let left_operand = match prepared.left_target.clone() {{\n        Some(target) => sv::EqualityOperand::converted(prepared.left_source.clone(), target),\n        None => sv::EqualityOperand::typed(prepared.left_source.clone()),\n    }};\n    let right_operand = match prepared.right_target.clone() {{\n        Some(target) => sv::EqualityOperand::converted(prepared.right_source.clone(), target),\n        None => sv::EqualityOperand::typed(prepared.right_source.clone()),\n    }};\n    let checked = match environment.check_equality({operator}, left_operand, right_operand, &prepared.enum_members) {{\n        Ok(checked) => checked,\n        Err(error) => return exact::Outcome::Refused(exact::Refusal::CheckedInvariant {{ cause: exact::CheckedInvariantCause::GeneratedEqualityCheckRejected {{ cause: error.cause }} }}),\n    }};\n    checked.evaluate(environment, left, right, meter)\n}}\n", operation = item.operator.identity(), operator = item.operator.path(), package_name = package_name))?;
         Ok(())
@@ -2281,7 +2282,7 @@ impl SourceBuilder {
         let module_declaration = format!("mod {name};\n");
         let module_source = crate::core::provenance::with_rust_header(
             format!(
-                "use super::*;\npub(super) fn declarations(_context: Option<&qsl_replay::AdmittedContext>, _enum_members: &mut quire_semantic_value::enumeration::EnumMemberIndex) -> Result<Vec<sv::CompositeDeclaration>, EnvironmentError> {{\n    let mut declarations = Vec::new();\n{declarations}    Ok(declarations)\n}}\n"
+                "use super::*;\npub(super) fn declarations(_context: Option<&fsl_replay::AdmittedContext>, _enum_members: &mut filament_semantic_value::enumeration::EnumMemberIndex) -> Result<Vec<sv::CompositeDeclaration>, EnvironmentError> {{\n    let mut declarations = Vec::new();\n{declarations}    Ok(declarations)\n}}\n"
             ),
             std::iter::once(subject).chain(composite_subjects.iter().map(String::as_str)),
         );
@@ -2609,9 +2610,9 @@ fn render_composite_key(
         .collect::<Vec<_>>()
         .join(", ");
     let form = match binding.form {
-        qsl_replay::AdmittedCompositeForm::Record => "qsl_replay::AdmittedCompositeForm::Record",
-        qsl_replay::AdmittedCompositeForm::Tuple => "qsl_replay::AdmittedCompositeForm::Tuple",
-        qsl_replay::AdmittedCompositeForm::Union => "qsl_replay::AdmittedCompositeForm::Union",
+        fsl_replay::AdmittedCompositeForm::Record => "fsl_replay::AdmittedCompositeForm::Record",
+        fsl_replay::AdmittedCompositeForm::Tuple => "fsl_replay::AdmittedCompositeForm::Tuple",
+        fsl_replay::AdmittedCompositeForm::Union => "fsl_replay::AdmittedCompositeForm::Union",
     };
     let node =
         render_checked_node_id(&binding.node).ok_or(OracleGenerationError::InvalidPlanState)?;
@@ -2659,10 +2660,10 @@ mod tests {
     use super::*;
     type Graph<'a> = crate::oracle::checked_graph::CheckedGraph<'a, CheckedTerm>;
     use crate::oracle::checked_graph::fixture::Node as FixtureNode;
-    use ix_trace_rs::trace;
-    use quire_contract_model::{
+    use filament_contract_model::{
         CheckedApplicationOperation, CheckedApplicationOperationFixture, LiteralKind,
     };
+    use ix_trace_rs::trace;
     use serde_json::json;
 
     #[trace("FR-018-AC-1")]
@@ -2793,19 +2794,19 @@ mod tests {
         recursive_shape_nodes()[position].node_id.clone()
     }
 
-    fn recursive_fixture() -> &'static (CheckedPackageV2, qsl_replay::AdmittedContext) {
-        static FIXTURE: std::sync::OnceLock<(CheckedPackageV2, qsl_replay::AdmittedContext)> =
+    fn recursive_fixture() -> &'static (CheckedPackageV2, fsl_replay::AdmittedContext) {
+        static FIXTURE: std::sync::OnceLock<(CheckedPackageV2, fsl_replay::AdmittedContext)> =
             std::sync::OnceLock::new();
         FIXTURE.get_or_init(fsl_recursive_admission)
     }
 
     /// Compile the recursive FSpec forms through FSL's public facade and read its package.
-    fn fsl_recursive_admission() -> (CheckedPackageV2, qsl_replay::AdmittedContext) {
-        use qsl_replay::{
-            compile_admitted, DependencyInput, ReplayLimits, SourceIdentity, StageLimits,
-        };
-        use quire_contract_model::{
+    fn fsl_recursive_admission() -> (CheckedPackageV2, fsl_replay::AdmittedContext) {
+        use filament_contract_model::{
             CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2ReadResult,
+        };
+        use fsl_replay::{
+            compile_admitted, DependencyInput, ReplayLimits, SourceIdentity, StageLimits,
         };
 
         let source = concat!(
@@ -2813,7 +2814,7 @@ mod tests {
             "\nfunction integer_same using v(a: Integer,b: Integer): Boolean pure { a = b }\n"
         );
         let compiled = compile_admitted(
-            qsl_replay::CompileUnit {
+            fsl_replay::CompileUnit {
                 source: SourceIdentity::new("a", "u"),
                 package_name: "recursive".to_owned(),
                 path: "recursive.native",
@@ -2826,7 +2827,7 @@ mod tests {
         )
         .expect("FSL compiles recursive records");
         let mut evidence = CheckedPackageEvidence::new();
-        evidence.support_feature("quire.value.complete/v1");
+        evidence.support_feature("filament.value.complete/v1");
         let read = CheckedPackageV2::read(
             compiled.package().bytes(),
             CheckedPackageReadLimits::bounded(),
@@ -2860,30 +2861,30 @@ mod tests {
         base_members: bool,
         mutation: Option<&str>,
     ) -> (String, CheckedNodeId) {
-        use quire_contract_model::{
+        use filament_contract_model::{
             CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2ReadResult,
         };
         let source = concat!(
-            "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\n",
+            "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\n",
             "enum Marker { UNUSED, ALSO_UNUSED }\nrecord Point { x: Boolean; }\n",
             "tuple Pair(Int[-100,100],Text[0,16;nfc],Decimal[-100,100;0,0;nearest-even],Rational[-10,10;1,1]);\n",
             "function f using v(a: Pair,b: Pair): Boolean pure { a = b }\n",
         );
-        let compiled = qsl_replay::compile_admitted(
-            qsl_replay::CompileUnit {
-                source: qsl_replay::SourceIdentity::new("test", "numeric-member.native"),
+        let compiled = fsl_replay::compile_admitted(
+            fsl_replay::CompileUnit {
+                source: fsl_replay::SourceIdentity::new("test", "numeric-member.native"),
                 package_name: "numeric-member".to_owned(),
                 path: "numeric-member.native",
                 bytes: source.as_bytes(),
             },
             [],
-            &qsl_replay::DependencyInput::default(),
-            qsl_replay::StageLimits::default(),
-            qsl_replay::ReplayLimits::default(),
+            &fsl_replay::DependencyInput::default(),
+            fsl_replay::StageLimits::default(),
+            fsl_replay::ReplayLimits::default(),
         )
         .expect("the unchanged original numeric member source compiles");
         let mut evidence = CheckedPackageEvidence::new();
-        evidence.support_feature("quire.value.complete/v1");
+        evidence.support_feature("filament.value.complete/v1");
         let CheckedPackageV2ReadResult::Admitted(package) = CheckedPackageV2::read(
             compiled.package().bytes(),
             CheckedPackageReadLimits::bounded(),
@@ -3224,18 +3225,18 @@ mod tests {
     ) -> (
         String,
         CheckedPackageV2,
-        qsl_replay::AdmittedContext,
+        fsl_replay::AdmittedContext,
         Vec<CheckedNodeId>,
         CheckedNodeId,
     ) {
-        use qsl_replay::{
-            compile_admitted, DependencyInput, ReplayLimits, SourceIdentity, StageLimits,
-        };
-        use quire_contract_model::{
+        use filament_contract_model::{
             CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2ReadResult,
         };
+        use fsl_replay::{
+            compile_admitted, DependencyInput, ReplayLimits, SourceIdentity, StageLimits,
+        };
         let mut source = String::from(
-            "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\n",
+            "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\n",
         );
         for index in 0..records {
             let payload = if index + 1 == records {
@@ -3277,7 +3278,7 @@ mod tests {
             "genuine large fixture records={records}; optional={optional}; source_bytes={source_bytes}; token_bound={token_bound}; syntax_nodes={syntax_nodes}"
         );
         let admitted = compile_admitted(
-            qsl_replay::CompileUnit {
+            fsl_replay::CompileUnit {
                 source: SourceIdentity::new("test", "deep.native"),
                 package_name: "deep".to_owned(),
                 path: "deep.native",
@@ -3312,7 +3313,7 @@ mod tests {
                 .expect("finite read-work bound"),
         };
         let mut evidence = CheckedPackageEvidence::new();
-        evidence.support_feature("quire.value.complete/v1");
+        evidence.support_feature("filament.value.complete/v1");
         let package = match CheckedPackageV2::read(bytes, read_limits, &evidence) {
             CheckedPackageV2ReadResult::Admitted(package) => *package,
             other => panic!("large original source must pass the real IR reader: {other:?}"),
@@ -3392,7 +3393,7 @@ mod tests {
     }
 
     fn resolve_shape_with_context(
-        context: Option<&qsl_replay::AdmittedContext>,
+        context: Option<&fsl_replay::AdmittedContext>,
         nodes: &[FixtureNode],
         type_id: &CheckedNodeId,
     ) -> Result<TypeClosure, CompositeEqualityRefusal> {
@@ -3427,7 +3428,7 @@ mod tests {
     }
 
     fn check_component_items_with_context(
-        context: Option<&qsl_replay::AdmittedContext>,
+        context: Option<&fsl_replay::AdmittedContext>,
         mut nodes: Vec<FixtureNode>,
         operands: &[(EqualityOperandDescriptor, EqualityOperandDescriptor)],
         limits: CompositeEqualityLimits,
@@ -3443,7 +3444,7 @@ mod tests {
             let parameter = |id: &CheckedNodeId, source_type: &CheckedNodeId| {
                 serde_json::from_value::<CheckedSemanticNodeV2>(json!({
                     "node_id": id,
-                    "schema_version": "quire.checked-semantic-graph/v2",
+                    "schema_version": "filament.checked-semantic-graph/v2",
                     "node_tag": "value",
                     "semantic_form": "parameter",
                     "semantic_type": source_type,
@@ -3482,7 +3483,7 @@ mod tests {
                     node_id: expression_id.clone(),
                     owner: None,
                     owner_model: None,
-                    schema_version: "quire.checked-semantic-graph/v2".into(),
+                    schema_version: "filament.checked-semantic-graph/v2".into(),
                     node_tag: "expression".into(),
                     semantic_form: "binary".into(),
                     semantic_type: left.source_type.clone(),
@@ -3751,7 +3752,7 @@ mod tests {
         let ids: Vec<CheckedNodeId> = (0..=DEPTH)
             .map(|index| CheckedNodeId {
                 package: "deep".into(),
-                path: vec![quire_contract_model::CheckedNodePathSegment::Name(
+                path: vec![filament_contract_model::CheckedNodePathSegment::Name(
                     format!("n{index:04}").into(),
                 )],
                 ordinal: 0,
@@ -3780,7 +3781,7 @@ mod tests {
                     node_id: ids[index].clone(),
                     owner: None,
                     owner_model: None,
-                    schema_version: "quire.checked-semantic-graph/v2".into(),
+                    schema_version: "filament.checked-semantic-graph/v2".into(),
                     node_tag: tag.into(),
                     semantic_form: form.into(),
                     semantic_type: ids[index].clone(),
@@ -4022,6 +4023,7 @@ mod tests {
                 temporal_clause_names: original.temporal_clause_names(),
                 schedulability_claims: original.schedulability_claim_rows(),
                 operation_effects: original.operation_effect_rows(),
+                operation_bodies: original.operation_body_rows(),
             },
             original.capability_report(),
             original.diagnostics(),
@@ -4170,7 +4172,7 @@ mod tests {
                 // that actually reconstructs Chain0, rather than assuming its key sorts first.
                 let root_expr = render_checked_node_id(&root).expect("rendered structural identity");
                 let root_lookup = format!(
-                    "sv::CompositeDeclaration::new(lookup_composite_key(_context, {root_expr}, &[\"Chain0\"], qsl_replay::AdmittedCompositeForm::Record)?"
+                    "sv::CompositeDeclaration::new(lookup_composite_key(_context, {root_expr}, &[\"Chain0\"], fsl_replay::AdmittedCompositeForm::Record)?"
                 );
                 let root_module = exact
                     .iter()
@@ -4220,27 +4222,27 @@ include!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/lib.rs"));
 #[test]
 fn deep_matches_shallow() {
     let source = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/deep.native"));
-    let admitted = qsl_replay::compile_admitted(
-        qsl_replay::CompileUnit {
-            source: qsl_replay::SourceIdentity::new("test", "deep.native"),
+    let admitted = fsl_replay::compile_admitted(
+        fsl_replay::CompileUnit {
+            source: fsl_replay::SourceIdentity::new("test", "deep.native"),
             package_name: "deep".to_owned(),
             path: "deep.native",
             bytes: source,
         },
-        [], &qsl_replay::DependencyInput::default(),
+        [], &fsl_replay::DependencyInput::default(),
         {
             let bytes = u64::try_from(source.len()).expect("finite retained source bytes");
             let tokens = bytes.checked_add(1).expect("finite byte-derived token allowance plus EOF");
             let nodes = (__RECORDS___u64).checked_mul(8).and_then(|n| n.checked_add(32))
                 .expect("finite fixed-record grammar node allowance");
-            qsl_replay::StageLimits::default()
+            fsl_replay::StageLimits::default()
                 .with_named("emit.output_bytes", __OUTPUT_BYTES___u64)
                 .and_then(|limits| limits.with_named("s1.input_bytes", bytes))
                 .and_then(|limits| limits.with_named("s1.tokens", tokens))
                 .and_then(|limits| limits.with_named("s1.nodes", nodes))
                 .expect("public fixed-fixture intake settings")
         },
-        qsl_replay::ReplayLimits::default().with_input_bytes(u64::try_from(source.len()).unwrap()),
+        fsl_replay::ReplayLimits::default().with_input_bytes(u64::try_from(source.len()).unwrap()),
     ).expect("same retained source must admit independently");
     assert_eq!(
         EXPECTED_PACKAGE_BYTES,
@@ -4273,7 +4275,7 @@ fn deep_matches_shallow() {
             sv::EqualityOperator::Equal,
             sv::EqualityOperand::typed(exact::ValueType::Composite(shallow_key.clone())),
             sv::EqualityOperand::typed(exact::ValueType::Composite(shallow_key)),
-            &quire_semantic_value::enumeration::EnumMemberIndex::default(),
+            &filament_semantic_value::enumeration::EnumMemberIndex::default(),
         ).expect("shallow equality").evaluate(&shallow, &shallow_value, &shallow_value, &mut exact::Meter::new(limits));
         assert_eq!(actual, expected);
         assert_eq!(actual, exact::Outcome::Completed(true));
@@ -4529,7 +4531,7 @@ fn deep_matches_shallow() {
             value: Box::new(CheckedTerm::Literal {
                 type_id: node_id('1'),
                 value_kind: LiteralKind::Integer,
-                value: quire_contract_model::CheckedJson::from_serializable(&serde_json::json!(
+                value: filament_contract_model::CheckedJson::from_serializable(&serde_json::json!(
                     value
                 ))
                 .expect("checked json literal"),
@@ -4543,7 +4545,7 @@ fn deep_matches_shallow() {
             value: Box::new(CheckedTerm::Literal {
                 type_id: node_id('0'),
                 value_kind: LiteralKind::Text,
-                value: quire_contract_model::CheckedJson::from_serializable(&serde_json::json!(
+                value: filament_contract_model::CheckedJson::from_serializable(&serde_json::json!(
                     value
                 ))
                 .expect("checked json literal"),
@@ -4555,8 +4557,10 @@ fn deep_matches_shallow() {
         CheckedTerm::Literal {
             type_id: node_id('0'),
             value_kind: LiteralKind::from_wire(kind).expect("closed fixture kind"),
-            value: quire_contract_model::CheckedJson::from_serializable(&serde_json::json!(value))
-                .expect("checked json literal"),
+            value: filament_contract_model::CheckedJson::from_serializable(&serde_json::json!(
+                value
+            ))
+            .expect("checked json literal"),
         }
     }
 
@@ -4650,9 +4654,9 @@ fn deep_matches_shallow() {
 
     fn quantity() -> ValueType {
         ValueType::Quantity(
-            quire_semantic_value::unit::compound_unit_id(
+            filament_semantic_value::unit::compound_unit_id(
                 core::iter::empty::<(&exact::NodeKey, &exact::Integer)>(),
-                quire_semantic_value::semantic_node::IDENTITY_LIMITS,
+                filament_semantic_value::semantic_node::IDENTITY_LIMITS,
             )
             .expect("the actual owner's empty compound unit is dimensionless"),
         )
@@ -4668,7 +4672,7 @@ fn deep_matches_shallow() {
     fn node_id(digit: char) -> CheckedNodeId {
         CheckedNodeId {
             package: "test".into(),
-            path: vec![quire_contract_model::CheckedNodePathSegment::Name(
+            path: vec![filament_contract_model::CheckedNodePathSegment::Name(
                 digit.to_string().into(),
             )],
             ordinal: 0,
@@ -4858,15 +4862,15 @@ fn deep_matches_shallow() {
     ) {
         let requests = [request('1'), request('2')];
         let mut claims = vec![generated_claim('1'), generated_claim('2')];
-        let admitted = qsl_replay::compile_admitted(
-            qsl_replay::CompileUnit {
-                source: qsl_replay::SourceIdentity::new("test", "render-boundary.native"),
+        let admitted = fsl_replay::compile_admitted(
+            fsl_replay::CompileUnit {
+                source: fsl_replay::SourceIdentity::new("test", "render-boundary.native"),
                 package_name: "render-boundary".to_owned(),
                 path: "render-boundary.native",
-                bytes: b"language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\ndimension Length;\nunit m : Length = rational(1, 1);\nfunction same using v(a: Quantity<m>, b: Quantity<m>): Boolean pure { a = b }\n",
+                bytes: b"language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\ndimension Length;\nunit m : Length = rational(1, 1);\nfunction same using v(a: Quantity<m>, b: Quantity<m>): Boolean pure { a = b }\n",
             },
-            [], &qsl_replay::DependencyInput::default(), qsl_replay::StageLimits::default(),
-            qsl_replay::ReplayLimits::default(),
+            [], &fsl_replay::DependencyInput::default(), fsl_replay::StageLimits::default(),
+            fsl_replay::ReplayLimits::default(),
         ).expect("the render boundary has a genuine owner-admitted quantity unit");
         let package = admitted.context().package_name().as_str();
         for claim in &mut claims {
@@ -4904,7 +4908,7 @@ fn deep_matches_shallow() {
                         item.operator.to_runtime(),
                         EqualityOperand::typed(value_type.clone()),
                         EqualityOperand::typed(value_type.clone()),
-                        &quire_semantic_value::enumeration::EnumMemberIndex::default(),
+                        &filament_semantic_value::enumeration::EnumMemberIndex::default(),
                     )
                     .expect("the owner admits this equality plan before rendering");
                 let prepared = CheckedItem {

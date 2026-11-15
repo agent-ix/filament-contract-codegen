@@ -6,12 +6,12 @@
 //! `cfg(kani)` items rebuild the prepared function from them with the genuine constructors and
 //! run the generated body, so the proof never links the reader or the FSL compiler.
 
-use qsl_replay::NominalDeclaration;
-use quire_contract_model::{
+use filament_contract_model::{
     ApplicationOperator, CheckedNodeId, CheckedPackageEvidence, CheckedPackageReadLimits,
     CheckedPackageV2, CheckedPackageV2ReadResult, CheckedTerm,
 };
-use quire_exact::Presence;
+use filament_exact::Presence;
+use fsl_replay::NominalDeclaration;
 
 use super::kani_descriptor::{node_key, value_type};
 use super::owner_path::{
@@ -60,19 +60,19 @@ enum SelectedBody {
 
 fn scalar_operator(identity: &str) -> Option<BinaryIntegerOperator> {
     match identity {
-        "quire.op.integer.add" => Some(BinaryIntegerOperator::Add),
-        "quire.op.integer.sub" => Some(BinaryIntegerOperator::Subtract),
-        "quire.op.integer.mul" => Some(BinaryIntegerOperator::Multiply),
+        "filament.op.integer.add" => Some(BinaryIntegerOperator::Add),
+        "filament.op.integer.sub" => Some(BinaryIntegerOperator::Subtract),
+        "filament.op.integer.mul" => Some(BinaryIntegerOperator::Multiply),
         _ => None,
     }
 }
 
 fn equality_operator(identity: &str) -> Option<EqualityOperatorKind> {
     match identity {
-        "quire.op.integer.eq" | "quire.op.boolean.eq" | "quire.op.structural.eq" => {
+        "filament.op.integer.eq" | "filament.op.boolean.eq" | "filament.op.structural.eq" => {
             Some(EqualityOperatorKind::Equal)
         }
-        "quire.op.integer.ne" | "quire.op.boolean.ne" | "quire.op.structural.ne" => {
+        "filament.op.integer.ne" | "filament.op.boolean.ne" | "filament.op.structural.ne" => {
             Some(EqualityOperatorKind::NotEqual)
         }
         _ => None,
@@ -122,7 +122,7 @@ fn presence(value: Presence) -> &'static str {
     }
 }
 
-fn types(values: &[quire_exact::ValueType]) -> Result<String, OracleGenerationError> {
+fn types(values: &[filament_exact::ValueType]) -> Result<String, OracleGenerationError> {
     Ok(values
         .iter()
         .map(value_type)
@@ -133,7 +133,7 @@ fn types(values: &[quire_exact::ValueType]) -> Result<String, OracleGenerationEr
 /// One reachable declaration as a literal descriptor: key, qualified name, form, members and
 /// the final `node()` key `seal_union_verified` needs.
 fn declaration_descriptor(view: &NominalDeclaration) -> Result<String, OracleGenerationError> {
-    use qsl_replay::{NominalDeclarationForm as Form, NominalDeclarationMember as Member};
+    use fsl_replay::{NominalDeclarationForm as Form, NominalDeclarationMember as Member};
     let mut members = Vec::with_capacity(view.members().len());
     for member in view.members() {
         members.push(match (view.form(), member) {
@@ -179,7 +179,7 @@ fn declaration_descriptor(view: &NominalDeclaration) -> Result<String, OracleGen
     let name = view
         .qualified_name()
         .iter()
-        .map(quire_exact::Identifier::as_str)
+        .map(filament_exact::Identifier::as_str)
         .collect::<Vec<_>>()
         .join(".");
     Ok(format!(
@@ -211,10 +211,10 @@ fn body_index(
 /// when it already is. A `Cancel::observing` link to a caller's cancel cannot be recovered from
 /// the value and is not rendered: the emitted source is then an uncancelled `Cancel::new()`, so
 /// the proof models only the uncancelled and the already-cancelled states.
-fn cancel_source(cancel: &quire_exact::Cancel) -> String {
+fn cancel_source(cancel: &filament_exact::Cancel) -> String {
     let cause = cancel.cause().map(|cause| match cause {
-        quire_exact::CancelCause::Requested => "Requested",
-        quire_exact::CancelCause::Deadline => "Deadline",
+        filament_exact::CancelCause::Requested => "Requested",
+        filament_exact::CancelCause::Deadline => "Deadline",
     });
     match cause {
         None => "exact::Cancel::new()".to_owned(),

@@ -2,7 +2,7 @@
 
 use std::fmt::Write as _;
 
-use quire_contract_model::{
+use filament_contract_model::{
     BoundClause, BoundPackage, ClauseKind, ClauseRef, ComparisonOperator as IrComparisonOperator,
     ExecutionPoint, Expression, ExpressionKind, StateObservation, ValueDeclarationKind, ValueType,
 };
@@ -683,7 +683,7 @@ fn runner_source(
             .join(", ");
         format!(
             "\n/// Evaluates every in-domain census case exactly once in deterministic order.\n\
-pub fn {census_runner}(report: &mut quire_contract_runtime::CampaignReport<'static>) -> Result<{summary}, {error}> {{\n\
+pub fn {census_runner}(report: &mut filament_contract_runtime::CampaignReport<'static>) -> Result<{summary}, {error}> {{\n\
     for census in &{constant} {{\n\
         let case = {case_type} {{ {field_values}, expected: match census.tag {{ {census_type}::Holds => {expectation}::Holds, {census_type}::Violated => {expectation}::Violated }} }};\n\
         if let Err(failure) = {evaluate}(&case, report) {{ return Err(failure); }}\n\
@@ -725,7 +725,7 @@ pub enum {error} {{\n\
     /// Rejected verdicts did not meet the requested floor.\n    BelowRejectedFloor {{ /// Retained accounting.\n        summary: {summary} }},\n\
     /// The complete supplied report already exceeds the discard ceiling.\n    AboveDiscardCeiling {{ /// Retained accounting.\n        summary: {summary} }},\n\
     /// Proptest exhausted its configured search.\n    Exhausted {{ /// Retained accounting.\n        summary: {summary}, /// Framework detail.\n        reason: String }},\n\
-    /// The generated oracle disagreed with the case's immutable tag.\n    ConformanceMismatch {{ /// Retained accounting.\n        summary: {summary}, /// Primary read value.\n        primary: i64, /// Partner read value when present.\n        partner: Option<i64>, /// Immutable expectation tag carried by the case.\n        expected: {expectation}, /// Observed runtime verdict kind.\n        observed: quire_contract_runtime::VerdictKind }},\n\
+    /// The generated oracle disagreed with the case's immutable tag.\n    ConformanceMismatch {{ /// Retained accounting.\n        summary: {summary}, /// Primary read value.\n        primary: i64, /// Partner read value when present.\n        partner: Option<i64>, /// Immutable expectation tag carried by the case.\n        expected: {expectation}, /// Observed runtime verdict kind.\n        observed: filament_contract_runtime::VerdictKind }},\n\
     /// The supplied campaign report names a different requirement revision.\n    IdentityMismatch {{ /// Retained accounting.\n        summary: {summary}, /// Expected report requirement.\n        expected_requirement: String, /// Expected report revision.\n        expected_revision: String, /// Actual generated requirement.\n        actual_requirement: String, /// Actual generated revision.\n        actual_revision: String }},\n\
 }}\n\n\
 impl {error} {{\n\
@@ -736,40 +736,40 @@ impl {error} {{\n\
 }}\n\n\
 /// Derives exact rate-bearing accounting from one immutable runtime snapshot.\n\
 #[must_use]\n\
-pub fn {base}_summary_from_snapshot(snapshot: &quire_contract_runtime::CampaignSnapshot<'_>) -> {summary} {{\n\
+pub fn {base}_summary_from_snapshot(snapshot: &filament_contract_runtime::CampaignSnapshot<'_>) -> {summary} {{\n\
     let counts = snapshot.counts();\n\
     {summary} {{ attempted: counts.total(), accepted: counts.accepted(), rejected: counts.rejected(), failed: counts.failed(), discarded: counts.discarded(), at_limit: snapshot.at_limit() }}\n\
 }}\n\n\
-fn {base}_summary(report: &quire_contract_runtime::CampaignReport<'static>) -> {summary} {{\n\
+fn {base}_summary(report: &filament_contract_runtime::CampaignReport<'static>) -> {summary} {{\n\
     let snapshot = report.snapshot();\n\
     {base}_summary_from_snapshot(&snapshot)\n\
 }}\n\n\
-fn {conclude}(report: &quire_contract_runtime::CampaignReport<'static>, framework_error: Option<String>) -> Result<{summary}, {error}> {{\n\
+fn {conclude}(report: &filament_contract_runtime::CampaignReport<'static>, framework_error: Option<String>) -> Result<{summary}, {error}> {{\n\
     let summary = {base}_summary(report);\n\
     if summary.discarded > {maximum_discarded} {{ return Err({error}::AboveDiscardCeiling {{ summary }}); }}\n\
     if let Some(reason) = framework_error {{ return Err({error}::Exhausted {{ summary, reason }}); }}\n\
 {accepted_floor}{rejected_floor}\
     Ok(summary)\n\
 }}\n\n\
-fn {evaluate}(case: &{case_type}, report: &mut quire_contract_runtime::CampaignReport<'static>) -> Result<(), {error}> {{\n\
+fn {evaluate}(case: &{case_type}, report: &mut filament_contract_runtime::CampaignReport<'static>) -> Result<(), {error}> {{\n\
     let holds = {oracle_function}({oracle_arguments});\n\
-    let failure = quire_contract_runtime::FailureDetail::new({clause_symbol}, quire_contract_runtime::FailureKind::{failure_kind}, 0, None);\n\
-    let outcome = if holds {{ quire_contract_runtime::ClauseOutcome::Passed }} else {{ quire_contract_runtime::ClauseOutcome::{false_outcome} }};\n\
+    let failure = filament_contract_runtime::FailureDetail::new({clause_symbol}, filament_contract_runtime::FailureKind::{failure_kind}, 0, None);\n\
+    let outcome = if holds {{ filament_contract_runtime::ClauseOutcome::Passed }} else {{ filament_contract_runtime::ClauseOutcome::{false_outcome} }};\n\
     let detail = if holds {{ None }} else {{ Some(failure) }};\n\
-    let observations = [quire_contract_runtime::Observation::new({clause_symbol}, quire_contract_runtime::ClauseKind::{runtime_kind}, outcome, detail)];\n\
-    let context = quire_contract_runtime::VerdictContext::new({identity_symbol}, quire_contract_runtime::ExecutionPoint::new({execution_point:?}), &observations);\n\
-    let verdict = if holds {{ quire_contract_runtime::Verdict::passed(context) }} else {{ quire_contract_runtime::Verdict::{false_verdict} {{ context, {failure_field}: failure }} }};\n\
+    let observations = [filament_contract_runtime::Observation::new({clause_symbol}, filament_contract_runtime::ClauseKind::{runtime_kind}, outcome, detail)];\n\
+    let context = filament_contract_runtime::VerdictContext::new({identity_symbol}, filament_contract_runtime::ExecutionPoint::new({execution_point:?}), &observations);\n\
+    let verdict = if holds {{ filament_contract_runtime::Verdict::passed(context) }} else {{ filament_contract_runtime::Verdict::{false_verdict} {{ context, {failure_field}: failure }} }};\n\
     let observed = verdict.kind();\n\
     if let Err(mismatch) = report.record_verdict(&verdict) {{\n\
         return Err({error}::IdentityMismatch {{ summary: {base}_summary(report), expected_requirement: mismatch.expected().requirement.as_str().to_owned(), expected_revision: mismatch.expected().revision.as_str().to_owned(), actual_requirement: mismatch.actual().requirement.as_str().to_owned(), actual_revision: mismatch.actual().revision.as_str().to_owned() }});\n\
     }}\n\
     let expected_holds = matches!(case.expected, {expectation}::Holds);\n\
-    let expected_kind = if expected_holds {{ quire_contract_runtime::VerdictKind::Passed }} else {{ quire_contract_runtime::VerdictKind::{false_verdict} }};\n\
+    let expected_kind = if expected_holds {{ filament_contract_runtime::VerdictKind::Passed }} else {{ filament_contract_runtime::VerdictKind::{false_verdict} }};\n\
     if observed != expected_kind {{ return Err({error}::ConformanceMismatch {{ summary: {base}_summary(report), primary: case.{primary}, partner: {partner_value}, expected: case.expected, observed }}); }}\n\
     Ok(())\n\
 }}\n\n\
 /// Runs the selected subject-free oracle-conformance campaign.\n\
-pub fn {runner}<Strategy>(runner: &mut proptest::test_runner::TestRunner, strategy: &Strategy, report: &mut quire_contract_runtime::CampaignReport<'static>) -> Result<{summary}, {error}>\n\
+pub fn {runner}<Strategy>(runner: &mut proptest::test_runner::TestRunner, strategy: &Strategy, report: &mut filament_contract_runtime::CampaignReport<'static>) -> Result<{summary}, {error}>\n\
 where Strategy: proptest::strategy::Strategy<Value = {case_type}> {{\n\
     let report = core::cell::RefCell::new(report);\n\
     let failure = core::cell::RefCell::new(None);\n\
@@ -925,7 +925,7 @@ fn bound_diagnostic(
     terminal_state: GenerationTerminalState,
     generation_code: Option<GenerationErrorCode>,
     clause: &ClauseRef,
-    source_span: Option<quire_contract_model::SourceSpan>,
+    source_span: Option<filament_contract_model::SourceSpan>,
     path: &str,
     message: &str,
 ) -> StrategyDiagnostic {
@@ -943,8 +943,8 @@ fn bound_diagnostic(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use filament_contract_model::EXECUTABLE_PROJECTION_FORMAT;
     use ix_trace_rs::trace;
-    use quire_contract_model::EXECUTABLE_PROJECTION_FORMAT;
     use serde_json::{json, Value};
 
     fn span(line: u64) -> Value {

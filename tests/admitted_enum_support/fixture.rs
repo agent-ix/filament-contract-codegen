@@ -1,12 +1,12 @@
 //! Authentic public-facade enum fixture, shared by generator and generated native tests.
 
-use qsl_replay::{
+use fsl_replay::{
     compile_admitted, AdmittedCompilation, CompileUnit, DependencyInput, ReplayLimits,
     SourceIdentity, StageLimits,
 };
 
 pub const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\n\
-profile v = \"quire.value.complete/v1\";\n\
+profile v = \"filament.value.complete/v1\";\n\
 ordered enum Ordered { READY, DONE, UNUSED }\n\
 enum Unordered { READY, DONE, UNUSED }\n\
 ordered enum Other { READY, DONE, UNUSED }\n\
@@ -33,14 +33,14 @@ pub fn compile(source: &str) -> AdmittedCompilation {
 
 pub fn imported(transitive: bool) -> (AdmittedCompilation, Vec<(String, AdmittedCompilation)>) {
     const HEADER: &str =
-        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\n";
-    let library = |identity: &str, name: &str, body: &str| qsl_replay::SuppliedLibrary {
+        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\n";
+    let library = |identity: &str, name: &str, body: &str| fsl_replay::SuppliedLibrary {
         identity: identity.to_owned(),
         source: SourceIdentity::new("test", name),
         path: format!("{name}.native"),
         bytes: format!("{HEADER}{body}").into_bytes(),
     };
-    let compile_library = |item: &qsl_replay::SuppliedLibrary, dependencies: &DependencyInput| {
+    let compile_library = |item: &fsl_replay::SuppliedLibrary, dependencies: &DependencyInput| {
         compile_admitted(
             CompileUnit {
                 source: item.source.clone(),

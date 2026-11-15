@@ -8,12 +8,12 @@ earlier statement of these timeouts).
 ## Measured row: general integer scalar route
 
 Rows in the shape of the measured tractability table (FR-056 "Measured table"). The shipped table
-holds two rows, `quire.op.integer.add` from 2 bits and `quire.op.integer.sub` from 4 bits, the
+holds two rows, `filament.op.integer.add` from 2 bits and `filament.op.integer.sub` from 4 bits, the
 smallest width at which each was observed to time out:
 
 | Field | add row | sub row |
 | --- | --- | --- |
-| operation_ids | `quire.op.integer.add` | `quire.op.integer.sub` |
+| operation_ids | `filament.op.integer.add` | `filament.op.integer.sub` |
 | scalar form | routed exact-scalar harness from `generate_routed` (operands and oracle result as `rt::Integer`), `x + 1` | `x - y` over two `Int[0, 9]` |
 | max_operand_bits | 2 (smallest observed, below) | 4 (every operand bound is at most 9) |
 | collection_bound | none | none |
@@ -21,13 +21,13 @@ smallest width at which each was observed to time out:
 | wall_seconds | 600 (the lane budget; `Inconclusive { TimedOut }`) | 600 (same) |
 | peak_bytes | 14602888806 (13.6 GiB, the systemd scope peak of the 2-bit probe, build included; not the runner's) | about 15.0e9 at 600 s |
 | Kani / CBMC / solver | 0.68.0 / 6.11.0 / cadical-3.0.0, `--unwind 3` | same |
-| generator version | quire-contract-codegen 0.1.0 | same |
-| kernel version | quire-exact `KERNEL_VERSION` 1 | same |
+| generator version | filament-contract-codegen 0.1.0 | same |
+| kernel version | filament-exact `KERNEL_VERSION` 1 | same |
 | host, date | titan, 2026-11-12 (4 bits); 2026-11-13 (2 bits) | titan, 2026-11-12 |
 
 The add row's width was first 4 bits (`Int[0, 9]`). The driver's Kani-lane test
-`successful_native_receipt_is_authenticated_against_retained_limits` (quire-driver `drive.rs`) on the
-general route with `quire.op.integer.add` over `Int[4, 4]` (`interval_bits(4, 4)` = 3 bits) ended
+`successful_native_receipt_is_authenticated_against_retained_limits` (filament-driver `drive.rs`) on the
+general route with `filament.op.integer.add` over `Int[4, 4]` (`interval_bits(4, 4)` = 3 bits) ended
 `ProofNotVerified` at 600 s in its coder's measured run, while the table let it run. One further probe
 under this ticket (follow-up to #821) ran the general-route `x + 1` over `Int[2, 2]` (operands
 `left` = `Int[2, 2]`, 2 bits, and `right` = `Int[1, 1]`, so the largest width is 2 bits) through
@@ -90,9 +90,9 @@ a generation `tractability_table`.
 The refusal is opt-in: the caller passes the table to the decided wrappers, and with none passed
 the harness runs. CG ships the table in-crate (`TractabilityTable::shipped_general_route_scalar`,
 embedded from the JSON file, which is the single source; a test pins the equality). The production
-caller is quire-driver (`src/provider.rs` ~308, `src/upstream.rs` ~191, which call
+caller is filament-driver (`src/provider.rs` ~308, `src/upstream.rs` ~191, which call
 `execute_kani_obligation` on `generate_routed` harnesses); it will be wired to the decided wrapper
-in a quire-driver PR under IR-1530. Operand widths below a row's bits on this route (below 2 bits for
+in a filament-driver PR under IR-1530. Operand widths below a row's bits on this route (below 2 bits for
 add, below 4 for sub) are unmeasured: nothing narrower was probed, so such a harness is not refused
 and is left to the wall-clock backstop.
 
@@ -167,8 +167,8 @@ clause carries no integer operand width, and the refusal of a float arithmetic n
 generation by the float row (FR-053) with the named capability `float.<op>.not_kani_tractable` and
 no harness.
 
-- `peak_bytes` is the largest peak memory among the row's non-Verified quire-exact harnesses, taken
-  from quire-exact TC-953's evidence record (the scope's cgroup `memory.peak` of an executed run
+- `peak_bytes` is the largest peak memory among the row's non-Verified filament-exact harnesses, taken
+  from filament-exact TC-953's evidence record (the scope's cgroup `memory.peak` of an executed run
   that ended at the 600 s timeout): `add`/`sub` 22906421248 (`sub` Binary64 `exact`), `mul`
   23159287808 (Binary64 `exact`), `div` 22179082240 (Binary64 `exact`), `sqrt` 21968105472 (Binary64
   `exact`) and `fma` 22985097216 (Binary64 `nearest-even`). They exceed the 16 GiB ceiling of CG
@@ -178,7 +178,7 @@ no harness.
   of `add`, `sub`, `mul` and `div`, and every `binary32` harness of `sqrt` and `fma`). It does not
   say that every spelling at `binary32` timed out: the `nearest-even` harnesses of `add`, `sub` and
   `mul` at `binary32` are Verified, and the row is refused because an arithmetic operation is a
-  supported row only when all three of its harnesses are (quire-exact FR-405 Behavior 15).
+  supported row only when all three of its harnesses are (filament-exact FR-405 Behavior 15).
 - The rows carry no Kani, CBMC or solver version: the versions are optional in the table schema,
   and none is recorded for this evidence (QSL-406, EA-49).
 

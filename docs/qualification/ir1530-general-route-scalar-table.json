@@ -1,7 +1,7 @@
 [
   {
     "operation_ids": [
-      "quire.op.integer.add"
+      "filament.op.integer.add"
     ],
     "route": "general",
     "max_operand_bits": 2,
@@ -17,7 +17,7 @@
   },
   {
     "operation_ids": [
-      "quire.op.integer.sub"
+      "filament.op.integer.sub"
     ],
     "route": "general",
     "max_operand_bits": 4,
@@ -33,10 +33,10 @@
   },
   {
     "operation_ids": [
-      "quire.op.ieee.float32.add",
-      "quire.op.ieee.float64.add",
-      "quire.op.ieee.float32.sub",
-      "quire.op.ieee.float64.sub"
+      "filament.op.ieee.float32.add",
+      "filament.op.ieee.float64.add",
+      "filament.op.ieee.float32.sub",
+      "filament.op.ieee.float64.sub"
     ],
     "route": "general",
     "max_operand_bits": 32,
@@ -49,8 +49,8 @@
   },
   {
     "operation_ids": [
-      "quire.op.ieee.float32.mul",
-      "quire.op.ieee.float64.mul"
+      "filament.op.ieee.float32.mul",
+      "filament.op.ieee.float64.mul"
     ],
     "route": "general",
     "max_operand_bits": 32,
@@ -63,8 +63,8 @@
   },
   {
     "operation_ids": [
-      "quire.op.ieee.float32.div",
-      "quire.op.ieee.float64.div"
+      "filament.op.ieee.float32.div",
+      "filament.op.ieee.float64.div"
     ],
     "route": "general",
     "max_operand_bits": 32,
@@ -77,8 +77,8 @@
   },
   {
     "operation_ids": [
-      "quire.op.ieee.float32.sqrt",
-      "quire.op.ieee.float64.sqrt"
+      "filament.op.ieee.float32.sqrt",
+      "filament.op.ieee.float64.sqrt"
     ],
     "route": "general",
     "max_operand_bits": 32,
@@ -91,8 +91,8 @@
   },
   {
     "operation_ids": [
-      "quire.op.ieee.float32.fma",
-      "quire.op.ieee.float64.fma"
+      "filament.op.ieee.float32.fma",
+      "filament.op.ieee.float64.fma"
     ],
     "route": "general",
     "max_operand_bits": 32,
@@ -105,7 +105,7 @@
   },
   {
     "operation_ids": [
-      "quire.op.integer.div"
+      "filament.op.integer.div"
     ],
     "route": "general",
     "max_operand_bits": 4,
@@ -118,7 +118,7 @@
   },
   {
     "operation_ids": [
-      "quire.op.integer.rem"
+      "filament.op.integer.rem"
     ],
     "route": "general",
     "max_operand_bits": 4,
@@ -131,7 +131,7 @@
   },
   {
     "operation_ids": [
-      "quire.op.integer.mod"
+      "filament.op.integer.mod"
     ],
     "route": "general",
     "max_operand_bits": 4,
@@ -139,6 +139,90 @@
     "verdict": "not_tractable",
     "wall_seconds": 600,
     "peak_bytes": 8538312704,
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.integer.div"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 8,
+    "verdict": "tractable",
+    "wall_seconds": 52.3,
+    "peak_bytes": 1836098519,
+    "provenance": "filament-exact TC-957 evidence record (IR-1541, filament-exact #171): the kernel's own harnesses, not CG-generated ones; copied. The symbolic-divisor figure is the least tractable profile and member. generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.integer.div"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 16,
+    "verdict": "not_tractable",
+    "wall_seconds": 600,
+    "peak_bytes": 1836098519,
+    "provenance": "filament-exact TC-957 evidence record (IR-1541, filament-exact #171): the kernel's own harnesses, not CG-generated ones; copied. The symbolic-divisor figure is the least tractable profile and member. generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.integer.rem"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 8,
+    "verdict": "tractable",
+    "wall_seconds": 88.2,
+    "peak_bytes": 2448131359,
+    "provenance": "filament-exact TC-957 evidence record (IR-1541, filament-exact #171): the kernel's own harnesses, not CG-generated ones; copied. The symbolic-divisor figure is the least tractable profile and member. generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.integer.rem"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 16,
+    "verdict": "not_tractable",
+    "wall_seconds": 600,
+    "peak_bytes": 2437393940,
+    "provenance": "filament-exact TC-957 evidence record (IR-1541, filament-exact #171): the kernel's own harnesses, not CG-generated ones; copied. The symbolic-divisor figure is the least tractable profile and member. generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.integer.mod"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 8,
+    "verdict": "tractable",
+    "wall_seconds": 64.7,
+    "peak_bytes": 2426656522,
+    "provenance": "filament-exact TC-957 evidence record (IR-1541, filament-exact #171): the kernel's own harnesses, not CG-generated ones; copied. The symbolic-divisor figure is the least tractable profile and member. generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.integer.mod"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 16,
+    "verdict": "not_tractable",
+    "wall_seconds": 600,
+    "peak_bytes": 2426656522,
+    "provenance": "filament-exact TC-957 evidence record (IR-1541, filament-exact #171): the kernel's own harnesses, not CG-generated ones; copied. The symbolic-divisor figure is the least tractable profile and member. generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it.",
     "generator_version": "0.1.0",
     "kernel_version": 1
   }

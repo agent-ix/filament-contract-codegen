@@ -6,7 +6,7 @@ This handoff shares genuine source fixtures and exact host commands with the QSL
 
 [ir17-host-commands.json](ir17-host-commands.json) contains the exact 24 argv arrays selecting 33 declared host functions. Run from the repository root, sequentially, retaining each exit and output. Some filters select multiple functions. The private resolver and raw-reader controls deliberately have different admission boundaries from genuine public generation.
 
-Use an isolated checkout with its own `CARGO_TARGET_DIR`, one Cargo job and one test thread. The raw QSpec control additionally needs `QSPEC_REPO` (or `QSPEC_DIR`) pointing to a real quire-specification Git checkout containing its referenced fixtures. An unset path reports UNAVAILABLE; do not report that as conformance or use a dummy path. These commands remain subject to the host operator's existing resource reservation and memory controls.
+Use an isolated checkout with its own `CARGO_TARGET_DIR`, one Cargo job and one test thread. The raw QSpec control additionally needs `QSPEC_REPO` (or `QSPEC_DIR`) pointing to a real filament-specification Git checkout containing its referenced fixtures. An unset path reports UNAVAILABLE; do not report that as conformance or use a dummy path. These commands remain subject to the host operator's existing resource reservation and memory controls.
 
 The focused, fail-fast reproduction is:
 

@@ -3,11 +3,11 @@
 use filament_contract_codegen::{
     select_v2_claim_execution_point, V2SelectedClaimKey, V2SelectedClaimRequest,
 };
-use ix_trace_rs::trace;
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedExecutionPointRefusal, CheckedNodeId, CheckedOccurrence, CheckedOccurrenceRole,
     ExecutionPoint, ExecutionPointName,
 };
+use ix_trace_rs::trace;
 
 use super::kani_obligations_state_frame::native_twin::Twin;
 

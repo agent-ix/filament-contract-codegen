@@ -7,18 +7,18 @@ mod generated {
     include!(concat!(env!("CARGO_MANIFEST_DIR"), "/names.rs"));
 }
 
-use qsl_replay::{
-    acquire_checked_closure, ApplicationEnvironment, CompileUnit, DependencyInput, LibraryName,
+use fsl_replay::{
+    acfilament_checked_closure, ApplicationEnvironment, CompileUnit, DependencyInput, LibraryName,
     ReplayLimits, SourceIdentity, StageLimits, SuppliedLibrary,
 };
 use filament_contract_codegen::{checked_function_key, CheckedFunctionSource};
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedNodeId, CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
     CheckedPackageV2ReadResult,
 };
-use quire_eval::FamilyOutcome;
-use quire_exact::{Integer, LimitKind, Meter, Outcome, ScalarLimits, Value};
-use quire_semantic_value::object_closure::ObjectClosure;
+use filament_eval::FamilyOutcome;
+use filament_exact::{Integer, LimitKind, Meter, Outcome, ScalarLimits, Value};
+use filament_semantic_value::object_closure::ObjectClosure;
 use std::sync::Arc;
 
 fn library_identity() -> SourceIdentity {
@@ -47,7 +47,7 @@ fn meter() -> Meter {
 
 fn admitted(bytes: &[u8], library: Option<&CheckedPackageV2>) -> CheckedPackageV2 {
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     if let Some(library) = library {
         evidence
             .insert_dependency_package("test/function-library", Arc::new(library.clone()))
@@ -84,7 +84,7 @@ fn function_id(package: &CheckedPackageV2) -> CheckedNodeId {
 )]
 #[test]
 fn generated_library_body_matches_importer_facade_application() {
-    let compiled_library = acquire_checked_closure(
+    let compiled_library = acfilament_checked_closure(
         CompileUnit {
             source: library_identity(),
             package_name: "test/function-library".to_owned(),
@@ -105,7 +105,7 @@ fn generated_library_body_matches_importer_facade_application() {
         bytes: generated::LIBRARY_SOURCE.as_bytes().to_vec(),
     }])
     .expect("one genuine FSL library dependency");
-    let compiled_unit = acquire_checked_closure(
+    let compiled_unit = acfilament_checked_closure(
         CompileUnit {
             source: importer_identity(),
             package_name: "function-importer".to_owned(),
@@ -146,7 +146,7 @@ fn generated_library_body_matches_importer_facade_application() {
     .expect("FSL selects and accepts generated imported body")
     .expect("generated imported body completes");
 
-    let fresh = acquire_checked_closure(
+    let fresh = acfilament_checked_closure(
         CompileUnit {
             source: importer_identity(),
             package_name: "function-importer".to_owned(),

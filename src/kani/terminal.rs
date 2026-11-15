@@ -9,15 +9,15 @@
 //! (AD-004). The value's category is [`TerminalValue::category`] and nothing else (AD-003 E-9):
 //! no `proof_category` function exists here.
 
-use qsl_replay::{
+use filament_contract_ir::kani::{
+    KaniCancellationSource, KaniOutcome, KaniOutcomeError, KaniOutcomeKind,
+};
+use filament_exact::CancelCause;
+use fsl_replay::{
     Certification, Code, DeclineCode, DisagreementCause, IncompleteCause, InconclusiveCause,
     OperatorParityResult, ProofBasis, ProofRefusalCause, ReplayRefusal, Std001Code, TerminalValue,
     UnavailabilityCause,
 };
-use quire_contract_ir::kani::{
-    KaniCancellationSource, KaniOutcome, KaniOutcomeError, KaniOutcomeKind,
-};
-use quire_exact::CancelCause;
 
 use crate::kani::classify::{KaniInconclusiveReason, KaniRunOutcome};
 use crate::kani::output::report::KaniFailureCause;
@@ -32,7 +32,7 @@ pub enum ReplaySettlement<'a> {
     Reproduced,
     /// The replay settled `Inconclusive`, with FSL's typed cause.
     Disagreement(&'a DisagreementCause),
-    /// `qsl_replay::replay`, `replay_frame` or `replay_state_clause` returned a refusal. The
+    /// `fsl_replay::replay`, `replay_frame` or `replay_state_clause` returned a refusal. The
     /// refusal is read by FSL's own rule ([`TerminalValue::from_replay_refusal`]): a fault is
     /// `Failed`, any other refusal is `Inconclusive` carrying the refusal's catalog code.
     Refused(&'a ReplayRefusal),
@@ -377,13 +377,13 @@ impl KaniExecutionEvidence {
     /// The owning IR constructor's refusal, or the FR-030 pair refusal.
     pub fn cancellation_terminal_value(
         &self,
-    ) -> Result<Option<(KaniOutcome, qsl_replay::TerminalValue)>, TerminalPairError> {
+    ) -> Result<Option<(KaniOutcome, fsl_replay::TerminalValue)>, TerminalPairError> {
         let KaniRunOutcome::Cancelled { source } = self.outcome else {
             return Ok(None);
         };
         let outcome = KaniOutcome::non_success(
             KaniOutcomeKind::Cancelled { source },
-            quire_contract_model::std001_code!("kani_cancelled"),
+            filament_contract_model::std001_code!("kani_cancelled"),
             &self.harness_path,
             &self.launcher_path,
         )

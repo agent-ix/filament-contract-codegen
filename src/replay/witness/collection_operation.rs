@@ -10,7 +10,7 @@ use crate::kani::{
     },
     output::playback::{Playback, WitnessDecodeLimits},
 };
-use qsl_replay::WitnessValue;
+use fsl_replay::WitnessValue;
 
 fn primitive(bounds: &SymbolicBounds) -> Option<KaniPrimitiveType> {
     match bounds {

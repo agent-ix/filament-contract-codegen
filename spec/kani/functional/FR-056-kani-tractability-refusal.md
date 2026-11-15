@@ -49,7 +49,8 @@ Each row carries its required `route` field, so general-route and native-route r
 file, and each applies only to its own route. The file name and the constructor name keep their
 historical `general_route` spelling; no rename is planned. Native-route rows measured in filament-exact
 (FR-409, TC-957 evidence) are copied into this table by the CG PR that consumes them. For integer
-`div`, `rem` and `mod`, that is the IR-854 coder's PR after IR-1541 lands (FR-057).
+`div`, `rem` and `mod`, the kernel's rows (IR-1541) are in the table: a `tractable` row at 8 bits and
+a `not_tractable` row at 16 bits per operation (FR-057).
 
 The generation-time decider runs AFTER the operator check of FR-015-AC-42: it sees only operations the V2 clause
 path accepts today (connectives, the six integer comparisons, integer add, subtract, multiply and
@@ -107,7 +108,7 @@ package or the filesystem.
 
 The table SHALL be data with one row per measured probe: `operation_ids` (catalog ids),
 `route` (`general` or `native`), `max_operand_bits`, `collection_bound`, `verdict` (`tractable` or `not_tractable`), `wall_seconds`,
-`peak_bytes` (`null` when the runner reported no peak), optionally the Kani, CBMC and solver versions the probe ran under (a row recorded without tool versions, as QSL-406 and EA-49 direct, loads, and a tool version never selects a row), and the generator and kernel version the probe
+`peak_bytes` (`null` when the runner reported no peak), optionally a `provenance` text (a row copied from another repository's record names that record; it never selects a row), optionally the Kani, CBMC and solver versions the probe ran under (a row recorded without tool versions, as QSL-406 and EA-49 direct, loads, and a tool version never selects a row), and the generator and kernel version the probe
 ran against. CG SHALL load it from a file and SHALL contain no per-operation tractability code. A
 malformed row SHALL fail the load with the row index; it SHALL NOT be skipped silently. A row
 without a `route` key, or with any other `route` value, is malformed like any row with a missing

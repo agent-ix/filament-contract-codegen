@@ -2,8 +2,8 @@
 use crate::kani::{
     run::execute::batch_tests::no_verdict_diagnostics::failure_cause, terminal::run_terminal_value,
 };
+use fsl_replay::{Certification, IncompleteCause, ProofBasis, TerminalValue};
 use ix_trace_rs::trace;
-use qsl_replay::{Certification, IncompleteCause, ProofBasis, TerminalValue};
 
 #[trace(
     "FR-017-AC-37",

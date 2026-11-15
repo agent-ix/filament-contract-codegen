@@ -5,27 +5,27 @@ use filament_contract_codegen::{
     ContractRequestPosition, EqualityOperandDescriptor, EqualityOperatorKind, IllTypedCauseKind,
     OracleGenerationError,
 };
-use ix_trace_rs::trace;
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedNodeId, CheckedNodeTag, CheckedPackageEvidence, CheckedPackageReadLimits,
     CheckedPackageV2, CheckedPackageV2ReadResult, CompleteLoweringProfileV2, ContractDependencies,
     ContractPackageReadResult, ContractPackageWireV1, LoweringProfileRef,
 };
+use ix_trace_rs::trace;
 
 use super::admitted_enum_fixture as fixture;
 
-fn foreign_context() -> qsl_replay::AdmittedCompilation {
-    qsl_replay::compile_admitted(
-        qsl_replay::CompileUnit {
-            source: qsl_replay::SourceIdentity::new("test", "foreign-enums.native"),
+fn foreign_context() -> fsl_replay::AdmittedCompilation {
+    fsl_replay::compile_admitted(
+        fsl_replay::CompileUnit {
+            source: fsl_replay::SourceIdentity::new("test", "foreign-enums.native"),
             package_name: "foreign-enums".to_owned(),
             path: "foreign-enums.native",
             bytes: fixture::SOURCE.as_bytes(),
         },
         [],
-        &qsl_replay::DependencyInput::default(),
-        qsl_replay::StageLimits::default(),
-        qsl_replay::ReplayLimits::default(),
+        &fsl_replay::DependencyInput::default(),
+        fsl_replay::StageLimits::default(),
+        fsl_replay::ReplayLimits::default(),
     )
     .expect("independent foreign enum source compiles")
 }
@@ -42,11 +42,11 @@ const CASES: [(&str, &str, EqualityOperatorKind); 4] = [
 ];
 
 pub(super) fn checked(
-    compiled: &qsl_replay::AdmittedCompilation,
-    libraries: &[(String, qsl_replay::AdmittedCompilation)],
+    compiled: &fsl_replay::AdmittedCompilation,
+    libraries: &[(String, fsl_replay::AdmittedCompilation)],
 ) -> CheckedPackageV2 {
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     for (position, (identity, library)) in libraries.iter().enumerate() {
         let admitted = checked(library, &libraries[..position]);
         evidence
@@ -87,8 +87,8 @@ pub(super) fn application(package: &CheckedPackageV2, function: &str) -> Checked
         .iter()
         .find(|node| {
             (node.semantic_form.as_ref() == "binary"
-                || matches!(&node.body, quire_contract_model::CheckedTerm::Application { operation, .. }
-                    if operation.identity().is_some_and(|id| id.starts_with("quire.op.ieee."))))
+                || matches!(&node.body, filament_contract_model::CheckedTerm::Application { operation, .. }
+                    if operation.identity().is_some_and(|id| id.starts_with("filament.op.ieee."))))
                 && package
                     .source_map()
                     .iter()
@@ -109,8 +109,8 @@ pub(super) fn application(package: &CheckedPackageV2, function: &str) -> Checked
 }
 
 fn generate(
-    compiled: &qsl_replay::AdmittedCompilation,
-    libraries: &[(String, qsl_replay::AdmittedCompilation)],
+    compiled: &fsl_replay::AdmittedCompilation,
+    libraries: &[(String, fsl_replay::AdmittedCompilation)],
 ) -> CompositeEqualityOracles {
     let checked = checked(compiled, libraries);
     let items = enum_items(&checked, compiled.context());
@@ -127,7 +127,7 @@ fn generate(
 
 fn enum_items(
     checked: &CheckedPackageV2,
-    context: &qsl_replay::AdmittedContext,
+    context: &fsl_replay::AdmittedContext,
 ) -> Vec<CompositeEqualityItem> {
     let mut items = Vec::new();
     for (function, name, operator) in CASES {
@@ -164,7 +164,7 @@ fn enum_items(
 /// no graph or provenance fields are rewritten to manufacture negative inputs.
 pub(super) fn generate_items(
     checked: &CheckedPackageV2,
-    context: Option<&qsl_replay::AdmittedContext>,
+    context: Option<&fsl_replay::AdmittedContext>,
     items: &[CompositeEqualityItem],
     extra_roots: &[CheckedNodeId],
 ) -> Result<CompositeEqualityOracles, OracleGenerationError> {
@@ -173,7 +173,7 @@ pub(super) fn generate_items(
 
 pub(super) fn generate_items_with_limits(
     checked: &CheckedPackageV2,
-    context: Option<&qsl_replay::AdmittedContext>,
+    context: Option<&fsl_replay::AdmittedContext>,
     items: &[CompositeEqualityItem],
     extra_roots: &[CheckedNodeId],
     limits: filament_contract_codegen::CompositeEqualityLimits,
@@ -185,11 +185,11 @@ pub(super) fn generate_items_with_limits(
 /// This changes neither the source package nor the admitted context's ownership.
 pub(super) fn generate_items_with_libraries(
     checked: &CheckedPackageV2,
-    context: Option<&qsl_replay::AdmittedContext>,
+    context: Option<&fsl_replay::AdmittedContext>,
     items: &[CompositeEqualityItem],
     extra_roots: &[CheckedNodeId],
     limits: filament_contract_codegen::CompositeEqualityLimits,
-    libraries: &[(String, qsl_replay::AdmittedCompilation)],
+    libraries: &[(String, fsl_replay::AdmittedCompilation)],
 ) -> Result<CompositeEqualityOracles, OracleGenerationError> {
     let retained = libraries
         .iter()
@@ -206,7 +206,7 @@ pub(super) fn generate_items_with_libraries(
         .map(|(identity, package)| {
             (
                 *identity,
-                quire_contract_model::ContractDependencyInput { identity, package },
+                filament_contract_model::ContractDependencyInput { identity, package },
             )
         })
         .collect::<ContractDependencies<'_>>();
@@ -327,7 +327,7 @@ fn genuine_enum_generated_native_abi_agrees_with_owner() {
             .iter()
             .find(|artifact| artifact.path == "Cargo.toml")
             .expect("manifest");
-        assert!(manifest.contents.contains("qsl-replay ="));
+        assert!(manifest.contents.contains("fsl-replay ="));
         assert!(!manifest.contents.contains("test-support"));
         super::exact_scalar_agreement::run_enum_agreement_cases(
             &format!("admitted-enum-equality-{mode}"),
@@ -388,7 +388,7 @@ fn genuine_enum_generated_native_abi_agrees_with_owner() {
 }
 
 const INTEGER_SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\n\
-profile v = \"quire.value.complete/v1\";\n\
+profile v = \"filament.value.complete/v1\";\n\
 function integer_same using v(a: Integer,b: Integer): Boolean pure { a = b }\n";
 
 fn integer_item(package: &CheckedPackageV2) -> (CompositeEqualityItem, CheckedNodeId) {
@@ -569,12 +569,14 @@ pub(super) fn direct_source_item(
         .iter()
         .find(|node| node.node_id == node_id)
         .expect("actual expression");
-    let quire_contract_model::CheckedTerm::Application { arguments, .. } = &expression.body else {
+    let filament_contract_model::CheckedTerm::Application { arguments, .. } = &expression.body
+    else {
         panic!("actual binary application");
     };
     assert_eq!(arguments.len(), 2);
     let operand = |position: usize| {
-        let quire_contract_model::CheckedTerm::Reference { target } = &arguments[position] else {
+        let filament_contract_model::CheckedTerm::Reference { target } = &arguments[position]
+        else {
             panic!("actual IR reference ID, never a reconstructed semantic key");
         };
         let parameter = package
@@ -614,7 +616,7 @@ fn authentic_text_option_and_primitive_sequence_generate_with_real_bounds() {
             "rebuild_cardinality(0, 3)?",
         ),
     ] {
-        let source = format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nfunction f using v(a: {kind}, b: {kind}): Boolean pure {{ a = b }}\n");
+        let source = format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nfunction f using v(a: {kind}, b: {kind}): Boolean pure {{ a = b }}\n");
         let compiled = fixture::compile(&source);
         let package = checked(&compiled, &[]);
         let item = direct_source_item(&package, "f");
@@ -664,7 +666,7 @@ fn authentic_text_option_and_primitive_sequence_generate_with_real_bounds() {
 }
 
 pub(super) fn authentic_text_oracles() -> CompositeEqualityOracles {
-    let compiled = fixture::compile("language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nfunction f using v(a: Text[0, 16; nfc],b: Text[0, 16; nfc]): Boolean pure { a = b }\n");
+    let compiled = fixture::compile("language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nfunction f using v(a: Text[0, 16; nfc],b: Text[0, 16; nfc]): Boolean pure { a = b }\n");
     let package = checked(&compiled, &[]);
     let item = direct_source_item(&package, "f");
     let bounds = package
@@ -745,11 +747,11 @@ fn authentic_enum_request_order_repeatability_and_dual_operator_symbols() {
 }
 
 fn genuine_asymmetric_integer_equality() -> (
-    qsl_replay::AdmittedCompilation,
+    fsl_replay::AdmittedCompilation,
     CheckedPackageV2,
     CompositeEqualityItem,
 ) {
-    let compiled = fixture::compile("language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nfunction f using v(a: Int[0, 9],b: Integer): Boolean pure { convert<Integer>(a) = b }\n");
+    let compiled = fixture::compile("language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nfunction f using v(a: Int[0, 9],b: Integer): Boolean pure { convert<Integer>(a) = b }\n");
     let package = checked(&compiled, &[]);
     let source = package
         .resolved_graph()
@@ -784,7 +786,7 @@ fn genuine_asymmetric_integer_equality() -> (
         "conversion target remains unbounded Integer"
     );
     let body = serde_json::to_value(&conversion.body).expect("checked conversion body");
-    assert_eq!(body["operation"]["identity"], "quire.op.numeric.convert");
+    assert_eq!(body["operation"]["identity"], "filament.op.numeric.convert");
     let parameters = package
         .resolved_graph()
         .nodes

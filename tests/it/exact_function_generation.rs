@@ -16,8 +16,8 @@ use filament_contract_codegen::{
     FunctionScheduleParameter, FunctionScheduleRefusal as ScheduleRefusal,
     FunctionScheduledOperation, GeneratedExactFunctionClaim, UpstreamBlocker,
 };
+use filament_contract_model::CheckedPackageV2;
 use ix_trace_rs::trace;
-use quire_contract_model::CheckedPackageV2;
 use std::ops::Deref;
 
 #[trace(
@@ -92,15 +92,15 @@ fn tc_031_ac34_public_strict_reader_chain_generates_compilable_flat_schedule() {
     );
     let item_left = code_id(PARAM_BASE + 2);
 
-    let call_body = |callee: &quire_contract_model::CheckedNodeId,
+    let call_body = |callee: &filament_contract_model::CheckedNodeId,
                      params: &(
-        quire_contract_model::CheckedNodeId,
-        quire_contract_model::CheckedNodeId,
+        filament_contract_model::CheckedNodeId,
+        filament_contract_model::CheckedNodeId,
     )| {
         json!({
             "term": "application",
             "operator": "call",
-            "operation": op("quire.op.function.call"),
+            "operation": op("filament.op.function.call"),
             "result_type": code_id(T_INTEGER),
             "arguments": [
                 {"term": "reference", "target": callee},
@@ -110,13 +110,13 @@ fn tc_031_ac34_public_strict_reader_chain_generates_compilable_flat_schedule() {
         })
     };
     let scalar_body = |params: &(
-        quire_contract_model::CheckedNodeId,
-        quire_contract_model::CheckedNodeId,
+        filament_contract_model::CheckedNodeId,
+        filament_contract_model::CheckedNodeId,
     )| {
         json!({
             "term": "application",
             "operator": "binary",
-            "operation": op("quire.op.integer.add"),
+            "operation": op("filament.op.integer.add"),
             "result_type": code_id(T_INTEGER),
             "arguments": [
                 {"term": "reference", "target": params.0},
@@ -171,15 +171,15 @@ fn tc_031_ac34_public_strict_reader_chain_generates_compilable_flat_schedule() {
         function_ids[index as usize] = code_id(BASE + index);
     }
 
-    let make_item_body = |callee: &quire_contract_model::CheckedNodeId,
+    let make_item_body = |callee: &filament_contract_model::CheckedNodeId,
                           params: &(
-        quire_contract_model::CheckedNodeId,
-        quire_contract_model::CheckedNodeId,
+        filament_contract_model::CheckedNodeId,
+        filament_contract_model::CheckedNodeId,
     )| {
         json!({
             "term": "application",
             "operator": "call",
-            "operation": op("quire.op.function.call"),
+            "operation": op("filament.op.function.call"),
             "result_type": code_id(T_INTEGER),
             "arguments": [
                 {"term": "reference", "target": callee},
@@ -232,7 +232,7 @@ fn tc_031_ac34_public_strict_reader_chain_generates_compilable_flat_schedule() {
     let mut category_by_node = std::collections::BTreeMap::new();
     let mut wire_bytes = std::collections::BTreeMap::<String, WireBytes>::new();
     for node in nodes {
-        let node_id: quire_contract_model::CheckedNodeId =
+        let node_id: filament_contract_model::CheckedNodeId =
             serde_json::from_value(node["node_id"].clone()).expect("node key");
         let kind = category(node);
         category_by_node.insert(node_id, kind.to_owned());
@@ -242,7 +242,7 @@ fn tc_031_ac34_public_strict_reader_chain_generates_compilable_flat_schedule() {
     }
     let source_map = wire["source_map"].as_array().expect("source map");
     for source_entry in source_map {
-        let node_id: quire_contract_model::CheckedNodeId =
+        let node_id: filament_contract_model::CheckedNodeId =
             serde_json::from_value(source_entry["node_id"].clone()).expect("source-map key");
         let kind = category_by_node
             .get(&node_id)
@@ -287,7 +287,7 @@ fn tc_031_ac34_public_strict_reader_chain_generates_compilable_flat_schedule() {
     fn assert_typed_references_resolve(
         value: &Value,
         path: &str,
-        graph_ids: &std::collections::BTreeSet<quire_contract_model::CheckedNodeId>,
+        graph_ids: &std::collections::BTreeSet<filament_contract_model::CheckedNodeId>,
     ) {
         match value {
             Value::Array(items) => {
@@ -297,7 +297,7 @@ fn tc_031_ac34_public_strict_reader_chain_generates_compilable_flat_schedule() {
             }
             Value::Object(object) => {
                 if let Ok(node_id) =
-                    serde_json::from_value::<quire_contract_model::CheckedNodeId>(value.clone())
+                    serde_json::from_value::<filament_contract_model::CheckedNodeId>(value.clone())
                 {
                     assert!(
                         graph_ids.contains(&node_id),
@@ -712,7 +712,7 @@ fn tc_031_ac7_admitted_hundred_thousand_call_nodes_generate_on_a_512_kib_stack()
     assert!((1..=CALLS).contains(&calls));
 
     let operation = json!({
-        "identity": "quire.op.function.call",
+        "identity": "filament.op.function.call",
         "laws": [],
         "mode": null,
         "member": null,
@@ -789,7 +789,7 @@ fn tc_031_ac7_admitted_hundred_thousand_call_nodes_generate_on_a_512_kib_stack()
     );
     eprintln!("IR-496 AC7 phase=builder-complete calls={calls}");
 
-    let limits = quire_contract_model::CheckedPackageReadLimits {
+    let limits = filament_contract_model::CheckedPackageReadLimits {
         bytes: 1 << 30,
         nodes: 110_000,
         edges: 300_000,
@@ -1041,7 +1041,7 @@ fn tc_031_source_assigned_parent_key_survives_child_body_change() {
             "term": "application",
             "operator": "binary",
             "operation": {
-                "identity": "quire.op.integer.add",
+                "identity": "filament.op.integer.add",
                 "laws": [], "mode": null, "member": null, "leaves": [],
             },
             "result_type": code_id(T_INTEGER),
@@ -1070,7 +1070,7 @@ fn tc_031_source_assigned_parent_key_survives_child_body_change() {
     let (initial, mut wire, ids) = builder.read_resolved();
     assert!(matches!(
         initial,
-        quire_contract_model::CheckedPackageV2ReadResult::Admitted(_)
+        filament_contract_model::CheckedPackageV2ReadResult::Admitted(_)
     ));
     let parameter_id = ids.resolve(&code_id(PARAM_LEFT));
     let parent_id = ids.resolve(&code_id(PARENT));
@@ -1085,7 +1085,7 @@ fn tc_031_source_assigned_parent_key_survives_child_body_change() {
     let (repaired, wire, repaired_ids) = PackageBuilder::from_wire(wire).read_resolved();
     assert!(matches!(
         repaired,
-        quire_contract_model::CheckedPackageV2ReadResult::Admitted(_)
+        filament_contract_model::CheckedPackageV2ReadResult::Admitted(_)
     ));
     assert_eq!(repaired_ids.resolve(&code_id(PARAM_LEFT)), parameter_id);
     assert_eq!(repaired_ids.resolve(&code_id(PARENT)), parent_id);
@@ -1152,7 +1152,7 @@ struct FixturePackage {
 }
 
 impl FixturePackage {
-    fn key(&self, code: u32) -> quire_contract_model::CheckedNodeId {
+    fn key(&self, code: u32) -> filament_contract_model::CheckedNodeId {
         self.ids.resolve(&code_id(code))
     }
 }
@@ -1172,7 +1172,7 @@ fn admit(builder: PackageBuilder) -> FixturePackage {
 
 fn admit_with(
     builder: &PackageBuilder,
-    limits: quire_contract_model::CheckedPackageReadLimits,
+    limits: filament_contract_model::CheckedPackageReadLimits,
 ) -> FixturePackage {
     let (checked, ids) = builder.admit_with_resolved(limits);
     FixturePackage { checked, ids }
@@ -1185,7 +1185,7 @@ pub(super) struct FixtureOracles {
 }
 
 impl FixtureOracles {
-    fn key(&self, code: u32) -> quire_contract_model::CheckedNodeId {
+    fn key(&self, code: u32) -> filament_contract_model::CheckedNodeId {
         self.ids.resolve(&code_id(code))
     }
 }
@@ -1208,7 +1208,7 @@ fn generate(
 }
 
 struct AdmittedFunctionRequest {
-    contract: quire_contract_model::ContractPackageV1,
+    contract: filament_contract_model::ContractPackageV1,
     roots: Vec<filament_contract_codegen::ContractRequestPosition>,
 }
 
@@ -1267,7 +1267,7 @@ fn generate_in_request(
             .or_insert_with(std::collections::VecDeque::new)
             .push_back(position);
     }
-    let mut take_position = |node_id: &quire_contract_model::CheckedNodeId| {
+    let mut take_position = |node_id: &filament_contract_model::CheckedNodeId| {
         available
             .get_mut(node_id)
             .and_then(std::collections::VecDeque::pop_front)
@@ -1321,7 +1321,7 @@ fn tc_031_ac23_byte_ceiling_has_failed_records_and_no_contract_package() {
     use crate::common::byte_ceiling::{
         limits_under, lowered_package_length, measuring_profile, LARGEST_CEILING,
     };
-    use quire_contract_model::{CheckedNodeId, CheckedPackageLimit, CompleteLoweringRecordV2};
+    use filament_contract_model::{CheckedNodeId, CheckedPackageLimit, CompleteLoweringRecordV2};
 
     let builder = byte_ceiling_package();
     let functions = byte_ceiling_functions();
@@ -1410,7 +1410,7 @@ fn tc_031_ac23_small_shared_chain_lowers_with_complete_closures() {
     use crate::common::byte_ceiling::{
         limits_under, lowered_package_length, measuring_profile, LARGEST_CEILING,
     };
-    use quire_contract_model::CompleteLoweringRecordV2;
+    use filament_contract_model::CompleteLoweringRecordV2;
 
     let builder = byte_ceiling_package_with_shape(16, 15);
     let (source, sites) = byte_ceiling_source(16, 15);
@@ -1592,7 +1592,7 @@ fn tc_031_ac8_generated_source_never_names_check_mode_kernel() {
     let lib = contents(&oracles, "src/lib.rs");
     assert!(lib.contains("apply_checked_function("));
     assert!(!lib.contains("CheckMode::"));
-    assert!(!lib.contains("quire_contract_runtime"));
+    assert!(!lib.contains("filament_contract_runtime"));
 }
 
 /// A reference parameter type outside the
@@ -2784,7 +2784,7 @@ fn generated_manifest_exposes_semantic_value_owner_source() {
     let oracles = main_oracles();
     let manifest = contents(&oracles, "Cargo.toml");
     let dependency = format!(
-        "quire-semantic-value = {{ {} }}",
+        "filament-semantic-value = {{ {} }}",
         filament_contract_codegen::SEMANTIC_VALUE_DEPENDENCY_SOURCE
     );
     assert!(manifest.lines().any(|line| line == dependency));
@@ -2801,17 +2801,17 @@ fn tc_031_ac14_manifest_and_source_shape() {
     let manifest = contents(&oracles, "Cargo.toml");
     assert!(manifest.contains("publish = false"));
     for dependency in [
-        "qsl-replay",
-        "quire-eval",
-        "quire-exact",
-        "quire-semantic-value",
+        "fsl-replay",
+        "filament-eval",
+        "filament-exact",
+        "filament-semantic-value",
     ] {
         assert!(
             manifest.contains(&format!("{dependency} =")),
             "{dependency}"
         );
     }
-    assert!(!manifest.contains("quire-contract-runtime"));
+    assert!(!manifest.contains("filament-contract-runtime"));
     assert!(!manifest.contains("rev ="));
     assert!(manifest.contains("unsafe_code = \"forbid\""));
 

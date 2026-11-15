@@ -9,13 +9,13 @@ use std::{
     time::Duration,
 };
 
-use ix_trace_rs::trace;
-use qsl_replay::{
-    acquire_checked_closure, encode_refinement_query, CompileUnit, DependencyInput, DocumentRef,
+use filament_exact::Cancel;
+use fsl_replay::{
+    acfilament_checked_closure, encode_refinement_query, CompileUnit, DependencyInput, DocumentRef,
     NodeKey, RefinementQueryKind, RefinementQueryRequest, RefinementQuerySubject,
     RefinementUniverse, ReplayLimits, ScalarLimits, SourceIdentity, StageLimits,
 };
-use quire_exact::Cancel;
+use ix_trace_rs::trace;
 use serde_json::{json, Value};
 
 use super::{
@@ -42,8 +42,8 @@ fn model_with_fields(package: &str, operations: &[&str], field_count: usize) -> 
     let object = key(package, "Object");
     let population = key(package, "objects");
     let constructs: Vec<_> = [
-        ("object_type", "quire.meaning.model.object-type/v1"),
-        ("population", "quire.meaning.model.population/v1"),
+        ("object_type", "filament.meaning.model.object-type/v1"),
+        ("population", "filament.meaning.model.population/v1"),
     ]
     .into_iter()
     .map(|(name, meaning)| {
@@ -73,7 +73,7 @@ fn model_with_fields(package: &str, operations: &[&str], field_count: usize) -> 
             let name = format!("flag{index}");
             let identity = key(package, &format!("Object/{name}"));
             json!({"identity": identity, "name": name,
-                "typeRef": "ix://quire/native/Boolean", "presence": "required",
+                "typeRef": "ix://filament/native/Boolean", "presence": "required",
                 "nullable": false, "defaultKind": "none",
                 "multiplicity": {"lower": 1, "upper": 1, "ordered": false, "unique": true},
                 "origin": origin(&identity)})
@@ -111,7 +111,7 @@ fn initial_with_fields(
         .map(|index| (format!("flag{index}"), json!({"boolean": false})))
         .collect();
     let snapshot = json!({
-        "format": "quire.state.snapshot/v1",
+        "format": "filament.state.snapshot/v1",
         "identity": {"authority": "test", "identity": name,
             "revision_namespace": "fixture", "revision": "fixture:1"},
         "observation": "current",
@@ -149,7 +149,7 @@ fn authored_unit(row_count: usize, reverse: bool) -> String {
         .join(" ");
     format!(
         "language \"ix:native\" edition \"1-draft\";\n\
-         profile inf = \"quire.temporal.infinite-trace/v1\";\n\
+         profile inf = \"filament.temporal.infinite-trace/v1\";\n\
          model Abstract = \"{ABSTRACT}\";\n\
          model Concrete = \"{CONCRETE}\";\n\
          refinement SevenRows using inf abstract Abstract concrete Concrete {{\n\
@@ -201,7 +201,7 @@ fn with_source_request<T>(
     if any {
         source = source.replace("-> stutter;", "-> any;");
     }
-    let compiled = acquire_checked_closure(
+    let compiled = acfilament_checked_closure(
         CompileUnit {
             source: SourceIdentity::new("agent-ix", "ir1120-refinement"),
             package_name: "ir1120-refinement".to_owned(),
@@ -241,7 +241,7 @@ fn with_source_request<T>(
                 work_units: 1 << 30,
                 result_units: 1 << 30,
             },
-            qsl_replay::CallerLimits::default()
+            fsl_replay::CallerLimits::default()
                 .spine
                 .package
                 .with_output_bytes(16 * 1024 * 1024)
@@ -429,19 +429,19 @@ fn production_refinement_preserves_encoding_refusal_and_cancellation() {
                 refusal,
                 Err(RefinementPreparationError::Encoding {
                     role: Some(RefinementRole::Step { row: 0 }),
-                    refusal: qsl_replay::SmtEncodingRefusal::Refused(
-                        qsl_replay::Refusal::RefinementAnyRow { row: 0 }
+                    refusal: fsl_replay::SmtEncodingRefusal::Refused(
+                        fsl_replay::Refusal::RefinementAnyRow { row: 0 }
                     ),
                 })
             ),
             "the admitted any row must retain the original encoding refusal"
         );
         let cancel = Cancel::new();
-        cancel.cancel(quire_exact::CancelCause::Requested);
+        cancel.cancel(filament_exact::CancelCause::Requested);
         assert!(matches!(
             prepare_refinement(request, &cancel),
             Err(RefinementPreparationError::Cancelled(
-                quire_exact::CancelCause::Requested
+                filament_exact::CancelCause::Requested
             ))
         ));
     });
@@ -531,7 +531,7 @@ fn production_refinement_live_solver_handoff_reaches_fsl_checker() {
             .handoff()
             .expect("complete authenticated collection");
         assert_eq!(execution.handoff().expect("repeat"), handoff);
-        let limits = qsl_replay::CertificateCheckLimits::default();
+        let limits = fsl_replay::CertificateCheckLimits::default();
         let certificate = request
             .assemble_smt_certificate(&handoff, &limits, &cancel)
             .expect("public FSL assembly");
@@ -550,9 +550,9 @@ fn production_refinement_live_solver_handoff_reaches_fsl_checker() {
         assert!(
             matches!(
                 checked,
-                qsl_replay::SmtProofCheck::Verified
-                    | qsl_replay::SmtProofCheck::Unverifiable {
-                        part: qsl_replay::QueryPart::Step { row: Some(0) },
+                fsl_replay::SmtProofCheck::Verified
+                    | fsl_replay::SmtProofCheck::Unverifiable {
+                        part: fsl_replay::QueryPart::Step { row: Some(0) },
                         step: 2,
                     }
             ),

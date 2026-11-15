@@ -11,7 +11,14 @@
 
 use std::fmt;
 
-use qsl_replay::{
+use filament_contract_model::{
+    CheckedCompositeOperandDomain, CheckedCompositeOperandError, CheckedCompositeOperands,
+    CheckedCompositeOperator, CheckedNodeId, CheckedOccurrence, CheckedOccurrenceRole,
+    CheckedPackageEvidence, CheckedPackageIncomplete, CheckedPackageReadLimits,
+    CheckedPackageRefusal, CheckedPackageV2, CheckedPackageV2ReadResult, CheckedScalarOperandChild,
+    CheckedSourceRef, ContractSourceKeyV1,
+};
+use fsl_replay::{
     compile_admitted, parity_obligation, settle_verified_shadow, AdmittedCompilation,
     AdmittedContext, AdmittedRefusal, BoundEntries, CompileUnit, CompositeEvidence,
     CompositeIdentity, CompositeParityClaim, DependencyInput, Domain, DomainKey, EnvelopeSource,
@@ -19,13 +26,6 @@ use qsl_replay::{
     Origin, ParityArgument, ParityPreimage, ProofBound, QualifiedName, ReplayRequest,
     ReplayRequestRefusal, ReplayRequestWire, ReplayTarget, ReplayTargetMembers, RequestTargetWire,
     Role, VerifiedShadow, VerifiedShadowReport, WitnessEnvelope, WitnessPacket, WitnessRefusal,
-};
-use quire_contract_model::{
-    CheckedCompositeOperandDomain, CheckedCompositeOperandError, CheckedCompositeOperands,
-    CheckedCompositeOperator, CheckedNodeId, CheckedOccurrence, CheckedOccurrenceRole,
-    CheckedPackageEvidence, CheckedPackageIncomplete, CheckedPackageReadLimits,
-    CheckedPackageRefusal, CheckedPackageV2, CheckedPackageV2ReadResult, CheckedScalarOperandChild,
-    CheckedSourceRef, ContractSourceKeyV1,
 };
 
 use crate::core::ir::node_key::checked_node_key;
@@ -73,7 +73,7 @@ pub enum CompositeBuildError {
     /// IR reached a checked-package read ceiling.
     PackageReadLimit(CheckedPackageIncomplete),
     /// The owner operation catalog is unavailable, independently of package validity.
-    CatalogUnavailable(quire_contract_model::CatalogReadError),
+    CatalogUnavailable(filament_contract_model::CatalogReadError),
     /// The original application has no complete admitted structural equality operand projection.
     Operands(Box<CheckedCompositeOperandError>),
     /// The requested equality operator differs from the original application's operator.
@@ -201,7 +201,7 @@ pub struct OriginalCompositeEqContext {
 struct SelectedParityClaim {
     operands: CheckedCompositeOperands,
     preimage: ParityPreimage,
-    obligation: qsl_replay::ObligationIdentity,
+    obligation: fsl_replay::ObligationIdentity,
     claim: CompositeParityClaim,
 }
 
@@ -228,7 +228,7 @@ impl OriginalCompositeEqContext {
     #[allow(clippy::result_large_err)]
     pub fn new(
         original: CheckedPackageV2,
-        raw_package: qsl_replay::ReplayPackage,
+        raw_package: fsl_replay::ReplayPackage,
         original_source: &LockedSource,
         inputs: ReplayInputs,
         function: &str,
@@ -471,7 +471,7 @@ impl OriginalCompositeEqContext {
 pub(crate) fn wire_node(
     source: &CheckedPackageV2,
     node: &CheckedNodeId,
-) -> Result<quire_exact::NodeKey, CompositeBuildError> {
+) -> Result<filament_exact::NodeKey, CompositeBuildError> {
     let key = ContractSourceKeyV1::from_v2_request(source, node)
         .ok_or(CompositeBuildError::NodeIdentity)?;
     checked_node_key(key.structural_key()).ok_or(CompositeBuildError::NodeIdentity)
@@ -503,15 +503,15 @@ mod admitted_failure_tests {
     fn boundary_mapping_retains_a_genuine_malformed_source_package_refusal() {
         let cause = compile_admitted(
             CompileUnit {
-                source: qsl_replay::SourceIdentity::new("test", "invalid.native"),
+                source: fsl_replay::SourceIdentity::new("test", "invalid.native"),
                 package_name: "invalid".to_owned(),
                 path: "invalid.native",
                 bytes: b"language \"ix:native\" edition \"1-draft\"; record { ",
             },
             [],
             &DependencyInput::default(),
-            qsl_replay::StageLimits::default(),
-            qsl_replay::ReplayLimits::default(),
+            fsl_replay::StageLimits::default(),
+            fsl_replay::ReplayLimits::default(),
         )
         .expect_err("malformed source cannot produce an admitted context");
         assert!(matches!(cause, AdmittedRefusal::Package(_)));
@@ -525,8 +525,10 @@ mod admitted_failure_tests {
     #[trace("FR-018-AC-35", "TC-029")]
     #[test]
     fn actual_boundary_mapping_retains_public_fault_payload() {
-        let fault =
-            quire_semantic_value::catalog::InternalFault::new("fixture-stage", "fixture-invariant");
+        let fault = filament_semantic_value::catalog::InternalFault::new(
+            "fixture-stage",
+            "fixture-invariant",
+        );
         let mapped = recompile_failure(AdmittedRefusal::Fault(fault));
         let CompositeBuildError::Recompile(cause) = mapped else {
             panic!("mapping lost its typed recompile envelope");
@@ -546,7 +548,7 @@ pub struct OriginalCompositeEqRequest {
     claim: CompositeParityClaim,
     operands: CheckedCompositeOperands,
     preimage: ParityPreimage,
-    replay_limits: qsl_replay::ReplayLimits,
+    replay_limits: fsl_replay::ReplayLimits,
 }
 
 impl fmt::Debug for OriginalCompositeEqRequest {
@@ -641,7 +643,7 @@ impl OriginalCompositeEqReport {
 #[derive(Debug)]
 pub(crate) struct OriginalReplayContext {
     pub(crate) original: std::sync::Arc<CheckedPackageV2>,
-    pub(crate) raw_package: qsl_replay::ReplayPackage,
+    pub(crate) raw_package: fsl_replay::ReplayPackage,
     pub(crate) inputs: std::sync::Arc<ReplayInputs>,
     pub(crate) dependencies: DependencyInput,
     pub(crate) selection: QualifiedName,
@@ -651,7 +653,7 @@ pub(crate) struct OriginalReplayContext {
 impl OriginalReplayContext {
     pub(crate) fn new(
         original: CheckedPackageV2,
-        raw_package: qsl_replay::ReplayPackage,
+        raw_package: fsl_replay::ReplayPackage,
         original_source: &LockedSource,
         inputs: ReplayInputs,
         function: &str,

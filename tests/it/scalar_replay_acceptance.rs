@@ -12,17 +12,17 @@ use filament_contract_codegen::{
     scalar_run_terminal_value, CompletedScalarReplay, KaniRunOutcome, ScalarAuthorityError,
     ScalarBuildError, ScalarSentRequest, TerminalPairError, SCALAR_PLAYBACK_BYTES,
 };
-use ix_trace_rs::trace;
-use qsl_replay::{
+use filament_exact::{Integer, IntegerInterval};
+use fsl_replay::{
     Code, Domain, InconclusiveCause, NodeKey, OperandIdentity, OperatorClaim, OperatorParityReport,
     OperatorParityResult, Origin, ParityArgument, ParityPreimage, ReplayLimits, ReplayRefusal,
     ReplayRequestWire, Role, ScalarIdentityMismatch, ScalarOperand, ScalarOperation, TerminalValue,
 };
-use quire_exact::{Integer, IntegerInterval};
+use ix_trace_rs::trace;
 
 fn sum_fixture() -> ReplayFixture {
     replay_fixture(
-        "quire.op.integer.add",
+        "filament.op.integer.add",
         "x: Int[0, 9]",
         "Int[0, 18]",
         "x + x",
@@ -65,7 +65,7 @@ fn remint(wire: &mut ReplayRequestWire, claim: &OperatorClaim) {
             })
             .collect(),
     };
-    wire.obligation_identity = qsl_replay::parity_obligation(&preimage).expect("encodable");
+    wire.obligation_identity = fsl_replay::parity_obligation(&preimage).expect("encodable");
 }
 
 fn playback_code<T: std::fmt::Debug>(result: Result<T, ScalarBuildError>) -> String {
@@ -296,13 +296,13 @@ fn each_single_retained_member_change_refuses_the_genuine_report() {
         replay_limits: limits,
     };
     let completed = completed_sum(&fixture);
-    let genuine = qsl_replay::replay_operator_parity(wire.clone(), claim.clone(), limits);
+    let genuine = fsl_replay::replay_operator_parity(wire.clone(), claim.clone(), limits);
     assert!(completed.settlement(&sent, Some(&genuine)).is_ok());
 
     let node = |package: &str| {
         NodeKey::new(
             package,
-            vec![quire_exact::PathSegment::Text("0".to_owned())],
+            vec![filament_exact::PathSegment::Text("0".to_owned())],
             0,
         )
         .unwrap()
@@ -312,7 +312,7 @@ fn each_single_retained_member_change_refuses_the_genuine_report() {
         let mut changed = claim.clone();
         match member {
             0 => {
-                changed_wire.obligation_identity = qsl_replay::ObligationIdentity::new(
+                changed_wire.obligation_identity = fsl_replay::ObligationIdentity::new(
                     claim.node.clone(),
                     None,
                     wire.obligation_identity.ordinal() + 1,
@@ -334,7 +334,7 @@ fn each_single_retained_member_change_refuses_the_genuine_report() {
             }
             _ => unreachable!(),
         }
-        let report = qsl_replay::replay_operator_parity(changed_wire, changed, limits);
+        let report = fsl_replay::replay_operator_parity(changed_wire, changed, limits);
         assert_ne!(report.claim(), genuine.claim(), "member {member} differs");
         assert!(
             matches!(
@@ -355,7 +355,7 @@ fn each_single_retained_member_change_refuses_the_genuine_report() {
 fn fsl_refuses_a_changed_node_identity_as_stale_dependency() {
     let fixture = sum_fixture();
     let (wire, claim, limits) = genuine_request(&fixture);
-    let control = qsl_replay::replay_operator_parity(wire.clone(), claim.clone(), limits);
+    let control = fsl_replay::replay_operator_parity(wire.clone(), claim.clone(), limits);
     assert!(matches!(
         control.result(),
         OperatorParityResult::Agrees { .. }
@@ -368,7 +368,7 @@ fn fsl_refuses_a_changed_node_identity_as_stale_dependency() {
             source.package(),
             [
                 source.path(),
-                vec![quire_exact::PathSegment::Text("other".into())],
+                vec![filament_exact::PathSegment::Text("other".into())],
             ]
             .concat(),
             source.ordinal(),
@@ -379,7 +379,7 @@ fn fsl_refuses_a_changed_node_identity_as_stale_dependency() {
     for (member, changed_node) in nodes.into_iter().enumerate() {
         let mut changed = claim.clone();
         changed.node = changed_node;
-        let report = qsl_replay::replay_operator_parity(wire.clone(), changed, limits);
+        let report = fsl_replay::replay_operator_parity(wire.clone(), changed, limits);
         assert!(
             matches!(
                 scalar_identity(&report),
@@ -396,12 +396,12 @@ fn fsl_refuses_a_changed_node_identity_as_stale_dependency() {
     }
 
     let mut stale = wire.clone();
-    stale.obligation_identity = qsl_replay::ObligationIdentity::new(
+    stale.obligation_identity = fsl_replay::ObligationIdentity::new(
         wire.obligation_identity.node().clone(),
         None,
         wire.obligation_identity.ordinal() + 1,
     );
-    let report = qsl_replay::replay_operator_parity(stale, claim, limits);
+    let report = fsl_replay::replay_operator_parity(stale, claim, limits);
     assert!(matches!(
         scalar_identity(&report),
         ScalarIdentityMismatch::Obligation { .. }
@@ -492,7 +492,7 @@ fn a_body_or_record_missing_a_retained_member_refuses_setup() {
 #[test]
 fn draw_order_is_kept_and_unrelated_enclosing_parameters_are_excluded() {
     let fixture = replay_fixture(
-        "quire.op.integer.sub",
+        "filament.op.integer.sub",
         "x: Int[10, 20], y: Int[0, 9], z: Int[50, 60]",
         "Int[-20, -1]",
         "y - x",
@@ -534,7 +534,7 @@ fn draw_order_is_kept_and_unrelated_enclosing_parameters_are_excluded() {
     let observation = observe(&fixture, &original, false);
     assert_eq!(
         observation.outcome,
-        qsl_replay::NativeOutcome::Completed(Integer::from(-12_i64))
+        fsl_replay::NativeOutcome::Completed(Integer::from(-12_i64))
     );
     let (wire, claim, limits) = original.complete(observation).unwrap().request();
     let ScalarOperation::Subtract { left, right } = &claim.operation else {
@@ -542,7 +542,7 @@ fn draw_order_is_kept_and_unrelated_enclosing_parameters_are_excluded() {
     };
     assert_eq!((left.value, right.value), (3, 15));
     assert!(matches!(
-        qsl_replay::replay_operator_parity(wire, claim, limits).result(),
+        fsl_replay::replay_operator_parity(wire, claim, limits).result(),
         OperatorParityResult::Agrees { .. }
     ));
 }
@@ -554,7 +554,7 @@ fn draw_order_is_kept_and_unrelated_enclosing_parameters_are_excluded() {
 #[test]
 fn invented_membership_is_refused_before_identity_comparison() {
     let fixture = replay_fixture(
-        "quire.op.integer.add",
+        "filament.op.integer.add",
         "x: Int[0, 9]",
         "Int[3, 12]",
         "x + 3",
@@ -566,7 +566,7 @@ fn invented_membership_is_refused_before_identity_comparison() {
     remint(&mut control_wire, &claim);
     assert!(
         matches!(
-            qsl_replay::replay_operator_parity(control_wire, claim.clone(), limits).result(),
+            fsl_replay::replay_operator_parity(control_wire, claim.clone(), limits).result(),
             OperatorParityResult::Agrees { .. }
         ),
         "the reminted genuine claim is accepted"
@@ -610,7 +610,7 @@ fn invented_membership_is_refused_before_identity_comparison() {
         }
         let mut changed_wire = wire.clone();
         remint(&mut changed_wire, &changed);
-        let report = qsl_replay::replay_operator_parity(changed_wire, changed, limits);
+        let report = fsl_replay::replay_operator_parity(changed_wire, changed, limits);
         let mismatch = scalar_identity(&report);
         let expected = match member {
             0 => matches!(mismatch, ScalarIdentityMismatch::Occurrence { .. }),

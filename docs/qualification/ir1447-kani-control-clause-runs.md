@@ -42,7 +42,7 @@ Union `case` (AC-154, 158, 162, 163, 171; FR-025-AC-19) needs a union operation 
 subject signature; collection `if` (AC-155, 159) needs a collection predicate arm; shadowing
 (AC-170, 173) needs constructed packages; AC-161 and the four other reasons of AC-167 have no
 reachable FSL clause fixture (their `control_operands` shape checks and the reader's `case_term`
-are tested over FSL-compiled function packages); the `let` of `quire.op.option.value` clause of
+are tested over FSL-compiled function packages); the `let` of `filament.op.option.value` clause of
 AC-166 is not tested because the FSL checker refuses `value(...)` over the fixture's nullable
 parameter. The AC-160 and AC-166 tests are default-lane tests in
 `tests/it/kani_obligations_v2_control.rs`, not Kani runs.

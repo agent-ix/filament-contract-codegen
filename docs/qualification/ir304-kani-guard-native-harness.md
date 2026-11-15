@@ -30,7 +30,7 @@ were therefore restricted to the native route.
   `f(x: Int[5, 9], y: Int[0, 4]): Int[0, 10] { if x OP y then x + 1 else 0 }`, routed item `x + 1`
   with path condition `[(x OP y, holds=true)]`, unwind 3. `OP` is `<` (infeasible: every `x >= 5`
   exceeds every `y <= 4`) or `>` (feasible). The generated file was copied unchanged to a scratch
-  crate whose only dependency is quire-exact `main` at the commit CG's `Cargo.lock` records; the
+  crate whose only dependency is filament-exact `main` at the commit CG's `Cargo.lock` records; the
   harness is self-contained and calls no subject.
 - Command (Kani 0.68.0, CBMC 6.11.0), one run at a time inside `flock /tmp/cargo-slot.lock`,
   `systemd-run --user --scope -p MemoryMax=24G -p MemorySwapMax=0`, `timeout 1800`:
@@ -71,7 +71,7 @@ recorded after the table.
 | mutant C: guard not assumed, `kani::assume(left_native < guard_0);` deleted (infeasible case) | VERIFICATION SUCCESSFUL, 1 of 1 cover satisfied | `Verified`, not `CoverUnsatisfied` | 95,296 | 3.15 s | 5.68 s | 9.0 s | 0.605 GB |
 
 Failing step of mutants A and B: the assertion "the oracle must complete with exactly the native
-quire.op.integer.add result when it lies in the checked domain, and refuse otherwise". Mutant C
+filament.op.integer.add result when it lies in the checked domain, and refuse otherwise". Mutant C
 fails the expected verdict: the unassumed guard makes the `completed` cover reachable, so the
 infeasible harness no longer reports `CoverUnsatisfied`.
 

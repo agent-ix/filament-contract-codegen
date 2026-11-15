@@ -4,7 +4,7 @@
 //! lowered, its expression. A guard is lowerable as a direct Boolean parameter reference or an
 //! IR-confirmed integer comparison between bounded-integer parameters and `i64` literals.
 
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedNodeId, CheckedNodeTag, CheckedTerm, ContractFeatureRecordV1, ContractSourceKeyV1,
 };
 
@@ -166,7 +166,7 @@ fn root_lowered(lookup: &ContractLookup<'_>, guard: &CheckedNodeId) -> bool {
 /// Whether the node is a parameter typed Boolean.
 fn is_boolean_parameter(
     lookup: &ContractLookup<'_>,
-    node: &quire_contract_model::CheckedSemanticNodeV2<quire_contract_model::CheckedJson>,
+    node: &filament_contract_model::CheckedSemanticNodeV2<filament_contract_model::CheckedJson>,
 ) -> bool {
     &*node.semantic_form == "parameter"
         && scalar_type_form(&lookup.graph, &node.semantic_type).as_deref() == Some("boolean")
@@ -216,7 +216,7 @@ fn side(lookup: &ContractLookup<'_>, term: &CheckedTerm) -> Result<Side, Fault> 
     // FSL proves the literal lies in the conversion's target range before it admits the package
     // (an out-of-range literal is an `Unproved(Range)` check refusal and no such package exists),
     // so the conversion keeps the literal's value and needs no second range check here.
-    if identity(graph.term(&node.node_id)) == Some("quire.op.numeric.narrow") {
+    if identity(graph.term(&node.node_id)) == Some("filament.op.numeric.narrow") {
         if let Some([argument]) = graph.arguments(&node.node_id) {
             return through_conversion(side(lookup, argument));
         }

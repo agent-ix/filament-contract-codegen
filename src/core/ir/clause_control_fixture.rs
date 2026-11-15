@@ -1,13 +1,13 @@
 //! Packages compiled from FSL functions whose bodies hold the control applications.
 
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedNodeId, CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
     CheckedPackageV2ReadResult, CheckedTerm,
 };
 
 const SOURCE: &str = concat!(
     "language \"ix:native\" edition \"1-draft\";\n",
-    "profile v = \"quire.value.complete/v1\";\n",
+    "profile v = \"filament.value.complete/v1\";\n",
     "union Kind { A, B, C }\n",
     "union Shape { Empty, Circle(Integer) }\n",
     "function pick using v(k: Kind): Integer pure { case k { C: 3; A: 1; B: 2; } }\n",
@@ -18,21 +18,21 @@ const SOURCE: &str = concat!(
 );
 
 pub(crate) fn package() -> CheckedPackageV2 {
-    let compiled = qsl_replay::compile_admitted(
-        qsl_replay::CompileUnit {
-            source: qsl_replay::SourceIdentity::new("test", "controls.native"),
+    let compiled = fsl_replay::compile_admitted(
+        fsl_replay::CompileUnit {
+            source: fsl_replay::SourceIdentity::new("test", "controls.native"),
             package_name: "controls".to_owned(),
             path: "controls.native",
             bytes: SOURCE.as_bytes(),
         },
         [],
-        &qsl_replay::DependencyInput::default(),
-        qsl_replay::StageLimits::default(),
-        qsl_replay::ReplayLimits::default(),
+        &fsl_replay::DependencyInput::default(),
+        fsl_replay::StageLimits::default(),
+        fsl_replay::ReplayLimits::default(),
     )
     .expect("the control functions compile");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     let read = CheckedPackageV2::read(
         compiled.package().bytes(),
         CheckedPackageReadLimits::bounded(),

@@ -4,7 +4,7 @@
 //! harness. The same assumptions narrow each symbolic input's range: interval analysis removes
 //! only values that falsify an assumed guard, so no execution the claim covers is dropped.
 
-use quire_contract_model::CheckedNodeId;
+use filament_contract_model::CheckedNodeId;
 
 use crate::{
     core::requirement::{RequirementGuard, RequirementOccurrence},
@@ -30,12 +30,12 @@ impl Comparison {
     /// The comparison a catalogued identity names.
     pub(crate) fn from_identity(identity: &str) -> Option<Self> {
         Some(match identity {
-            "quire.op.integer.lt" => Self::Lt,
-            "quire.op.integer.le" => Self::Le,
-            "quire.op.integer.gt" => Self::Gt,
-            "quire.op.integer.ge" => Self::Ge,
-            "quire.op.integer.eq" => Self::Eq,
-            "quire.op.integer.ne" => Self::Ne,
+            "filament.op.integer.lt" => Self::Lt,
+            "filament.op.integer.le" => Self::Le,
+            "filament.op.integer.gt" => Self::Gt,
+            "filament.op.integer.ge" => Self::Ge,
+            "filament.op.integer.eq" => Self::Eq,
+            "filament.op.integer.ne" => Self::Ne,
             _ => return None,
         })
     }
@@ -435,7 +435,7 @@ mod tests {
             guards: vec![ResolvedGuard {
                 occurrence: RequirementOccurrence {
                     node_id: node("g"),
-                    role: quire_contract_model::CheckedOccurrenceRole::Expression,
+                    role: filament_contract_model::CheckedOccurrenceRole::Expression,
                     ordinal: 0,
                 },
                 holds,

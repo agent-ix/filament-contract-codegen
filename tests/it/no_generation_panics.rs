@@ -13,8 +13,8 @@ use filament_contract_codegen::{
     ItemSettlement, KaniObligationOutcome, KaniObligationRequest, ObligationDisposition,
     ObligationItem, UnsupportedObligation,
 };
+use filament_contract_model::CheckedNodeId;
 use ix_trace_rs::trace;
-use quire_contract_model::CheckedNodeId;
 
 use crate::common::panic_scan::{non_test_code_outside_literals, panic_tokens_in};
 use crate::kani_obligations::{admitted_scalar_claims, scalar_package};
@@ -508,7 +508,7 @@ fn tc_042_ac2_a_claim_map_this_generator_did_not_produce_is_operation_not_render
         .items
         .iter()
         .find(|claim| {
-            claim.operation.identity == "quire.op.integer.add"
+            claim.operation.identity == "filament.op.integer.add"
                 && matches!(claim.result, ClaimDisposition::Generated(_))
         })
         .map(|claim| claim.node_id.clone())

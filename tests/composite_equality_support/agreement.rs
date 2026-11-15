@@ -10,8 +10,8 @@
 #![allow(dead_code, unused_imports)]
 
 /// The exact source case used by this scratch run, admitted independently through the public root.
-pub fn context() -> &'static qsl_replay::AdmittedContext {
-    static ORIGINAL: std::sync::OnceLock<qsl_replay::AdmittedCompilation> = std::sync::OnceLock::new();
+pub fn context() -> &'static fsl_replay::AdmittedContext {
+    static ORIGINAL: std::sync::OnceLock<fsl_replay::AdmittedCompilation> = std::sync::OnceLock::new();
     ORIGINAL.get_or_init(|| {
         let case = std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/case-mode"))
             .expect("host retained original source case");
@@ -185,7 +185,7 @@ macro_rules! shared_helpers {
         //
         // Declared directly against `CompositeDeclaration`, `FieldDeclaration`
         // and `NodeKey` rather than read back from the generated crate
-        // (which only ever produces `quire_contract_runtime::exact::TypeEnvironment`),
+        // (which only ever produces `filament_contract_runtime::exact::TypeEnvironment`),
         // so this expands under `rt_side` into a Contract Runtime environment
         // built the same way the direct-call leg builds its own.
 
@@ -369,8 +369,8 @@ macro_rules! shared_helpers {
             ValueType::Enum(EnumShape::new(actual.is_ordered(), actual.cases().iter().map(|case| declaration.member(case.case().as_str()).variant())))
         }
 
-        pub fn enum_members() -> quire_semantic_value::enumeration::EnumMemberIndex {
-            let mut index = quire_semantic_value::enumeration::EnumMemberIndex::default();
+        pub fn enum_members() -> filament_semantic_value::enumeration::EnumMemberIndex {
+            let mut index = filament_semantic_value::enumeration::EnumMemberIndex::default();
             for actual in super::context().enums() {
                 let declaration = EnumDeclaration::new(actual.key().clone(), actual.is_ordered(), actual.cases().iter().map(|case| case.case().as_str().to_owned()).collect())
                     .expect("genuine full enum declaration");
@@ -435,7 +435,7 @@ macro_rules! shared_helpers {
                 Ok(checked) => checked,
                 Err(error) => {
                     return Outcome::Refused(Refusal::CheckedInvariant {
-                        cause: quire_exact::CheckedInvariantCause::GeneratedEqualityCheckRejected {
+                        cause: filament_exact::CheckedInvariantCause::GeneratedEqualityCheckRejected {
                             cause: error.cause,
                         },
                     })
@@ -447,18 +447,18 @@ macro_rules! shared_helpers {
 }
 
 pub mod rt_side {
-    pub use quire_semantic_value::declaration::{
+    pub use filament_semantic_value::declaration::{
         CompositeDeclaration, CompositeShape, EqualityOperand, EqualityOperator, FieldDeclaration,
         ObjectTypeDeclaration, TypeEnvironment,
     };
-    pub use quire_semantic_value::enumeration::{EnumDeclaration, EnumValue};
-    pub use quire_exact::*;
+    pub use filament_semantic_value::enumeration::{EnumDeclaration, EnumValue};
+    pub use filament_exact::*;
     shared_helpers!();
 
     /// Genuine original Phase declaration, including every admitted case key and canonical rank.
     pub struct EnumStatus {
         declaration: EnumDeclaration,
-        admitted: qsl_replay::AdmittedEnum,
+        admitted: fsl_replay::AdmittedEnum,
     }
 
     pub fn enum_status() -> EnumStatus {

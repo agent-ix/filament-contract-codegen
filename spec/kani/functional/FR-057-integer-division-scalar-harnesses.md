@@ -27,9 +27,9 @@ relationships:
 When an admitted request selects an IR-confirmed V2 exact-scalar claim of one
 of the following kinds, CG SHALL generate a bounded Kani row:
 
-- `quire.op.integer.div` or `quire.op.integer.rem`, each with its one
+- `filament.op.integer.div` or `filament.op.integer.rem`, each with its one
   law-selected `DivisionProfile` (truncating, floor or Euclidean);
-- `quire.op.integer.mod`, which is always the Euclidean remainder and carries
+- `filament.op.integer.mod`, which is always the Euclidean remainder and carries
   no law.
 
 The row proves that the claim's generated oracle agrees with an independent
@@ -389,10 +389,29 @@ Partly delivered (PARTIAL):
 
 Not delivered (PARTIAL, owner IR-1541):
 
-- AC-7's native-route `Verified` verdicts and its native minimum (one shape per
-  operation, at least the constant-divisor shape at 8 bits). The native route
-  refuses per AC-6 until the kernel plan exists. The native-route rows are copied
-  into the shipped table by the PR that consumes IR-1541's measurements (AC-9).
+- AC-7's native-route `Verified` verdicts of CG's own generated harnesses and its
+  native minimum (one shape per operation, at least the constant-divisor shape at
+  8 bits). The native route still refuses per AC-6
+  (`NativeDivisionPlanUnavailable`), although the kernel's `Divide` and `Modulo`
+  plan now exists, so CG generates no native division harness to run.
+  Delivered toward it: the kernel's measured record (filament-exact TC-957, 80
+  harnesses: 42 VERIFIED, 20 timeout at 600 s, 18 covered by a smaller width) is
+  copied into the shipped table as native-route rows, one `tractable` row at 8
+  bits (every profile and member verified at the symbolic 8-bit width) and one
+  `not_tractable` row at 16 bits (the smallest symbolic width that timed out
+  under any profile) for each of `div`, `rem` and `mod`. The rows carry no
+  profile, member or divisor-shape key, so they state the least tractable
+  profile and the symbolic divisor; the kernel measured constant divisors
+  `7`, `-7` and `-1` verified at 64 bits (and some at 128), which these rows
+  neither record nor refuse until the table grows a divisor-shape feature. The
+  kernel's verdicts are its own harnesses', not CG's, so AC-7 stays PARTIAL.
+  The rows record that provenance (`provenance`, the kernel's TC-957 record) and carry
+  CG's current `generator_version` and `kernel_version` so they are current; those
+  two fields do not claim a CG build measured them. The 16-bit `not_tractable` rows
+  are the least-tractable limit and over-refuse combinations the kernel verified at
+  16 bits (truncating quotient and remainder) and constant divisors at 64 bits, because
+  the table keys on operation id and width alone. That over-refusal is a known
+  limitation until a profile or divisor-shape feature exists.
 - AC-8's installed-Kani mutant falsification and its playback replay. No
   general-route shape is tractable, and the one mutant tried on the general route
   (completing at a zero divisor, over a 5-bit explicit-result fixture) also

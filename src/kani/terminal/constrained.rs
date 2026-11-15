@@ -25,9 +25,10 @@ pub struct ConstrainedOwnerObservation<'a> {
     /// Method whose admitted clauses and snapshot were evaluated.
     pub method: &'a ConstrainedMethodIdentity,
     /// Original FSL/kernel safety evaluation or original call failure.
-    pub safety: Result<&'a qsl_replay::ClauseEvaluation, &'a quire_eval::CallFailure>,
+    pub safety: Result<&'a fsl_replay::ClauseEvaluation, &'a filament_eval::CallFailure>,
     /// Original FSL/kernel constraint evaluation or original call failure.
-    pub constraint: Option<Result<&'a qsl_replay::ClauseEvaluation, &'a quire_eval::CallFailure>>,
+    pub constraint:
+        Option<Result<&'a fsl_replay::ClauseEvaluation, &'a filament_eval::CallFailure>>,
     /// Exact backend playback when evaluating a counterexample; absent on a nonfalsified run.
     pub playback: Option<&'a str>,
 }
@@ -77,9 +78,9 @@ impl ConstrainedMethodResult<'_> {
         self.evidence
     }
     /// The owner's established-invariant-broken code/cause for a call failure.
-    pub fn fault_catalog_code(&self) -> Option<quire_semantic_value::catalog::CatalogCode> {
+    pub fn fault_catalog_code(&self) -> Option<filament_semantic_value::catalog::CatalogCode> {
         (self.status == ConstrainedMethodStatus::RuntimeInvariant).then(|| {
-            quire_semantic_value::catalog::InternalFault::new(
+            filament_semantic_value::catalog::InternalFault::new(
                 "kani-constrained-method",
                 "owner-call-succeeded",
             )
@@ -133,7 +134,7 @@ pub fn classify_constrained_method<'a>(
     evidence: &'a ConstrainedBackendEvidence,
     owner: &'a ConstrainedOwnerObservation<'a>,
 ) -> Result<ConstrainedMethodResult<'a>, ConstrainedBindingRefusal> {
-    use qsl_replay::ClauseEvaluation as O;
+    use fsl_replay::ClauseEvaluation as O;
     use ConstrainedMethodStatus as S;
     if &evidence.method != owner.method {
         return Err(ConstrainedBindingRefusal::Method);
@@ -190,11 +191,11 @@ pub fn classify_constrained_method<'a>(
             }
         }
     });
-    let is_fault = |value: Result<&qsl_replay::ClauseEvaluation, &quire_eval::CallFailure>| {
+    let is_fault = |value: Result<&fsl_replay::ClauseEvaluation, &filament_eval::CallFailure>| {
         value.is_err()
             || matches!(
                 value,
-                Ok(O::Refused(qsl_replay::ClauseRefusal::Fault { .. }))
+                Ok(O::Refused(fsl_replay::ClauseRefusal::Fault { .. }))
             )
     };
     let status = if is_fault(owner.safety) || owner.constraint.is_some_and(is_fault) {
@@ -286,7 +287,7 @@ pub struct ConstrainedReplaySettlement<'a> {
 pub fn constrained_terminal_value(
     result: &ConstrainedMethodResult<'_>,
     replay: Option<ConstrainedReplaySettlement<'_>>,
-) -> Result<qsl_replay::TerminalValue, ConstrainedBindingRefusal> {
+) -> Result<fsl_replay::TerminalValue, ConstrainedBindingRefusal> {
     let needs_replay = matches!(
         result.status,
         ConstrainedMethodStatus::Falsified | ConstrainedMethodStatus::EvaluationViolation

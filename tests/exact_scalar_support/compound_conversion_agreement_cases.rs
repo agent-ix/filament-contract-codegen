@@ -13,8 +13,8 @@ use generated::{
     compound_chain, compound_source, compound_target, quantity_product, quantity_square, OracleStop,
 };
 use ix_trace_rs::trace;
-use quire_exact::{IllTyped, Integer, Meter, Outcome, Quantity, Rational};
-use quire_semantic_value::quantity::{IdentifiedUnit, UnitQuantity};
+use filament_exact::{IllTyped, Integer, Meter, Outcome, Quantity, Rational};
+use filament_semantic_value::quantity::{IdentifiedUnit, UnitQuantity};
 
 fn typed(
     result: Result<Outcome<Quantity>, OracleStop>,
@@ -30,7 +30,7 @@ fn direct(
     target: &IdentifiedUnit,
     meter: &mut Meter,
 ) -> Result<Outcome<Quantity>, IllTyped> {
-    use quire_semantic_value::quantity::{convert_quantity, ConvertedValue, QuantityTarget};
+    use filament_semantic_value::quantity::{convert_quantity, ConvertedValue, QuantityTarget};
 
     convert_quantity(source, target.unit(), &QuantityTarget::Exact, meter).map(|outcome| {
         match outcome {
@@ -48,7 +48,7 @@ fn direct(
 }
 
 fn compound_unit(fixture: &support::rt_side::Fixture, terms: &[(&str, i64)]) -> IdentifiedUnit {
-    use quire_semantic_value::quantity::{result_unit, UnitOperation};
+    use filament_semantic_value::quantity::{result_unit, UnitOperation};
 
     let metre = fixture.unit("m");
     let mut unit = result_unit(UnitOperation::Divide, metre.unit(), metre.unit())
@@ -205,7 +205,7 @@ fn inline_integer_exponent_u12_square_agrees_in_value_charges_counters_and_denia
 #[trace("FR-014-AC-59", "TC-024")]
 #[test]
 fn generated_compound_product_chains_into_another_multiply() {
-    use quire_semantic_value::quantity::UnitScope;
+    use filament_semantic_value::quantity::UnitScope;
 
     let fixture = support::rt_side::named_fixture(&support::GraphSpec::conversions());
     let (left, right, following) = (

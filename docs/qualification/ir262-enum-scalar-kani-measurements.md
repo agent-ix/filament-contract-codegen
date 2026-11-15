@@ -1,6 +1,6 @@
 # IR-262 enum scalar Kani measurements
 
-Kani 0.68.0, CBMC 6.11.0, `--solver cadical`, unwind 1, rustc stable, quire-exact `b81e5950`
+Kani 0.68.0, CBMC 6.11.0, `--solver cadical`, unwind 1, rustc stable, filament-exact `b81e5950`
 (native enum carrier, FR-407). Every option is the harness's own vector, recorded in its
 `identity.options` (`-Z function-contracts --harness <module>::<proof> --exact --unwind 1
 --solver cadical --output-format regular`, then the runner's `-Z unstable-options --export-json`).

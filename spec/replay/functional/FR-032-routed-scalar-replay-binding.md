@@ -169,8 +169,8 @@ is AC-16. The replay projection refers to those criteria rather than redefining 
 slice adds no refusal-cause equality, admitted-charge sequence or consumed-counter equality.
 The original limits remain inputs so the driver and FSL execute the proving context.
 
-The current profile comprises only `quire.op.integer.add`, `quire.op.integer.sub`,
-`quire.op.integer.mul` and `quire.op.integer.negate` over the persisted `i64` operands.
+The current profile comprises only `filament.op.integer.add`, `filament.op.integer.sub`,
+`filament.op.integer.mul` and `filament.op.integer.negate` over the persisted `i64` operands.
 These operations are mathematically defined for every admitted operand vector. An observed
 `Undefined` therefore cannot agree with this profile; like `Incomplete` or an execution fault,
 it does not conform to the current harness's `_ => false` assertion and cannot become
@@ -540,7 +540,7 @@ actual driver/FSL ties. `tests/it/scalar_replay_residuals.rs` adds every current
 integer operator, distinct parameters, an occurrence-qualified inline literal,
 source-span invariance, independently observed result changes and missing-body
 refusals. The subtract and multiply paths consume the catalogue identities
-`quire.op.integer.sub` and `quire.op.integer.mul` stated above.
+`filament.op.integer.sub` and `filament.op.integer.mul` stated above.
 
 These are real native executions and owner replay calls, not proof receipts.
 The complete same-proved-artifact falsification pipeline remains Planned under

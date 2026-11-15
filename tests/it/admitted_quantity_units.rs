@@ -5,16 +5,16 @@ use super::admitted_enum_equality::{checked, direct_source_item, generate_items}
 use filament_contract_codegen::{
     ClaimDisposition, CompositeEqualityOracles, CompositeEqualityRefusal, OracleGenerationError,
 };
-use ix_trace_rs::trace;
-use qsl_replay::{
+use fsl_replay::{
     compile_admitted, AdmittedCompilation, CompileUnit, DependencyInput, ReplayLimits,
     SourceIdentity, StageLimits,
 };
+use ix_trace_rs::trace;
 use std::collections::BTreeSet;
 
 const SOURCE: &str = r#"
 language "ix:native" edition "1-draft";
-profile v = "quire.value.complete/v1";
+profile v = "filament.value.complete/v1";
 dimension Length;
 unit m : Length = rational(1, 1);
 unit km : Length = rational(1000, 1) * m;

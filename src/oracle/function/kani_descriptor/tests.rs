@@ -1,11 +1,11 @@
 use super::*;
-use ix_trace_rs::trace;
-use quire_exact::{
+use filament_exact::{
     BoundedQuantityType, CardinalityBound, CarriedQuantityType, CollectionKind, CollectionType,
     DecimalType, EffectiveId, EnumShape, FloatType, IeeeWidth, Integer, IntegerInterval, MapType,
     NodeKey, OriginalDeclarationKey, PathSegment, Quantity, QuantityCarrier, Rational,
     RationalDomain, RoundingMode, TextProfile, TextType, UnitId, ValueType, VariantId,
 };
+use ix_trace_rs::trace;
 use std::path::Path;
 use std::process::Command;
 
@@ -179,7 +179,7 @@ fn rebuilt_debug(name: &str, expressions: &[String]) -> String {
     std::fs::write(
         directory.join("Cargo.toml"),
         format!(
-            "[package]\nname = \"kani-descriptor-roundtrip-{}\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\nquire-exact = {{ {} }}\n\n[workspace]\n",
+            "[package]\nname = \"kani-descriptor-roundtrip-{}\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\nfilament-exact = {{ {} }}\n\n[workspace]\n",
             name,
             crate::core::profile::EXACT_DEPENDENCY_SOURCE
         ),
@@ -193,7 +193,7 @@ fn rebuilt_debug(name: &str, expressions: &[String]) -> String {
     std::fs::write(
         directory.join("src/main.rs"),
         format!(
-            "use quire_exact as exact;\nfn rebuilt<T, E>(result: Result<T, E>) -> T {{ match result {{ Ok(value) => value, Err(_) => panic!(\"rebuild failed\") }} }}\nfn main() {{\n    let values: Vec<exact::ValueType> = vec![{}];\n    for value in &values {{ print!(\"{{value:?}}\\u{{1f}}\"); }}\n}}\n",
+            "use filament_exact as exact;\nfn rebuilt<T, E>(result: Result<T, E>) -> T {{ match result {{ Ok(value) => value, Err(_) => panic!(\"rebuild failed\") }} }}\nfn main() {{\n    let values: Vec<exact::ValueType> = vec![{}];\n    for value in &values {{ print!(\"{{value:?}}\\u{{1f}}\"); }}\n}}\n",
             expressions.join(",\n        ")
         ),
     )

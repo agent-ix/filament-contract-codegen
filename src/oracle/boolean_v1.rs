@@ -9,7 +9,7 @@ use crate::{
     core::naming::{observation_name, oracle_symbol, reference_identifier},
     core::source_map::{SourceProbe, SourceRegion},
 };
-use quire_contract_model::{
+use filament_contract_model::{
     BooleanOperator, ClauseId, ComparisonOperator, DefinednessObligationKind, DependencyIdentity,
     DependencyKind, Expression, ExpressionKind, IntegerType, NumericOperator, OverflowPolicy,
     RequirementRef, SourceSpan, StateObservation, TypedExpression, ValueType,
@@ -302,21 +302,23 @@ fn generate_boolean_oracle_inner(
     ];
     header.push(String::new());
     if returns_outcome {
-        header.push("use quire_exact as rt;".to_owned());
+        header.push("use filament_exact as rt;".to_owned());
         header.extend(native_helper_lines(rendered.helpers));
     }
 
     let mut source = SourceBuilder::new();
     for line in header.into_iter().chain([
         format!("/// Generated contract identity for `{requirement}@{revision}`."),
-        format!("pub const {identity_symbol}: quire_contract_runtime::ContractIdentity<'static> ="),
-        "quire_contract_runtime::ContractIdentity::new(".to_owned(),
-        format!("quire_contract_runtime::RequirementId::new({requirement_literal}),"),
-        format!("quire_contract_runtime::RevisionId::new({revision_literal}),"),
+        format!(
+            "pub const {identity_symbol}: filament_contract_runtime::ContractIdentity<'static> ="
+        ),
+        "filament_contract_runtime::ContractIdentity::new(".to_owned(),
+        format!("filament_contract_runtime::RequirementId::new({requirement_literal}),"),
+        format!("filament_contract_runtime::RevisionId::new({revision_literal}),"),
         ");".to_owned(),
         format!("/// Generated clause identity for `{clause}`."),
-        format!("pub const {clause_symbol}: quire_contract_runtime::ClauseId<'static> ="),
-        format!("quire_contract_runtime::ClauseId::new({clause_literal});"),
+        format!("pub const {clause_symbol}: filament_contract_runtime::ClauseId<'static> ="),
+        format!("filament_contract_runtime::ClauseId::new({clause_literal});"),
         format!("/// Evaluates generated oracle `{requirement}@{revision}/{clause}`."),
         "#[must_use]".to_owned(),
         signature,
@@ -982,7 +984,9 @@ impl<'a> Renderer<'a> {
                 right,
             } => {
                 let (function, left_closure) = connective_function(*operator);
-                self.emit(&format!("quire_contract_runtime::operators::{function}("))?;
+                self.emit(&format!(
+                    "filament_contract_runtime::operators::{function}("
+                ))?;
                 if left_closure {
                     self.emit("|| {")?;
                 }
@@ -1499,13 +1503,13 @@ mod checked_invariant_tests {
         let directory = dependencies.join(format!("cg-interval-guard-{}", std::process::id()));
         fs::create_dir_all(&directory).unwrap();
         let probe_source = directory.join("metadata_probe.rs");
-        fs::write(&probe_source, "extern crate quire_exact;\n").unwrap();
+        fs::write(&probe_source, "extern crate filament_exact;\n").unwrap();
         let mut candidates = fs::read_dir(&dependencies)
             .unwrap()
             .map(|entry| entry.unwrap().path())
             .filter(|path| {
                 path.file_name()
-                    .is_some_and(|name| name.to_string_lossy().starts_with("libquire_exact-"))
+                    .is_some_and(|name| name.to_string_lossy().starts_with("libfilament_exact-"))
                     && path
                         .extension()
                         .is_some_and(|extension| extension == "rlib")
@@ -1520,7 +1524,7 @@ mod checked_invariant_tests {
                 Command::new("rustc")
                     .args(["--edition=2021", "--crate-type", "lib", "--emit=metadata"])
                     .arg("--extern")
-                    .arg(format!("quire_exact={}", library.display()))
+                    .arg(format!("filament_exact={}", library.display()))
                     .arg("-L")
                     .arg(format!("dependency={}", dependencies.display()))
                     .arg("-o")
@@ -1539,7 +1543,7 @@ mod checked_invariant_tests {
         })
         .join("\n");
         let source = format!(
-            r#"use quire_exact as rt;
+            r#"use filament_exact as rt;
 {helpers}
 fn main() {{
     assert!(bound::<bool>(3, 4).is_ok());
@@ -1555,7 +1559,7 @@ fn main() {{
         let output = Command::new("rustc")
             .args(["--edition=2021", "--crate-type", "bin"])
             .arg("--extern")
-            .arg(format!("quire_exact={}", library.display()))
+            .arg(format!("filament_exact={}", library.display()))
             .arg("-L")
             .arg(format!("dependency={}", dependencies.display()))
             .arg("-o")

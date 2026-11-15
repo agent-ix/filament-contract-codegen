@@ -17,10 +17,10 @@ use filament_contract_codegen::{
     KaniRunOutcome, KaniV2ClauseObligationHarness, ObligationDisposition, ObligationItem,
     ObligationKind, ProofCeilings, StateClauseHarness, StateClauseReplay, UnsupportedObligation,
 };
+use filament_contract_model::CheckedNodeId;
+use filament_semantic_value::catalog::Category;
+use fsl_replay::{ReplayResult, WitnessSettlement, WitnessValue};
 use ix_trace_rs::trace;
-use qsl_replay::{ReplayResult, WitnessSettlement, WitnessValue};
-use quire_contract_model::CheckedNodeId;
-use quire_semantic_value::catalog::Category;
 
 use super::kani_obligations_state_frame::native_twin::Twin;
 use super::kani_obligations_v2_clause_controls::{subject_module, ScopePeak, ScratchCrate};
@@ -459,7 +459,7 @@ fn run_with_subject(
 ) -> KaniExecutionEvidence {
     let lib = format!("{}{subject}", harness.rust.contents);
     let scratch = ScratchCrate::new(label, &lib, None);
-    let cancel = quire_exact::Cancel::new();
+    let cancel = filament_exact::Cancel::new();
     let installation = KaniInstallation::discover()
         .expect("cargo-kani is installed")
         .with_peak_memory_source(Arc::new(ScopePeak));
@@ -616,14 +616,14 @@ fn falsified_and_replayed(label: &str, twin: &Twin, expected: i64) {
         .documents
         .iter()
         .filter_map(|bytes| serde_json::from_slice::<serde_json::Value>(bytes).ok())
-        .find(|document| document["format"] == "quire.state.snapshot/v1")
+        .find(|document| document["format"] == "filament.state.snapshot/v1")
         .expect("a state snapshot");
     assert_eq!(
         snapshot["populations"][0]["objects"][0]["fields"]["balance"]["integer"],
         expected.to_string(),
         "the replayed state is the counterexample"
     );
-    let qsl_replay::ReplaySource::Witness(witness) = &replay.wire.source else {
+    let fsl_replay::ReplaySource::Witness(witness) = &replay.wire.source else {
         panic!("the invariant envelope rides the witness arm");
     };
     assert_eq!(
