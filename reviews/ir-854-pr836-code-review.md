@@ -94,3 +94,17 @@ ignored; `cargo fmt --check` and `cargo clippy --all-targets -- -D warnings` cle
 | FND-002 | fixed | `integer_division_harness` removed from `KANI_FILTERS` and `EXPECTED_KANI_FILTERS`; the ignore reasons and a new Reproducers section in the measurement doc say to run them by name. |
 | FND-003 | fixed | Decoder doc now names the seven operations and says the replay builder still refuses division; new `decoder_accepts_division_identities_with_their_operand_arity` asserts decode and arity refusal for div, rem and mod. |
 | FND-004 | fixed | Stale doc replaced, FR-015-AC-15 and FR-019-AC-29 tags dropped, and the test now asserts the harness's `division_scalar` profile and the `(0, 10)` result range. |
+
+## New findings (disposition pass 2)
+
+Delta re-review of 6644a0da (merge of origin/main ef26c8cb, the FSL rename #837, into the
+reviewed head 96b72b4a). The token-level diff of every PR file between 96b72b4a and 6644a0da is
+rename pairs only (`QSL`→`FSL`, `quire`→`filament`, `quire_contract_codegen`→
+`filament_contract_codegen`, `qsl_*`→`fsl_*` in identifiers and prose, `QSPEC*`→`FSPEC*`) plus
+import reordering; upstream crate names (`qsl_replay`, `quire_exact`, `quire_contract_model`) and
+`quire.op.*` wire ids are unchanged, matching main's `Cargo.toml`. The `reviews/` copies are
+byte-identical to round 2. No semantic change slipped in.
+
+| ID | Severity | Summary | Refs |
+|---|---|---|---|
+| FND-005 | medium | `cargo fmt --check` fails on the merged head, only in this PR's new file: the rename lengthened lines and moved the `filament_contract_codegen` import, which rustfmt now orders before `ix_trace_rs`; origin/main ef26c8cb is fmt-clean. Run `cargo fmt` on `tests/it/integer_division_harness.rs` and commit. | tests/it/integer_division_harness.rs:4-14, tests/it/integer_division_harness.rs:1087, tests/it/integer_division_harness.rs:1136-1144 |

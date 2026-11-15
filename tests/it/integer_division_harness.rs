@@ -4,13 +4,13 @@
 //! FR-057 V2 Kani integer div/rem/mod scalar harnesses over genuine FSL sources admitted through
 //! Contract IR and routed through `generate_routed`.
 
+use filament_contract_codegen::{
+    KaniScalarObligationHarness, ObligationDisposition, RoutedGeneration, UnsupportedObligation,
+};
 use ix_trace_rs::trace;
 use qsl_replay::{
     admit_integer_division, compile_package_with_integer_division, CompileUnit, DefinitionRole,
     DependencyInput, ReplayLimits, SourceIdentity, StageLimits,
-};
-use filament_contract_codegen::{
-    KaniScalarObligationHarness, ObligationDisposition, RoutedGeneration, UnsupportedObligation,
 };
 use quire_contract_model::{
     CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2, CheckedPackageV2ReadResult,
@@ -1084,7 +1084,10 @@ fn the_harness_identity_records_node_operation_profile_route_ranges_and_backend_
     assert_eq!(identity.node_id, node);
     assert_eq!(identity.operation_identity, "quire.op.integer.div");
     assert_eq!(identity.unwind, 12);
-    assert_eq!(identity.solver, filament_contract_codegen::KaniSolver::Cadical);
+    assert_eq!(
+        identity.solver,
+        filament_contract_codegen::KaniSolver::Cadical
+    );
     let division = identity.division_scalar.as_ref().unwrap();
     assert_eq!(
         division.profile.as_deref(),
@@ -1133,14 +1136,16 @@ fn run_with_launcher(
     .unwrap();
     std::fs::set_permissions(&launcher, std::fs::Permissions::from_mode(0o755)).unwrap();
     let cancel = quire_exact::Cancel::new();
-    filament_contract_codegen::execute_kani_obligation(&filament_contract_codegen::KaniExecutionRequest {
-        cancel: &cancel,
-        installation: &filament_contract_codegen::KaniInstallation::new(launcher),
-        harness: (&harness).into(),
-        crate_directory: directory,
-        target_directory: &directory.join("target"),
-        home_directory: None,
-    })
+    filament_contract_codegen::execute_kani_obligation(
+        &filament_contract_codegen::KaniExecutionRequest {
+            cancel: &cancel,
+            installation: &filament_contract_codegen::KaniInstallation::new(launcher),
+            harness: (&harness).into(),
+            crate_directory: directory,
+            target_directory: &directory.join("target"),
+            home_directory: None,
+        },
+    )
     .unwrap_or_else(|refusal| panic!("{refusal}"))
 }
 
