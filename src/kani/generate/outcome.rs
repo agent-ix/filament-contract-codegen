@@ -243,6 +243,23 @@ pub enum V2ClauseControlReason {
     CaseScrutineeNotParameter,
 }
 
+/// Why an option read of a V2 clause has no harness (FR-054).
+#[non_exhaustive]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum OptionNotLoweredReason {
+    /// A payload leaf is of a family other than Boolean or a bounded integer.
+    PayloadNotScalar,
+    /// An option of an option, or a record or tuple payload holding an option leaf.
+    NestedOption,
+    /// A record field read as an option: the checked package types a `field?` slot and a required
+    /// `Option<T>` field alike as an option, so both are refused here, and either can hold `null`
+    /// besides present and absent.
+    NullablePresence,
+    /// An option operation other than `present` and `value`.
+    OptionOperationNotLowered,
+}
+
 /// Why a well-formed item has no harness.
 #[non_exhaustive]
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
@@ -345,6 +362,19 @@ pub enum UnsupportedObligation {
         node_id: CheckedNodeId,
         /// Exact checked operator identity found in the clause body.
         operation_identity: String,
+    },
+    /// An admitted V2 clause reads an option the clause harness does not lower (FR-054-AC-10 to
+    /// FR-054-AC-13).
+    OptionNotLowered {
+        /// Selected clause node.
+        node_id: CheckedNodeId,
+        /// The checked node of the option operation that was refused, or the clause node when the
+        /// walk reached the operation without a node.
+        option_node_id: CheckedNodeId,
+        /// The closed reason the option read is refused.
+        reason: OptionNotLoweredReason,
+        /// The offending value family or option operation identity.
+        detail: String,
     },
     /// An admitted V2 clause holds a `let`, `if` or `case` whose shape the clause harness does not
     /// lower (FR-015-AC-160 to FR-015-AC-163 and FR-015-AC-171).

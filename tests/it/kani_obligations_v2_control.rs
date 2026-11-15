@@ -113,7 +113,43 @@ pub(crate) fn negotiate_condition(
 /// FR-015-AC-168, FR-015-AC-169 and FR-015-AC-172. FSL types its arithmetic as mathematical
 /// integers, so a bounded node is a constructed package, admitted through Contract IR.
 fn bounded_addition(twin: &Twin) -> (CheckedPackageV2, CheckedNodeId) {
-    let (package, clause) = twin.emitted_package("BalanceNeverDrops");
+    let mut changed = 0;
+    let package = rewrite_nodes(twin, "BalanceNeverDrops", |frame, nodes, _, node| {
+        if node["body"]["operation"]["identity"] != "filament.op.integer.add" {
+            return false;
+        }
+        let bound_position = nodes
+            .iter()
+            .position(|node| {
+                node["node_tag"] == "bounded_domain" && node["semantic_form"] == "integer_range"
+            })
+            .expect("the amount range");
+        let bound = frame
+            .document_value_in_row(bound_position, &nodes[bound_position]["node_id"])
+            .unwrap();
+        node["semantic_type"] = bound.clone();
+        node["body"]["result_type"] = bound;
+        changed += 1;
+        true
+    });
+    assert_eq!(changed, 1, "one addition node is bounded");
+    package
+}
+
+/// The clause `clause_name` of `twin`'s emitted package with every node `edit` changes rewritten
+/// on the wire (its operand row re-authored), admitted again through Contract IR. `edit` gets the
+/// original holding rows, the original nodes, the node position and the node's document value.
+pub(crate) fn rewrite_nodes(
+    twin: &Twin,
+    clause_name: &str,
+    mut edit: impl FnMut(
+        &fsl_replay::WireGraph,
+        &[serde_json::Value],
+        usize,
+        &mut serde_json::Value,
+    ) -> bool,
+) -> (CheckedPackageV2, CheckedNodeId) {
+    let (package, clause) = twin.emitted_package(clause_name);
     let mut wire = json!({
         "contract_version": "filament.checked-package/v2",
         "name": package.name(),
@@ -125,32 +161,18 @@ fn bounded_addition(twin: &Twin) -> (CheckedPackageV2, CheckedNodeId) {
     });
     let frame = fsl_replay::WireGraph::of_package_value(&wire).expect("original holding rows");
     let nodes = wire["semantic_graph"]["nodes"].as_array().unwrap().clone();
-    let bound_position = nodes
-        .iter()
-        .position(|node| {
-            node["node_tag"] == "bounded_domain" && node["semantic_form"] == "integer_range"
-        })
-        .expect("the amount range");
-    let bound = frame
-        .document_value_in_row(bound_position, &nodes[bound_position]["node_id"])
-        .unwrap();
     let package_name = wire["name"].as_str().unwrap().to_owned();
-    let mut changed = 0;
     for (position, node) in nodes.iter().enumerate() {
-        if node["body"]["operation"]["identity"] != "filament.op.integer.add" {
+        let mut node = frame.document_value_in_row(position, node).unwrap();
+        if !edit(&frame, &nodes, position, &mut node) {
             continue;
         }
-        let mut node = frame.document_value_in_row(position, node).unwrap();
-        node["semantic_type"] = bound.clone();
-        node["body"]["result_type"] = bound.clone();
         let mut row = Vec::new();
         draft_rows::author_row(&package_name, &mut node, &mut row);
         wire["semantic_graph"]["nodes"][position] = node;
         wire["semantic_graph"]["operand_rows"][position] = json!(row);
-        changed += 1;
     }
-    assert_eq!(changed, 1, "one addition node is bounded");
-    let inputs = twin.state_clause_inputs(&package, &clause, "BalanceNeverDrops", (0, 0), (0, 0));
+    let inputs = twin.state_clause_inputs(&package, &clause, clause_name, (0, 0), (0, 0));
     let [document] = inputs.packages.as_slice() else {
         panic!("one original model document")
     };
@@ -170,7 +192,7 @@ fn bounded_addition(twin: &Twin) -> (CheckedPackageV2, CheckedNodeId) {
     evidence.support_feature("filament.value.complete/v1");
     let resolved = rekey::resolve_wire(&wire, &evidence, CheckedPackageReadLimits::bounded());
     let CheckedPackageV2ReadResult::Admitted(constructed) = resolved.outcome else {
-        panic!("the bounded addition is admitted: {:?}", resolved.outcome)
+        panic!("the rewritten package is admitted: {:?}", resolved.outcome)
     };
     (*constructed, resolved.ids.resolve(&clause))
 }

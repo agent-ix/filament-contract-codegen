@@ -4,8 +4,9 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use super::checked_term::{application, reference};
 use filament_contract_model::{
-    ApplicationOperator, CheckedMemberType, CheckedNodeId, CheckedNodeKind, CheckedPackageV2,
-    CheckedSemanticNodeV2, CheckedTerm, LiteralKind,
+    ApplicationOperator, BoundedDomainForm, CheckedMemberType, CheckedNodeId, CheckedNodeKind,
+    CheckedPackageV2, CheckedSemanticNodeV2, CheckedTerm, CompositeTypeForm, LiteralKind,
+    ScalarTypeForm,
 };
 
 pub(crate) const MAX_CONDITION_TERMS: usize = 256;
@@ -18,9 +19,21 @@ pub(crate) enum ClauseInputSide {
     Result,
 }
 
+/// Which physical draw of a declared operand an input is: the operand itself, or one leaf of an
+/// option operand (FR-054).
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub(crate) enum ClauseLeaf {
+    Whole,
+    /// The presence draw of an option operand.
+    Presence,
+    /// A payload leaf of an option operand, by its path (empty for a scalar payload).
+    Payload(String),
+}
+
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub(crate) struct ClauseInput {
     pub(crate) name: String,
+    pub(crate) leaf: ClauseLeaf,
     pub(crate) side: ClauseInputSide,
     pub(crate) declaring_node_id: Option<CheckedNodeId>,
     pub(crate) boolean: bool,
@@ -37,6 +50,12 @@ pub(crate) enum ClauseTerm {
         identity: String,
         arguments: Vec<ClauseTerm>,
         result_bound: Option<(i128, i128)>,
+    },
+    /// `filament.op.option.value` of an option operand: the payload leaf, defined only where the
+    /// presence draw is true.
+    OptionValue {
+        presence: ClauseInput,
+        payload: ClauseInput,
     },
     /// A read of the innermost enclosing `let` binder, by the unique number the reader gave it.
     Binder {
@@ -61,6 +80,145 @@ pub(crate) enum ClauseTerm {
         scrutinee: ClauseInput,
         arms: Vec<ClauseTerm>,
     },
+}
+
+/// Option identities the clause readers lower (FR-054).
+pub(crate) const OPTION_PRESENT: &str = "filament.op.option.present";
+pub(crate) const OPTION_VALUE: &str = "filament.op.option.value";
+
+/// The draws of one option operand: its presence and its payload leaves in ascending path order.
+struct OptionOperand {
+    presence: ClauseInput,
+    payload: Vec<ClauseInput>,
+}
+
+/// One scalar leaf of an option payload.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) struct OptionLeaf {
+    /// The leaf's path in the payload: empty for a scalar payload, a field name for a record leaf.
+    pub(crate) path: String,
+    pub(crate) boolean: bool,
+    pub(crate) lower: i128,
+    pub(crate) upper: i128,
+}
+
+/// What an option type's payload is.
+pub(crate) enum OptionShape {
+    /// Boolean and bounded-integer leaves, in ascending path order.
+    Leaves(Vec<OptionLeaf>),
+    /// A leaf of a family other than Boolean or a bounded integer, by its semantic form.
+    NotScalar(String),
+    /// An option of an option, or a payload leaf that is an option.
+    Nested,
+    /// An integer leaf with no declared bound.
+    Unbounded,
+}
+
+/// The payload shape of the option type `type_node`, or `None` when it is not an option type.
+pub(crate) fn option_shape(
+    nodes: &ClauseGraphView<'_>,
+    type_node: &CheckedNodeId,
+) -> Option<OptionShape> {
+    if nodes.kind(type_node) != Some(CheckedNodeKind::CompositeType(CompositeTypeForm::Option)) {
+        return None;
+    }
+    let CheckedTerm::Aggregate { members } = nodes.package().term(type_node)? else {
+        return None;
+    };
+    let [payload] = members.as_slice() else {
+        return None;
+    };
+    let payload = reference(payload)?;
+    let mut leaves = Vec::new();
+    let mut unbounded = false;
+    Some(
+        match payload_leaves(nodes, payload, "", &mut leaves, &mut unbounded, 0) {
+            // A shape refusal decides which leaves exist, so it precedes a bound refusal.
+            Err(refusal) => refusal,
+            Ok(()) if unbounded => OptionShape::Unbounded,
+            Ok(()) => {
+                leaves.sort_by(|left, right| left.path.cmp(&right.path));
+                OptionShape::Leaves(leaves)
+            }
+        },
+    )
+}
+
+fn payload_leaves(
+    nodes: &ClauseGraphView<'_>,
+    type_node: &CheckedNodeId,
+    path: &str,
+    out: &mut Vec<OptionLeaf>,
+    unbounded: &mut bool,
+    depth: usize,
+) -> Result<(), OptionShape> {
+    let package = nodes.package();
+    let node = nodes.node(type_node).ok_or(OptionShape::Nested)?;
+    let family = || OptionShape::NotScalar(node.semantic_form.to_string());
+    match nodes.kind(type_node) {
+        Some(CheckedNodeKind::ScalarType(ScalarTypeForm::Boolean)) => out.push(OptionLeaf {
+            path: path.to_owned(),
+            boolean: true,
+            lower: 0,
+            upper: 1,
+        }),
+        Some(CheckedNodeKind::ScalarType(ScalarTypeForm::Integer)) => *unbounded = true,
+        Some(CheckedNodeKind::BoundedDomain(BoundedDomainForm::IntegerRange)) => {
+            let (lower, upper) = integer_bound(package, type_node).ok_or_else(family)?;
+            out.push(OptionLeaf {
+                path: path.to_owned(),
+                boolean: false,
+                lower,
+                upper,
+            });
+        }
+        Some(CheckedNodeKind::CompositeType(CompositeTypeForm::Option)) => {
+            return Err(OptionShape::Nested)
+        }
+        Some(CheckedNodeKind::CompositeType(
+            form @ (CompositeTypeForm::Record | CompositeTypeForm::Tuple),
+        )) if depth == 0 => {
+            let CheckedTerm::Aggregate { members } = package.term(type_node).ok_or_else(family)?
+            else {
+                return Err(family());
+            };
+            for (position, member) in members.iter().enumerate() {
+                let (leaf_path, leaf_type) = match (form, member) {
+                    (CompositeTypeForm::Record, CheckedTerm::Binding { name, value }) => {
+                        (name.to_string(), reference(value).ok_or_else(family)?)
+                    }
+                    (CompositeTypeForm::Tuple, other) => {
+                        (position.to_string(), reference(other).ok_or_else(family)?)
+                    }
+                    _ => return Err(family()),
+                };
+                payload_leaves(nodes, leaf_type, &leaf_path, out, unbounded, depth + 1)?;
+            }
+        }
+        _ => return Err(family()),
+    }
+    Ok(())
+}
+
+/// The inclusive bounds of an `integer_range` node.
+fn integer_bound(package: &CheckedPackageV2, id: &CheckedNodeId) -> Option<(i128, i128)> {
+    let CheckedTerm::Aggregate { members } = package.term(id)? else {
+        return None;
+    };
+    let number = |name| -> Option<i128> {
+        let value = members.iter().find_map(|entry| match entry {
+            CheckedTerm::Binding {
+                name: actual,
+                value,
+            } if actual.as_ref() == name => Some(value.as_ref()),
+            _ => None,
+        })?;
+        let CheckedTerm::Literal { value, .. } = value else {
+            return None;
+        };
+        value.as_str()?.parse().ok()
+    };
+    Some((number("min")?, number("max")?))
 }
 
 /// Control identities the clause readers lower.
@@ -191,6 +349,7 @@ impl Reader<'_, '_> {
                     }
                     let input = ClauseInput {
                         name: declaration.name.to_string(),
+                        leaf: ClauseLeaf::Whole,
                         side: if self.result_id.as_ref() == Some(&id) {
                             ClauseInputSide::Result
                         } else {
@@ -220,23 +379,7 @@ impl Reader<'_, '_> {
         if &*node.node_tag != "bounded_domain" || &*node.semantic_form != "integer_range" {
             return None;
         }
-        let CheckedTerm::Aggregate { members } = self.package.term(id)? else {
-            return None;
-        };
-        let number = |name| -> Option<i128> {
-            let value = members.iter().find_map(|entry| match entry {
-                CheckedTerm::Binding {
-                    name: actual,
-                    value,
-                } if actual.as_ref() == name => Some(value.as_ref()),
-                _ => None,
-            })?;
-            let CheckedTerm::Literal { value, .. } = value else {
-                return None;
-            };
-            value.as_str()?.parse().ok()
-        };
-        Some((number("min")?, number("max")?))
+        integer_bound(self.package, id)
     }
 
     fn term_with_bound(
@@ -279,7 +422,24 @@ impl Reader<'_, '_> {
                         self.field(&read, deref, ClauseInputSide::Pre)
                     }
                     "filament.op.record.project" if args.len() == 1 => {
+                        if let Some(read) = self.option_leaf_read(value, &args[0], side) {
+                            return read;
+                        }
                         self.field(value, &args[0], side)
+                    }
+                    OPTION_PRESENT if args.len() == 1 => {
+                        let option = self.option_operand(&args[0], side)?;
+                        Some(ClauseTerm::Input(option.presence))
+                    }
+                    OPTION_VALUE if args.len() == 1 => {
+                        let option = self.option_operand(&args[0], side)?;
+                        let [payload] = option.payload.as_slice() else {
+                            return None;
+                        };
+                        Some(ClauseTerm::OptionValue {
+                            presence: option.presence,
+                            payload: payload.clone(),
+                        })
                     }
                     CONTROL_LET => self.let_term(args, side),
                     CONTROL_IF => {
@@ -325,6 +485,95 @@ impl Reader<'_, '_> {
             .find_map(|(bound, binder)| (*bound == name).then_some(*binder))
     }
 
+    /// The presence draw and payload leaves of the option parameter `operand` reads, recording
+    /// every draw as a clause input.
+    fn option_operand(
+        &mut self,
+        operand: &CheckedTerm,
+        side: ClauseInputSide,
+    ) -> Option<OptionOperand> {
+        let id = reference(operand)?.clone();
+        let node = self.node(&id)?;
+        if &*node.node_tag != "value"
+            || &*node.semantic_form != "parameter"
+            || side != ClauseInputSide::Current
+            || !self.allowed_parameters.contains(&id)
+        {
+            return None;
+        }
+        let OptionShape::Leaves(leaves) = option_shape(self.nodes, &node.semantic_type)? else {
+            return None;
+        };
+        let declaration = self.package.parameter_declaration(&id).ok()?;
+        let input = |leaf: ClauseLeaf, boolean: bool, lower: i128, upper: i128| ClauseInput {
+            name: declaration.name.to_string(),
+            leaf,
+            side: ClauseInputSide::Parameter,
+            declaring_node_id: None,
+            boolean,
+            lower,
+            upper,
+        };
+        let presence = input(ClauseLeaf::Presence, true, 0, 1);
+        let payload = leaves
+            .iter()
+            .map(|leaf| {
+                input(
+                    ClauseLeaf::Payload(leaf.path.clone()),
+                    leaf.boolean,
+                    leaf.lower,
+                    leaf.upper,
+                )
+            })
+            .collect::<Vec<_>>();
+        self.inputs.insert(presence.clone());
+        self.inputs.extend(payload.iter().cloned());
+        Some(OptionOperand { presence, payload })
+    }
+
+    /// `filament.op.record.project` of `filament.op.option.value` of an option parameter: the payload
+    /// leaf named by the projected field. `None` when `deref` is not such a read; `Some(None)`
+    /// when it is and the read cannot be lowered.
+    fn option_leaf_read(
+        &mut self,
+        project: &CheckedTerm,
+        deref: &CheckedTerm,
+        side: ClauseInputSide,
+    ) -> Option<Option<ClauseTerm>> {
+        let read = self.term_body(deref)?;
+        let CheckedTerm::Application {
+            operation,
+            arguments,
+            ..
+        } = &read
+        else {
+            return None;
+        };
+        if operation.identity()? != OPTION_VALUE {
+            return None;
+        }
+        let CheckedTerm::Application { operation, .. } = project else {
+            return Some(None);
+        };
+        let Some((_, name)) = operation.projection_field().ok().flatten() else {
+            return Some(None);
+        };
+        let [argument] = arguments.as_slice() else {
+            return Some(None);
+        };
+        let Some(option) = self.option_operand(argument, side) else {
+            return Some(None);
+        };
+        let payload = option
+            .payload
+            .iter()
+            .find(|leaf| matches!(&leaf.leaf, ClauseLeaf::Payload(path) if path == name));
+        Some(payload.map(|payload| ClauseTerm::OptionValue {
+            presence: option.presence.clone(),
+            payload: payload.clone(),
+        }))
+    }
+
     fn let_term(&mut self, args: &[CheckedTerm], side: ClauseInputSide) -> Option<ClauseTerm> {
         let [CheckedTerm::Binding { name, value }, body] = args else {
             return None;
@@ -361,6 +610,7 @@ impl Reader<'_, '_> {
         let declaration = self.package.parameter_declaration(&id).ok()?;
         let input = ClauseInput {
             name: declaration.name.to_string(),
+            leaf: ClauseLeaf::Whole,
             side: ClauseInputSide::Parameter,
             declaring_node_id: None,
             boolean: false,
@@ -433,6 +683,7 @@ impl Reader<'_, '_> {
         };
         let input = ClauseInput {
             name: name.to_owned(),
+            leaf: ClauseLeaf::Whole,
             side,
             declaring_node_id: Some(field.declaring_node_id().clone()),
             boolean,

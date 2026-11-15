@@ -104,6 +104,20 @@ fn construct(name: &str, meaning: &str) -> Value {
     })
 }
 
+fn option_declaration(identity: &str, inner: &str) -> Value {
+    json!({
+        "identity": identity,
+        "displayName": identity,
+        "kind": "option",
+        "inner": inner,
+        "origin": generated(identity),
+        "roles": [],
+        "constraints": [],
+        "extensions": [],
+        "unknownPolicy": "reject",
+    })
+}
+
 fn field(owner: &str, name: &str) -> Value {
     let identity = format!("{owner}/{name}");
     json!({
@@ -752,6 +766,19 @@ impl Twin {
         twin
     }
 
+    /// The same unit with the head of the authored clause (`post BalanceNeverDrops using v on
+    /// Bank::Account::deposit`) replaced by `head`.
+    pub fn with_clause_head(mut self, head: &str) -> Self {
+        let source = String::from_utf8(self.unit).expect("native unit");
+        let changed = source.replace(
+            "post BalanceNeverDrops using v on Bank::Account::deposit",
+            head,
+        );
+        assert_ne!(changed, source, "the clause head was replaced");
+        self.unit = changed.into_bytes();
+        self
+    }
+
     /// The same unit with `lines` blank lines before `anchor`, moving every later source span.
     pub fn with_blank_lines_before(mut self, anchor: &str, lines: usize) -> Self {
         let source = String::from_utf8(self.unit).expect("native unit");
@@ -996,6 +1023,186 @@ impl Twin {
         deposit["params"][0]["multiplicity"] =
             json!({"lower": 0, "upper": 1, "ordered": false, "unique": true});
         deposit["params"][0]["presence"] = json!("optional");
+        self.domain = domain.to_string().into_bytes();
+        self
+    }
+
+    /// The same twin with the `amount` parameter typed by an option type over the `balance` range,
+    /// the shape FSL reads as `Option<Int[...]>`.
+    pub fn with_option_amount(self) -> Self {
+        self.with_option_amount_over(range_type("balance"))
+    }
+
+    /// The same twin with the `amount` parameter typed by an option over `inner`, a type reference.
+    pub fn with_option_amount_over(self, inner: String) -> Self {
+        let option = format!("ix://{PACKAGE}/amount_option");
+        let declaration = option_declaration(&option, &inner);
+        self.with_amount_type(vec![], vec![declaration], option)
+    }
+
+    /// The same twin with `amount` typed by an option over a declared, unconstrained value type
+    /// of the given `scalar` family (for example `"string"`).
+    pub fn with_scalar_option_amount(self, scalar: &str) -> Self {
+        let payload = format!("ix://{PACKAGE}/scalar_payload");
+        let mut domain: Value = serde_json::from_slice(&self.domain).expect("domain document");
+        let mut declaration = domain["types"]
+            .as_array()
+            .expect("types")
+            .iter()
+            .find(|ty| ty["identity"] == range_type("balance"))
+            .expect("balance value type")
+            .clone();
+        declaration["identity"] = json!(payload);
+        declaration["displayName"] = json!(payload);
+        declaration["origin"] = generated(&payload);
+        declaration["scalar"] = json!(scalar);
+        let constraints = if scalar == "string" {
+            json!([
+                {"keyword":"minLength", "operands":{"value":0}, "appliesTo":payload},
+                {"keyword":"maxLength", "operands":{"value":8}, "appliesTo":payload},
+                {"keyword":"format", "operands":{"name":"text-profile:nfc"}, "appliesTo":payload},
+            ])
+        } else {
+            json!([])
+        };
+        declaration["constraints"] = constraints;
+        for constraint in declaration["constraints"]
+            .as_array_mut()
+            .expect("constraints")
+        {
+            let keyword = constraint["keyword"].as_str().expect("keyword").to_owned();
+            constraint["identity"] = json!(format!("{payload}/constraints/{keyword}"));
+            constraint["diagnosticCode"] = json!(format!("text.{keyword}"));
+            constraint["origin"] = generated(&payload);
+        }
+        domain["types"]
+            .as_array_mut()
+            .expect("types")
+            .push(declaration);
+        let mut twin = self;
+        twin.domain = domain.to_string().into_bytes();
+        twin.with_option_amount_over(payload)
+    }
+
+    /// The same twin with the `amount` parameter typed `Option<Option<inner>>`.
+    pub fn with_nested_option_amount(self) -> Self {
+        let inner = format!("ix://{PACKAGE}/inner_option");
+        let outer = format!("ix://{PACKAGE}/amount_option");
+        let declarations = vec![
+            option_declaration(&inner, &range_type("balance")),
+            option_declaration(&outer, &inner),
+        ];
+        self.with_amount_type(vec![], declarations, outer)
+    }
+
+    /// The same twin with the `amount` parameter typed by an option over a record `Pair` of the
+    /// given `(field, type reference)` members, the composite option of FR-054-AC-8.
+    pub fn with_record_option_amount_of(self, members: &[(&str, String)]) -> Self {
+        let record = format!("ix://{PACKAGE}/Pair");
+        let option = format!("ix://{PACKAGE}/pair_option");
+        let member = |name: &str, type_ref: &String| {
+            let mut member = field(&record, name);
+            member["typeRef"] = json!(type_ref);
+            member
+        };
+        let declarations = vec![
+            json!({
+                "identity": record,
+                "displayName": record,
+                "kind": {"module": PACKAGE, "name": "record_value_type"},
+                "roles": [],
+                "origin": generated(&record),
+                "constraints": [],
+                "extensions": [],
+                "unknownPolicy": "reject",
+                "supertypes": [],
+                "fields": members.iter().map(|(name, type_ref)| member(name, type_ref)).collect::<Vec<_>>(),
+                "operations": [],
+            }),
+            option_declaration(&option, &record),
+        ];
+        self.with_amount_type(
+            vec![construct(
+                "record_value_type",
+                "filament.meaning.model.record-value-type/v1",
+            )],
+            declarations,
+            option,
+        )
+    }
+
+    /// The composite option of FR-054-AC-8: a record of `n: Int[balance range]` and `flag: Boolean`.
+    pub fn with_record_option_amount(self) -> Self {
+        self.with_record_option_amount_of(&[
+            ("n", range_type("balance")),
+            ("flag", "ix://filament/native/Boolean".to_owned()),
+        ])
+    }
+
+    /// The same twin with `amount` typed by a record `Pair` whose member `f` holds the `balance`
+    /// range, or an option over it when `option_typed`, with optional presence (`f?`) when
+    /// `optional`.
+    pub fn with_record_field_amount(self, optional: bool, option_typed: bool) -> Self {
+        let record = format!("ix://{PACKAGE}/Pair");
+        let option = format!("ix://{PACKAGE}/field_option");
+        let mut member = field(&record, "f");
+        member["typeRef"] = json!(if option_typed {
+            option.clone()
+        } else {
+            range_type("balance")
+        });
+        member["presence"] = json!(if optional { "optional" } else { "required" });
+        let mut declarations = vec![json!({
+            "identity": record,
+            "displayName": record,
+            "kind": {"module": PACKAGE, "name": "record_value_type"},
+            "roles": [],
+            "origin": generated(&record),
+            "constraints": [],
+            "extensions": [],
+            "unknownPolicy": "reject",
+            "supertypes": [],
+            "fields": [member],
+            "operations": [],
+        })];
+        if option_typed {
+            declarations.push(option_declaration(&option, &range_type("balance")));
+        }
+        self.with_amount_type(
+            vec![construct(
+                "record_value_type",
+                "filament.meaning.model.record-value-type/v1",
+            )],
+            declarations,
+            record,
+        )
+    }
+
+    /// Declare `constructs` and `declarations` in the domain package and type `amount` by `type_ref`.
+    fn with_amount_type(
+        mut self,
+        constructs: Vec<Value>,
+        declarations: Vec<Value>,
+        type_ref: String,
+    ) -> Self {
+        let mut domain: Value = serde_json::from_slice(&self.domain).expect("domain document");
+        domain["constructs"]
+            .as_array_mut()
+            .expect("constructs")
+            .extend(constructs);
+        let types = domain["types"].as_array_mut().expect("types");
+        types.extend(declarations);
+        let account = types
+            .iter_mut()
+            .find(|ty| ty["identity"] == account_type())
+            .expect("account type");
+        let deposit = account["operations"]
+            .as_array_mut()
+            .expect("operations")
+            .iter_mut()
+            .find(|operation| operation["name"] == "deposit")
+            .expect("deposit operation");
+        deposit["params"][0]["typeRef"] = json!(type_ref);
         self.domain = domain.to_string().into_bytes();
         self
     }

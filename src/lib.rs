@@ -315,7 +315,7 @@ pub use kani::generate::outcome::{
     BoundNotResolvedCause, CollectionUnsupportedReason, DerivedDomain, GraphAccessorRefusal,
     GraphPopulationRefusal, GraphUnsupportedReason, InvalidObligationItem, KaniObligationError,
     KaniObligationOutcome, KaniObligationRequest, ModelMemberRangeReason, ObligationDisposition,
-    ObligationItem, ObligationRecord, ObligationSubject, PathGuardRefusal,
+    ObligationItem, ObligationRecord, ObligationSubject, OptionNotLoweredReason, PathGuardRefusal,
     StateFrameLoweringRefusal, StateFrameRefusal, StateFrameRole, UnsupportedFrameEffect,
     UnsupportedObligation, V2ClauseControlReason, MAX_OBLIGATION_ITEMS, MAX_OBLIGATION_UNWIND,
 };
