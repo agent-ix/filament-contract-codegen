@@ -4,9 +4,6 @@ allow = [
     "MIT",
     "Apache-2.0",
     "BSD-2-Clause",
-    "BSD-3-Clause",
-    "CDLA-Permissive-2.0",
-    "ISC",
     "Unicode-3.0",
     "Zlib",
     # Reached through the operation catalog's home: `borrow-or-share` (MIT-0) via
@@ -60,9 +57,6 @@ wildcards = "warn"
 
 [advisories]
 version = 2
-# RUSTSEC-2026-0009 is in `time`, reached through jsonschema; it is reachable only through an
-# unused RFC-2822 parser.
-ignore = ["RUSTSEC-2026-0009"]
 
 [sources]
 unknown-registry = "deny"

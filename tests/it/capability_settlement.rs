@@ -1090,7 +1090,8 @@ fn process_settlement_does_not_resolve_provider_identity_as_an_executable() {
         }
     );
 
-    let guard = crate::scratch_crate::TemporaryDirectory::new("quire-codegen-process-settlement");
+    let guard =
+        crate::scratch_crate::TemporaryDirectory::new("filament-codegen-process-settlement");
     let scratch = guard.path.clone();
     let executable = scratch.join("record-start");
     let record = scratch.join("started");

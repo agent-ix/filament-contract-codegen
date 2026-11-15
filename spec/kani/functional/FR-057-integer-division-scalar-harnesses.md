@@ -405,6 +405,13 @@ Not delivered (PARTIAL, owner IR-1541):
   `7`, `-7` and `-1` verified at 64 bits (and some at 128), which these rows
   neither record nor refuse until the table grows a divisor-shape feature. The
   kernel's verdicts are its own harnesses', not CG's, so AC-7 stays PARTIAL.
+  The rows record that provenance (`provenance`, the kernel's TC-957 record) and carry
+  CG's current `generator_version` and `kernel_version` so they are current; those
+  two fields do not claim a CG build measured them. The 16-bit `not_tractable` rows
+  are the least-tractable limit and over-refuse combinations the kernel verified at
+  16 bits (truncating quotient and remainder) and constant divisors at 64 bits, because
+  the table keys on operation id and width alone. That over-refusal is a known
+  limitation until a profile or divisor-shape feature exists.
 - AC-8's installed-Kani mutant falsification and its playback replay. No
   general-route shape is tractable, and the one mutant tried on the general route
   (completing at a zero divisor, over a 5-bit explicit-result fixture) also

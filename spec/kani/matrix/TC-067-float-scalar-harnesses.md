@@ -28,7 +28,7 @@ used by name below.
    the admitted node's, that no result bound is read for a comparison, and that the
    expected side is not a second call of the generated oracle. Request `sqrt` and `fma`
    and assert the FR-014 derivation (IR-1502, delivered) yields the descriptor, and no
-   harness while P1 is absent. Request `to_float32`, `to_float64`, `from_exact`, `to_rational`,
+   harness while the P1 arithmetic natives (IR-1446) are absent. Request `to_float32`, `to_float64`, `from_exact`, `to_rational`,
    `float32.negate` and `float64.negate` and assert no harness and the existing dispositions. Request a float literal operand
    and assert `unsupported` naming `FloatLiteralOperand`, and a non-parameter operand and
    assert `unsupported` naming `OperandNotSupported`, each with the node (AC-1).

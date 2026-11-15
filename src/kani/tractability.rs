@@ -188,6 +188,11 @@ pub struct TractabilityRow {
     /// The solver version the probe ran under, when the row records one.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub solver_version: Option<String>,
+    /// Where the measurement came from, when it was not taken by CG's own generated harness
+    /// (a row copied from the kernel's record names that record). A provenance never selects a
+    /// row.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provenance: Option<String>,
     /// The generator version the probe ran against.
     pub generator_version: String,
     /// The kernel version the probe ran against.

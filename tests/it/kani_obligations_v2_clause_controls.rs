@@ -136,13 +136,28 @@ fn the_fsl_source_of_the_clause_fixture_carries_the_deposit_body_as_a_function_n
             row.body
         );
     };
+    let graph = package.resolved_graph();
+    let body = graph
+        .nodes
+        .iter()
+        .find(|candidate| candidate.node_id == *node)
+        .expect("the body node is in the checked graph");
+    // The row is the authored operation's: it is declared on the Account type, and the node is
+    // the function whose body is the authored implication over the amount parameter.
+    let declaring = graph
+        .nodes
+        .iter()
+        .find(|candidate| candidate.node_id == row.declaring)
+        .expect("the declaring node is in the checked graph");
     assert!(
-        package
-            .resolved_graph()
-            .nodes
-            .iter()
-            .any(|candidate| candidate.node_id == *node),
-        "the body node is in the checked graph"
+        format!("{declaring:?}").contains("Account"),
+        "declared on the Account type: {declaring:?}"
+    );
+    assert_eq!(&*body.node_tag, "function", "{:?}", body.node_tag);
+    let content = format!("{:?}", body.body);
+    assert!(
+        content.contains("filament.op.boolean.implies") && content.contains("Name(\"amount\")"),
+        "the body is the authored implication over the amount parameter: {content}"
     );
 }
 

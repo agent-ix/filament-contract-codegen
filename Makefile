@@ -166,7 +166,7 @@ deny:
 
 .PHONY: cargo-audit
 cargo-audit:
-	$(CARGO) audit --ignore RUSTSEC-2026-0009
+	$(CARGO) audit
 
 .PHONY: rustdoc
 rustdoc:

@@ -909,7 +909,7 @@ fn tc_002_supported_boolean_grammar_compiles_and_matches_an_independent_evaluato
 /// Writes `program` as the `main.rs` of a scratch binary crate named `crate_name` that depends
 /// on the runtime, then builds and runs it with warnings denied, asserting it exits cleanly.
 fn run_generated_program(crate_name: &str, program: &str) {
-    let directory = TemporaryDirectory::new(&format!("quire-codegen-{crate_name}"));
+    let directory = TemporaryDirectory::new(&format!("filament-codegen-{crate_name}"));
     let source_directory = directory.path.join("src");
     fs::create_dir_all(&source_directory).unwrap();
     fs::write(source_directory.join("main.rs"), program).unwrap();
@@ -1045,7 +1045,7 @@ fn tc_002_integer_and_state_comparisons_are_deterministic_compile_and_match_the_
     assertions.push_str("}\n");
     generated_program.push_str(&assertions);
 
-    let directory = TemporaryDirectory::new("quire-codegen-numeric-differential");
+    let directory = TemporaryDirectory::new("filament-codegen-numeric-differential");
     let source_directory = directory.path.join("src");
     fs::create_dir_all(&source_directory).unwrap();
     fs::write(source_directory.join("main.rs"), generated_program).unwrap();

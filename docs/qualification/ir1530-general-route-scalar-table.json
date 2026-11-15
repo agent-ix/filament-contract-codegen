@@ -152,6 +152,7 @@
     "verdict": "tractable",
     "wall_seconds": 52.3,
     "peak_bytes": 1836098519,
+    "provenance": "filament-exact TC-957 evidence record (IR-1541, filament-exact #171): the kernel's own harnesses, not CG-generated ones; copied. The symbolic-divisor figure is the least tractable profile and member. generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it.",
     "generator_version": "0.1.0",
     "kernel_version": 1
   },
@@ -165,6 +166,7 @@
     "verdict": "not_tractable",
     "wall_seconds": 600,
     "peak_bytes": 1836098519,
+    "provenance": "filament-exact TC-957 evidence record (IR-1541, filament-exact #171): the kernel's own harnesses, not CG-generated ones; copied. The symbolic-divisor figure is the least tractable profile and member. generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it.",
     "generator_version": "0.1.0",
     "kernel_version": 1
   },
@@ -178,6 +180,7 @@
     "verdict": "tractable",
     "wall_seconds": 88.2,
     "peak_bytes": 2448131359,
+    "provenance": "filament-exact TC-957 evidence record (IR-1541, filament-exact #171): the kernel's own harnesses, not CG-generated ones; copied. The symbolic-divisor figure is the least tractable profile and member. generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it.",
     "generator_version": "0.1.0",
     "kernel_version": 1
   },
@@ -191,6 +194,7 @@
     "verdict": "not_tractable",
     "wall_seconds": 600,
     "peak_bytes": 2437393940,
+    "provenance": "filament-exact TC-957 evidence record (IR-1541, filament-exact #171): the kernel's own harnesses, not CG-generated ones; copied. The symbolic-divisor figure is the least tractable profile and member. generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it.",
     "generator_version": "0.1.0",
     "kernel_version": 1
   },
@@ -204,6 +208,7 @@
     "verdict": "tractable",
     "wall_seconds": 64.7,
     "peak_bytes": 2426656522,
+    "provenance": "filament-exact TC-957 evidence record (IR-1541, filament-exact #171): the kernel's own harnesses, not CG-generated ones; copied. The symbolic-divisor figure is the least tractable profile and member. generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it.",
     "generator_version": "0.1.0",
     "kernel_version": 1
   },
@@ -217,6 +222,7 @@
     "verdict": "not_tractable",
     "wall_seconds": 600,
     "peak_bytes": 2426656522,
+    "provenance": "filament-exact TC-957 evidence record (IR-1541, filament-exact #171): the kernel's own harnesses, not CG-generated ones; copied. The symbolic-divisor figure is the least tractable profile and member. generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it.",
     "generator_version": "0.1.0",
     "kernel_version": 1
   }

@@ -687,8 +687,8 @@ fn render_artifacts(
         oracle: Artifact::new(format!("corpus/{name}.oracle.rs"), oracle),
         strategy: Artifact::new(format!("corpus/{name}.strategy.rs"), strategy),
         kani_harness: Artifact::new(format!("corpus/{name}.kani.rs"), harness),
-        fsl_source: Artifact::new(format!("corpus/{name}.qsl"), fsl_source),
-        fsl_dependency: Artifact::new(format!("corpus/{name}.dependency.qsl"), fsl_dependency),
+        fsl_source: Artifact::new(format!("corpus/{name}.fsl"), fsl_source),
+        fsl_dependency: Artifact::new(format!("corpus/{name}.dependency.fsl"), fsl_dependency),
         proof_graph: Artifact::new(
             format!("corpus/{name}.proof-graph.json"),
             proof_graph_contents,

@@ -482,7 +482,7 @@ fn classify_corpus(
     generated: &filament_contract_codegen::BoundedCorpusCase,
     harness_filter: &str,
 ) -> KaniRunOutcome {
-    let directory = TemporaryDirectory::new("quire-codegen-bounded-kani");
+    let directory = TemporaryDirectory::new("filament-codegen-bounded-kani");
     fs::write(
         directory.path.join("src/lib.rs"),
         format!(

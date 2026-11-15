@@ -1496,6 +1496,14 @@ fn the_shipped_table_holds_the_kernel_native_division_rows_on_the_native_route()
             .expect("a not-tractable native row");
         assert_eq!(verified.max_operand_bits, 8);
         assert_eq!(timed_out.max_operand_bits, 16);
+        for row in [verified, timed_out] {
+            assert!(
+                row.provenance
+                    .as_deref()
+                    .is_some_and(|text| text.contains("TC-957") && text.contains("copied")),
+                "a native row names the kernel record it was copied from: {row:?}"
+            );
+        }
         assert_eq!(timed_out.wall_seconds.millis(), 600_000);
         for features_route in [IntegerRoute::Native, IntegerRoute::General] {
             let decide = |bits| {

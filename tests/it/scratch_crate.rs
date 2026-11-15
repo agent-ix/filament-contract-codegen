@@ -337,7 +337,7 @@ mod tests {
     /// Architecture evidence: AD-004 L-11.
     #[test]
     fn a_scratch_crate_resolves_the_runtime_commit_cg_locks() {
-        let scratch = super::TemporaryDirectory::new("quire-codegen-scratch-lock");
+        let scratch = super::TemporaryDirectory::new("filament-codegen-scratch-lock");
         let directory = scratch.path.clone();
         std::fs::write(directory.join("src/lib.rs"), "").unwrap();
         write_manifest(

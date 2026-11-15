@@ -53,10 +53,12 @@ that TC-030's IEEE-float scalar row settles today as `OperationNotRendered`, and
 specification part of the row that this requirement implements. It is not a new
 IR schema, a new oracle or a claim of current Rust support.
 
-Three prerequisites are named; P2 and P3 (IR-1502) are delivered. Every criterion that describes a
-supported harness is conditional on P1, the criteria about unbounded operands are
-conditional on P2 (delivered), and the `sqrt` and `fma` parts of every criterion were conditional on
-P3, which is delivered.
+Three prerequisites are named; P2 and P3 (IR-1502) are delivered, and P1 is delivered for the
+comparisons, the only supported harnesses. Every criterion that describes a supported harness
+needs P1's comparison natives (present in filament-exact); the arithmetic natives of P1 (IR-1446,
+in progress) condition only the arithmetic rows, which this requirement refuses today. The criteria
+about unbounded operands depend on P2 (delivered), and the `sqrt` and `fma` parts of every
+criterion were conditional on P3, which is delivered.
 
 - P1 (ticket IR-1446) is the filament-exact float carrier: a symbolic IEEE operand, and a
   native expression for the comparisons and for add, sub, mul, div, sqrt and fma at
@@ -65,8 +67,9 @@ P3, which is delivered.
   iterator loop, and none of the owner's `BigInt` or `BigUint` arithmetic. IR-1446 is
   the supplier of the native add, sub, mul, div, sqrt and fma and of the comparisons
   (filament-exact FR-405). These native operations are host-callable ordinary code, one source
-  for the host and Kani builds and not a `cfg(kani)`-only body, which AC-13 needs. Until
-  IR-1446 lands them, AC-13 cannot run. Support is per operation and width, as filament-exact
+  for the host and Kani builds and not a `cfg(kani)`-only body, which AC-13 needs. AC-13 runs
+  today for the comparisons, whose natives are shipped; the arithmetic half of AC-13 cannot run
+  until IR-1446 lands the arithmetic natives, and no arithmetic row is supported before then. Support is per operation and width, as filament-exact
   FR-405 Behavior 15 gates it: only a combination with an executed Verified verdict is a
   supported row. A combination whose filament-exact record is a measured table row (timeout,
   memory exhaustion or unreliable) is in the table-row state. The float row refuses it at
@@ -85,7 +88,7 @@ P3, which is delivered.
   (FR-014-AC-72..80, tagged and run under TC-024). The owner supports both (`IeeeOperation::SquareRoot`,
   `IeeeOperation::FusedMultiplyAdd`), and Contract IR catalogues both identities, so
   CG's descriptor, derivation and renderer are those of FR-014. This row's proof of
-  them still depends on P1.
+  them depends on the P1 arithmetic natives, which are not delivered, so the row refuses them.
 
 The CG float ABI, the decoder and the replay grouping are this requirement's own implementation
 work under this requirement, not prerequisites. The IR-1436 review orders the Meter
@@ -372,9 +375,11 @@ or occurrence key.
 
 ## Acceptance Criteria
 
-All supported-harness criteria are conditional on P1 (IR-1446). The unpinned-operand
+The supported-harness criteria (the comparisons) rest on P1's delivered comparison natives; the
+arithmetic halves wait on the P1 arithmetic natives (IR-1446, in progress) and are dispositioned
+by the refusal ruling. The unpinned-operand
 refusal of AC-3 is the Contract IR `requires_bound` record, which CG reports. The `sqrt` and `fma`
-parts of AC-1, AC-4, AC-5, AC-9, AC-10, AC-13 and AC-14 were conditional on P3 (IR-1502), which is delivered; they remain conditional on P1.
+parts of AC-1, AC-4, AC-5, AC-9, AC-10, AC-13 and AC-14 were conditional on P3 (IR-1502), which is delivered; they remain conditional on the P1 arithmetic natives and are refused until then.
 
 | ID | Criteria | Verification |
 | --- | --- | --- |
