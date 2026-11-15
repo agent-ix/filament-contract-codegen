@@ -44,4 +44,16 @@ Per-criterion status as evidenced:
 
 AC-21 and AC-22 statuses are honest (AC-22 PARTIAL with a named owner). AC-23's Covered status overclaims by scope (FND-001), and its option-payload clause and the reconstruction-bound clause lack working controls (code-review FND-002, FND-004). Fix FND-001 in this PR, by widening the test or narrowing the AC.
 
+## New findings (disposition pass 1)
+
+| ID | Severity | Summary | Refs |
+|---|---|---|---|
+| FND-002 | low | The fix put the union `Shape` into "the bounded corpus of AC-21", but the AC-22 PARTIAL text still says it is "executed natively over the whole domain of the bounded corpus of AC-21 (every domain there fits the case cap: 30, 6, 4 and 4 values ...)", and tests.md says "every pair of the bounded corpus domains". The union item is excluded from the domain run (`DOMAIN_ALIASES`, "its oracle's totality is not [checked] (AC-22)"), though its 9-value domain fits the cap. Either run the union's domain or name the exclusion in FR-018-AC-22 and tests.md (TC-029 step 14 already says "record, tuple and option items"). | spec/oracle/functional/FR-018-composite-equality-oracles.md:728, spec/oracle/matrix/tests.md:47, tests/composite_equality_support/closure_cases.rs:39-48 |
+
 ## Dispositions
+
+Round 1, fix commit 02e476d6 (reviewed against f0d42093..02e476d6).
+
+| FND | outcome | reason |
+|---|---|---|
+| FND-001 | fixed | AC-23 is now scoped to "the TC-029 bounded corpus of AC-21 and the retained TC-029 `option` case (`Option<Int[-100, 100]>`)", and the new `tc_029_ac23_retained_option_case_equals_an_independent_read` reads that case against its package (with a narrowed-bound control); TC-029 step 15 and tests.md agree. |

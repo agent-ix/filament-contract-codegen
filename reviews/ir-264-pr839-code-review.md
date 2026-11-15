@@ -79,3 +79,12 @@ The presence source mutant fails AC-21, AC-22 and AC-23. The bound source mutant
 are fixed or answered in this PR. FND-003 is low and can ride the same round.
 
 ## Dispositions
+
+Round 1, fix commit 02e476d6 (reviewed against f0d42093..02e476d6).
+
+| FND | outcome | reason |
+|---|---|---|
+| FND-001 | fixed | `closure.rs` now records one `RecordedMember` per union member with `RecordedType::Payload { positions }` (empty for a nullary member). The bounded corpus gains `union Shape { Empty, Flag(Boolean), Both(Boolean, Int[0, 2]) }`; AC-21 native controls (dropped nullary member, dropped payload position, narrowed payload bound) and AC-23 package-read controls (nullary member dropped, payload position dropped) each fail; the member count includes the union's 3 members. |
+| FND-002 | fixed | The record mutant is relabelled "record operand replaced by Boolean"; new option mutants run on the option items: `option_equal` payload bound narrowed, `nested_option_equal` layer dropped, `option_equal` read as its payload, plus the retained `option` case narrowed to `[-100, 99]`; each must fail the package read and the test passes at 02e476d6. |
+| FND-003 | fixed | The flip control now takes the panic payload and requires `composite agreement workspace failed`, no `could not compile`, `test tc_029_ac22_oracle_completes_every_domain_pair_with_the_fr149_verdict_and_schedule ... FAILED`, `flags_equal` and `Completed(`. |
+| FND-004 | rejected: reviewer measurement error | The same edit at `mod.rs:1753` (`[lower, lower]`), re-run by the reviewer at 02e476d6 with `--locked`, fails all 4 `composite_equality_closure` tests. The fix commit does not touch `mod.rs`, so the round-1 survivor at f0d42093 was a stale or invalid reviewer build, not a test gap. The emitted-render mutant at `mod.rs:2466` (`exact::ValueType::option({child})` -> `{child}`) fails the native AC-21 and AC-22 tests; AC-23 reads the claim, not the emitted source, and its `T?`-as-`T` reconstruction case (`resolution.rs:445` Optional->Required) failed AC-23 in round 1. |

@@ -44,3 +44,10 @@ TC-029 and tests.md, and AC-22 is honestly PARTIAL. FND-001 is an internal contr
 introduced by rewriting AC-21 without its failure-mode row; fix it and FND-002 in this PR.
 
 ## Dispositions
+
+Round 1, fix commit 02e476d6 (reviewed against f0d42093..02e476d6).
+
+| FND | outcome | reason |
+|---|---|---|
+| FND-001 | fixed | The FR-018 AC-21 failure-mode row now reads "The closure comparison of this criterion is order-sensitive, so a permuted member list fails it; the permutation is still not a mutant of the shadow or the verdict ...", consistent with the AC-21 row, the reordered-members mutant and tests.md. |
+| FND-002 | fixed | TC-029 step 13 now compares the operand comparison types and lists the closure controls (including union ones); step 15 adds the retained option case, union payload types, operand types, the option-layer, option-as-payload and record-operand mutants, and the reconstruction source mutants, matching the AC-21 and AC-23 rows. |
