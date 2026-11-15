@@ -967,6 +967,29 @@ impl Twin {
         twin
     }
 
+    /// The same twin with the `amount` parameter declared nullable, an option of its range.
+    pub fn with_optional_amount(mut self) -> Self {
+        let mut domain: Value = serde_json::from_slice(&self.domain).expect("domain document");
+        let account = domain["types"]
+            .as_array_mut()
+            .expect("types")
+            .iter_mut()
+            .find(|ty| ty["identity"] == account_type())
+            .expect("account type");
+        let deposit = account["operations"]
+            .as_array_mut()
+            .expect("operations")
+            .iter_mut()
+            .find(|operation| operation["name"] == "deposit")
+            .expect("deposit operation");
+        deposit["params"][0]["nullable"] = json!(true);
+        deposit["params"][0]["multiplicity"] =
+            json!({"lower": 0, "upper": 1, "ordered": false, "unique": true});
+        deposit["params"][0]["presence"] = json!("optional");
+        self.domain = domain.to_string().into_bytes();
+        self
+    }
+
     /// The same twin with the `balance` range, which types the `amount` parameter, ending at `maximum`.
     pub fn with_amount_maximum(mut self, maximum: i64) -> Self {
         let mut domain: Value = serde_json::from_slice(&self.domain).expect("domain document");

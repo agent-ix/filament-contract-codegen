@@ -3212,7 +3212,7 @@ mod control_expectation_tests {
 
     /// FR-015-AC-170 and FR-015-AC-173: a read of a binder is the value of the innermost enclosing
     /// binder with that number, so a rebinding resolves each read to its own `let`.
-    #[trace("FR-015-AC-170", "FR-015-AC-173", "TC-025")]
+    #[trace("FR-015-AC-152", "TC-025")]
     #[test]
     fn a_binder_read_resolves_to_the_innermost_binding() {
         let amount = ClauseTerm::Input(input("amount", 999));
@@ -3281,5 +3281,75 @@ mod control_expectation_tests {
         };
         assert!(then.guard.ends_with("< 500_i128))") && !then.guard.contains("!("));
         assert!(other.guard.contains("!(") && other.guard.contains("< 500_i128"));
+    }
+}
+
+#[cfg(test)]
+mod control_shape_tests {
+    use super::*;
+    use crate::core::ir::clause::control_fixture::{applications, package, read_node};
+    use ix_trace_rs::trace;
+
+    /// `control_operands` over the `n`th application of `identity` in the fixture package, with the
+    /// scrutinee's parameter declared unless `declared` is false.
+    fn shape(
+        identity: &str,
+        position: usize,
+        declared: bool,
+    ) -> Result<usize, V2ClauseControlReason> {
+        let package = package();
+        let view = ClauseGraphView::new(&package);
+        let arguments = applications(&package, identity)[position];
+        let parameters = if declared {
+            vec![read_node(&arguments[0]).clone()]
+        } else {
+            Vec::new()
+        };
+        control_operands(&view, identity, arguments, &parameters).map(|operands| operands.len())
+    }
+
+    #[trace("FR-015-AC-154", "TC-025")]
+    #[test]
+    fn a_case_over_an_arity_0_union_with_native_arms_contributes_its_arm_bodies() {
+        assert_eq!(shape(CONTROL_CASE, 0, true), Ok(3));
+    }
+
+    #[trace("FR-015-AC-161", "TC-025")]
+    #[test]
+    fn an_if_with_a_non_native_branch_is_refused_and_native_branches_contribute_all_operands() {
+        // The two `if` functions are `texts` (Text branches) and `plain` (Integer branches).
+        let mut outcomes = [shape(CONTROL_IF, 0, true), shape(CONTROL_IF, 1, true)];
+        outcomes.sort_by_key(Result::is_ok);
+        assert_eq!(
+            outcomes,
+            [Err(V2ClauseControlReason::IfBranchNotNativeScalar), Ok(3)]
+        );
+    }
+
+    #[trace("FR-015-AC-162", "TC-025")]
+    #[test]
+    fn a_case_over_a_union_with_a_payload_member_is_refused_for_the_payload() {
+        assert_eq!(
+            shape(CONTROL_CASE, 2, true),
+            Err(V2ClauseControlReason::CaseUnionPayloadNotSupported)
+        );
+    }
+
+    #[trace("FR-015-AC-163", "TC-025")]
+    #[test]
+    fn a_case_with_a_non_native_arm_body_is_refused_for_the_arm() {
+        assert_eq!(
+            shape(CONTROL_CASE, 1, true),
+            Err(V2ClauseControlReason::CaseArmNotNativeScalar)
+        );
+    }
+
+    #[trace("FR-015-AC-171", "TC-025")]
+    #[test]
+    fn a_case_whose_scrutinee_is_not_a_declared_operation_parameter_is_refused() {
+        assert_eq!(
+            shape(CONTROL_CASE, 0, false),
+            Err(V2ClauseControlReason::CaseScrutineeNotParameter)
+        );
     }
 }

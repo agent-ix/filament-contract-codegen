@@ -26,7 +26,7 @@ mod draft_rows;
 
 use quire_contract_model::{
     CheckedNodeId, CheckedNodeOwner, CheckedPackageEvidence, CheckedPackageReadLimits,
-    CheckedPackageV2, CheckedPackageV2ReadResult,
+    CheckedPackageV2, CheckedPackageV2ReadResult, CheckedTerm,
 };
 use serde_json::json;
 
@@ -51,31 +51,51 @@ pub(crate) fn negotiate_package(
     package: &CheckedPackageV2,
     clause: &CheckedNodeId,
 ) -> Result<KaniV2ClauseObligationHarness, UnsupportedObligation> {
-    let (package, clause) = (package, clause);
-    let item = ObligationItem::V2Clause {
-        package,
-        clause,
-        claim: &crate::common::v2_claim::claim_for(package, clause),
-        dependencies: None,
-    };
+    negotiate_packages(&[(package, clause)])
+        .remove(0)
+        .map(|harness| harness.expect("a single item emits its harness"))
+}
+
+/// One request holding every `(package, clause)` item: per item, its refusal or its harness
+/// (`None` when the item is neither refused nor emitted as a V2 clause harness).
+pub(crate) fn negotiate_packages(
+    items: &[(&CheckedPackageV2, &CheckedNodeId)],
+) -> Vec<Result<Option<KaniV2ClauseObligationHarness>, UnsupportedObligation>> {
+    let claims: Vec<_> = items
+        .iter()
+        .map(|(package, clause)| crate::common::v2_claim::claim_for(package, clause))
+        .collect();
+    let requests: Vec<_> = items
+        .iter()
+        .zip(&claims)
+        .map(|((package, clause), claim)| ObligationItem::V2Clause {
+            package,
+            clause,
+            claim,
+            dependencies: None,
+        })
+        .collect();
     let outcome = negotiate_kani_native_obligations(&KaniObligationRequest {
         ceilings: ceilings(),
-        items: &[item],
+        items: &requests,
         subject_path: SUBJECT,
         unwind: 3,
     })
-    .expect("the clause negotiates");
+    .expect("the clauses negotiate");
     match outcome {
         KaniObligationOutcome::Emitted {
-            mut v2_clause_harnesses,
+            v2_clause_harnesses,
             records,
             ..
         } => {
-            if let ObligationDisposition::Unsupported { reason } = &records[0].disposition {
-                return Err(reason.clone());
-            }
-            assert_eq!(v2_clause_harnesses.len(), 1);
-            Ok(v2_clause_harnesses.remove(0))
+            let mut harnesses = v2_clause_harnesses.into_iter();
+            records
+                .iter()
+                .map(|record| match &record.disposition {
+                    ObligationDisposition::Unsupported { reason } => Err(reason.clone()),
+                    _ => Ok(harnesses.next()),
+                })
+                .collect()
         }
         KaniObligationOutcome::Rejected { records } => panic!("rejected: {records:?}"),
     }
@@ -237,12 +257,59 @@ fn operator_refusal(condition: &str) -> String {
     }
 }
 
+/// A twin whose clause `result = (let q = amount in true)` binds the nullable `amount`.
+fn optional_binding() -> Twin {
+    Twin::with_bounded_amount_implication_condition("result = (let q = amount in true)")
+        .with_optional_amount()
+}
+
 #[trace("FR-015-AC-160", "FR-015-AC-167", "TC-025")]
 #[test]
-fn tc_025_a_let_binding_a_text_is_a_typed_control_refusal_not_an_operator_refusal() {
-    let (reason, identity) = control_refusal(r#"result = (let q = "a" in true)"#);
-    assert_eq!(reason, V2ClauseControlReason::LetValueNotNativeScalar);
-    assert_eq!(identity, "quire.op.control.let");
+fn tc_025_a_let_binding_a_non_native_value_is_a_typed_control_refusal_and_spares_a_sibling() {
+    let (sibling_package, sibling_clause) =
+        Twin::with_bounded_amount_implication_condition(LET).emitted_package("BalanceNeverDrops");
+    for (family, twin) in [
+        (
+            "text",
+            Twin::with_bounded_amount_implication_condition(r#"result = (let q = "a" in true)"#),
+        ),
+        ("option", optional_binding()),
+    ] {
+        let (package, clause) = twin.emitted_package("BalanceNeverDrops");
+        let mut outcomes =
+            negotiate_packages(&[(&package, &clause), (&sibling_package, &sibling_clause)]);
+        let sibling = outcomes
+            .remove(1)
+            .expect("the supported sibling is unaffected");
+        assert!(sibling.is_some(), "{family}: the sibling keeps its harness");
+        match outcomes.remove(0) {
+            Err(UnsupportedObligation::V2ClauseControlNotSupported {
+                node_id,
+                control_node_id,
+                operation_identity,
+                reason,
+            }) => {
+                assert_eq!(
+                    reason,
+                    V2ClauseControlReason::LetValueNotNativeScalar,
+                    "{family}"
+                );
+                assert_eq!(operation_identity, "quire.op.control.let", "{family}");
+                assert_eq!(node_id, clause, "{family}: the clause node");
+                let Some(CheckedTerm::Application { operation, .. }) =
+                    package.term(&control_node_id)
+                else {
+                    panic!("{family}: the control node holds an application")
+                };
+                assert_eq!(
+                    operation.identity(),
+                    Some("quire.op.control.let"),
+                    "{family}"
+                );
+            }
+            other => panic!("{family}: expected a control refusal, got {other:?}"),
+        }
+    }
 }
 
 #[trace("FR-015-AC-166", "TC-025")]
@@ -261,6 +328,17 @@ fn tc_025_the_first_refusal_the_walk_meets_decides() {
     let (reason, _) =
         control_refusal(r#"result = ((let p = "a" in true) and (let q = "b" in true))"#);
     assert_eq!(reason, V2ClauseControlReason::LetValueNotNativeScalar);
+}
+
+#[trace("FR-015-AC-166", "TC-025")]
+#[test]
+fn tc_025_a_let_of_an_option_parameter_is_a_control_refusal_not_an_option_refusal() {
+    match negotiate_twin(&optional_binding()) {
+        Err(UnsupportedObligation::V2ClauseControlNotSupported { reason, .. }) => {
+            assert_eq!(reason, V2ClauseControlReason::LetValueNotNativeScalar)
+        }
+        other => panic!("expected the control refusal, got {other:?}"),
+    }
 }
 
 // ---- kani lane ---------------------------------------------------------------------------
@@ -531,4 +609,40 @@ fn tc_025_installed_unread_initializer_is_falsified_at_1000() {
         assert_two_phase_falsified(&run, &harness, POSTCONDITION_CHECK),
         vec![1000]
     );
+}
+
+/// The eager evaluation FR-015-AC-168 describes, as a package: each branch value is bound by a
+/// strict `let` before the selection, so the never-selected `amount + 1000` is evaluated on every
+/// draw. The runner refuses a mutated generated source, so the mutant is the equivalent clause.
+const EAGER: &str =
+    "result = (let e = amount + 1000 in (if amount < 1000 then amount else e) >= 0)";
+/// The unread-initializer skip FR-015-AC-172 describes, as a package: the same clause without the
+/// unread `let`.
+const SKIPPED: &str = "result = (amount >= 0)";
+
+#[trace("FR-015-AC-168", "FR-017-AC-63", "TC-025")]
+#[test]
+#[ignore = "kani lane: run serially through `make kani`"]
+fn tc_025_installed_eager_branch_equivalent_is_falsified_at_the_postcondition() {
+    let harness = constructed_harness(EAGER, 999);
+    let scratch = kani_crate_from("ir1447-eager", &harness.rust.contents, LAZY_SUBJECT);
+    let run = run_installed(&scratch, &harness);
+    let witness = assert_two_phase_falsified(&run, &harness, POSTCONDITION_CHECK);
+    assert!(
+        witness.iter().all(|amount| (0..=999).contains(amount)),
+        "an in-domain input: {witness:?}"
+    );
+}
+
+#[trace("FR-015-AC-172", "FR-017-AC-63", "TC-025")]
+#[test]
+#[ignore = "kani lane: run serially through `make kani`"]
+fn tc_025_installed_clause_without_the_unread_initializer_verifies() {
+    let harness = negotiate_twin(
+        &Twin::with_bounded_amount_implication_condition(SKIPPED).with_amount_maximum(1000),
+    )
+    .expect("the clause lowers");
+    let scratch = kani_crate_from("ir1447-skipped", &harness.rust.contents, UNREAD_SUBJECT);
+    let run = run_installed(&scratch, &harness);
+    assert_eq!(run.evidence.outcome, KaniRunOutcome::Verified);
 }
