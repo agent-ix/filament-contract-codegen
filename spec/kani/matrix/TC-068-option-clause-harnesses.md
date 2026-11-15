@@ -49,8 +49,8 @@ mutant fails the step "produced result agrees with the independent checked condi
    classifying the record-held option leaf as `PayloadNotScalar`, and by lowering `field?` as a
    two-state option; each must fail.
 9. Request a refused clause beside a supported sibling and assert the sibling keeps its harness
-   (FR-054-AC-15). Request an option of an unbounded integer and assert `requires_bound`; mutate
-   to `PayloadNotScalar` and require failure (FR-054-AC-16).
+   (FR-054-AC-15). Build an option of an unbounded integer and assert package admission refuses it with
+   `OperatorIneligible` (FR-054-AC-16).
 10. Request a clause with an unsupported operator at a lower node id than an option refusal, a
     clause with two option refusals, and a clause whose payload is both non-scalar and unbounded;
     assert the reported refusal is the lowest node id, and the shape reason first (FR-054-AC-17).

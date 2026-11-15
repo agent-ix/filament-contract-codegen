@@ -123,8 +123,8 @@ CG SHALL refuse the clause as `OptionNotLowered` with reason `PayloadNotScalar` 
 family. The family list is closed by that rule: text, decimal, rational, float, quantity, enum,
 timestamp, uuid, union, population and collection are all `PayloadNotScalar`.
 
-An option of an unbounded integer keeps `requires_bound` (FR-015-AC-61), and an integer payload
-bound beyond `i64` keeps its existing bound refusal.
+Contract IR package admission refuses an option of an unbounded integer (`OperatorIneligible`), so such a clause never reaches
+this lowering; an integer payload bound beyond `i64` keeps its existing bound refusal.
 
 When an option operand is the payload of an option, or any leaf of a record or tuple payload is
 itself an option, CG SHALL refuse the clause with reason `NestedOption`.
@@ -184,7 +184,7 @@ checked condition".
 | FR-054-AC-13 | A clause applying `filament.op.option.some` is refused with reason `OptionOperationNotLowered` naming the operation, not as `V2ClauseOperatorNotSupported`, with no harness. | Test |
 | FR-054-AC-14 | None of the four refusal reasons is reported as `NoFiniteEncoding`, `StateFrameRefused` or `V2ClauseOperatorNotSupported`. Mutant: collapsing the four reasons into `V2ClauseOperatorNotSupported` fails FR-054-AC-10 to FR-054-AC-13. | Test |
 | FR-054-AC-15 | A request holding a refused option clause and a supported sibling item reports the sibling `supported` with its harness unchanged. Mutant: dropping the sibling after the refusal fails. | Test |
-| FR-054-AC-16 | An option of an unbounded integer keeps `requires_bound` with the type node and has no harness. Mutant: remapping it to `PayloadNotScalar` fails the disposition check. | Test |
+| FR-054-AC-16 | An option of an unbounded integer is refused at package admission with `OperatorIneligible`, so no package reaches the lowering and no harness exists. | Test |
 | FR-054-AC-17 | A clause holding an unsupported operator met earlier in the walk than an option refusal is reported as `V2ClauseOperatorNotSupported`; a clause holding two option refusals reports the one met first; and a shape refusal precedes the bound refusal of the same node. Mutant: reporting the last refusal met fails the first two. | Test |
 | FR-054-AC-18 | The harness identity record retains the presence leaf, the payload leaves and the canonical-absent rule. Mutant: changing the absent rule from canonical payload to free payload yields an identity record that differs from the healthy one. | Test |
 | FR-054-AC-19 | Playback of a present and of an absent draw decodes to one option witness value each. Mutant: decoding the presence leaf as a payload leaf fails both. | Test |
@@ -205,12 +205,11 @@ checked condition".
 ## Status
 
 PARTIAL (IR-1448; executed runs in `docs/qualification/ir1448-kani-option-clause-runs.md`).
-Implemented: AC-1, AC-2, AC-3, AC-4, AC-5, AC-7, AC-15, AC-22, AC-23. PARTIAL: AC-6 (healthy
+Implemented: AC-1, AC-2, AC-3, AC-4, AC-5, AC-7, AC-15, AC-16, AC-22, AC-23. PARTIAL: AC-6 (healthy
 Kani run and a host stop probe; the unguarded mutant has no admitted package, so no Kani verdict),
 AC-8 and AC-9 (the checked package carries no record fields, so a composite option is refused
 `PayloadNotScalar`; unowned, planner to assign), AC-10 (only the bounded text family is run),
-AC-11 (Contract IR refuses an option of an option; a record-held option is not run), AC-16
-(package admission refuses an unbounded integer option, so `requires_bound` is not reached; the
-criterion text is to be corrected), AC-21 (AC-3, AC-4 and AC-7 are run; AC-6 and AC-8 are not).
+AC-11 (Contract IR refuses an option of an option; a record-held option is not run),
+AC-21 (AC-3, AC-4 and AC-7 are run; AC-6 and AC-8 are not).
 Not run: AC-12, AC-13, AC-14, AC-17, AC-18, AC-19, AC-20 (unowned, planner to assign). Drawing the
 `null` state of `field?` is not planned.
