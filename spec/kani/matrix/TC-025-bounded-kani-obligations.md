@@ -1074,7 +1074,7 @@ with the required author `make kani-gate`; independent review and final acceptan
     `execute_kani_concrete_playback` is TC-027 step 5 (FR-017-AC-60, IR-917; `docs/qualification/ir917-kani-playback.md`).
     PLANNED: the subject compiled by the pipeline. The FSL carrier is delivered and the body of the fixture's
     `deposit` operation is read as a function node (`the_fsl_source_of_the_clause_fixture_carries_the_deposit_body_as_a_function_node`);
-    the CG step that renders it into the subject is not built (unowned, planner to assign).
+    the CG step that renders it into the subject is not built (owned by IR-1548 (terra:IR writes the spec first, CG code after; it blocks IR-1509)).
 
 ## Control construct lowering (IR-1447)
 

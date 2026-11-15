@@ -96,5 +96,5 @@ proof-phase evidence and a satisfied cover. The check counts and the helper play
 - Program-step counts are not part of the runner's evidence and were not recorded.
 - PLANNED: a subject compiled by the pipeline. The subject is test-written. FSL now carries the operation body
   (the fixture's `deposit` body is read as a function node), but no CG step renders it into the subject
-  (unowned, planner to assign).
+  (owned by IR-1548 (terra:IR writes the spec first, CG code after; it blocks IR-1509)).
 - The 999 playback here is a host stand-in run; the Kani-backed one is `ir917-kani-playback.md` (IR-917).
