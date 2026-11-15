@@ -253,13 +253,14 @@ the enum-only owner facade does not excuse dropping it.
     reachable through the public API); `work` gives `LoweringWorkExhausted`; each of
     `nodes`, `edges`, `occurrences` and `diagnostics` gives `LoweringLimitUnrecognised` with that
     snake_case `limit_kind`, with no panic and never `LoweringWorkExhausted`.
-13. Declaration closure (FR-018-AC-21, planned, IR-264). For every item of the step 1 package whose
-    leaves are Boolean or bounded integers, read the claim-map entry's closure (each declaration's
+13. Declaration closure (FR-018-AC-21, IR-264). For every item of the bounded corpus (the
+    `bounded` source case: a record with an optional field under both operators, a tuple, an
+    option and a nested option over Boolean and `Int[0, 2]`), read the claim-map entry's closure (each declaration's
     key, form, members in declaration order with name, presence and type, each leaf's family and
     declared bound) and compare it member by member with the declarations of the
     `TypeEnvironment` the item's generated environment constructor returns, held by the test and
     not parsed from the source.
-14. Totality and schedule over the refinement domain (FR-018-AC-22, planned, IR-264). For the
+14. Totality and schedule over the refinement domain (FR-018-AC-22, partial, IR-264, IR-241). For the
     record, tuple and option items of step 13, whose declared integer ranges are chosen so the
     domain fits the case cap (both Booleans, an integer range of three values, every presence
     state of an option and of an optional field), enumerate every operand pair of that domain, the
@@ -268,7 +269,7 @@ the enum-only owner facade does not excuse dropping it.
     from the values, the admitted charges `equality.plan-form`, `equality.plan`, one
     `equality.pair` per node of the occurrence-pair tree counted by the test, then
     `equality.result-retain`, and no `Refused` or `Incomplete`.
-15. Independent closure (FR-018-AC-23, planned, IR-264). For each item of step 13, read the
+15. Independent closure (FR-018-AC-23, IR-264). For each item of step 13, read the
     package's declared types through Contract IR's reader, not through the generator, and compare
     member names, presence and each integer leaf's inclusive bounds with the claim-map closure;
     then hand the check a closure that dropped a member, one whose bound was narrowed by one, and
@@ -628,7 +629,7 @@ No vector produces `Refusal::ForeignReference`: reference operands are excluded,
 so `CheckedInvariant` from step 6 is the only run-time `Refused` a generated
 oracle here can yield.
 
-Steps 13 to 15 (FR-018-AC-21 to FR-018-AC-23, IR-264) are planned and narrow the paragraph above
+Steps 13 to 15 (FR-018-AC-21 to FR-018-AC-23, IR-264) are implemented as stated in their steps and narrow the paragraph above
 for the shapes they cover: for a record, tuple or option over Boolean and bounded-integer leaves
 the pair count is asserted, against a count the test makes from the values by FSpec FR-149's
 occurrence-pair rule and not from the runtime, because the shadow of FR-015-AC-69 models exactly

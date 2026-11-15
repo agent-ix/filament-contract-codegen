@@ -119,6 +119,11 @@ pub use oracle::equality::{
     COMPOSITE_EQUALITY_CRATE_NAME, COMPOSITE_EQUALITY_LOWERING_WORK_LIMIT,
 };
 
+pub use oracle::equality::closure::{
+    RecordedDeclaration, RecordedForm, RecordedMember, RecordedOperandTypes, RecordedPresence,
+    RecordedType,
+};
+
 pub use oracle::function::owner_path::{
     apply_checked_function, checked_composite_declarations, checked_function_declarations,
     checked_function_key, select_checked_callable, selected_nested_call_site, CheckedFunctionError,
