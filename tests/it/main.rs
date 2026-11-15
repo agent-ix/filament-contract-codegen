@@ -68,6 +68,7 @@ mod composite_equality_generation;
 mod composite_original_eq;
 mod composite_parity_converter;
 mod composite_record_residuals;
+mod composite_shadow;
 mod cover_last;
 mod enum_scalar_harness;
 mod exact_function_agreement;

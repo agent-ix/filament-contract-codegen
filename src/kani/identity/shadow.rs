@@ -12,6 +12,7 @@ use crate::{
             ProofCeilings,
         },
     },
+    oracle::equality::closure::{RecordedDeclaration, RecordedOperandTypes},
 };
 
 /// The evidence that discharges one abstraction the shadow makes.
@@ -70,16 +71,87 @@ pub struct AbstractionRecord {
     pub evidence: AbstractionEvidence,
 }
 
+/// What one drawn leaf stands for.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum LeafKind {
+    /// A bounded integer.
+    Integer,
+    /// A Boolean.
+    Boolean,
+    /// Whether an option is present.
+    Presence,
+    /// The state of an optional field: 0 present, 1 absent, 2 null.
+    SlotState,
+}
+
 /// One leaf of the identity: its declared and drawn domains.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LeafRecord {
     /// The leaf name.
     pub name: String,
+    /// The node of the parameter the leaf belongs to.
+    pub node: String,
+    /// The leaf's path inside the parameter; empty for a stand-in leaf.
+    pub path: String,
+    /// What the leaf stands for.
+    pub kind: LeafKind,
     /// The declared inclusive bound.
     pub declared: (i64, i64),
     /// The inclusive bound the harness draws from.
     pub drawn: (i64, i64),
+}
+
+/// Whether the criterion that covers an unexercised behaviour is covered in the test matrix.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum BackingState {
+    /// The matrix lists the criterion covered.
+    Backed,
+    /// The matrix lists it in any other state.
+    Unbacked,
+}
+
+/// A behaviour the proof does not exercise, with the native criterion that covers it.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UnexercisedCoverage {
+    /// The behaviour.
+    pub behaviour: String,
+    /// The native criterion that covers it.
+    pub criterion: String,
+    /// The criterion's backing state.
+    pub backing: BackingState,
+}
+
+/// A literal operand's leaf, pinned to exactly one value.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct PinnedLeaf {
+    /// The leaf name.
+    pub name: String,
+    /// The value, in the encoding of the refinement domain.
+    pub value: i64,
+}
+
+/// What the composite-equality family adds to the identity (FR-015-AC-76).
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CompositeIdentity {
+    /// `=` or `!=`.
+    pub operator: String,
+    /// The closure's declarations, each with its leaves' declared domains.
+    pub declarations: Vec<RecordedDeclaration>,
+    /// The comparison types of both operands.
+    pub operand_types: RecordedOperandTypes,
+    /// The closure's pair-node count.
+    pub pair_nodes: u32,
+    /// Literal operand leaves.
+    pub pinned: Vec<PinnedLeaf>,
+    /// Each unexercised behaviour with its covering criterion and its backing state.
+    pub coverage: Vec<UnexercisedCoverage>,
+    /// Whether any covering criterion is unbacked, so the result closes no family row.
+    pub closes_family_row: bool,
 }
 
 /// The identity of a bounded-shadow harness (FR-028-AC-18).
@@ -118,6 +190,9 @@ pub struct ShadowIdentity {
     pub options: Vec<String>,
     /// The witness option vector.
     pub witness_options: Vec<String>,
+    /// The composite-equality family's members.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub composite: Option<CompositeIdentity>,
 }
 
 /// The refinement obligation: what the production subject owes the shadow (FR-028-AC-14).

@@ -16,8 +16,9 @@ use crate::{
         identity::{
             refinement::{DomainBound, ProofSubject},
             shadow::{
-                AbstractionEvidence, AbstractionRecord, HelperMark, KaniShadowHarness, LeafRecord,
-                ProductionRead, RefinementObligation, ShadowIdentity, SharedHelperClaim,
+                AbstractionEvidence, AbstractionRecord, HelperMark, KaniShadowHarness, LeafKind,
+                LeafRecord, ProductionRead, RefinementObligation, ShadowIdentity,
+                SharedHelperClaim,
             },
             ProofCeilings,
         },
@@ -26,6 +27,7 @@ use crate::{
 
 use super::render;
 
+pub mod composite;
 pub mod source_check;
 #[cfg(test)]
 mod tests;
@@ -285,15 +287,23 @@ pub(crate) fn generate_with(
     let domain = refinement_domain(&item.leaves, &leaves)?;
 
     let shadow_module = render_shadow_module(&item.leaves, hooks);
-    let draws: Vec<(&str, i64, i64)> = leaves
+    let draws: Vec<render::shadow::Draw<'_>> = leaves
         .iter()
-        .map(|leaf| (leaf.name.as_str(), leaf.drawn.0, leaf.drawn.1))
+        .map(|leaf| render::shadow::Draw {
+            name: leaf.name.as_str(),
+            domain: render::shadow::DrawDomain::Int(leaf.drawn.0, leaf.drawn.1),
+            when: None,
+        })
         .collect();
+    let arguments: Vec<&str> = leaves.iter().map(|leaf| leaf.name.as_str()).collect();
     let proof_module = render::shadow::proof_module(&render::shadow::ProofModule {
         module: PROOF_MODULE,
         function: PROOF_FUNCTION,
         shadow_module: SHADOW_MODULE,
         draws: &draws,
+        pinned: &[],
+        arguments: &arguments,
+        cover: "expected_verdict",
         before_proof: &hooks.proof_extra,
         before_assertions: &hooks.body_extra,
     });
@@ -353,6 +363,7 @@ pub(crate) fn generate_with(
         unwind: item.unwind,
         options: adapter_options(&harness, item.unwind, solver, false),
         witness_options: witness_options(&harness, item.unwind, solver, false),
+        composite: None,
     };
     let obligation = RefinementObligation {
         subject: item.subject.clone(),
@@ -445,6 +456,9 @@ fn leaf_records(leaves: &[ShadowLeaf]) -> Result<Vec<LeafRecord>, ShadowRefusal>
             }
             Ok(LeafRecord {
                 name: leaf.name.clone(),
+                node: leaf.node.clone(),
+                path: String::new(),
+                kind: LeafKind::Integer,
                 declared,
                 drawn,
             })

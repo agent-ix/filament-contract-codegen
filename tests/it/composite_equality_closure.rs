@@ -15,7 +15,7 @@ use ix_trace_rs::trace;
 use quire_contract_model::{CheckedNodeId, CheckedPackageV2};
 
 /// `(alias, function, operator)`: the corpus items, named as `closure_cases.rs` expects.
-const ITEMS: [(&str, &str, EqualityOperatorKind); 6] = [
+pub(super) const ITEMS: [(&str, &str, EqualityOperatorKind); 6] = [
     ("flags_equal", "fr", EqualityOperatorKind::Equal),
     ("flags_not_equal", "fr", EqualityOperatorKind::NotEqual),
     ("duo_equal", "ft", EqualityOperatorKind::Equal),
@@ -24,13 +24,13 @@ const ITEMS: [(&str, &str, EqualityOperatorKind); 6] = [
     ("shape_equal", "fu", EqualityOperatorKind::Equal),
 ];
 
-struct Corpus {
-    package: CheckedPackageV2,
-    oracles: CompositeEqualityOracles,
-    items: Vec<CompositeEqualityItem>,
+pub(super) struct Corpus {
+    pub(super) package: CheckedPackageV2,
+    pub(super) oracles: CompositeEqualityOracles,
+    pub(super) items: Vec<CompositeEqualityItem>,
 }
 
-fn corpus() -> Corpus {
+pub(super) fn corpus() -> Corpus {
     let compiled = fixture::compile(fixture::BOUNDED_CASE);
     let package = super::admitted_enum_equality::checked(&compiled, &[]);
     let items: Vec<_> = ITEMS
@@ -57,7 +57,7 @@ fn corpus() -> Corpus {
 
 /// The generated claim of the `index`th requested item; the claim map is ordered by
 /// descriptor key, not by request.
-fn generated(corpus: &Corpus, index: usize) -> &GeneratedCompositeEqualityClaim {
+pub(super) fn generated(corpus: &Corpus, index: usize) -> &GeneratedCompositeEqualityClaim {
     let item = &corpus.items[index];
     corpus
         .oracles
@@ -344,7 +344,7 @@ fn describe(value: &RecordedType, closure: &[RecordedDeclaration]) -> Read {
 
 /// Compare a claim's closure and operand types with the independent read of the package:
 /// member names, presence, integer bounds and option nesting.
-fn check_against_package(
+pub(super) fn check_against_package(
     package: &CheckedPackageV2,
     claim: &GeneratedCompositeEqualityClaim,
 ) -> Result<(), String> {
@@ -397,6 +397,7 @@ fn check_against_package(
 }
 
 /// A mutation of the claim at `item` (an index into [`ITEMS`]).
+#[allow(dead_code)]
 type ClaimMutation = (
     &'static str,
     usize,
