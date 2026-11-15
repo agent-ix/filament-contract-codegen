@@ -12,11 +12,19 @@ use serde::Serialize;
 use crate::{
     core::artifact::Artifact,
     kani::{
-        abi::{adapter_options, i64_literal, witness_options, KaniSolver},
-        identity::ProofCeilings,
-        refinement::{DomainBound, ProofSubject},
+        abi::{adapter_options, witness_options, KaniSolver},
+        identity::{
+            refinement::{DomainBound, ProofSubject},
+            shadow::{
+                AbstractionEvidence, AbstractionRecord, HelperMark, KaniShadowHarness, LeafRecord,
+                ProductionRead, RefinementObligation, ShadowIdentity, SharedHelperClaim,
+            },
+            ProofCeilings,
+        },
     },
 };
+
+use super::render;
 
 pub mod source_check;
 #[cfg(test)]
@@ -67,16 +75,6 @@ pub struct ShadowLeaf {
     pub refinement: Option<(i64, i64)>,
 }
 
-/// The evidence that discharges one abstraction the shadow makes.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
-#[serde(tag = "kind", content = "name", rename_all = "snake_case")]
-pub enum AbstractionEvidence {
-    /// A Kani check of the harness, by name.
-    KaniCheck(String),
-    /// A comparison of the refinement run, by the observable it reads.
-    RefinementComparison(String),
-}
-
 /// One abstraction the shadow makes, with the evidence the item supplies for it.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct AbstractionClaim {
@@ -84,43 +82,6 @@ pub struct AbstractionClaim {
     pub name: String,
     /// What discharges it; none leaves it undischarged and the item is refused.
     pub evidence: Option<AbstractionEvidence>,
-}
-
-/// Whether a shared helper's result is read by the compared observables.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum HelperMark {
-    /// It returns a bound, a presence, a member set or a count the comparison reads.
-    ValueBearing,
-    /// It returns only an order the compared observables do not read.
-    OrderOnly,
-}
-
-/// Whether the production subject reads a value-bearing helper's value through the same helper.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum ProductionRead {
-    /// The production subject reads its own value, so the refinement run sees a mutant.
-    Independent,
-    /// The production subject calls the same helper, so only an independent check sees a mutant.
-    SameHelper,
-}
-
-/// One helper the shadow shares with its expectation.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SharedHelperClaim {
-    /// The helper's function name.
-    pub name: String,
-    /// Its mark.
-    pub mark: HelperMark,
-    /// Why it is `order_only`; required exactly for that mark.
-    pub order_only_reason: Option<String>,
-    /// How the production subject obtains the same fact.
-    pub production_read: ProductionRead,
-    /// The family's independent check of the helper; required when the production subject reads
-    /// it through the same helper.
-    pub independent_check: Option<String>,
 }
 
 /// One item for the shadow generator.
@@ -231,106 +192,6 @@ impl ShadowRefusal {
     }
 }
 
-/// One abstraction of the identity, with its discharging evidence.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
-pub struct AbstractionRecord {
-    /// The name.
-    pub name: String,
-    /// The evidence.
-    pub evidence: AbstractionEvidence,
-}
-
-/// One leaf of the identity: its declared and drawn domains.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct LeafRecord {
-    /// The leaf name.
-    pub name: String,
-    /// The declared inclusive bound.
-    pub declared: (i64, i64),
-    /// The inclusive bound the harness draws from.
-    pub drawn: (i64, i64),
-}
-
-/// The identity of a bounded-shadow harness (FR-028-AC-18).
-#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ShadowIdentity {
-    /// The family.
-    pub family: String,
-    /// Always `bounded_shadow`.
-    pub proof_subject: ProofSubject,
-    /// The claimed node.
-    pub node: String,
-    /// The request ceilings.
-    pub ceilings: ProofCeilings,
-    /// Harness module.
-    pub module_symbol: String,
-    /// Harness function.
-    pub harness_symbol: String,
-    /// The drawn arguments.
-    pub leaves: Vec<LeafRecord>,
-    /// The family's size budget and the item's size.
-    pub size_budget: u32,
-    /// The item's size.
-    pub size: u32,
-    /// Each abstraction with its discharging evidence.
-    pub abstractions: Vec<AbstractionRecord>,
-    /// Each behaviour of the production subject the proof does not exercise.
-    pub unexercised: Vec<String>,
-    /// Each helper the shadow shares with its expectation.
-    pub shared_helpers: Vec<SharedHelperClaim>,
-    /// Solver.
-    pub solver: KaniSolver,
-    /// Unwind bound.
-    pub unwind: u32,
-    /// The proof option vector.
-    pub options: Vec<String>,
-    /// The witness option vector.
-    pub witness_options: Vec<String>,
-}
-
-/// The refinement obligation: what the production subject owes the shadow (FR-028-AC-14).
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct RefinementObligation {
-    /// The production subject's symbol.
-    pub subject: String,
-    /// The shadow's symbol.
-    pub shadow: String,
-    /// The bounded domain, one inclusive bound per drawn argument.
-    pub domain: Vec<DomainBound>,
-    /// The abstraction function's symbol.
-    pub abstraction: String,
-    /// The observables the comparison reads.
-    pub observables: Vec<String>,
-    /// The generated Rust source of the native refinement program, in the same result.
-    pub source: Artifact,
-    /// The source of the abstraction module alone.
-    pub abstraction_source: String,
-}
-
-/// One generated shadow harness with its identity and its refinement obligation.
-#[derive(Clone, Debug)]
-pub struct KaniShadowHarness {
-    /// Identity.
-    pub identity: ShadowIdentity,
-    /// The shadow, the expectation and the Kani harness, self-contained.
-    pub rust: Artifact,
-    /// The obligation generated beside it.
-    pub obligation: RefinementObligation,
-}
-
-impl KaniShadowHarness {
-    /// The `module::harness` path of the proof.
-    #[must_use]
-    pub fn harness_path(&self) -> String {
-        format!(
-            "{}::{}",
-            self.identity.module_symbol, self.identity.harness_symbol
-        )
-    }
-}
-
 /// Text substituted into a rendering by the tests that mutate the generator.
 #[derive(Clone, Debug, Default)]
 pub(crate) struct Hooks {
@@ -424,7 +285,18 @@ pub(crate) fn generate_with(
     let domain = refinement_domain(&item.leaves, &leaves)?;
 
     let shadow_module = render_shadow_module(&item.leaves, hooks);
-    let proof_module = render_proof_module(&leaves, &item.leaves, hooks);
+    let draws: Vec<(&str, i64, i64)> = leaves
+        .iter()
+        .map(|leaf| (leaf.name.as_str(), leaf.drawn.0, leaf.drawn.1))
+        .collect();
+    let proof_module = render::shadow::proof_module(&render::shadow::ProofModule {
+        module: PROOF_MODULE,
+        function: PROOF_FUNCTION,
+        shadow_module: SHADOW_MODULE,
+        draws: &draws,
+        before_proof: &hooks.proof_extra,
+        before_assertions: &hooks.body_extra,
+    });
     let rust = Artifact::new(
         "shadow_harness.rs",
         format!("{shadow_module}\n{proof_module}"),
@@ -639,37 +511,6 @@ fn render_shadow_module(leaves: &[ShadowLeaf], hooks: &Hooks) -> String {
 {extra}}}
 ",
         extra = hooks.shadow_extra
-    )
-}
-
-fn render_proof_module(records: &[LeafRecord], leaves: &[ShadowLeaf], hooks: &Hooks) -> String {
-    let mut draws = String::new();
-    for record in records {
-        let name = &record.name;
-        draws.push_str(&format!(
-            "        let {name}: i64 = kani::any();\n        kani::assume({name} >= {} && {name} <= {});\n",
-            i64_literal(record.drawn.0),
-            i64_literal(record.drawn.1)
-        ));
-    }
-    let (left, right) = (&leaves[0].name, &leaves[1].name);
-    format!(
-        "#[cfg(kani)]
-pub mod {PROOF_MODULE} {{
-    use super::{SHADOW_MODULE}::{{expectation, shadow}};
-{proof_extra}
-    #[kani::proof]
-    pub fn {PROOF_FUNCTION}() {{
-{draws}{body_extra}        let (verdict, pairs) = shadow({left}, {right});
-        let (expected_verdict, expected_pairs) = expectation({left}, {right});
-        assert!(verdict == expected_verdict);
-        assert!(pairs == expected_pairs);
-        kani::cover!(expected_verdict);
-    }}
-}}
-",
-        proof_extra = hooks.proof_extra,
-        body_extra = hooks.body_extra
     )
 }
 

@@ -37,7 +37,7 @@ must catch.
     seconds whose product with N fits, and a `Duration::MAX` request, reading each launch's
     arguments and outer bound.
 
-### The shadow contract (planned, IR-241)
+### The shadow contract (partly implemented, IR-264 PR2; composite family IR-264 PR3)
 
 Steps 11 to 22 use a stand-in family, not composite equality: a two-leaf shadow (two bounded
 integers compared for equality) with a stand-in production subject that the test can mutate, so
@@ -220,12 +220,12 @@ Steps 5 to 9 remain planned: the ceiling slice supplies no family or proof-subje
 other identities.
 
 Steps 11 to 18, 20 and 22 are implemented over the stand-in family (IR-264 PR2), in
-`src/kani/generate/shadow/tests.rs`: the shadow generator and its parsed-source check
+`src/kani/generate/shadow/tests.rs` (generator side), `tests/it/shadow_refinement.rs` (native refinement) and `tests/it/shadow_kani.rs` (installed backend, in the Kani lane): the shadow generator and its parsed-source check
 (`tc_039_the_shadow_source_has_no_runtime_path_no_stub_and_no_assumption_beyond_its_domain`), the
 obligation (`tc_039_the_obligation_names_its_parts_and_the_abstraction_module_is_imported_by_none`),
 the native refinement over a mutable stand-in subject
 (`tc_039_each_production_divergence_is_a_recorded_disagreement_never_skipped`), the case plan
-(`tc_039_a_refinement_domain_is_exhaustive_up_to_the_cap_and_sampled_beyond_it`,
+(`tc_039_a_refinement_domain_is_exhaustive_up_to_the_cap_and_sampled_beyond_it`, `tc_039_planning_is_bounded_whatever_the_case_cap`,
 `tc_039_a_native_sampled_run_records_class_count_cases_and_seed`), the strengths
 (`tc_039_proof_strength_follows_the_subject_and_the_refinement_run`), the identity and its helpers
 (`tc_039_the_identity_lists_what_the_shadow_abstracts_and_an_undischarged_one_is_refused`,
@@ -233,12 +233,15 @@ the native refinement over a mutable stand-in subject
 domain and shape refusals (`tc_039_a_refinement_domain_narrower_than_the_drawn_domain_is_refused`,
 `tc_039_unsupported_shapes_are_refused_without_a_harness_or_a_production_fallback`), the
 installed-backend shadow runs (`tc_039_installed_kani_verifies_the_shadow_and_falsifies_its_mutant_in_two_phases`)
-and the refinement at a ceiling or ended by a signal
-(`tc_039_a_refinement_at_a_ceiling_or_ended_by_a_signal_is_inconclusive_with_its_evidence`).
-The installed-backend run took about 2 s of wall time with a cgroup `memory.peak` of 187,551,744 B
+the never-comparing subject (`tc_039_a_subject_that_never_compares_one_leaf_settles_refinement_failed`) and the refinement at a ceiling, ended by a signal or cancelled
+(`tc_039_a_refinement_at_a_ceiling_or_ended_by_a_signal_is_inconclusive_with_its_evidence`,
+`tc_039_a_cancelled_refinement_is_a_typed_refusal_not_an_inconclusive_strength`).
+The installed-backend test is `#[ignore]`d under the `kani lane:` convention and runs through `make kani-gate` (filter `shadow_kani`), not plain `cargo test`. It took about 2 s of wall time with a cgroup `memory.peak` of 187,551,744 B
 (one cgroup, swap 0, the three proofs and the test binary together).
 
+The Boolean and option or optional-slot boundary values of step 14 (FR-028-AC-16) have no code yet: the plan covers integer leaves only (owner IR-264 PR3, which adds those leaf kinds with the composite family).
+
 Still partial: step 21 has the per-phase vectors but not the tool versions in the shadow run's own
-evidence (owner IR-241 follow-up); the strength is not yet a member of the terminal value, the
+evidence (owner IR-264 PR3, which is the ticket that closes IR-241's composite scope); the strength is not yet a member of the terminal value, the
 composite observables, the `evaluate_record` construction refusals and FR-018-AC-23's independent
 read of the closure belong to the composite family (IR-264 PR1 for the oracle side, PR3).

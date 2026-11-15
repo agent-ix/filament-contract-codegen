@@ -34,7 +34,7 @@ pub enum KaniExecutableHarness<'a> {
     V2Clause(&'a KaniV2ClauseObligationHarness),
     /// A bounded shadow harness; its refinement obligation runs through
     /// `execute_kani_refinement` (FR-028-AC-24).
-    Shadow(&'a crate::kani::generate::shadow::KaniShadowHarness),
+    Shadow(&'a crate::kani::identity::shadow::KaniShadowHarness),
 }
 
 impl<'a> From<&'a KaniObligationHarness> for KaniExecutableHarness<'a> {
@@ -67,8 +67,8 @@ impl<'a> From<&'a KaniCollectionObligationHarness> for KaniExecutableHarness<'a>
     }
 }
 
-impl<'a> From<&'a crate::kani::generate::shadow::KaniShadowHarness> for KaniExecutableHarness<'a> {
-    fn from(harness: &'a crate::kani::generate::shadow::KaniShadowHarness) -> Self {
+impl<'a> From<&'a crate::kani::identity::shadow::KaniShadowHarness> for KaniExecutableHarness<'a> {
+    fn from(harness: &'a crate::kani::identity::shadow::KaniShadowHarness) -> Self {
         Self::Shadow(harness)
     }
 }

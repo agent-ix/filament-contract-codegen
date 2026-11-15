@@ -1,14 +1,9 @@
-//! The refinement run of a bounded shadow: its case plan, its evidence and the proof strength
-//! the shadow run and the refinement run settle together (FR-028-AC-15 to FR-028-AC-17 and
-//! FR-028-AC-24, ADR-003).
+//! The refinement plan, its budget and the values a refinement run and its strength are stated in
+//! (FR-028-AC-15 to FR-028-AC-17 and FR-028-AC-24, ADR-003).
 //!
 //! The plan is pure. Two plans with equal inputs hold the same cases in the same order.
 
 use serde::Serialize;
-
-use crate::kani::{
-    classify::KaniRunOutcome, identity::ProofCeilings, run::memory::MemoryObservation,
-};
 
 /// One inclusive bound of one drawn argument of the refinement domain.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
@@ -85,7 +80,17 @@ pub enum RefinementPlanError {
     },
     /// The domain has no argument.
     NoArguments,
+    /// The sample size is above [`MAX_PLANNED_CASES`].
+    SampleTooLarge {
+        /// The requested sample size.
+        sample_size: u64,
+    },
 }
+
+/// The most cases one plan holds. A plan is materialised and written before the run launches, so
+/// it is bounded here and not by the run's wall-clock ceiling: a domain above the request's case
+/// cap, or above this limit when the cap is higher, is sampled.
+pub const MAX_PLANNED_CASES: u128 = 1 << 20;
 
 fn span(bound: &DomainBound) -> u128 {
     (i128::from(bound.maximum) - i128::from(bound.minimum)) as u128 + 1
@@ -110,11 +115,17 @@ pub fn plan_refinement(
             argument: bound.argument.clone(),
         });
     }
+    if u128::from(budget.sample_size) > MAX_PLANNED_CASES {
+        return Err(RefinementPlanError::SampleTooLarge {
+            sample_size: budget.sample_size,
+        });
+    }
+    let case_cap = budget.case_cap.min(MAX_PLANNED_CASES);
     let count = bounds
         .iter()
         .try_fold(1_u128, |total, bound| total.checked_mul(span(bound)));
     let case_count = count.map_or(CaseCount::Overflowed, CaseCount::Exact);
-    if let Some(count) = count.filter(|count| *count <= budget.case_cap) {
+    if let Some(count) = count.filter(|count| *count <= case_cap) {
         return Ok(RefinementPlan {
             class: RefinementClass::Exhaustive,
             case_count,
@@ -246,8 +257,6 @@ pub enum RefinementOutcome {
     ReachedWallClockCeiling,
     /// The environment ended the process by a signal, which is how it enforces its memory cap.
     EndedBySignal,
-    /// The caller's cancellation handle stopped the run.
-    Cancelled,
 }
 
 /// The tool versions a refinement evidence names.
@@ -258,51 +267,6 @@ pub struct RefinementVersions {
     pub rust_compiler: String,
     /// The production subject's crate version.
     pub subject_crate: String,
-}
-
-/// What one refinement run did (FR-028-AC-24).
-#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct RefinementEvidence {
-    /// The `module::harness` path of the shadow harness this refinement accompanies.
-    pub harness_path: String,
-    /// Exhaustive or sampled, as planned.
-    pub class: RefinementClass,
-    /// The size of the domain.
-    pub case_count: CaseCount,
-    /// How many cases the process executed.
-    pub cases_run: u64,
-    /// How many cases the plan held.
-    pub cases_planned: u64,
-    /// Boundary cases in a sampled plan.
-    pub boundary_cases: u64,
-    /// Seeded cases in a sampled plan.
-    pub sample_size: u64,
-    /// The seed.
-    pub seed: u64,
-    /// The two ceilings the run was held to: the identity wall clock, and the memory ceiling
-    /// the caller's environment is expected to enforce.
-    pub ceilings: ProofCeilings,
-    /// The peak the environment provided, when it provided one.
-    pub memory: MemoryObservation,
-    /// How the run ended.
-    pub outcome: RefinementOutcome,
-    /// The versions the run used.
-    pub versions: RefinementVersions,
-}
-
-impl RefinementEvidence {
-    /// The summary strength mapping reads.
-    #[must_use]
-    pub fn summary(&self) -> RefinementSummary {
-        match &self.outcome {
-            RefinementOutcome::Agreed => RefinementSummary::Agreed(self.class),
-            RefinementOutcome::Disagreed { .. } => RefinementSummary::Disagreed,
-            RefinementOutcome::ReachedWallClockCeiling
-            | RefinementOutcome::EndedBySignal
-            | RefinementOutcome::Cancelled => RefinementSummary::ReachedCeiling,
-        }
-    }
 }
 
 /// What a refinement run established, with nothing else a strength reads.
@@ -324,53 +288,4 @@ pub enum ProofSubject {
     Production,
     /// A smaller program, with a refinement obligation to the production code.
     BoundedShadow,
-}
-
-/// How strongly a verified harness, with its refinement run if it has one, proves the production
-/// subject (FR-028-AC-17). A `bounded_shadow` result is never `production_proved`.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum ProofStrength {
-    /// A verified `production` harness.
-    ProductionProved,
-    /// A verified shadow whose refinement run was exhaustive and agreed.
-    ShadowProvedRefinementExhaustive,
-    /// A verified shadow whose refinement run was sampled and agreed.
-    ShadowProvedRefinementSampled,
-    /// A verified shadow with no refinement run.
-    ShadowProvedRefinementNotRun,
-    /// A verified shadow whose refinement run reached a ceiling.
-    ShadowProvedRefinementInconclusive,
-    /// The refinement run found a disagreement.
-    RefinementFailed,
-}
-
-/// The strength of one harness's result, or none where the harness itself did not verify and
-/// no refinement disagreement was found.
-#[must_use]
-pub fn proof_strength(
-    subject: ProofSubject,
-    outcome: &KaniRunOutcome,
-    refinement: Option<RefinementSummary>,
-) -> Option<ProofStrength> {
-    if subject == ProofSubject::BoundedShadow && refinement == Some(RefinementSummary::Disagreed) {
-        return Some(ProofStrength::RefinementFailed);
-    }
-    if !matches!(outcome, KaniRunOutcome::Verified) {
-        return None;
-    }
-    Some(match (subject, refinement) {
-        (ProofSubject::Production, _) => ProofStrength::ProductionProved,
-        (ProofSubject::BoundedShadow, None) => ProofStrength::ShadowProvedRefinementNotRun,
-        (ProofSubject::BoundedShadow, Some(RefinementSummary::Agreed(class))) => match class {
-            RefinementClass::Exhaustive => ProofStrength::ShadowProvedRefinementExhaustive,
-            RefinementClass::Sampled => ProofStrength::ShadowProvedRefinementSampled,
-        },
-        (ProofSubject::BoundedShadow, Some(RefinementSummary::ReachedCeiling)) => {
-            ProofStrength::ShadowProvedRefinementInconclusive
-        }
-        (ProofSubject::BoundedShadow, Some(RefinementSummary::Disagreed)) => {
-            ProofStrength::RefinementFailed
-        }
-    })
 }

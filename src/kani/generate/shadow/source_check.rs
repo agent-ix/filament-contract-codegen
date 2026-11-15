@@ -1,7 +1,7 @@
 //! The parsed-source checks of a `bounded_shadow` harness (FR-028-AC-13) and of the module that
 //! holds its abstraction function (FR-028-AC-14).
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use syn::{
     punctuated::Punctuated,
@@ -42,9 +42,20 @@ const PRIMITIVES: [&str; 17] = [
     "bool", "char", "str", "i8", "i16", "i32", "i64", "i128", "isize", "u8", "u16", "u32", "u64",
     "u128", "usize", "f32", "f64",
 ];
+/// The names the standard prelude brings into scope, which a path may start with.
+const PRELUDE: [&str; 12] = [
+    "Option", "Result", "Some", "None", "Ok", "Err", "Box", "Vec", "String", "Default", "From",
+    "Into",
+];
+/// The only items of `kani` a shadow harness may name.
+const KANI_ITEMS: [&str; 4] = ["proof", "any", "assume", "cover"];
 
 struct Checker {
     local_modules: BTreeSet<String>,
+    /// Types the file declares: a path may start with one.
+    local_types: BTreeSet<String>,
+    /// What each `use` binding names, so a bare `assume(..)` or `k::assume(..)` resolves.
+    imports: BTreeMap<String, Vec<String>>,
     forbidden_module: Option<String>,
     violation: Option<ShadowSourceViolation>,
     assumptions: Vec<DrawnBound>,
@@ -55,66 +66,113 @@ impl Checker {
         self.violation.get_or_insert(violation);
     }
 
-    fn check_path(&mut self, path: &Path) {
-        let segments: Vec<String> = path.segments.iter().map(|s| s.ident.to_string()).collect();
-        self.check_segments(&segments);
+    /// `segments` with a leading `use` binding replaced by what it names.
+    fn expand(&self, segments: &[String]) -> Vec<String> {
+        let mut expanded = segments.to_vec();
+        for _ in 0..4 {
+            let Some(target) = expanded.first().and_then(|first| self.imports.get(first)) else {
+                break;
+            };
+            if target.first() == expanded.first() && target.len() == 1 {
+                break;
+            }
+            let mut next = target.clone();
+            next.extend(expanded.iter().skip(1).cloned());
+            expanded = next;
+        }
+        expanded
     }
 
-    fn check_segments(&mut self, segments: &[String]) {
-        let Some(first) = segments.first() else {
+    fn check_path(&mut self, path: &Path) {
+        let segments: Vec<String> = path.segments.iter().map(|s| s.ident.to_string()).collect();
+        self.check_segments(&segments, path.leading_colon.is_some());
+    }
+
+    fn check_segments(&mut self, written: &[String], leading_colon: bool) {
+        let Some(first) = written.first() else {
             return;
         };
         if let Some(forbidden) = &self.forbidden_module {
-            if segments.iter().any(|segment| segment == forbidden) {
+            if written.iter().any(|segment| segment == forbidden) {
                 self.fail(ShadowSourceViolation::ImportsAbstraction(
-                    segments.join("::"),
+                    written.join("::"),
                 ));
             }
         }
-        if matches!(segments.get(..2), Some([a, b]) if a == "kani" && (b == "stub" || b == "stub_verified"))
-        {
-            self.fail(ShadowSourceViolation::Stub(segments.join("::")));
+        let segments = self.expand(written);
+        if segments.first().is_some_and(|name| name == "kani") {
+            match segments.get(1) {
+                None => {}
+                Some(item) if KANI_ITEMS.contains(&item.as_str()) => {}
+                Some(item) if item == "stub" || item == "stub_verified" => {
+                    self.fail(ShadowSourceViolation::Stub(segments.join("::")));
+                }
+                Some(_) => {
+                    self.fail(ShadowSourceViolation::ForeignCrate(segments.join("::")));
+                }
+            }
+            return;
         }
-        if segments.len() < 2 {
+        // A path written with a leading `::` always names an extern crate, whatever a local
+        // module is called.
+        if leading_colon {
+            if !ALLOWED_CRATES.contains(&first.as_str()) {
+                self.fail(ShadowSourceViolation::ForeignCrate(format!(
+                    "::{}",
+                    written.join("::")
+                )));
+            }
+            return;
+        }
+        if written.len() < 2 {
             return;
         }
         let known = ALLOWED_CRATES.contains(&first.as_str())
             || matches!(first.as_str(), "self" | "super" | "Self")
             || PRIMITIVES.contains(&first.as_str())
             || self.local_modules.contains(first)
-            || first.chars().next().is_some_and(char::is_uppercase);
+            || self.local_types.contains(first)
+            || PRELUDE.contains(&first.as_str());
         if !known {
-            self.fail(ShadowSourceViolation::ForeignCrate(segments.join("::")));
+            self.fail(ShadowSourceViolation::ForeignCrate(written.join("::")));
         }
     }
 
-    fn check_use_tree(&mut self, tree: &syn::UseTree, prefix: &mut Vec<String>) {
+    fn check_use_tree(&mut self, tree: &syn::UseTree, prefix: &mut Vec<String>, colon: bool) {
         match tree {
             syn::UseTree::Path(path) => {
                 prefix.push(path.ident.to_string());
-                self.check_use_tree(&path.tree, prefix);
+                self.check_use_tree(&path.tree, prefix, colon);
                 prefix.pop();
             }
             syn::UseTree::Name(name) => {
                 prefix.push(name.ident.to_string());
-                self.check_use_root(prefix);
+                self.check_use_root(prefix, colon);
                 prefix.pop();
             }
             syn::UseTree::Rename(rename) => {
                 prefix.push(rename.ident.to_string());
-                self.check_use_root(prefix);
+                self.check_use_root(prefix, colon);
                 prefix.pop();
             }
-            syn::UseTree::Glob(_) => self.check_use_root(prefix),
+            syn::UseTree::Glob(_) => {
+                self.check_use_root(prefix, colon);
+                if prefix.first().is_some_and(|name| name == "kani") {
+                    self.fail(ShadowSourceViolation::ForeignCrate(format!(
+                        "{}::*",
+                        prefix.join("::")
+                    )));
+                }
+            }
             syn::UseTree::Group(group) => {
                 for item in &group.items {
-                    self.check_use_tree(item, prefix);
+                    self.check_use_tree(item, prefix, colon);
                 }
             }
         }
     }
 
-    fn check_use_root(&mut self, segments: &[String]) {
+    fn check_use_root(&mut self, segments: &[String], colon: bool) {
         let Some(first) = segments.first() else {
             return;
         };
@@ -125,11 +183,31 @@ impl Checker {
                 ));
             }
         }
-        let known = ALLOWED_CRATES.contains(&first.as_str())
-            || matches!(first.as_str(), "self" | "super")
-            || self.local_modules.contains(first);
-        if !known {
+        if first == "kani" {
+            self.check_segments(segments, false);
+            return;
+        }
+        let local = !colon
+            && (matches!(first.as_str(), "self" | "super") || self.local_modules.contains(first));
+        if !(ALLOWED_CRATES.contains(&first.as_str()) || local) {
             self.fail(ShadowSourceViolation::ForeignCrate(segments.join("::")));
+        }
+    }
+
+    /// The `cfg_attr` predicate and attributes, each attribute checked as if written alone.
+    fn check_meta(&mut self, meta: &syn::Meta) {
+        self.check_path(meta.path());
+        if let syn::Meta::List(list) = meta {
+            if list.path.is_ident("cfg_attr") {
+                match list.parse_args_with(Punctuated::<syn::Meta, Token![,]>::parse_terminated) {
+                    Ok(metas) => {
+                        for inner in metas.iter().skip(1) {
+                            self.check_meta(inner);
+                        }
+                    }
+                    Err(_) => self.fail(ShadowSourceViolation::OpaqueMacro("cfg_attr".to_owned())),
+                }
+            }
         }
     }
 }
@@ -231,7 +309,7 @@ impl<'ast> Visit<'ast> for Checker {
     }
 
     fn visit_item_use(&mut self, item: &'ast syn::ItemUse) {
-        self.check_use_tree(&item.tree, &mut Vec::new());
+        self.check_use_tree(&item.tree, &mut Vec::new(), item.leading_colon.is_some());
     }
 
     fn visit_item_extern_crate(&mut self, item: &'ast syn::ItemExternCrate) {
@@ -241,14 +319,14 @@ impl<'ast> Visit<'ast> for Checker {
     fn visit_expr_call(&mut self, call: &'ast ExprCall) {
         if let Expr::Path(ExprPath { path, .. }) = &*call.func {
             let segments: Vec<String> = path.segments.iter().map(|s| s.ident.to_string()).collect();
-            if segments == ["kani", "assume"] {
+            if self.expand(&segments) == ["kani", "assume"] {
                 let admitted = call.args.len() == 1
                     && domain_assumption(&call.args[0])
                         .map(|bound| self.assumptions.push(bound))
                         .is_some();
                 if !admitted {
                     self.fail(ShadowSourceViolation::Assumption(format!(
-                        "kani::assume with {} argument(s) that is not a domain bound",
+                        "an assume call with {} argument(s) that is not a domain bound",
                         call.args.len()
                     )));
                 }
@@ -283,16 +361,68 @@ impl<'ast> Visit<'ast> for Checker {
     }
 
     fn visit_attribute(&mut self, attribute: &'ast syn::Attribute) {
-        self.check_path(attribute.path());
+        self.check_meta(&attribute.meta);
     }
 }
 
-struct ModuleCollector(BTreeSet<String>);
+#[derive(Default)]
+struct Declarations {
+    modules: BTreeSet<String>,
+    types: BTreeSet<String>,
+    imports: BTreeMap<String, Vec<String>>,
+}
 
-impl<'ast> Visit<'ast> for ModuleCollector {
+impl Declarations {
+    fn import(&mut self, tree: &syn::UseTree, prefix: &mut Vec<String>) {
+        match tree {
+            syn::UseTree::Path(path) => {
+                prefix.push(path.ident.to_string());
+                self.import(&path.tree, prefix);
+                prefix.pop();
+            }
+            syn::UseTree::Name(name) => {
+                let mut target = prefix.clone();
+                target.push(name.ident.to_string());
+                self.imports.insert(name.ident.to_string(), target);
+            }
+            syn::UseTree::Rename(rename) => {
+                let mut target = prefix.clone();
+                target.push(rename.ident.to_string());
+                self.imports.insert(rename.rename.to_string(), target);
+            }
+            syn::UseTree::Group(group) => {
+                for item in &group.items {
+                    self.import(item, prefix);
+                }
+            }
+            syn::UseTree::Glob(_) => {}
+        }
+    }
+}
+
+impl<'ast> Visit<'ast> for Declarations {
     fn visit_item_mod(&mut self, item: &'ast ItemMod) {
-        self.0.insert(item.ident.to_string());
+        self.modules.insert(item.ident.to_string());
         visit::visit_item_mod(self, item);
+    }
+    fn visit_item_struct(&mut self, item: &'ast syn::ItemStruct) {
+        self.types.insert(item.ident.to_string());
+        visit::visit_item_struct(self, item);
+    }
+    fn visit_item_enum(&mut self, item: &'ast syn::ItemEnum) {
+        self.types.insert(item.ident.to_string());
+        visit::visit_item_enum(self, item);
+    }
+    fn visit_item_trait(&mut self, item: &'ast syn::ItemTrait) {
+        self.types.insert(item.ident.to_string());
+        visit::visit_item_trait(self, item);
+    }
+    fn visit_item_type(&mut self, item: &'ast syn::ItemType) {
+        self.types.insert(item.ident.to_string());
+        visit::visit_item_type(self, item);
+    }
+    fn visit_item_use(&mut self, item: &'ast syn::ItemUse) {
+        self.import(&item.tree, &mut Vec::new());
     }
 }
 
@@ -308,10 +438,12 @@ pub fn check_shadow_source(
 ) -> Result<Vec<DrawnBound>, ShadowSourceViolation> {
     let file = syn::parse_file(source)
         .map_err(|error| ShadowSourceViolation::Unparsed(error.to_string()))?;
-    let mut modules = ModuleCollector(BTreeSet::new());
-    modules.visit_file(&file);
+    let mut declarations = Declarations::default();
+    declarations.visit_file(&file);
     let mut checker = Checker {
-        local_modules: modules.0,
+        local_modules: declarations.modules,
+        local_types: declarations.types,
+        imports: declarations.imports,
         forbidden_module: abstraction_module.map(ToOwned::to_owned),
         violation: None,
         assumptions: Vec::new(),

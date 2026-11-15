@@ -9,15 +9,21 @@ use std::{fs, io, num::NonZeroUsize, path::Path, time::Instant};
 
 use quire_exact::Cancel;
 
+use serde::Serialize;
+
 use super::{settle, Concluded, KaniExecutionRefusal};
 use crate::kani::{
-    generate::shadow::KaniShadowHarness,
-    refinement::{
-        plan_refinement, RefinementBudget, RefinementDisagreement, RefinementEvidence,
-        RefinementOutcome, RefinementPlanError, RefinementVersions,
+    identity::{
+        refinement::{
+            plan_refinement, CaseCount, RefinementBudget, RefinementClass, RefinementDisagreement,
+            RefinementOutcome, RefinementPlanError, RefinementSummary, RefinementVersions,
+        },
+        shadow::KaniShadowHarness,
+        ProofCeilings,
     },
     run::{
         launch::run_bounded_launcher,
+        memory::MemoryObservation,
         tool::{KaniInstallation, KaniTool, KaniToolError},
     },
 };
@@ -41,6 +47,51 @@ pub struct KaniRefinementRequest<'a> {
     pub versions: RefinementVersions,
 }
 
+/// What one refinement run did (FR-028-AC-24).
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RefinementEvidence {
+    /// The `module::harness` path of the shadow harness this refinement accompanies.
+    pub harness_path: String,
+    /// Exhaustive or sampled, as planned.
+    pub class: RefinementClass,
+    /// The size of the domain.
+    pub case_count: CaseCount,
+    /// How many cases the process executed.
+    pub cases_run: u64,
+    /// How many cases the plan held.
+    pub cases_planned: u64,
+    /// Boundary cases in a sampled plan.
+    pub boundary_cases: u64,
+    /// Seeded cases in a sampled plan.
+    pub sample_size: u64,
+    /// The seed.
+    pub seed: u64,
+    /// The two ceilings the run was held to: the identity wall clock, and the memory ceiling
+    /// the caller's environment is expected to enforce.
+    pub ceilings: ProofCeilings,
+    /// The peak the environment provided, when it provided one.
+    pub memory: MemoryObservation,
+    /// How the run ended.
+    pub outcome: RefinementOutcome,
+    /// The versions the run used.
+    pub versions: RefinementVersions,
+}
+
+impl RefinementEvidence {
+    /// The summary strength mapping reads.
+    #[must_use]
+    pub fn summary(&self) -> RefinementSummary {
+        match &self.outcome {
+            RefinementOutcome::Agreed => RefinementSummary::Agreed(self.class),
+            RefinementOutcome::Disagreed { .. } => RefinementSummary::Disagreed,
+            RefinementOutcome::ReachedWallClockCeiling | RefinementOutcome::EndedBySignal => {
+                RefinementSummary::ReachedCeiling
+            }
+        }
+    }
+}
+
 /// Why a refinement run was refused or produced no evidence.
 #[derive(Debug)]
 pub enum KaniRefinementRefusal {
@@ -50,6 +101,12 @@ pub enum KaniRefinementRefusal {
     CasesUnwritable(io::Error),
     /// The launcher refused or could not start the program.
     Execution(KaniExecutionRefusal),
+    /// The caller's cancellation handle stopped the run. A cancellation is neither a ceiling nor
+    /// a signal (FR-028-AC-24), so it yields no evidence and no strength.
+    Cancelled {
+        /// The first observed cancellation source.
+        source: quire_contract_ir::kani::KaniCancellationSource,
+    },
     /// The program exited unsuccessfully on its own, which is neither a verdict nor a signal.
     ProcessFailed {
         /// Its exit code.
@@ -116,41 +173,42 @@ pub fn execute_kani_refinement(
         }))
     })?;
     let memory = launch.memory;
-    let (outcome, cases_run) =
-        match settle(launch.outcome).map_err(KaniRefinementRefusal::Execution)? {
-            Concluded::TimedOut => (RefinementOutcome::ReachedWallClockCeiling, 0),
-            Concluded::Cancelled { .. } => (RefinementOutcome::Cancelled, 0),
-            Concluded::Completed {
-                exit_code: None, ..
-            } => (RefinementOutcome::EndedBySignal, 0),
-            Concluded::Completed {
-                exited_successfully: false,
-                exit_code,
-                ..
-            } => return Err(KaniRefinementRefusal::ProcessFailed { exit_code }),
-            Concluded::Completed { streams, .. } => {
-                let report = parse_report(&String::from_utf8_lossy(&streams.stdout))?;
-                if report.run != planned {
-                    return Err(KaniRefinementRefusal::CasesRunMismatch {
-                        planned,
-                        run: report.run,
-                    });
-                }
-                let outcome = match report.first {
-                    None if report.disagreements == 0 => RefinementOutcome::Agreed,
-                    Some(first) => RefinementOutcome::Disagreed {
-                        first,
-                        disagreements: report.disagreements,
-                    },
-                    None => {
-                        return Err(KaniRefinementRefusal::ReportMalformed(
-                            "disagreements counted but none listed".to_owned(),
-                        ))
-                    }
-                };
-                (outcome, report.run)
+    let (outcome, cases_run) = match settle(launch.outcome)
+        .map_err(KaniRefinementRefusal::Execution)?
+    {
+        Concluded::TimedOut => (RefinementOutcome::ReachedWallClockCeiling, 0),
+        Concluded::Cancelled { source } => return Err(KaniRefinementRefusal::Cancelled { source }),
+        Concluded::Completed {
+            exit_code: None, ..
+        } => (RefinementOutcome::EndedBySignal, 0),
+        Concluded::Completed {
+            exited_successfully: false,
+            exit_code,
+            ..
+        } => return Err(KaniRefinementRefusal::ProcessFailed { exit_code }),
+        Concluded::Completed { streams, .. } => {
+            let report = parse_report(&String::from_utf8_lossy(&streams.stdout))?;
+            if report.run != planned {
+                return Err(KaniRefinementRefusal::CasesRunMismatch {
+                    planned,
+                    run: report.run,
+                });
             }
-        };
+            let outcome = match report.first {
+                None if report.disagreements == 0 => RefinementOutcome::Agreed,
+                Some(first) => RefinementOutcome::Disagreed {
+                    first,
+                    disagreements: report.disagreements,
+                },
+                None => {
+                    return Err(KaniRefinementRefusal::ReportMalformed(
+                        "disagreements counted but none listed".to_owned(),
+                    ))
+                }
+            };
+            (outcome, report.run)
+        }
+    };
     Ok(RefinementEvidence {
         harness_path: request.harness.harness_path(),
         class: plan.class,
