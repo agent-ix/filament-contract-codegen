@@ -288,7 +288,7 @@ pub use kani::generate::outcome::{
     KaniObligationOutcome, KaniObligationRequest, ModelMemberRangeReason, ObligationDisposition,
     ObligationItem, ObligationRecord, ObligationSubject, PathGuardRefusal,
     StateFrameLoweringRefusal, StateFrameRefusal, StateFrameRole, UnsupportedFrameEffect,
-    UnsupportedObligation, MAX_OBLIGATION_ITEMS, MAX_OBLIGATION_UNWIND,
+    UnsupportedObligation, V2ClauseControlReason, MAX_OBLIGATION_ITEMS, MAX_OBLIGATION_UNWIND,
 };
 pub use kani::identity::{
     CollectionElementIdentity, CollectionKindIdentity, CollectionObjectFieldIdentity,

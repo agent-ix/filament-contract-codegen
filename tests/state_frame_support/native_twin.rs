@@ -967,6 +967,26 @@ impl Twin {
         twin
     }
 
+    /// The same twin with the `balance` range, which types the `amount` parameter, ending at `maximum`.
+    pub fn with_amount_maximum(mut self, maximum: i64) -> Self {
+        let mut domain: Value = serde_json::from_slice(&self.domain).expect("domain document");
+        let range = domain["types"]
+            .as_array_mut()
+            .expect("types")
+            .iter_mut()
+            .find(|ty| ty["identity"] == range_type("balance"))
+            .expect("balance value type");
+        let bound = range["constraints"]
+            .as_array_mut()
+            .expect("constraints")
+            .iter_mut()
+            .find(|constraint| constraint["keyword"] == "max")
+            .expect("maximum bound");
+        bound["operands"]["value"] = json!(maximum.to_string());
+        self.domain = domain.to_string().into_bytes();
+        self
+    }
+
     /// The original guarded arithmetic condition with the same declared bounds.
     pub fn with_bounded_amount_implication() -> Self {
         Self::with_bounded_amount_implication_condition(

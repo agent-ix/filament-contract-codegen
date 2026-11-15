@@ -290,7 +290,7 @@ impl ScratchCrate {
     }
 
     /// `cargo test` of this crate on the host, returning its stdout.
-    fn host_test(&self, filter: &str) -> (bool, String) {
+    pub(crate) fn host_test(&self, filter: &str) -> (bool, String) {
         let build = lock_agreement_build();
         let output = Command::new(env!("CARGO"))
             .args(["test", "--locked", "--offline", "-j2", "--lib", filter])
@@ -758,7 +758,7 @@ fn playback_values(counterexample: &str) -> Vec<i64> {
 
 /// A falsified two-phase run: the verdict and the in-domain playback are the witness phase's,
 /// the proof phase's evidence is nested, and one identity covers both.
-fn assert_two_phase_falsified(
+pub(crate) fn assert_two_phase_falsified(
     run: &InstalledRun,
     harness: &KaniV2ClauseObligationHarness,
     check: &str,
@@ -817,7 +817,7 @@ fn assert_two_phase_falsified(
     values
 }
 
-const RESULT_CHECK: &str =
+pub(crate) const RESULT_CHECK: &str =
     "the produced V2 Boolean result agrees with the independent checked condition";
 
 #[trace("FR-015-AC-151", "FR-015-AC-126", "FR-017-AC-63", "TC-025")]
