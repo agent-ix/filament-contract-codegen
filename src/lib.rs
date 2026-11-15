@@ -201,6 +201,15 @@ pub use kani::generate::float_scalar::{
     generate_float_scalar_harness, FloatCapability, FloatScalarHarness, FloatScalarOutcome,
     FloatScalarRefusal, FloatScalarRequest,
 };
+pub use kani::generate::shadow::source_check::{
+    check_shadow_source, DrawnBound, ShadowSourceViolation,
+};
+pub use kani::generate::shadow::{
+    generate_shadow, generate_shadows, independent_helper_check, AbstractionClaim,
+    AbstractionEvidence, AbstractionRecord, HelperMark, KaniShadowHarness, LeafRecord,
+    ProductionRead, RefinementObligation, ShadowDisposition, ShadowIdentity, ShadowItem,
+    ShadowLeaf, ShadowRefusal, ShadowShape, SharedHelperClaim, SHADOW_PAIR_NODE_BUDGET,
+};
 pub use kani::identity::{DivisionScalarIdentity, EnumScalarIdentity, FloatScalarIdentity};
 pub use kani::output::diagnostics::{
     KaniFailurePhase, KaniNoVerdictDiagnostics, KaniStreamExcerpt,
@@ -209,11 +218,19 @@ pub use kani::output::report::{
     KaniCheckClass, KaniCheckLocation, KaniCheckResult, KaniCheckStatus, KaniFailureCause,
     KaniReportRefusal, OtherCheckClass,
 };
+pub use kani::refinement::{
+    plan_refinement, proof_strength, CaseCount, DomainBound, ProofStrength, ProofSubject,
+    RefinementBudget, RefinementClass, RefinementDisagreement, RefinementEvidence,
+    RefinementOutcome, RefinementPlan, RefinementPlanError, RefinementSummary, RefinementVersions,
+};
 pub use kani::run::execute::{
     execute_kani_concrete_playback, execute_kani_obligation, execute_kani_obligations,
     KaniBatchInvocation, KaniConcretePlayback, KaniConcretePlaybackOutcome, KaniExecutionEvidence,
     KaniExecutionRefusal, KaniExecutionRequest, KaniGroupRun, OUTPUT_OVER_LIMIT_CODE,
     OUTPUT_UNREAD_CODE,
+};
+pub use kani::run::execute::{
+    execute_kani_refinement, KaniRefinementRefusal, KaniRefinementRequest,
 };
 pub use kani::run::harness::KaniExecutableHarness;
 pub use kani::run::launch::CaptureStream;

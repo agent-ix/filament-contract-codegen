@@ -2038,6 +2038,9 @@ mod tests {
     }
 }
 
+mod refinement;
+pub use refinement::{execute_kani_refinement, KaniRefinementRefusal, KaniRefinementRequest};
+
 #[cfg(test)]
 mod two_phase_tests;
 

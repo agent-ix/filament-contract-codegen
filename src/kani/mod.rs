@@ -22,6 +22,9 @@ macro_rules! implements_deserialize {
 pub(crate) mod abi;
 // The proof-dependency census types.
 pub(crate) mod census;
+// The refinement run of a bounded shadow, its plan, evidence and proof strength.
+// Implements: FR-028
+pub(crate) mod refinement;
 // Run classification.
 // Implements: FR-017
 pub(crate) mod classify;
