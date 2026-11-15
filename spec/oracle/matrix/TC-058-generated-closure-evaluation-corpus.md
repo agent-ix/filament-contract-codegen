@@ -1,31 +1,31 @@
 ---
 id: TC-058
-title: "Load CG generated-closure cases into QSL evaluator comparison"
+title: "Load CG generated-closure cases into FSL evaluator comparison"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-044
+  - target: ix://agent-ix/filament-contract-codegen/FR-044
     type: verifies
 ---
-# TC-058: Load CG generated-closure cases into QSL evaluator comparison
+# TC-058: Load CG generated-closure cases into FSL evaluator comparison
 
 ## Description
 
-Verify that CG publishes QSL-admitted generated-closure source applications
-through the FR-402 `quire-eval-corpus` case format. QSL's harness runs both
+Verify that CG publishes FSL-admitted generated-closure source applications
+through the FR-402 `filament-eval-corpus` case format. FSL's harness runs both
 evaluators and decides agreement; this case verifies CG's export boundary and
-its later `quire-eval` expectation path.
+its later `filament-eval` expectation path.
 
 ## Test Procedure
 
 1. Admit a scalar, an equality and a nested generated-to-generated-to-
-   interpreted source application through QSL. Enumerate their case ids from
+   interpreted source application through FSL. Enumerate their case ids from
    the live source applications before loading the bundle. Run
    `make evaluator-corpus EVALUATOR_CORPUS_DIR=<dir>` and load `cases.jsonl`
-   through `quire_eval_corpus::load` and QSL's FR-402 admission. Assert exact
+   through `filament_eval_corpus::load` and FSL's FR-402 admission. Assert exact
    `quire.evaluator-case/v1` fields, ascending case ids, two source labels,
    dependency units, `package_id` from compilation, callable function,
    arguments, decimal-string limits, `object_environment: null`, sorted
-   `generated_bodies: []` and `expected: null` while `quire-eval`
+   `generated_bodies: []` and `expected: null` while `filament-eval`
    cannot yet execute registered bodies. Change authority, identity and
    valid source text one at a time without recompiling `package_id` and assert
    `package_mismatch` (FR-044-AC-1).
@@ -37,17 +37,17 @@ its later `quire-eval` expectation path.
    compile, case-construction, case-encoding or load check and assert no partial replacement:
    the prior complete bundle is byte-identical, or the target remains absent
    (FR-044-AC-2).
-3. Inspect CG's writer and dependencies for `quire-eval-corpus` use, and the
-   replay module for `qsl_replay::compile_package`. Confirm no CG-local case
-   or compared-record codec, loader refusal, `qsl-eval` dependency, direct QSL
+3. Inspect CG's writer and dependencies for `filament-eval-corpus` use, and the
+   replay module for `fsl_replay::compile_package`. Confirm no CG-local case
+   or compared-record codec, loader refusal, `fsl-eval` dependency, direct FSL
    evaluator call outside replay, or expectation computed from emitted source
    or Contract Runtime `exact` (FR-044-AC-3).
-4. Once `quire-eval` runs registered generated bodies, use one real
-   `quire-eval` run per selected case to set its non-null `expected` record.
+4. Once `filament-eval` runs registered generated bodies, use one real
+   `filament-eval` run per selected case to set its non-null `expected` record.
    Assert `generated_bodies` contains the sorted unique names of exactly the
    bodies registered for that run; perturb one name and assert FR-402's
    resulting loaded change or refusal.
-   Run QSL FR-402's expected/std check over the bundle; assert exact result,
+   Run FSL FR-402's expected/std check over the bundle; assert exact result,
    refusal, location, losses and ten consumed counters. Check Boolean and
    Integer completed values, a non-Boolean/Integer `unencodable_value`, and
    `charges` populated only with non-truncated FR-402 `charge-log` test support
@@ -58,8 +58,8 @@ its later `quire-eval` expectation path.
 All intact cases load and admit as their authored applications. Case bytes,
 case census and adverse controls have the stated outcomes; a failed export
 never publishes a partial bundle. Before registered-body execution exists,
-`expected` is `null`; after it exists, non-null expectations pass QSL's
-expected/std check under the FR-402 encoding rules. QSL FR-402-AC-10 owns
+`expected` is `null`; after it exists, non-null expectations pass FSL's
+expected/std check under the FR-402 encoding rules. FSL FR-402-AC-10 owns
 its differential harness run over CG's bundle.
 
 ## Scoped evidence status (IR-1316)

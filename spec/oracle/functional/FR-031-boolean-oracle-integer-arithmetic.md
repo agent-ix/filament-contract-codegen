@@ -3,25 +3,25 @@ id: FR-031
 title: "Generate Boolean oracles whose integer arithmetic and comparison take the exact kernel's meaning"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/StR-001
+  - target: ix://agent-ix/filament-contract-codegen/StR-001
     type: satisfies
-  - target: ix://agent-ix/quire-contract-codegen/interface-001
+  - target: ix://agent-ix/filament-contract-codegen/interface-001
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-014
+  - target: ix://agent-ix/filament-contract-codegen/FR-014
     type: references
-  - target: ix://agent-ix/quire-contract-codegen/FR-015
+  - target: ix://agent-ix/filament-contract-codegen/FR-015
     type: references
-  - target: ix://agent-ix/quire-contract-runtime/FR-002
+  - target: ix://agent-ix/filament-contract-runtime/FR-002
     type: references
-  - target: ix://agent-ix/quire-contract-runtime/FR-006
+  - target: ix://agent-ix/filament-contract-runtime/FR-006
     type: references
-  - target: ix://agent-ix/quire-contract-runtime/FR-007
+  - target: ix://agent-ix/filament-contract-runtime/FR-007
     type: references
-  - target: ix://agent-ix/quire-exact/FR-357
+  - target: ix://agent-ix/filament-exact/FR-357
     type: references
-  - target: ix://agent-ix/quire-contract-ir/FR-013
+  - target: ix://agent-ix/filament-contract-ir/FR-013
     type: references
-  - target: ix://agent-ix/quire-contract-ir/FR-015
+  - target: ix://agent-ix/filament-contract-ir/FR-015
     type: references
 ---
 # FR-031: Generate Boolean oracles whose integer arithmetic and comparison take the exact kernel's meaning
@@ -34,7 +34,7 @@ subtract, multiply, divide and remainder, and the six integer comparisons. Today
 renders each of those five operators as the raw Rust infix operator on `i64`, and each comparison
 as the raw infix comparison. It never reads the operand type's overflow policy. On overflow the
 generated function panics in a debug build and wraps in a release build, and on a zero divisor it
-panics. The exact kernel's integer operations (`quire-exact`, which Contract Runtime also carries a
+panics. The exact kernel's integer operations (`filament-exact`, which Contract Runtime also carries a
 copy of until IR-349 removes it), which are the language's meaning of the same nodes, return a typed
 outcome instead.
 
@@ -62,14 +62,14 @@ merged (see "Integer divide and remainder").
 - **IR-596's closing code change** implemented the then-current native requirements for add,
   subtract, multiply and their comparison path. It refused divide and
   remainder at generation, with the interim code `UnsupportedIntegerDivision` naming IR-601, so
-  that no oracle emitted a raw `/` or `%`. The QSL exemplar run was pending
+  that no oracle emitted a raw `/` or `%`. The FSL exemplar run was pending
   before that V1 bundle criterion retired under IR-348; it is no longer a closing gate here.
 - **The native divide and remainder change (IR-1045)** implements FR-031-AC-2, AC-6,
   AC-16, AC-17, the native portion of AC-18, AC-22 and AC-26. IR-602 was canceled after the
   2026-10-27 IR-348 ruling because its bundle work is V1-only. the V1-only bundle claims are
   retired historical procedures, and AC-27's obsolete error-code cleanup remains an
   IR-348 disposition dependent on the native replacement.
-- **Dependency compatibility is met at CG's locked revisions.** QSL replay passes
+- **Dependency compatibility is met at CG's locked revisions.** FSL replay passes
   `NonZeroInteger` to `Integer::div_mod_floor`, and CG builds with the current kernel.
   The surviving native behavior is implemented on the IR-1045 branch.
 
@@ -81,7 +81,7 @@ generator and tri-state harness generator still call the named generator; before
 Kani bundle and Kani obligation clause lowering also called it.
 This renderer retires with that file at AD-004 step 6, with the other V1 readers; step 4f deleted
 the V1 bundle and removed its V1 Kani obligation-arm caller. The exact V2 oracles of FR-014,
-FR-018 and FR-021 now call `quire-exact` directly. The surviving native divide and remainder
+FR-018 and FR-021 now call `filament-exact` directly. The surviving native divide and remainder
 behavior is implemented on the IR-1045 branch;
 the dependency lock prerequisite is met.
 
@@ -104,7 +104,7 @@ and is not specified here.
   `exact::evaluate_integer_arithmetic` refuses exactly when the one result it computes is outside
   the bound, so for add, subtract and multiply it agrees with IR's per-result range proof on
   every operand IR admitted.
-- `quire-exact` FR-357 (merged in `agent-ix/quire-exact`, which holds the exact kernel) gives
+- `filament-exact` FR-357 (merged in `agent-ix/filament-exact`, which holds the exact kernel) gives
   division a single-member operation: `divide(profile, member, dividend, divisor, domain, meter)`
   returns one member of the quotient and remainder pair, and only that member must be in the
   domain. A zero divisor is `Undefined(DivisionByZero)`; an exposed member outside a bounded
@@ -125,7 +125,7 @@ the renderer served two kinds of consumer with different arithmetic:
   that a Rust program evaluates. A wrapped or panicking result is the defect there, so the
   arithmetic is an exact-kernel call returning a typed outcome.
 - **The retired Kani bundle oracle**: the oracle that `generate_kani_bundle` embedded in a
-  `proof_for_contract` harness. It was evaluated only by `cargo kani`. QSL's Kani exemplar
+  `proof_for_contract` harness. It was evaluated only by `cargo kani`. FSL's Kani exemplar
   (IT-011 in the integration repository, and IT-010-SC-05) specified the clause `amount < 1000`
   implies `amount + 1 <= 1000` over `0..=1000` through that bundle, and its mutation control
   specified a rewrite of the generated oracle's text: it required exactly one `+` in the
@@ -170,8 +170,8 @@ harness assumed the declared domain on every drawn input and asserted it on ever
 before the oracle runs (`ensures` is `(result bounds) && oracle`).
 
 The retired V1 divide and remainder plan used the same rationale, and the same measurement bears
-on it. `quire_exact::divide`
-computes over `quire_exact::Integer`, an arbitrary-precision integer backed by `num-bigint`, so a
+on it. `filament_exact::divide`
+computes over `filament_exact::Integer`, an arbitrary-precision integer backed by `num-bigint`, so a
 call to it under CBMC unwinds the big-integer vector growth and the division routine's recursion.
 A scratch crate that called `divide` over `x` in `0..=10` and `y` in `1..=10` (Kani 0.68.0,
 CBMC 6.11.0, unwind 6) compiled to a goto program and reached bounded model checking, and gave
@@ -185,7 +185,7 @@ IR admits a divide or remainder after proving only the selected member in range 
 divide's quotient, a remainder's remainder. The earlier pair operation, which Contract Runtime
 still carries until IR-349 step 3 and which this requirement does not call, refused when either
 member was outside the domain, so it refused expressions IR admits. IR-601 ruled for member-only
-semantics, and `quire_exact::divide` provides them. The two reproductions that separated the
+semantics, and `filament_exact::divide` provides them. The two reproductions that separated the
 semantics are now vectors of FR-031-AC-17:
 
 - R-1, `10 / y <= 10` over a `reject` type of `1..=10`, at `y = 5`: the quotient 2 is in range and
@@ -204,7 +204,7 @@ The semantics, in the native oracle:
   and remainder nodes name no law, and the Boolean oracle has no package to select one from.
   Truncating is what the earlier raw `/` and `%` computed on every in-domain operand, what Rust's
   `checked_div` and `checked_rem` compute in IR's own arithmetic preimage, and so what the retired
-  bundle oracle's operators meant. The law is one constant of the generator. That IR and QSL want it is an
+  bundle oracle's operators meant. The law is one constant of the generator. That IR and FSL want it is an
   open decision (Open decisions).
 - **A zero divisor** is `Undefined(DivisionByZero)`, for both members, and `divide` stops before
   it computes anything.
@@ -247,17 +247,17 @@ compiling, and an artifact that records the string no longer names a code the cr
   artifact.
 - For an expression with no arithmetic node, the same `bool`-returning function as before.
 - For an expression with at least one arithmetic node, a native oracle is a function that returns
-  `quire_exact::Outcome<bool>` and takes a trailing `&mut quire_exact::Meter`, as the FR-014
+  `filament_exact::Outcome<bool>` and takes a trailing `&mut filament_exact::Meter`, as the FR-014
   oracles do. The retired V1 Kani bundle oracle returned `bool`.
 
 ## Behavior
 
-### Prerequisite: the one `quire-exact` lock entry
+### Prerequisite: the one `filament-exact` lock entry
 
-CG's dependency graph holds one `quire-exact` entry shared with QSL and Contract
+CG's dependency graph holds one `filament-exact` entry shared with FSL and Contract
 Runtime. The kernel no longer exports the former pair `divide`,
 `QuotientRemainder` or `DivisionPairOutOfDomain`. CG declares the kernel directly;
-QSL replay passes `NonZeroInteger` to `Integer::div_mod_floor`, and CG's locked
+FSL replay passes `NonZeroInteger` to `Integer::div_mod_floor`, and CG's locked
 dependencies build together. The dependency gate for FR-031-AC-2, AC-6, AC-16,
 AC-17, AC-22, AC-25, AC-26 and AC-27 is met. Their planned behavior still
 requires implementation and verification.
@@ -267,18 +267,18 @@ although this requirement does not require that split.
 ### The kernel the native oracle calls
 
 Contract Runtime has removed its exact scalar, outcome and meter re-exports. The native
-oracle therefore takes those items from `quire_exact` directly; CG's coherent dependency
+oracle therefore takes those items from `filament_exact` directly; CG's coherent dependency
 graph now resolves one kernel for this planned rendering.
 
-- The native oracle shall take every exact operation from `quire_exact`, the one exact kernel, and
+- The native oracle shall take every exact operation from `filament_exact`, the one exact kernel, and
   from no other path: the generated source aliases it as `rt`, and `exact::` in this requirement
-  names its items. Its `Outcome`, `Meter` and `Integer` are `quire_exact`'s. It shall contain no
-  `quire_contract_runtime::exact` path.
+  names its items. Its `Outcome`, `Meter` and `Integer` are `filament_exact`'s. It shall contain no
+  `filament_contract_runtime::exact` path.
 - The short-circuit connectives cannot keep their current rendering. The oracle calls Contract
   Runtime's `operators::{and,or,implies}_short_circuit<R: From<bool>>`, which compile for
   `Outcome<bool>` only because Contract Runtime's `Outcome` implements `From<T>`.
-  `quire_exact::Outcome` has no such impl, and the orphan rule stops a generated crate adding one.
-  `quire_exact` exports `retain_boolean`, which charges `boolean.result-retain`, and no
+  `filament_exact::Outcome` has no such impl, and the orphan rule stops a generated crate adding one.
+  `filament_exact` exports `retain_boolean`, which charges `boolean.result-retain`, and no
   short-circuit helper. The migrated oracle shall render a short-circuit connective as an
   inline `match` over the left operand's outcome that returns the first stop and skips the right
   operand when the left decides. It shall call `retain_boolean` exactly once on the completed
@@ -288,18 +288,18 @@ graph now resolves one kernel for this planned rendering.
   `evaluate_boolean`. Unary BooleanNot also retains its completed negated result once
   and carries its operand stop without a result-retain charge.
 - The reason is Rust type identity. Contract Runtime carries its own `Integer`, `Meter` and
-  `Outcome` in the older dependency graph, and they differ from `quire_exact`'s. One
+  `Outcome` in the older dependency graph, and they differ from `filament_exact`'s. One
   oracle body that adds, divides and compares passes one integer value and one `&mut Meter`
   through every call, so it cannot call both families, and a bridge between the two would be a
-  compatibility layer. `quire_exact::divide` is the only division that takes IR's member-only
-  semantics, so the whole native oracle takes the `quire_exact` family. This moves the add,
+  compatibility layer. `filament_exact::divide` is the only division that takes IR's member-only
+  semantics, so the whole native oracle takes the `filament_exact` family. This moves the add,
   subtract, multiply and comparison calls that IR-596 emitted against Contract Runtime's copy
-  to the same calls in `quire_exact`, with the same meaning (Open decisions records the
+  to the same calls in `filament_exact`, with the same meaning (Open decisions records the
   sequencing against IR-349).
 - A generated crate that holds a native oracle with an arithmetic node shall depend on
-  `quire-exact`, and CG shall depend on `quire-exact` directly, from its own repository
-  `agent-ix/quire-exact`, spelled `branch = "main"` like the other first-party crates, so that
-  the lock holds one `quire-exact` entry. Contract Runtime stays a dependency of the generated
+  `filament-exact`, and CG shall depend on `filament-exact` directly, from its own repository
+  `agent-ix/filament-exact`, spelled `branch = "main"` like the other first-party crates, so that
+  the lock holds one `filament-exact` entry. Contract Runtime stays a dependency of the generated
   crate for the contract identity items the oracle declares.
 - An oracle with no arithmetic node, which returns `bool` and takes no meter, calls no kernel item
   and is unchanged.
@@ -423,7 +423,7 @@ because its arithmetic was fixed-width and its comparison of two `i64` values ha
 - The native generator shall not use a Rust comparison operator
   between the two operands of a comparison that has an arithmetic operand. Its outcome is the
   kernel's, and an `Outcome::Completed` boolean continues as above.
-- `quire_exact` exports no type environment or checked equality, which the earlier rendering of
+- `filament_exact` exports no type environment or checked equality, which the earlier rendering of
   equal and not-equal called through Contract Runtime's copy. `planned_equality` is the equality
   schedule the kernel exports over two completed values, and it is the call that the table names.
   For two integers it is the same value and the same charges as the checked equality (Open
@@ -457,12 +457,12 @@ because its arithmetic was fixed-width and its comparison of two `i64` values ha
   infix shape before step 4f retired the bundle. FR-014-AC-38 and FR-015-AC-40 and AC-41 own
   the `Outcome<bool>` oracle of a V2 clause body. The former V1 bundle covers of
   FR-015-AC-53 to AC-58 were part of the retired bundle behavior.
-- **Retired V1 exemplar gate (IR-348 history).** QSL's IT-011 in the integration repository
+- **Retired V1 exemplar gate (IR-348 history).** FSL's IT-011 in the integration repository
   specified an exemplar run through `generate_kani_bundle` and real `cargo kani`, with controls
   IT-011-SC-01 to SC-04; IT-010-SC-05 specified a comparison run through the same bundle.
   AD-004 step 4a and L-5 required that route until step 4e. The verifying run and mutants
   (`left + right + 1` falsified at `amount_current = 999`, and the equivalent mutant verifying)
-  were specified outcomes, not a current gate or a claim of a completed QSL run.
+  were specified outcomes, not a current gate or a claim of a completed FSL run.
 
 ### Test obligations
 
@@ -480,7 +480,7 @@ because its arithmetic was fixed-width and its comparison of two `i64` values ha
   construction rests on a declared bound that the operand vector violates while the guards still
   pass. No case is replaced by a nearby vector.
 - **Retired V1 test obligation (IR-348 history).** The former closing change called for runs of
-  the integration repository's exemplar tests (`tests/qsl_kani_exemplar.rs`: IT-011 and
+  the integration repository's exemplar tests (`tests/fsl_kani_exemplar.rs`: IT-011 and
   IT-010-SC-05) before and after the change. This was evidence for the retired bundle criterion,
   not a current test obligation. A run that was not made is not read as a pass.
 
@@ -491,11 +491,11 @@ because its arithmetic was fixed-width and its comparison of two `i64` values ha
 | FR-031-AC-1 | IMPLEMENTED (IR-596). For each of Add, Subtract and Multiply over a `reject` integer type, the generated source of the native oracle calls `exact::evaluate_integer_arithmetic` with the matching `IntegerArithmetic` variant and the type's interval as the bound, and the oracle's body holds no Rust arithmetic operator between operand expressions and none of `checked_`, `wrapping_`, `saturating_` or `overflowing_` method calls. | Test (TC-044) |
 | FR-031-AC-2 | IMPLEMENTED in the IR-1045 native oracle branch (formerly PLANNED under canceled IR-602). For Divide and Remainder over a `reject` integer type, the generated source of the native oracle calls `exact::divide` with `DivisionProfile::Truncating`, with `DivisionMember::Quotient` for a divide and `DivisionMember::Remainder` for a remainder, and with `IntegerDomain::Bounded` over the node's interval as the domain, and the oracle's body holds no Rust `/` or `%` and none of `checked_div`, `checked_rem`, `wrapping_rem`, `div_euclid`, `rem_euclid` or `modulo`, and no division of a quotient and remainder pair. | Test (TC-044) |
 | FR-031-AC-3 | IMPLEMENTED (IR-596). A native oracle with an arithmetic node returns `Outcome<bool>` and takes a trailing `&mut Meter`; an oracle with none returns `bool` and takes no meter. | Test (TC-044) |
-| FR-031-AC-4 | IMPLEMENTED (IR-596). Each of the six comparisons over two arithmetic-free operands is emitted as the one native operator the table names, and over the seven values `i64::MIN`, `i64::MIN + 1`, `-1`, `0`, `1`, `i64::MAX - 1` and `i64::MAX`, with two interior values added, taken pairwise in both orders, agrees with the exact kernel's own evaluation, as the test takes it from Contract Runtime today (`order_numbers` for the four orderings, `check_equality` then `CheckedEquality::evaluate` for equal and not-equal; after the migration of FR-031-AC-22, `quire_exact`'s `order_numbers` and `planned_equality`). This criterion passes on the tree before the change and is a held agreement, not a defect proof. | Test (TC-044) |
+| FR-031-AC-4 | IMPLEMENTED (IR-596). Each of the six comparisons over two arithmetic-free operands is emitted as the one native operator the table names, and over the seven values `i64::MIN`, `i64::MIN + 1`, `-1`, `0`, `1`, `i64::MAX - 1` and `i64::MAX`, with two interior values added, taken pairwise in both orders, agrees with the exact kernel's own evaluation, as the test takes it from Contract Runtime today (`order_numbers` for the four orderings, `check_equality` then `CheckedEquality::evaluate` for equal and not-equal; after the migration of FR-031-AC-22, `filament_exact`'s `order_numbers` and `planned_equality`). This criterion passes on the tree before the change and is a held agreement, not a defect proof. | Test (TC-044) |
 | FR-031-AC-5 | IMPLEMENTED (IR-596). Under a `reject` integer type, an add, subtract or multiply result outside the type's interval evaluates to `Refused(IntegerOutOfDomain)`, and the oracle neither panics nor returns a wrapped, saturated or clamped value. The cases are O-1 `i64::MAX + 1`, O-2 `i64::MIN - 1` as a subtract, and O-4 `i64::MIN * 2`, each built as TC-044 step 4 gives. On the tree before the change each fails: a debug build panics with an overflow message, a release build returns a wrapped value, and no case returns the refusal. | Test (TC-044) |
 | FR-031-AC-6 | IMPLEMENTED in the IR-1045 native oracle branch (formerly PLANNED under canceled IR-602). Under a `reject` integer type, a zero divisor evaluates to `Undefined(DivisionByZero)` for both Divide and Remainder, for the cases Z-1 `x / 0`, Z-2 `0 / 0`, Z-3 `x % 0` and Z-4 `0 % 0`, each built as TC-044 step 5 gives (Z-3 and Z-4 reach the zero through the add `y + 11`, which completes with 0), and the oracle does not panic and does not return `Refused`. On the tree before the change each case is refused at generation with the interim code, and a raw operator would panic with a division-by-zero message. | Test (TC-044) |
 | FR-031-AC-7 | IMPLEMENTED (IR-596). An add, subtract or multiply over a `saturate` integer type is refused with `UnsupportedSaturatingArithmetic` at the node's span, with no artifact, for the rows `x + 1` at `x = i64::MAX` and `x - 1` at `x = i64::MIN` over an integer type of `i64::MIN..=i64::MAX`, and `x * 2` at `x = i64::MAX` over `0..=10` (where an in-domain `x = 10` also gives the wrong value `20 <= 10` against the policy's `10 <= 10`); the refusal span is the first such node in authored preorder when a negation also occurs later, and the diagnostic message names the missing runtime saturating operation. On the tree before the change each expression generates, and the generated function panics in a debug build on the named operands. | Test (TC-044) |
-| FR-031-AC-8 | IMPLEMENTED (IR-596). In a generated crate compiled and executed against `quire-contract-runtime`, the outcome of a native add, subtract or multiply oracle equals a plain-integer model of IR FR-015's member-range semantics, computed in the test with `i128` independently of the emitter and of any `exact::` call: `Completed` with the exact result when it lies in the type's interval and `Refused(IntegerOutOfDomain)` when it does not. The grid covers operand values inside the declared domain, at its edges and outside it, and the outcome kind is compared, so no vector returns `Completed` where the model refuses. | Test (TC-044) |
+| FR-031-AC-8 | IMPLEMENTED (IR-596). In a generated crate compiled and executed against `filament-contract-runtime`, the outcome of a native add, subtract or multiply oracle equals a plain-integer model of IR FR-015's member-range semantics, computed in the test with `i128` independently of the emitter and of any `exact::` call: `Completed` with the exact result when it lies in the type's interval and `Refused(IntegerOutOfDomain)` when it does not. The grid covers operand values inside the declared domain, at its edges and outside it, and the outcome kind is compared, so no vector returns `Completed` where the model refuses. | Test (TC-044) |
 | FR-031-AC-9 | IMPLEMENTED (IR-596). The first non-completed outcome in evaluation order is the oracle's outcome: an arithmetic stop in the left operand of a short-circuit connective is returned, a stop in a right operand the left decided is never reached, a total connective returns the first stop of its two operands, and a stop is never returned as `Completed(true)` or `Completed(false)`. | Test (TC-044) |
 | FR-031-AC-10 | OPEN for tri-state and bound-strategy consumers; the V1 Kani clause-lowering consumer and its tagged test retire under the 2026-10-27 IR-348 ruling. Original criterion retained: IMPLEMENTED (IR-596). The tri-state harness generator, the bound strategy generators and the Kani obligation clause lowering each refuse a clause holding an arithmetic node with the refusal the Consumers section names for it, emit no raw arithmetic operator, and never read an `Outcome<bool>` as `bool`. | Test (TC-044) |
 | FR-031-AC-12 | IMPLEMENTED (IR-596). Apart from the generated Rust header lines required by NFR-002, the oracle generated for an expression with no arithmetic node is byte-identical to the oracle the generator produced for it before this requirement. This criterion passes on the tree before the change and is a held agreement, not a defect proof. | Test (TC-044) |
@@ -507,8 +507,8 @@ because its arithmetic was fixed-width and its comparison of two `i64` values ha
 | FR-031-AC-18 | PARTIALLY IMPLEMENTED: the active native-consumer portion is implemented by IR-1045; the V1 bundle-consumer portion is RETIRED under the 2026-10-27 IR-348 owner ruling. The original two-consumer acceptance value, formerly PLANNED under canceled IR-602, is retained verbatim as historical provenance; this status makes no active bundle-coverage claim. A divide or remainder node over a `saturate` integer type is refused with `UnsupportedSaturatingArithmetic` at the node's span, with no artifact and no raw `/` or `%` in any output, for the `saturate` rows S-1 to S-4 of TC-044 step 11, in both consumers; the diagnostic message names the missing saturating operation and the refusal has terminal state `unsupported`. On the tree before the change each row is refused with `UnsupportedIntegerDivision` instead. This criterion calls no kernel and can be implemented independently of kernel calls, while the interim code still exists for a divide or remainder over `reject`. | Test (TC-044) |
 | FR-031-AC-27 | PLANNED (IR-1316; IR-348) for obsolete error-code cleanup after IR-1045 native replacement. Original criterion retained: PLANNED (IR-602) (it cannot land before the native division of AC-2 exists). The code `UnsupportedIntegerDivision` does not exist: the crate's `GenerationErrorCode` has no such variant, nothing under `src/`, `tests/` or `schemas/` spells it, no stable code string of that name is emitted, and no diagnostic message that generation can emit names IR-601. On the tree before the change the variant exists and a divide or remainder over `reject` is refused with it. | Test (TC-044) |
 | FR-031-AC-28 | IMPLEMENTED (IR-664). The V1 Boolean oracle admits a typed IR integer domain or literal only when its value and both inclusive domain endpoints fit i64. A minimum of `i64::MIN - 1` or `i128::MIN`, or a maximum of `i64::MAX + 1` or `i128::MAX`, produces `UnsupportedExpression` at the first affected expression source span and no generated source; the same rule applies to an out-of-range literal. Values are never narrowed, clamped or wrapped to create an oracle. | Test (TC-044) |
-| FR-031-AC-22 | IMPLEMENTED in the IR-1045 native oracle branch (formerly PLANNED under canceled IR-602). The generated source of a native oracle with an arithmetic node aliases `quire_exact` as `rt`, takes `&mut rt::Meter`, returns `rt::Outcome<bool>`, and contains no `quire_contract_runtime::exact` path; a generated crate that compiles and runs it, with divide and remainder nodes and with add, subtract and multiply nodes in the same oracle (the construction Z-3, `y <= 0 && x % (y + 11) <= 10`, is one such oracle), resolves `quire-exact`; CG's own `Cargo.toml` depends on `quire-exact` directly from `agent-ix/quire-exact`, at a version that has the single-member `divide`. With the dependency in place, the generated crates of FR-031-AC-8, AC-21 and AC-25 depend on `quire-exact`, and AC-4's reference for equal and not-equal is `planned_equality`. The former `make deny` one-copy assertion is retired under IR-1105; Cargo's manifest and lock remain the dependency authority. | Test (TC-044) |
-| FR-031-AC-26 | IMPLEMENTED in the IR-1045 native oracle branch (formerly PLANNED under canceled IR-602). The generated source of a native oracle holds no `quire_contract_runtime::operators` path and no `and_short_circuit`, `or_short_circuit` or `implies_short_circuit`; a short-circuit connective is an inline `match` over the left operand's `rt::Outcome` that returns the first stop and does not evaluate the right operand when the left decides, and a total connective evaluates both operands in order and returns the first stop. Each completed connective, including unary BooleanNot, calls `quire_exact::retain_boolean` exactly once and charges `boolean.result-retain` once, including a result decided by the left; a child stop charges no connective result-retain point. Neither rendering calls `evaluate_boolean`. In a generated crate the completed Boolean values and first-stop outcomes of FR-031-AC-9's cases and Z-3 agree with the prior rendering, while completed connective meter counters include their new result-retain charges; denial at that point returns `Incomplete` before applying the denied charge. | Test (TC-044) |
+| FR-031-AC-22 | IMPLEMENTED in the IR-1045 native oracle branch (formerly PLANNED under canceled IR-602). The generated source of a native oracle with an arithmetic node aliases `filament_exact` as `rt`, takes `&mut rt::Meter`, returns `rt::Outcome<bool>`, and contains no `filament_contract_runtime::exact` path; a generated crate that compiles and runs it, with divide and remainder nodes and with add, subtract and multiply nodes in the same oracle (the construction Z-3, `y <= 0 && x % (y + 11) <= 10`, is one such oracle), resolves `filament-exact`; CG's own `Cargo.toml` depends on `filament-exact` directly from `agent-ix/filament-exact`, at a version that has the single-member `divide`. With the dependency in place, the generated crates of FR-031-AC-8, AC-21 and AC-25 depend on `filament-exact`, and AC-4's reference for equal and not-equal is `planned_equality`. The former `make deny` one-copy assertion is retired under IR-1105; Cargo's manifest and lock remain the dependency authority. | Test (TC-044) |
+| FR-031-AC-26 | IMPLEMENTED in the IR-1045 native oracle branch (formerly PLANNED under canceled IR-602). The generated source of a native oracle holds no `filament_contract_runtime::operators` path and no `and_short_circuit`, `or_short_circuit` or `implies_short_circuit`; a short-circuit connective is an inline `match` over the left operand's `rt::Outcome` that returns the first stop and does not evaluate the right operand when the left decides, and a total connective evaluates both operands in order and returns the first stop. Each completed connective, including unary BooleanNot, calls `filament_exact::retain_boolean` exactly once and charges `boolean.result-retain` once, including a result decided by the left; a child stop charges no connective result-retain point. Neither rendering calls `evaluate_boolean`. In a generated crate the completed Boolean values and first-stop outcomes of FR-031-AC-9's cases and Z-3 agree with the prior rendering, while completed connective meter counters include their new result-retain charges; denial at that point returns `Incomplete` before applying the denied charge. | Test (TC-044) |
 
 ## Dependencies
 
@@ -516,9 +516,9 @@ because its arithmetic was fixed-width and its comparison of two `i64` values ha
   meter and `Outcome` convention of an exact oracle, [FR-018](./FR-018-composite-equality-oracles.md)
   for the equality evaluation, [FR-008](../../strategy/functional/FR-008-bound-domain-strategy-admission.md) for the
   strategy admission, Contract IR FR-013 and FR-015, Contract Runtime FR-002, FR-006 and
-  FR-007 (the identity items of a generated crate), and `quire-exact` FR-357 for the division
-  operation. The IR-1045 native code change depends on QSL's single-member `divide` and CG
-  then bumping QSL and `quire-exact` together ("Prerequisite: the one `quire-exact` lock entry").
+  FR-007 (the identity items of a generated crate), and `filament-exact` FR-357 for the division
+  operation. The IR-1045 native code change depends on FSL's single-member `divide` and CG
+  then bumping FSL and `filament-exact` together ("Prerequisite: the one `filament-exact` lock entry").
 - **Retired V1 context**: [FR-015](../../kani/functional/FR-015-bounded-kani-obligations.md)
   and [FR-028](../../kani/functional/FR-028-bounded-proof-ceilings.md) supplied the former Kani
   bundle and its ceilings; IR-348 retired that consumer.
@@ -531,41 +531,41 @@ the pending implementation and proof gates are separate from those decisions.
 
 - **OD-1, the law.** The native generator selects `DivisionProfile::Truncating`. IR's divide and
   remainder nodes name no law, IR's own arithmetic preimage computes the truncating one, and
-  so did the earlier raw operators, but no ruling names it for V1. To confirm with IR and QSL. If
+  so did the earlier raw operators, but no ruling names it for V1. To confirm with IR and FSL. If
   the language wants floor or Euclidean division here, the native generator's law constant must
   change; the retired bundle operators no longer participate.
 - **OD-2, kernel ownership (closed by the merged API).** Contract Runtime removed its
   exact scalar, outcome and meter re-exports, so the native oracle must import those
-  types and calls from `quire_exact` directly. QSV owns composite declarations and
+  types and calls from `filament_exact` directly. FSV owns composite declarations and
   equality; Contract Runtime retains its negotiation and function-expression APIs. CG must migrate the complete native scalar
   family and the generated crate dependency together. The coherent CG lock has landed;
   AC-22 and AC-26 still require their planned behavior and verification.
-- **OD-3, the equality route (closed by measurement).** `quire_exact` exports `planned_equality`
-  and no type environment or checked equality. For two integer operands, QSV's
+- **OD-3, the equality route (closed by measurement).** `filament_exact` exports `planned_equality`
+  and no type environment or checked equality. For two integer operands, FSV's
   `CheckedEquality::evaluate` takes `EqualitySchedule::Plan`, calls its `planned_equality` and
   returns `equal == (operator == Equal)`, that is negated for not-equal, with no further charge
-  (QSV declaration equality evaluation). `quire_exact::planned_equality` over
+  (FSV declaration equality evaluation). `filament_exact::planned_equality` over
   `Value::Integer` operands, negated for not-equal, is therefore the same value and the same
   charges.
 - **OD-4, retired V1 Kani encoding of division.** The bundle was planned to use fixed-width
   operators, with the measurements in "Native consumer and retired V1 bundle history".
-  `quire_exact::Integer` is
+  `filament_exact::Integer` is
   `num-bigint`-backed, and the call gave no CBMC verdict in 900 seconds. Contract Runtime's copy
   of the integer holds an `i64` inline whenever the value fits, and its source comment cites
-  CBMC; `quire-exact`'s is a `BigInt` newtype. Any future V2 proof of the kernel's own division
+  CBMC; `filament-exact`'s is a `BigInt` newtype. Any future V2 proof of the kernel's own division
   needs a separately specified, measurable route; this retired V1 decision supplies no current
-  requirement. No divide under Kani through `quire_exact` was verified here.
-- **OD-6, connective metering (closed by current contracts).** QSL's evaluator,
-  `quire-exact` FR-362-AC-9, QSpec TC-191 and CG FR-014-AC-35/37 require one
+  requirement. No divide under Kani through `filament_exact` was verified here.
+- **OD-6, connective metering (closed by current contracts).** FSL's evaluator,
+  `filament-exact` FR-362-AC-9, FSpec TC-191 and CG FR-014-AC-35/37 require one
   `boolean.result-retain` charge for every completed connective, including a
   short-circuit result decided by the left. A child stop yields no connective
   result-retain charge. AC-26 and TC-044 require that behavior in generated code.
 
 ## Out of Scope
 
-- **Moving QSL's exemplar onto the V2 contract arm.** AD-004 step 4e and QSL's follow-up own it.
-  The V1 bundle gate is retired. Whether QSL makes a V2 exemplar run a required
-  gate on its side is an open question to QSL.
+- **Moving FSL's exemplar onto the V2 contract arm.** AD-004 step 4e and FSL's follow-up own it.
+  The V1 bundle gate is retired. Whether FSL makes a V2 exemplar run a required
+  gate on its side is an open question to FSL.
 - **Numeric negation.** `interface-001` and the generator refuse it, and this requirement does
   not change that.
 - **Rational, decimal, IEEE, quantity and text arithmetic.** The V1 Boolean oracle carries

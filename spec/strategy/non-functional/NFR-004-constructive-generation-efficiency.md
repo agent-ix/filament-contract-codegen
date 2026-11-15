@@ -4,11 +4,11 @@ title: "Constructive numeric generation efficiency"
 type: NFR
 quality_attribute: performance_efficiency
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-009
+  - target: ix://agent-ix/filament-contract-codegen/FR-009
     type: constrains
-  - target: ix://agent-ix/quire-contract-codegen/FR-010
+  - target: ix://agent-ix/filament-contract-codegen/FR-010
     type: constrains
-  - target: ix://agent-ix/quire-contract-codegen/FR-011
+  - target: ix://agent-ix/filament-contract-codegen/FR-011
     type: constrains
 ---
 # NFR-004: Constructive numeric generation efficiency

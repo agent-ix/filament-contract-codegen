@@ -16,7 +16,7 @@
 //! operation and Integer result; the equality root retains its equality
 //! operation, and call-item roots retain their call form. The function
 //! classifier checks scalar operation identity and body arity against the
-//! caller-declared [`quire_contract_codegen::ExactFunctionBody`].
+//! caller-declared [`filament_contract_codegen::ExactFunctionBody`].
 
 #![allow(dead_code)]
 
@@ -24,7 +24,7 @@
 mod ce;
 pub use ce::*;
 
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     ContractRequestPosition, ExactFunctionBody, ExactFunctionDeclaration, ExactFunctionItem,
     FunctionParameter,
 };
@@ -43,7 +43,7 @@ pub fn admitted_function_contract(
     let profile = CompleteLoweringProfileV2 {
         reference: LoweringProfileRef {
             authority: "agent-ix".into(),
-            identity: "quire.codegen.exact-function/v1".into(),
+            identity: "filament.codegen.exact-function/v1".into(),
         },
         required_source_selections: Vec::new(),
         supported_tags: BTreeSet::from([
@@ -78,7 +78,8 @@ pub fn driver_positions(requested: &[CheckedNodeId]) -> Vec<ContractRequestPosit
         .cloned()
         .map(|node_id| ContractRequestPosition::DriverItem {
             node_id,
-            result_selection: quire_contract_codegen::ContractDriverResultSelection::NotApplicable,
+            result_selection:
+                filament_contract_codegen::ContractDriverResultSelection::NotApplicable,
         })
         .collect()
 }
@@ -586,7 +587,7 @@ pub fn source_function(name: &str, body_code: u32) -> ExactFunctionDeclaration {
         parameters: vec![parameter("a", T_INTEGER), parameter("b", T_INTEGER)],
         result_type: code_id(T_INTEGER),
         body: ExactFunctionBody::Scalar {
-            operator: quire_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
+            operator: filament_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
         },
         capability_requirements: Vec::new(),
     }
@@ -618,7 +619,7 @@ pub fn function_add(name: &str) -> ExactFunctionDeclaration {
         parameters: vec![parameter("a", T_INTEGER), parameter("b", T_INTEGER)],
         result_type: code_id(T_INTEGER),
         body: ExactFunctionBody::Scalar {
-            operator: quire_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
+            operator: filament_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
         },
         capability_requirements: Vec::new(),
     }
@@ -631,7 +632,7 @@ pub fn function_eq(name: &str) -> ExactFunctionDeclaration {
         parameters: vec![parameter("a", T_INTEGER), parameter("b", T_INTEGER)],
         result_type: code_id(T_BOOLEAN),
         body: ExactFunctionBody::CompositeEquality {
-            operator: quire_contract_codegen::EqualityOperatorKind::Equal,
+            operator: filament_contract_codegen::EqualityOperatorKind::Equal,
         },
         capability_requirements: Vec::new(),
     }
@@ -659,7 +660,7 @@ pub fn function_form_mismatch(name: &str) -> ExactFunctionDeclaration {
         parameters: vec![parameter("a", T_INTEGER), parameter("b", T_INTEGER)],
         result_type: code_id(T_INTEGER),
         body: ExactFunctionBody::Scalar {
-            operator: quire_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
+            operator: filament_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
         },
         capability_requirements: Vec::new(),
     }
@@ -685,7 +686,7 @@ pub fn function_ref_param(name: &str) -> ExactFunctionDeclaration {
         parameters: vec![parameter("a", REF_TYPE)],
         result_type: code_id(T_INTEGER),
         body: ExactFunctionBody::Scalar {
-            operator: quire_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
+            operator: filament_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
         },
         capability_requirements: Vec::new(),
     }
@@ -698,7 +699,7 @@ pub fn function_model_root(name: &str) -> ExactFunctionDeclaration {
         parameters: vec![parameter("a", T_INTEGER), parameter("b", T_INTEGER)],
         result_type: code_id(T_INTEGER),
         body: ExactFunctionBody::Scalar {
-            operator: quire_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
+            operator: filament_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
         },
         capability_requirements: Vec::new(),
     }
@@ -711,7 +712,7 @@ pub fn function_state_root(name: &str) -> ExactFunctionDeclaration {
         parameters: vec![parameter("a", T_INTEGER), parameter("b", T_INTEGER)],
         result_type: code_id(T_INTEGER),
         body: ExactFunctionBody::Scalar {
-            operator: quire_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
+            operator: filament_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
         },
         capability_requirements: Vec::new(),
     }
@@ -724,9 +725,9 @@ pub fn function_capability(name: &str) -> ExactFunctionDeclaration {
         parameters: vec![parameter("a", T_INTEGER), parameter("b", T_INTEGER)],
         result_type: code_id(T_INTEGER),
         body: ExactFunctionBody::Scalar {
-            operator: quire_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
+            operator: filament_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
         },
-        capability_requirements: vec!["quire.capability.undischargeable-in-v1".to_owned()],
+        capability_requirements: vec!["filament.capability.undischargeable-in-v1".to_owned()],
     }
 }
 
@@ -737,7 +738,7 @@ pub fn function_unrelated(name: &str) -> ExactFunctionDeclaration {
         parameters: vec![parameter("a", T_INTEGER), parameter("b", T_INTEGER)],
         result_type: code_id(T_INTEGER),
         body: ExactFunctionBody::Scalar {
-            operator: quire_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
+            operator: filament_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
         },
         capability_requirements: Vec::new(),
     }
@@ -895,7 +896,7 @@ pub fn byte_ceiling_functions() -> Vec<ExactFunctionDeclaration> {
             parameters: vec![parameter("a", T_INTEGER), parameter("b", T_INTEGER)],
             result_type: code_id(T_INTEGER),
             body: ExactFunctionBody::Scalar {
-                operator: quire_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
+                operator: filament_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
             },
             capability_requirements: Vec::new(),
         })

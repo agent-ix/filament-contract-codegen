@@ -3,15 +3,15 @@ id: FR-004
 title: "Produce vacuity and rejection evidence"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/StR-001
+  - target: ix://agent-ix/filament-contract-codegen/StR-001
     type: satisfies
-  - target: ix://agent-ix/quire-contract-codegen/FR-014
+  - target: ix://agent-ix/filament-contract-codegen/FR-014
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-011
+  - target: ix://agent-ix/filament-contract-codegen/FR-011
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/interface-001
+  - target: ix://agent-ix/filament-contract-codegen/interface-001
     type: implements
-  - target: ix://agent-ix/quire-contract-ir/FR-045
+  - target: ix://agent-ix/filament-contract-ir/FR-045
     type: references
 ---
 # FR-004: Produce vacuity and rejection evidence
@@ -29,12 +29,12 @@ per-requirement vacuity report without executing a coverage producer itself.
 - Planned (IR-815): for the V2 analyzer, the executable clauses of an admitted `CheckedPackageV2`,
   read through the `core/ir/` layer of AD-004, in place of the V1 bound population. The expected
   population includes every executable clause of the admitted package; V2 strategy generation
-  selects a checked clause id and one authentic `claim` `CheckedOccurrence`. The accepted QSL
+  selects a checked clause id and one authentic `claim` `CheckedOccurrence`. The accepted FSL
   `ClauseBinding.execution_point` for that exact package, clause and occurrence is exposed through
   the planned Contract IR FR-058 typed accessor under FR-011. A node alone does not identify the
   point: distinct accepted points require distinct point-qualified clause nodes, while two
-  authentic claims of one node share its one point (QSpec FR-322-AC-131, FR-341-AC-14;
-  IR FR-058-AC-9/10). Each QSL driver-bound FR-331
+  authentic claims of one node share its one point (FSpec FR-322-AC-131, FR-341-AC-14;
+  IR FR-058-AC-9/10). Each FSL driver-bound FR-331
   claim supplies its admitted requirement occurrence. A process frame's FR-331
   `request.package_id` is compared with this separately admitted package under FR-011; a linked
   driver exports, emits, and admits this one package before passing its selected claim to CG.
@@ -43,19 +43,19 @@ per-requirement vacuity report without executing a coverage producer itself.
 - LLVM coverage JSON export bytes captured directly from the LLVM export child started by the
   CG campaign runner for this invocation, its tool and version, and native runtime campaign
   results identifying the generated source and source map actually used for that run.
-- Separately, a QSL strict-reader typed clause-run or command-error variant for exact
-  `native-run-result/2`, or its located wire refusal. This is QSL source-clause evaluation or
+- Separately, a FSL strict-reader typed clause-run or command-error variant for exact
+  `native-run-result/2`, or its located wire refusal. This is FSL source-clause evaluation or
   command failure, not execution of the generated campaign; the QSL-520 public producer and
   strict reader are delivered, while CG consumption remains planned and unrun.
 - A live CG runner context that owns the original `native-run-result/2` wire bytes and the typed
-  result returned by QSL's strict reader for those bytes, together with the execution record,
+  result returned by FSL's strict reader for those bytes, together with the execution record,
   generated source and source map used by the coverage producer, the runner-owned campaign and
   LLVM export child handles, the profile output produced by that campaign, the export
   read directly from that LLVM child's output stream, and its reported tool/version. These are
   the inputs being analyzed, not copies in a provenance record. The
   context borrows one private invocation lifetime, has no registry or serialized run key, and cannot
   be supplied by a caller or restored from wire data. Caller-declared identities, matching paths,
-  QSL `package_id`, and self-declared
+  FSL `package_id`, and self-declared
   producer metadata are insufficient.
 
 ## Outputs
@@ -63,7 +63,7 @@ per-requirement vacuity report without executing a coverage producer itself.
 - A versioned analysis outcome containing trusted observations, per-clause classifications where
   measurable, structured diagnostics, and an explicit non-success state for
   adverse, unavailable, unsupported, malformed, or inconclusive analysis.
-- Distinct retained facts for the QSL clause-run disposition and the generated Rust campaign's
+- Distinct retained facts for the FSL clause-run disposition and the generated Rust campaign's
   execution/coverage state; neither fact is synthesized from the other.
 
 ## Behavior
@@ -97,7 +97,7 @@ per-requirement vacuity report without executing a coverage producer itself.
   outcome independently. It shall verify run/requirement/revision bindings; a successful test outcome
   cannot coexist with failed postconditions, and positive oracle observation cannot coexist with
   zero recorded invocations when the run declares the generated campaign as its only execution source.
-- The planned aggregate analyzer shall consume `native-run-result/2` only through QSL's strict
+- The planned aggregate analyzer shall consume `native-run-result/2` only through FSL's strict
   reader. It shall retain the typed clause-run stage, category, truth where present, settlement
   basis and optional witness without parsing display text or making an absent component `null`,
   zero or a default. The same reader's typed command-error variant shall retain stage, code,
@@ -107,7 +107,7 @@ per-requirement vacuity report without executing a coverage producer itself.
   schema copy, or version inference from payload members.
 - Before qualifying a generated campaign or deriving any measured coverage classification, the
   analyzer shall bind within the same live CG runner invocation that owns and produces its inputs.
-  QSL's strict reader shall decode the runner-owned original `/2` wire bytes once.
+  FSL's strict reader shall decode the runner-owned original `/2` wire bytes once.
   The analyzer shall consume that returned typed value directly, without reserializing it or
   inventing bytes for a decoded value. The runner shall pass the same owned generated source/map
   buffers it gave the campaign, plus its execution record and the LLVM export/tool/version captured
@@ -129,9 +129,9 @@ per-requirement vacuity report without executing a coverage producer itself.
   stored or wire receipt, issuance set, file/tool tracking record or digest. For an absent, foreign,
   expired, incomplete or mismatched association, the analyzer shall yield structured
   non-success naming the failed association and
-  retaining available input identities and the decoded QSL outcome separately. Equal paths or QSL
+  retaining available input identities and the decoded FSL outcome separately. Equal paths or FSL
   `package_id` do not repair a mismatch. Such a result yields no campaign qualification, measured
-  classification or coverage discharge; a located QSL wire refusal remains a wire refusal, not a
+  classification or coverage discharge; a located FSL wire refusal remains a wire refusal, not a
   binding failure.
 - When inputs cross a process boundary, the runner shall treat the wire envelope as untrusted raw
   input, never as qualification from an earlier run. The caller shall set named maximum encoded
@@ -140,18 +140,18 @@ per-requirement vacuity report without executing a coverage producer itself.
   structured resource refusal naming the exceeded limit before coverage classification. Encoding
   expansion and framing count toward the encoded limit; decoded objects and any copied buffers
   count toward the working limit. No partial admission or inherited qualification is allowed.
-- The analyzer shall keep QSL source-clause evaluation separate from generated Rust campaign
-  execution. QSL `success`, `closed-scope`, or a decisive witness cannot establish that CG's
-  generated artifact ran; QSL `violation`, refusal, undefined, incomplete, cancelled, unsupported
+- The analyzer shall keep FSL source-clause evaluation separate from generated Rust campaign
+  execution. FSL `success`, `closed-scope`, or a decisive witness cannot establish that CG's
+  generated artifact ran; FSL `violation`, refusal, undefined, incomplete, cancelled, unsupported
   or internal failure remains a typed adverse/non-success semantic fact and cannot be promoted to
   passed generated execution. A command-error envelope retains its stage/code/cause/details as an
   error, never as a Boolean clause result. Even a bound live run cannot promote
-  it to generated-campaign success. No QSL witness or LLVM probe alone grants IR FR-045
+  it to generated-campaign success. No FSL witness or LLVM probe alone grants IR FR-045
   completed-proof credit.
 - Source-map requirement/revision identity shall equal the runtime campaign identity, and duplicate,
   missing, ambiguous, malformed, summary-only, or unsupported-version coverage input shall remain
   a structured non-success analysis outcome.
-- The in-run binding shall consume the exact QSL wire input through its typed strict-reader result,
+- The in-run binding shall consume the exact FSL wire input through its typed strict-reader result,
   the producer execution, generated source and source map actually used, and exact LLVM export
   bytes captured from that run's linked campaign/profile/LLVM-export producer chain and carrying
   probe observations for its requirement and revision.
@@ -210,12 +210,12 @@ per-requirement vacuity report without executing a coverage producer itself.
 | FR-004-AC-7 | Removing an expected clause, consequent, evaluation probe, or all clauses prevents successful analysis; the expected census comes from bound typed IR. | Test (TC-006) |
 | FR-004-AC-8 | PLANNED / UNRUN. Adverse coverage and non-success native execution cannot discharge the coverage obligation merely because a report serialized successfully. | Test |
 | FR-004-AC-9 | Complete bound observations without a native campaign run are reported as observations only and never as a passed coverage result. Valid informational-only populations retain their references as no executable work. | Test |
-| FR-004-AC-10 | PLANNED / UNRUN. CG binds coverage inside the same live campaign-runner invocation, using the original `/2` wire bytes and their QSL strict-reader typed result directly, the producer execution record, and the same generated source/map buffers used by that campaign. The runner starts the campaign with fresh private profile output, performs any required LLVM merge over only that output, starts LLVM export over only that profile, and captures exact export bytes and tool/version from that LLVM child's direct output stream while retaining the linked child handles. Binding verifies this live campaign/profile/export chain; it refuses a foreign profile location, child handle, stream or pre-existing output as `producer_run_mismatch` before classification, including when source/map and declared tool/version match. It accepts no detached export bytes, path or self-declared producer identity as authority. Every association borrows one private invocation lifetime, with no registry or serialized run key. No separate stored or wire receipt, tracking record or digest carries these associations. The context expires when the invocation returns; a forwarded report or copied input from another run cannot inherit qualification. The selected QSL driver-bound FR-331 claim occurrence and its admitted `CheckedPackageV2::package_id()` revision match the campaign through FR-011 canonical renderings or exact typed fields; noncanonical or mismatched text refuses before classification. A missing or conflicting same-run association yields structured non-success with no campaign qualification, measured classification or discharge. | Test |
+| FR-004-AC-10 | PLANNED / UNRUN. CG binds coverage inside the same live campaign-runner invocation, using the original `/2` wire bytes and their FSL strict-reader typed result directly, the producer execution record, and the same generated source/map buffers used by that campaign. The runner starts the campaign with fresh private profile output, performs any required LLVM merge over only that output, starts LLVM export over only that profile, and captures exact export bytes and tool/version from that LLVM child's direct output stream while retaining the linked child handles. Binding verifies this live campaign/profile/export chain; it refuses a foreign profile location, child handle, stream or pre-existing output as `producer_run_mismatch` before classification, including when source/map and declared tool/version match. It accepts no detached export bytes, path or self-declared producer identity as authority. Every association borrows one private invocation lifetime, with no registry or serialized run key. No separate stored or wire receipt, tracking record or digest carries these associations. The context expires when the invocation returns; a forwarded report or copied input from another run cannot inherit qualification. The selected FSL driver-bound FR-331 claim occurrence and its admitted `CheckedPackageV2::package_id()` revision match the campaign through FR-011 canonical renderings or exact typed fields; noncanonical or mismatched text refuses before classification. A missing or conflicting same-run association yields structured non-success with no campaign qualification, measured classification or discharge. | Test |
 | FR-004-AC-11 | PLANNED / UNRUN. The consuming report retains vacuity and native outcome as evidence for IR FR-045; an oracle-success run with an unobserved consequent denies the coverage obligation, and LLVM probe observations alone produce no completed-proof credit or separate eligible denominator. | Test |
-| FR-004-AC-12 | PLANNED / UNRUN. CG consumes QSL's typed strict-reader clause-run or command-error variant for exact `native-run-result/2`: a decisive basis retains its witness with assigned members, while `closed-scope` or `unavailable` retains none. Missing or other versions, missing/unknown basis, malformed witness, contradictory basis/witness and mixed/invalid variant shape are located wire refusals before binding; no `/1` fallback or CG copy of the wire reader exists. | Test |
-| FR-004-AC-13 | PLANNED / UNRUN. QSL `run_clause` success and a decisive witness remain source-clause facts and do not count as generated-campaign execution or LLVM coverage; QSL violation, refusal, undefined, incomplete, cancelled, unsupported and internal failure remain distinct typed adverse/non-success facts. A bound live run does not upgrade any QSL disposition or itself grant campaign success, measured classification, proof credit or coverage discharge. The same reader's command-error variant retains stage/code/optional cause/message/details and unavailable basis as non-success, with no campaign qualification or measured classification even when the generated run is bound. | Test |
-| FR-004-AC-14 | PLANNED / UNRUN. Only CG's campaign runner constructs the private, non-cloneable, non-serializable live run context; callers cannot construct or restore it from a `/2` document, paths, QSL `package_id`, metadata, or a forwarded report. Absent, foreign or expired context, or an omitted association yields structured binding non-success retaining the typed QSL outcome and available identities, with no qualification, classification or discharge. A complete same-invocation context admits binding without changing the QSL outcome. The caller supplies maximum encoded-input and decoded-working-byte limits; CG refuses an over-limit wire envelope before allocation and an over-limit decode before further growth, naming the exceeded limit and admitting no partial context. | Test |
-| FR-004-AC-15 | PLANNED / UNRUN. A controlled attempt to replace the strict-reader typed result, execution record, generated source, source map, LLVM export stream or LLVM tool/version with a foreign-run value cannot construct a valid same-invocation context, even when paths, QSL `package_id`, source/map and tool/version declarations match. In particular, foreign export bytes offered through a detached buffer or a different producer stream/child handle refuse as `producer_run_mismatch` before classification because neither is the current runner-owned campaign/profile/export chain. A malformed association observable inside one run yields structured non-success naming that association before classification; the original decoded outcome remains distinct from the binding diagnostic. An old context or serialized report cannot be replayed into a later invocation, and a later process must bind a fresh run. A valid typed command-error variant stays non-success with a bound run; an invalid `/2` or unsupported version refuses at QSL reading before binding. | Test |
+| FR-004-AC-12 | PLANNED / UNRUN. CG consumes FSL's typed strict-reader clause-run or command-error variant for exact `native-run-result/2`: a decisive basis retains its witness with assigned members, while `closed-scope` or `unavailable` retains none. Missing or other versions, missing/unknown basis, malformed witness, contradictory basis/witness and mixed/invalid variant shape are located wire refusals before binding; no `/1` fallback or CG copy of the wire reader exists. | Test |
+| FR-004-AC-13 | PLANNED / UNRUN. FSL `run_clause` success and a decisive witness remain source-clause facts and do not count as generated-campaign execution or LLVM coverage; FSL violation, refusal, undefined, incomplete, cancelled, unsupported and internal failure remain distinct typed adverse/non-success facts. A bound live run does not upgrade any FSL disposition or itself grant campaign success, measured classification, proof credit or coverage discharge. The same reader's command-error variant retains stage/code/optional cause/message/details and unavailable basis as non-success, with no campaign qualification or measured classification even when the generated run is bound. | Test |
+| FR-004-AC-14 | PLANNED / UNRUN. Only CG's campaign runner constructs the private, non-cloneable, non-serializable live run context; callers cannot construct or restore it from a `/2` document, paths, FSL `package_id`, metadata, or a forwarded report. Absent, foreign or expired context, or an omitted association yields structured binding non-success retaining the typed FSL outcome and available identities, with no qualification, classification or discharge. A complete same-invocation context admits binding without changing the FSL outcome. The caller supplies maximum encoded-input and decoded-working-byte limits; CG refuses an over-limit wire envelope before allocation and an over-limit decode before further growth, naming the exceeded limit and admitting no partial context. | Test |
+| FR-004-AC-15 | PLANNED / UNRUN. A controlled attempt to replace the strict-reader typed result, execution record, generated source, source map, LLVM export stream or LLVM tool/version with a foreign-run value cannot construct a valid same-invocation context, even when paths, FSL `package_id`, source/map and tool/version declarations match. In particular, foreign export bytes offered through a detached buffer or a different producer stream/child handle refuse as `producer_run_mismatch` before classification because neither is the current runner-owned campaign/profile/export chain. A malformed association observable inside one run yields structured non-success naming that association before classification; the original decoded outcome remains distinct from the binding diagnostic. An old context or serialized report cannot be replayed into a later invocation, and a later process must bind a fresh run. A valid typed command-error variant stays non-success with a bound run; an invalid `/2` or unsupported version refuses at FSL reading before binding. | Test |
 | FR-004-AC-16 | PLANNED (IR-815). The expected clause population and implication counts of the V2 analyzer equal those independently derived from the admitted `CheckedPackageV2` clause bodies. | Test (TC-006) |
 | FR-004-AC-17 | PLANNED / UNRUN (IR-815; pending IR-1013). Source inspection shows the V2 analyzer opens a `CheckedPackageV2` body only through the `core/ir/` layer of AD-004, and names no `BoundPackage` or `ClauseRef`, both of which today's `analyze_bound_coverage` names. | Inspection |
 | FR-004-AC-18 | PLANNED (IR-815). A V2 clause whose generated source map declares an implication count unequal to the count derived from its body yields a structured binding non-success naming the clause and no classification, and is never treated as implication-free. | Test (TC-006) |
@@ -253,8 +253,8 @@ campaign-runner invocation over its owned inputs; no separate persisted or wire 
 specified. A forwarded report is observational output and cannot qualify a later run. If an
 externally verifiable cross-process receipt is required, its authority remains a separate design
 gate rather than a capability claimed here. FR-011 OQ-2 resolves the V2 identity source to the
-QSL driver-bound FR-331 claim occurrence and its admitted
-`CheckedPackageV2::package_id()`. QSL's `/2` document gains no generated-source, map or
+FSL driver-bound FR-331 claim occurrence and its admitted
+`CheckedPackageV2::package_id()`. FSL's `/2` document gains no generated-source, map or
 coverage-producer member.
 
 IR FR-045 owns source-derived proof eligibility, denominators, and completed-proof credit;
@@ -280,7 +280,7 @@ observation tests are partial evidence; these rows remain Planned without new tr
 | FR-004-AC-6 | Planned (IR-1316) | `BoundCoverageInputs` and `V2ClauseCoverageInput` accept artifact/probe observations, not runtime campaign counts or a native execution outcome. Their analysis bodies cannot yet retain those complete independent facts. |
 | FR-004-AC-8, FR-004-AC-11 | Planned (IR-1316) | Observation serialization exists, but the consuming coverage-obligation/proof-accounting boundary is absent. A serialized adverse observation alone does not test discharge denial. |
 | FR-004-AC-10, FR-004-AC-14, FR-004-AC-15 | Planned (IR-1316) | The analyzers accept detached caller-supplied source/map/export bytes. There is no private live campaign/profile/export context, child-stream association or bounded cross-process admission to exercise; observation comparison is insufficient. |
-| FR-004-AC-12, FR-004-AC-13 | Planned (IR-1316) | Neither analyzer accepts QSL's strict-reader `native-run-result/2` result. QSL reader delivery does not establish a CG consumer or typed disposition retention and separation. |
+| FR-004-AC-12, FR-004-AC-13 | Planned (IR-1316) | Neither analyzer accepts FSL's strict-reader `native-run-result/2` result. FSL reader delivery does not establish a CG consumer or typed disposition retention and separation. |
 | FR-004-AC-17 | Planned (IR-1316; implementation IR-815) | The V2 analyzer exists in `src/evidence/v2_llvm.rs`, but its population scan still reads `package.graph().nodes` directly outside `core/ir/`. The V1 analyzer separately names `BoundPackage` and `ClauseRef`; no compliant V2-only access-layer inspection is claimed. |
 
 AC-25 is superseded by AC-26 and earns no implementation credit. The latter's

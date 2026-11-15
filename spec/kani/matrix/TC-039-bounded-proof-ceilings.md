@@ -3,7 +3,7 @@ id: TC-039
 title: "Verify bounded proof ceilings, their inconclusive reasons and the proof subject"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-028
+  - target: ix://agent-ix/filament-contract-codegen/FR-028
     type: verifies
 ---
 # TC-039: Verify bounded proof ceilings, their inconclusive reasons and the proof subject

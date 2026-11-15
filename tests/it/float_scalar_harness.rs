@@ -1,12 +1,12 @@
-//! FR-053 IEEE float scalar comparison harnesses over a genuine QSL source admitted through
+//! FR-053 IEEE float scalar comparison harnesses over a genuine FSL source admitted through
 //! Contract IR, routed through `generate_routed`.
 
-use ix_trace_rs::trace;
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     decode_float_falsification, generate_float_scalar_harness, parse_assertion_playback,
     FloatCapability, FloatScalarHarness, FloatScalarOutcome, FloatScalarRefusal,
     FloatScalarRequest, KaniRunOutcome, ObligationDisposition, UnsupportedObligation,
 };
+use ix_trace_rs::trace;
 use quire_contract_model::{
     CheckedNodeId, CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
     CheckedPackageV2ReadResult, CheckedTerm,
@@ -54,7 +54,7 @@ fn compiled_bytes() -> Vec<u8> {
         qsl_replay::StageLimits::default(),
         qsl_replay::ReplayLimits::default(),
     )
-    .expect("QSL admits the float source")
+    .expect("FSL admits the float source")
     .package()
     .bytes()
     .to_vec()
@@ -71,7 +71,7 @@ fn read_package(bytes: &[u8]) -> Option<CheckedPackageV2> {
 
 fn corpus() -> Corpus {
     Corpus {
-        package: read_package(&compiled_bytes()).expect("Contract IR admits the QSL float source"),
+        package: read_package(&compiled_bytes()).expect("Contract IR admits the FSL float source"),
     }
 }
 
@@ -146,7 +146,7 @@ impl Corpus {
     }
 
     /// Routes each `(function, identity)` through `generate_routed` as one request.
-    fn routed(&self, items: &[(&str, &str)]) -> quire_contract_codegen::RoutedGeneration {
+    fn routed(&self, items: &[(&str, &str)]) -> filament_contract_codegen::RoutedGeneration {
         let routed = items
             .iter()
             .enumerate()
@@ -169,8 +169,8 @@ impl Corpus {
         function: &str,
         identity: &str,
     ) -> (
-        quire_contract_codegen::KaniScalarObligationHarness,
-        quire_contract_codegen::Artifact,
+        filament_contract_codegen::KaniScalarObligationHarness,
+        filament_contract_codegen::Artifact,
     ) {
         let generation = self.routed(&[(function, identity)]);
         let manifest = generation
@@ -234,7 +234,7 @@ fn proof_body(harness: &FloatScalarHarness) -> &str {
     &source[source.find("#[kani::proof]").expect("a proof attribute")..]
 }
 
-/// Every comparison at each width, from a genuine QSL source, generates one harness over native
+/// Every comparison at each width, from a genuine FSL source, generates one harness over native
 /// carriers that names its operation, width and parameters.
 #[trace("TC-067", "FR-053-AC-1")]
 #[test]
@@ -268,10 +268,10 @@ fn every_comparison_generates_one_native_carrier_harness_from_its_node() {
     }
 }
 
-/// The QSL `=` operator over floats lowers to the same `numeric_equal` row.
+/// The FSL `=` operator over floats lowers to the same `numeric_equal` row.
 #[trace("TC-067", "FR-053-AC-1")]
 #[test]
-fn the_qsl_equality_operator_generates_the_numeric_equal_row() {
+fn the_fsl_equality_operator_generates_the_numeric_equal_row() {
     let corpus = corpus();
     let generated = corpus.harness("eq64", "quire.op.ieee.numeric_equal");
     assert_eq!(
@@ -509,7 +509,7 @@ fn transcript(harness: &FloatScalarHarness, draws: &[i64]) -> String {
 fn decode(
     harness: &FloatScalarHarness,
     transcript: &str,
-) -> Result<quire_contract_codegen::FloatWitness, quire_contract_codegen::DecodeFailure> {
+) -> Result<filament_contract_codegen::FloatWitness, filament_contract_codegen::DecodeFailure> {
     let identity = &harness.harness.identity;
     let playback = parse_assertion_playback(
         transcript,
@@ -518,7 +518,7 @@ fn decode(
         usize::MAX,
         usize::MAX,
     )
-    .map_err(quire_contract_codegen::DecodeFailure::from)?;
+    .map_err(filament_contract_codegen::DecodeFailure::from)?;
     decode_float_falsification(identity, &playback)
 }
 
@@ -618,7 +618,7 @@ fn malformed_float_bindings_and_schemas_are_refused_with_typed_causes() {
 
 // ---- owner replay (FR-053-AC-11) ----
 
-fn owner_package(function: &str) -> quire_contract_codegen::ReplayPackage {
+fn owner_package(function: &str) -> filament_contract_codegen::ReplayPackage {
     let unlimited = qsl_replay::ScalarLimits {
         integer_bits: u64::MAX,
         decimal_digits: u64::MAX,
@@ -631,14 +631,14 @@ fn owner_package(function: &str) -> quire_contract_codegen::ReplayPackage {
         work_units: u64::MAX,
         result_units: u64::MAX,
     };
-    quire_contract_codegen::ReplayPackage::new(
-        quire_contract_codegen::ReplayInputs {
-            decode_limits: quire_contract_codegen::WitnessDecodeLimits {
+    filament_contract_codegen::ReplayPackage::new(
+        filament_contract_codegen::ReplayInputs {
+            decode_limits: filament_contract_codegen::WitnessDecodeLimits {
                 bytes: 1 << 20,
                 values: 16,
             },
             package_name: "float-row".to_owned(),
-            source: quire_contract_codegen::LockedSource {
+            source: filament_contract_codegen::LockedSource {
                 authority: "test".to_owned(),
                 identity: "float-row.native".to_owned(),
                 bytes: SOURCE.as_bytes().to_vec(),
@@ -658,13 +658,13 @@ fn owner_package(function: &str) -> quire_contract_codegen::ReplayPackage {
     .expect("the owner package recompiles the corpus source")
 }
 
-/// The owner's result for `draws` through the selected QSL function: the decoded bit patterns
+/// The owner's result for `draws` through the selected FSL function: the decoded bit patterns
 /// are replayed as exact `WitnessValue::Float64` / `Float32` values.
 fn owner_result(function: &str, identity: &str, draws: &[i64]) -> bool {
     let corpus = corpus();
     let generated = corpus.harness(function, identity);
     let witness = decode(&generated, &transcript(&generated, draws)).expect("decodes");
-    quire_contract_codegen::replay_float_witness(&owner_package(function), &witness)
+    filament_contract_codegen::replay_float_witness(&owner_package(function), &witness)
         .expect("the owner route evaluates the bit patterns")
 }
 
@@ -717,7 +717,10 @@ fn a_decoded_witness_replays_through_the_owner_route_with_exact_bits() {
 // ---- operand controls (FR-053-AC-1, AC-3) ----
 
 /// The disposition cause and operation of the routed item at `position`.
-fn routed_cause(generation: &quire_contract_codegen::RoutedGeneration, position: usize) -> String {
+fn routed_cause(
+    generation: &filament_contract_codegen::RoutedGeneration,
+    position: usize,
+) -> String {
     let (record, harness) = kani_parts(&generation.items[position].output);
     assert!(harness.is_none(), "a refused item has no harness");
     match &record.disposition {
@@ -768,7 +771,7 @@ fn a_literal_operand_and_a_non_parameter_operand_are_refused_under_their_own_nam
 }
 
 /// The corpus package with the `unpinned64` parameters retyped by `retype`, which gets the node's
-/// JSON and the `float64` scalar type's id. QSL types a bare `Float64` as `exact`-pinned, so an
+/// JSON and the `float64` scalar type's id. FSL types a bare `Float64` as `exact`-pinned, so an
 /// operand with no `float_rounding` bound exists only as hand-edited Contract IR.
 fn corpus_with_unpinned_operands(retype: bool, bogus_rounding: bool) -> (Corpus, CheckedNodeId) {
     let mut value: serde_json::Value = serde_json::from_slice(&compiled_bytes()).expect("json");
@@ -899,14 +902,14 @@ fn an_unpinned_float_operand_requires_a_bound_naming_its_type() {
 #[trace("TC-067", "FR-053-AC-11")]
 #[test]
 fn an_unknown_witness_width_is_refused_not_replayed_as_binary64() {
-    let witness = quire_contract_codegen::FloatWitness {
+    let witness = filament_contract_codegen::FloatWitness {
         operator: "quire.op.ieee.numeric_equal".to_owned(),
         width: "float16".to_owned(),
         operands: vec![("a".to_owned(), 0), ("b".to_owned(), 0)],
     };
     assert!(matches!(
-        quire_contract_codegen::replay_float_witness(&owner_package("numeq64"), &witness),
-        Err(quire_contract_codegen::SpineReplayError::UnsupportedWitnessValue { .. })
+        filament_contract_codegen::replay_float_witness(&owner_package("numeq64"), &witness),
+        Err(filament_contract_codegen::SpineReplayError::UnsupportedWitnessValue { .. })
     ));
 }
 
@@ -1690,7 +1693,7 @@ fn the_shipped_float_rows_are_a_version_free_record_with_measured_peaks() {
         assert_eq!(row["verdict"], "not_tractable");
     }
     // The loader accepts a row that records no tool version.
-    quire_contract_codegen::TractabilityTable::shipped_general_route_scalar()
+    filament_contract_codegen::TractabilityTable::shipped_general_route_scalar()
         .expect("the shipped table loads with float rows that record no tool version");
 }
 
@@ -1703,7 +1706,7 @@ fn run(
     function: &str,
     identity: &str,
     mutation: Option<(&str, &str)>,
-) -> quire_contract_codegen::KaniExecutionEvidence {
+) -> filament_contract_codegen::KaniExecutionEvidence {
     let corpus = corpus();
     let (mut harness, manifest) = corpus.routed_harness(function, identity);
     if let Some((site, with)) = mutation {
@@ -1839,8 +1842,9 @@ fn kani_a_falsifying_counterexample_replays_through_the_owner_route() {
         panic!("the mutant must falsify: {evidence:?}");
     };
     let witness = decode(&generated, &counterexample).expect("the counterexample decodes");
-    let owner = quire_contract_codegen::replay_float_witness(&owner_package("numeq64"), &witness)
-        .expect("the owner route evaluates the bit patterns");
+    let owner =
+        filament_contract_codegen::replay_float_witness(&owner_package("numeq64"), &witness)
+            .expect("the owner route evaluates the bit patterns");
     let (a, b) = (witness.operands[0].1, witness.operands[1].1);
     let nan = |bits: u64| (bits >> 52) & 0x7FF == 0x7FF && bits & 0xF_FFFF_FFFF_FFFF != 0;
     let expected = !nan(a) && !nan(b) && ((a | b) << 1 == 0 || a == b);
@@ -1942,14 +1946,14 @@ fn kani_the_run_evidence_records_every_option_and_no_tool_version() {
         [
             (
                 "a",
-                quire_contract_codegen::SymbolicBounds::Integer {
+                filament_contract_codegen::SymbolicBounds::Integer {
                     minimum: 0,
                     maximum: i64::from(u32::MAX)
                 }
             ),
             (
                 "b",
-                quire_contract_codegen::SymbolicBounds::Integer {
+                filament_contract_codegen::SymbolicBounds::Integer {
                     minimum: 0,
                     maximum: i64::from(u32::MAX)
                 }
@@ -1960,12 +1964,12 @@ fn kani_the_run_evidence_records_every_option_and_no_tool_version() {
     let covers = evidence
         .checks
         .iter()
-        .filter(|check| check.class == quire_contract_codegen::KaniCheckClass::Cover)
+        .filter(|check| check.class == filament_contract_codegen::KaniCheckClass::Cover)
         .collect::<Vec<_>>();
     assert_eq!(covers.len(), 1, "exactly one final completion cover");
     assert_eq!(
         covers[0].status,
-        quire_contract_codegen::KaniCheckStatus::Satisfied
+        filament_contract_codegen::KaniCheckStatus::Satisfied
     );
     fn keys(value: &serde_json::Value, found: &mut Vec<String>) {
         match value {

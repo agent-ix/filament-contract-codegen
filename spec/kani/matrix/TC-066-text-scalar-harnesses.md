@@ -3,7 +3,7 @@ id: TC-066
 title: "Verify bounded text scalar comparison harnesses"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-052
+  - target: ix://agent-ix/filament-contract-codegen/FR-052
     type: verifies
 ---
 # TC-066: Verify bounded text scalar comparison harnesses
@@ -11,7 +11,7 @@ relationships:
 ## Description
 
 Verify [FR-052](../functional/FR-052-text-scalar-harnesses.md) through admitted
-text comparison packages (conditional on the quire-exact text carrier, IR-1445, the
+text comparison packages (conditional on the filament-exact text carrier, IR-1445, the
 non-metered `Text` constructor, IR-1499, and for normalizing profiles the payload-byte
 bound, IR-1500, and the loop-free normalization, IR-1501, none of which is delivered), public CG generation, installed proof execution and owner
 replay. This case is planned; FR-014 oracle agreement does not establish Kani
@@ -113,7 +113,7 @@ Execute generated proofs only with the authorized runner and budget.
     length; each must fail the differential (AC-12). The result covers the enumerated and boundary payloads, not every payload
     up to C.
 13. Compute A on the host for `binary-utf8`, `unicode-scalars`, `nfd`, `nfkd`, `nfc`
-    and `nfkc` at `max` of 0, 1, 2 and 8 by the quire-exact FR-400-AC-6 construction
+    and `nfkc` at `max` of 0, 1, 2 and 8 by the filament-exact FR-400-AC-6 construction
     (for `nfc` and `nfkc`: the first stable scalar, in scalar order, with the most
     `nfd` or `nfkd` UTF-8 bytes, its decomposition repeated `max` times, admitted by
     `Text[max, max]`; for the other four the payload of P bytes). Assert A is at most

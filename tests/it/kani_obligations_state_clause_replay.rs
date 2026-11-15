@@ -1,10 +1,10 @@
-//! FR-024 (IR-460): a postcondition state-clause counterexample is put before QSL's
+//! FR-024 (IR-460): a postcondition state-clause counterexample is put before FSL's
 //! `replay_state_clause` as a request and a witness-arm envelope built by `StateClauseReplay`.
 //!
-//! The admitted package is emitted by QSL from the native twin of the state-frame fixture,
+//! The admitted package is emitted by FSL from the native twin of the state-frame fixture,
 //! with two postcondition clauses on `deposit`. The invocation and snapshot documents
 //! are built by the crate under test and read back from the request's documents, so each
-//! assertion is about the bytes QSL receives.
+//! assertion is about the bytes FSL receives.
 //!
 //! The default lane runs without Kani. The `kani` lane (`#[ignore]` here, run serially by
 //! `make kani`, whose `kani_obligations` filter this module's name matches) replays the real
@@ -12,17 +12,17 @@
 
 use std::cell::RefCell;
 
+use filament_contract_codegen::{
+    parse_state_clause_falsification, run_terminal_value, DocumentLabel, KaniRunOutcome,
+    OperationDeclaration, StateClauseHarnessMember, StateClauseModelFieldsCause,
+    StateClausePlaybackError, StateClauseReplay, StateClauseReplayError, StateClauseReplayInputs,
+    StateComparison, StateFrameIdentity, StateFrameProperty, StateObjectAddress,
+};
 use qsl_replay::{
     replay_state_clause, CallSiteRefusal, ClauseName, ClauseSelectionInput, DisagreementCause,
     DomainKey, DomainKind, EvaluatedValue, FiniteBound, Identifier, Integer, ReplayRequestWire,
     ReplayResult, ReplayTargetMembers, StateClauseReplayResult, TerminalValue, Verdict,
     WitnessEnvelope, WitnessPacket, WitnessRefusal, WitnessSettlement,
-};
-use quire_contract_codegen::{
-    parse_state_clause_falsification, run_terminal_value, DocumentLabel, KaniRunOutcome,
-    OperationDeclaration, StateClauseHarnessMember, StateClauseModelFieldsCause,
-    StateClausePlaybackError, StateClauseReplay, StateClauseReplayError, StateClauseReplayInputs,
-    StateComparison, StateFrameIdentity, StateFrameProperty, StateObjectAddress,
 };
 use quire_semantic_value::catalog::Category;
 use serde_json::{json, Value};
@@ -44,7 +44,7 @@ trait DecodeStateClauseRun {
         &mut self,
         harness: &StateFrameIdentity,
         outcome: &KaniRunOutcome,
-        limits: quire_contract_codegen::WitnessDecodeLimits,
+        limits: filament_contract_codegen::WitnessDecodeLimits,
     ) -> Result<(), StateClauseReplayError>;
 }
 
@@ -53,7 +53,7 @@ impl DecodeStateClauseRun for StateClauseReplayInputs<'_> {
         &mut self,
         harness: &StateFrameIdentity,
         outcome: &KaniRunOutcome,
-        limits: quire_contract_codegen::WitnessDecodeLimits,
+        limits: filament_contract_codegen::WitnessDecodeLimits,
     ) -> Result<(), StateClauseReplayError> {
         let playback = parse_state_clause_falsification(
             outcome,
@@ -79,8 +79,8 @@ impl DecodeStateClauseRun for StateClauseReplayInputs<'_> {
 fn tc_026_state_clause_decode_refuses_poisoned_suffixes_at_both_bounds() {
     let twin = Twin::new();
     let fixture = emitted_fixture(&twin, BALANCE);
-    let generated = quire_contract_codegen::generate_state_frame_obligations(
-        &quire_contract_codegen::StateFrameRequest {
+    let generated = filament_contract_codegen::generate_state_frame_obligations(
+        &filament_contract_codegen::StateFrameRequest {
             ceilings: crate::common::proof_ceilings::proof_ceilings(),
             package: &fixture.package,
             clause: &fixture.clause,
@@ -99,7 +99,7 @@ fn tc_026_state_clause_decode_refuses_poisoned_suffixes_at_both_bounds() {
     let mut inputs =
         twin.state_clause_inputs(&fixture.package, &fixture.clause, BALANCE, (0, 0), (4, 7));
     inputs.playback.clear();
-    let limits = quire_contract_codegen::WitnessDecodeLimits {
+    let limits = filament_contract_codegen::WitnessDecodeLimits {
         bytes: transcript.len(),
         values: 2,
     };
@@ -117,7 +117,7 @@ fn tc_026_state_clause_decode_refuses_poisoned_suffixes_at_both_bounds() {
 
     // A caller can hand the typed decoder a playback parsed under wider bounds. It must still
     // enforce both the requested limit and the run's own limit without relying on the parser.
-    let parsed = quire_contract_codegen::parse_assertion_playback(
+    let parsed = filament_contract_codegen::parse_assertion_playback(
         &transcript,
         harness.harness_symbol.as_str(),
         harness.module_symbol.as_str(),
@@ -127,7 +127,7 @@ fn tc_026_state_clause_decode_refuses_poisoned_suffixes_at_both_bounds() {
     .expect("the output reader accepts the complete playback");
     for (field_limit, parameter_limit, code) in [
         (
-            quire_contract_codegen::WitnessDecodeLimits {
+            filament_contract_codegen::WitnessDecodeLimits {
                 bytes: transcript.len() - 1,
                 values: 2,
             },
@@ -136,7 +136,7 @@ fn tc_026_state_clause_decode_refuses_poisoned_suffixes_at_both_bounds() {
         ),
         (
             crate::unbounded_decode_limits(),
-            quire_contract_codegen::WitnessDecodeLimits {
+            filament_contract_codegen::WitnessDecodeLimits {
                 bytes: transcript.len() - 1,
                 values: 2,
             },
@@ -144,14 +144,14 @@ fn tc_026_state_clause_decode_refuses_poisoned_suffixes_at_both_bounds() {
         ),
         (
             crate::unbounded_decode_limits(),
-            quire_contract_codegen::WitnessDecodeLimits {
+            filament_contract_codegen::WitnessDecodeLimits {
                 bytes: usize::MAX,
                 values: 1,
             },
             "cg_witness_decode_values_limit",
         ),
         (
-            quire_contract_codegen::WitnessDecodeLimits {
+            filament_contract_codegen::WitnessDecodeLimits {
                 bytes: usize::MAX,
                 values: 1,
             },
@@ -177,7 +177,7 @@ fn tc_026_state_clause_decode_refuses_poisoned_suffixes_at_both_bounds() {
         ),
         (
             transcript.replace("    ];", "        // 0\n        vec![not_a_byte],\n    ];"),
-            quire_contract_codegen::WitnessDecodeLimits {
+            filament_contract_codegen::WitnessDecodeLimits {
                 bytes: usize::MAX,
                 values: 2,
             },
@@ -243,8 +243,8 @@ fn tc_026_state_clause_decode_refuses_poisoned_suffixes_at_both_bounds() {
 fn state_clause_kani_playback_adapter_refuses_wrong_evidence() {
     let twin = Twin::new();
     let (package, clause) = twin.emitted_package(BALANCE);
-    let generated = quire_contract_codegen::generate_state_frame_obligations(
-        &quire_contract_codegen::StateFrameRequest {
+    let generated = filament_contract_codegen::generate_state_frame_obligations(
+        &filament_contract_codegen::StateFrameRequest {
             ceilings: crate::common::proof_ceilings::proof_ceilings(),
             package: &package,
             clause: &clause,
@@ -455,7 +455,7 @@ fn state_clause_kani_playback_adapter_refuses_wrong_evidence() {
     ));
 }
 
-/// QSL's emitted checked package has an empty model body, yet replay takes the caller's field
+/// FSL's emitted checked package has an empty model body, yet replay takes the caller's field
 /// order and both inclusive ranges from the admitted model declaration's accessor.
 #[trace("FR-024-AC-31", "FR-024-AC-33")]
 #[test]
@@ -557,7 +557,7 @@ fn direct(replay: StateClauseReplay) -> StateClauseReplayResult {
     let replay_limits = replay.replay_limits();
     let envelope = WitnessEnvelope::reconstruct(replay.packet, replay_limits)
         .expect("a complete packet reconstructs");
-    replay_state_clause(replay.wire, &envelope, replay_limits).expect("QSL settles the replay")
+    replay_state_clause(replay.wire, &envelope, replay_limits).expect("FSL settles the replay")
 }
 
 /// The violating run: the debiting subject takes `balance` from 5 to 4.
@@ -630,7 +630,7 @@ fn tc_035_replay_returns_the_direct_result_and_replay_through_returns_the_execut
     );
 }
 
-/// Every missing packet member is reported by QSL admission before the executor runs. A present
+/// Every missing packet member is reported by FSL admission before the executor runs. A present
 /// trace position whose value is none still reaches the executor.
 #[trace("TC-035", "FR-024-AC-4")]
 #[test]
@@ -965,7 +965,7 @@ fn tc_035_the_documents_hold_the_playback_and_post_state() {
     assert_eq!(changed_post.pre, pre);
 }
 
-/// The same document identities select changed values, so the actual QSL verdict follows the
+/// The same document identities select changed values, so the actual FSL verdict follows the
 /// changed pre or post state rather than a stale document address.
 #[trace("FR-024-AC-52", "TC-035")]
 #[test]
@@ -992,16 +992,16 @@ fn tc_035_changed_document_values_change_the_replay_verdict() {
         ));
         let result = replay
             .replay()
-            .expect("QSL settles changed document values");
+            .expect("FSL settles changed document values");
         assert_eq!(witness_arm(&result).settlement(), expected);
     }
     assert!(identities.windows(2).all(|pair| pair[0] == pair[1]));
 }
 
-/// QSL accepts a differently formatted raw document under the same self-declared identity.
+/// FSL accepts a differently formatted raw document under the same self-declared identity.
 #[trace("FR-024-AC-53", "TC-035")]
 #[test]
-fn tc_035_qsl_reads_reformatted_raw_documents_by_identity() {
+fn tc_035_fsl_reads_reformatted_raw_documents_by_identity() {
     let twin = Twin::new();
     let fixture = healthy();
     let original = built(&twin, &fixture, BALANCE, (10, 0), (9, 0));
@@ -1045,7 +1045,7 @@ fn tc_035_qsl_reads_reformatted_raw_documents_by_identity() {
     );
 }
 
-/// The debit at the declared floor leaves an exact out-of-range post-state observation. QSL
+/// The debit at the declared floor leaves an exact out-of-range post-state observation. FSL
 /// replays it as a violated witness and the ordinary falsified terminal is refuted.
 #[trace("FR-029-AC-18", "TC-040")]
 #[test]
@@ -1058,7 +1058,7 @@ fn tc_040_out_of_range_debit_post_state_is_exact_and_refuted() {
     assert_eq!(integers(&docs.post)["balance"]["integer"], "-1");
     let result = replay
         .replay()
-        .expect("QSL replays the observed post state");
+        .expect("FSL replays the observed post state");
     let arm = witness_arm(&result);
     assert_eq!(
         arm.settlement(),
@@ -1140,7 +1140,7 @@ fn tc_035_an_undeclared_or_repeated_binding_is_refused_by_name() {
 
 /// The envelope's `declared_domains` are one per ranged state field, on `self`'s node at the
 /// field's child index with the declared range, and the witness transcript names the operation,
-/// the clause and each playback value. QSL's replay reads neither, so only these assertions
+/// the clause and each playback value. FSL's replay reads neither, so only these assertions
 /// pin them. A field whose member declares no range is carried and is not range-checked or
 /// given a domain.
 #[trace("FR-024-AC-12", "TC-035")]
@@ -1265,7 +1265,7 @@ fn tc_035_a_violating_run_reproduces_and_a_respecting_run_is_inconclusive() {
 /// endpoints are admitted. The out-of-range value is put in the playback alone, and separately in
 /// the post state alone, so the test says which side the range is read from: the playback. The
 /// post state is whatever the subject ran to; how a post state outside the range should settle
-/// is a pending QSL ruling (see the replay spec's Current state), and this test pins no answer to
+/// is a pending FSL ruling (see the replay spec's Current state), and this test pins no answer to
 /// it.
 #[trace("FR-024-AC-17", "TC-035")]
 #[test]
@@ -1394,8 +1394,8 @@ fn tc_035_an_operation_declaring_a_parameter_or_a_result_is_refused_by_shape() {
 fn tc_035_real_kani_state_clause_counterexample_replays_through_qsl() {
     let twin = Twin::new();
     let (package, clause) = twin.emitted_package(BALANCE);
-    let generated = quire_contract_codegen::generate_state_frame_obligations(
-        &quire_contract_codegen::StateFrameRequest {
+    let generated = filament_contract_codegen::generate_state_frame_obligations(
+        &filament_contract_codegen::StateFrameRequest {
             ceilings: crate::common::proof_ceilings::proof_ceilings(),
             package: &package,
             clause: &clause,
@@ -1501,15 +1501,15 @@ fn tc_035_real_kani_state_clause_counterexample_replays_through_qsl() {
 }
 
 /// Real Kani playback of the wrapping debit starts at the range floor. The native subject's
-/// -1 post state survives CG's snapshot construction and QSL settles the violation.
+/// -1 post state survives CG's snapshot construction and FSL settles the violation.
 #[trace("FR-029-AC-18", "TC-040")]
 #[test]
 #[ignore = "kani lane: run serially through `make kani`"]
 fn tc_040_real_kani_out_of_range_debit_replays_as_refuted() {
     let twin = Twin::new();
     let (package, clause) = twin.emitted_package(BALANCE);
-    let generated = quire_contract_codegen::generate_state_frame_obligations(
-        &quire_contract_codegen::StateFrameRequest {
+    let generated = filament_contract_codegen::generate_state_frame_obligations(
+        &filament_contract_codegen::StateFrameRequest {
             ceilings: crate::common::proof_ceilings::proof_ceilings(),
             package: &package,
             clause: &clause,
@@ -1554,7 +1554,7 @@ fn tc_040_real_kani_out_of_range_debit_replays_as_refuted() {
     let docs = documents(&replay.wire);
     assert_eq!(integers(&docs.pre)["balance"]["integer"], "0");
     assert_eq!(integers(&docs.post)["balance"]["integer"], "-1");
-    let result = replay.replay().expect("QSL replays the exact post state");
+    let result = replay.replay().expect("FSL replays the exact post state");
     let arm = witness_arm(&result);
     assert_eq!(
         arm.settlement(),

@@ -1,13 +1,13 @@
 //! FR-033-AC-18 native artifact authentication. Native Boolean execution is not
 //! backend proof, shadow evidence or an invented occurrence-pair count (IR-806).
 use super::{admitted_enum_equality, composite_equality_agreement, composite_original_eq};
-use ix_trace_rs::trace;
-use qsl_replay::{EqualityOperator, ReplayLimits, WitnessValue};
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     CompositeBuildError, CompositeDriverObservation, CompositeEqualityOracles, LockedSource,
     OriginalCompositeArtifactBinding, OriginalCompositeEqContext, ReplayInputs,
     WitnessDecodeLimits,
 };
+use ix_trace_rs::trace;
+use qsl_replay::{EqualityOperator, ReplayLimits, WitnessValue};
 use quire_contract_model::{
     CheckedNodeId, CheckedOccurrence, CheckedOccurrenceRole, CheckedPackageReadLimits,
     CheckedPackageV2,

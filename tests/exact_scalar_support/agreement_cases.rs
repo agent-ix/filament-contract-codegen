@@ -1,5 +1,5 @@
 //! FR-014-AC-6: generated exact scalar oracles and direct Contract Runtime
-//! execution agree on the QSpec TC-185, TC-186, TC-187, TC-192 and TC-193
+//! execution agree on the FSpec TC-185, TC-186, TC-187, TC-192 and TC-193
 //! vectors, in outcome, every admitted charge, every consumed counter, and
 //! the outcome of denying each admitted charge.
 //!
@@ -11,9 +11,9 @@
 //! limit tuple taken from the TC's tabled or generated vectors.
 //!
 //! IR-254: every vector here runs `agree2!` (direct runtime vs. generated
-//! oracle). A third, QSL value-authority leg (`agree3!`) used to run
+//! oracle). A third, FSL value-authority leg (`agree3!`) used to run
 //! alongside it; `agreement.rs`'s module doc records why it was deleted
-//! rather than ported to the QSL revision this bumps to.
+//! rather than ported to the FSL revision this bumps to.
 
 #[path = "agreement.rs"]
 #[macro_use]
@@ -22,7 +22,7 @@ mod support;
 /// The generated crate under test. `names.rs`, written beside the scratch crate's manifest at test
 /// time, re-exports each generated oracle under the operation name these cases call it by.
 mod generated {
-    pub use quire_exact_scalar_oracles::*;
+    pub use filament_exact_scalar_oracles::*;
     include!(concat!(env!("CARGO_MANIFEST_DIR"), "/names.rs"));
 }
 
@@ -314,7 +314,7 @@ fn tc_024_tc185_decimal_oracles_agree() {
     assert_eq!(named, 9);
 
     // Decimal ordering: runtime vs. generated oracle only (`agree2!`); see
-    // FR-014-AC-47 for why this file has no QSL authority leg.
+    // FR-014-AC-47 for why this file has no FSL authority leg.
     let mut ordering = 0_usize;
     for (ca, sa) in &operands {
         for (cb, sb) in &operands {
@@ -500,7 +500,7 @@ fn tc_024_tc187_quantity_oracles_agree() {
     let operations = arithmetic + comparisons + powers;
     assert_eq!(operations, UNIT_GRID.len() * (5 * 5 * (4 + 6) + 5 * 6));
 
-    // The tabled TC-187 vectors run QSpec's own limit tuples and assert QSpec's disposition,
+    // The tabled TC-187 vectors run FSpec's own limit tuples and assert FSpec's disposition,
     // including the whole incomplete record: U03 and U19/U24 sums, U28 compound product,
     // U13/U21 powers, U23 comparison tuples.
     let add = Arithmetic::Add;
@@ -670,7 +670,7 @@ fn agree_comparison(
     })
 }
 
-/// The run stopped incomplete with exactly QSpec's record.
+/// The run stopped incomplete with exactly FSpec's record.
 fn assert_incomplete<T: std::fmt::Debug, E: std::fmt::Debug>(
     result: &Result<Outcome<T>, E>,
     limit_kind: rt::LimitKind,
@@ -1168,7 +1168,7 @@ fn declaration(
 }
 
 /// TC-187 U06 and U11: the generated oracles take an already admitted unit graph, so these rows
-/// have no generated oracle; they exercise QSV's public low-level graph boundary separately
+/// have no generated oracle; they exercise FSV's public low-level graph boundary separately
 /// from the compiler-admitted named fixtures. A zero scale and each broken topology of the `L` graph is refused
 /// `invalid_semantic_graph`, with its typed cause, before a quantity can exist.
 #[trace("FR-014-AC-6", "TC-024")]
@@ -1559,7 +1559,7 @@ fn agree_conversion(
     rt::metered(bounds, |m| direct_conversion(source, unit, m))
 }
 
-/// QSpec TC-187 U01/U04/U09b/U10/U15/U22/U25(second)/U26, including each denied charge.
+/// FSpec TC-187 U01/U04/U09b/U10/U15/U22/U25(second)/U26, including each denied charge.
 #[trace("FR-014-AC-6", "FR-014-AC-48", "FR-014-AC-50", "TC-024")]
 #[test]
 fn exact_quantity_conversion_vectors_agree() {

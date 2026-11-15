@@ -1,11 +1,11 @@
 //! A matching V2 clause claim for tests that do not exercise FR-015-AC-48 themselves.
 
-use qsl_replay::ObligationIdentity;
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     negotiate_kani_obligations, KaniObligationRequest, ObligationDisposition, ObligationItem,
     ObligationKind, RequirementOccurrence, UnsupportedObligation, V2ClauseObligationClaim,
     V2ClauseObligationRecord,
 };
+use qsl_replay::ObligationIdentity;
 use quire_contract_model::{CheckedNodeId, CheckedNodePathSegment, CheckedPackageV2, CheckedTerm};
 use quire_exact::{NodeKey, PathSegment};
 

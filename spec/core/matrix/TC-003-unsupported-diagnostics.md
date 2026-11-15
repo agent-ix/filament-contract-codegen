@@ -3,7 +3,7 @@ id: TC-003
 title: "Reject unsupported or invalid constructs explicitly"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/NFR-002
+  - target: ix://agent-ix/filament-contract-codegen/NFR-002
     type: verifies
 ---
 # TC-003: Reject unsupported or invalid constructs explicitly

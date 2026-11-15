@@ -295,7 +295,7 @@ pub struct FloatWitness {
     pub operator: String,
     /// Operand width, `float32` or `float64`.
     pub width: String,
-    /// Each operand as the QSL parameter name and its bit pattern, in operand order. A `float32`
+    /// Each operand as the FSL parameter name and its bit pattern, in operand order. A `float32`
     /// pattern is below `2^32`; a `float64` pattern is the drawn `i64` reinterpreted, never
     /// converted through a host float or a checked signed conversion.
     pub operands: Vec<(String, u64)>,

@@ -15,15 +15,15 @@ use serde::Serialize;
 pub enum UpstreamBlocker {
     /// Model, relation and reference-reaching semantics, including
     /// `reference` composite operands.
-    #[serde(rename = "agent-ix/quire-spec-language#120")]
-    QuireSpecLanguage120,
+    #[serde(rename = "agent-ix/filament-spec-language#120")]
+    FilamentSpecLanguage120,
     /// State, temporal and protocol semantics.
-    #[serde(rename = "agent-ix/quire-spec-language#121")]
-    QuireSpecLanguage121,
+    #[serde(rename = "agent-ix/filament-spec-language#121")]
+    FilamentSpecLanguage121,
     /// Function application: Contract Runtime publishes no
     /// function-application operator surface to call.
     #[serde(rename = "agent-ix/quire-contract-runtime#34")]
-    QuireContractRuntime34,
+    FilamentContractRuntime34,
     /// The generator classified the item from its body and the request's own
     /// descriptor and did not confirm the node's catalogued operation, so it
     /// reports the descriptor-derived identity instead. The cases are listed

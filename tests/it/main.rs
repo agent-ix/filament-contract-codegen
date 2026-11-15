@@ -40,8 +40,8 @@ pub(crate) mod checked_package_evidence;
 #[path = "../common/mod.rs"]
 pub(crate) mod common;
 
-pub(crate) const fn unbounded_decode_limits() -> quire_contract_codegen::WitnessDecodeLimits {
-    quire_contract_codegen::WitnessDecodeLimits {
+pub(crate) const fn unbounded_decode_limits() -> filament_contract_codegen::WitnessDecodeLimits {
+    filament_contract_codegen::WitnessDecodeLimits {
         bytes: usize::MAX,
         values: usize::MAX,
     }

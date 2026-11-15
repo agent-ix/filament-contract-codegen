@@ -1,11 +1,20 @@
 //! FR-029 and FR-030: the total maps from a Kani run outcome (FR-029) and from a Contract IR
-//! outcome (FR-030), each paired with its replay settlement, to QSL's terminal value.
+//! outcome (FR-030), each paired with its replay settlement, to FSL's terminal value.
 //!
-//! The replay failures are built from the public types of this crate and of `qsl-replay`; a
+//! The replay failures are built from the public types of this crate and of `fsl-replay`; a
 //! repeated dependency identity is the refusal `ReplayPackage::new` returns for a real lock.
-//! The IR outcomes are built with IR's own constructors and the `Std001Code` that `qsl-replay`
-//! re-exports, so the `Declined` code arm is built through `qsl-replay` alone.
+//! The IR outcomes are built with IR's own constructors and the `Std001Code` that `fsl-replay`
+//! re-exports, so the `Declined` code arm is built through `fsl-replay` alone.
 
+use filament_contract_codegen::{
+    ir_outcome_terminal_value, run_terminal_value, DecodeFailure, DependencyLock,
+    DependencyLockError, DocumentError, EvidenceFailureCause, FrameReplayError,
+    KaniExecutionEvidence, KaniFailureCause, KaniInconclusiveReason, KaniRunOutcome, KaniSolver,
+    LockedSource, MemoryObservation, ModelError, ObligationIdentityError, OperationDeclaration,
+    PreStateFault, ProofCeilings, ReplayInputs, ReplayPackage, ReplayPackageError,
+    ReplaySettlement, ReplayVerdict, ScopeMember, SelectedTargetMember, SpineReplayError,
+    StateClauseReplay, StateClauseReplayError, StateFrameRefusal, TerminalPairError,
+};
 use ix_trace_rs::trace;
 use qsl_replay::{
     std001_code, AdmissionFailure, CallSiteRefusal, Certification, ClauseName, Code, DeclineCode,
@@ -16,15 +25,6 @@ use qsl_replay::{
     ScalarLimits, SourceIdentity, StateClauseCounterexample, Std001Code, SuppliedLibrary,
     TerminalValue, UnavailabilityCause, Verdict, Witness, WitnessEnvelope, WitnessFailure,
     WitnessPacket,
-};
-use quire_contract_codegen::{
-    ir_outcome_terminal_value, run_terminal_value, DecodeFailure, DependencyLock,
-    DependencyLockError, DocumentError, EvidenceFailureCause, FrameReplayError,
-    KaniExecutionEvidence, KaniFailureCause, KaniInconclusiveReason, KaniRunOutcome, KaniSolver,
-    LockedSource, MemoryObservation, ModelError, ObligationIdentityError, OperationDeclaration,
-    PreStateFault, ProofCeilings, ReplayInputs, ReplayPackage, ReplayPackageError,
-    ReplaySettlement, ReplayVerdict, ScopeMember, SelectedTargetMember, SpineReplayError,
-    StateClauseReplay, StateClauseReplayError, StateFrameRefusal, TerminalPairError,
 };
 use quire_contract_ir::kani::{KaniCancellationSource, KaniOutcome, KaniOutcomeKind};
 use quire_exact::CancelCause;
@@ -142,14 +142,14 @@ fn library(identity: &str, owner: &str) -> SuppliedLibrary {
     }
 }
 
-/// QSL's own refusal of a dependency input with a repeated identity.
+/// FSL's own refusal of a dependency input with a repeated identity.
 fn duplicate_identity() -> DependencyInputRefusal {
     DependencyInput::new([library("test/units", "one"), library("test/units", "two")])
         .map(|_| ())
         .expect_err("a repeated identity is refused")
 }
 
-/// QSL's own refusal of a library under the empty identity.
+/// FSL's own refusal of a library under the empty identity.
 fn empty_identity() -> DependencyInputRefusal {
     DependencyInput::new([library("", "one")])
         .map(|_| ())
@@ -160,7 +160,7 @@ fn identifier(name: &str) -> Identifier {
     Identifier::new(name).expect("an identifier")
 }
 
-/// QSL's own refusal of two libraries sharing one source owner.
+/// FSL's own refusal of two libraries sharing one source owner.
 fn shared_owner() -> DependencyInputRefusal {
     DependencyInput::new([library("test/a", "one"), library("test/b", "one")])
         .map(|_| ())
@@ -194,7 +194,7 @@ fn tc_040_verified_proves_its_checks_and_a_reproduced_falsification_refutes() {
 }
 
 /// The vacuous-proof reason and `cover-unsatisfied` each map to a certified `Proved` with
-/// zero checks, which QSL reads as category `inconclusive` with the vacuity cause.
+/// zero checks, which FSL reads as category `inconclusive` with the vacuity cause.
 #[trace("FR-029-AC-2", "TC-040")]
 #[test]
 fn tc_040_a_vacuous_proof_and_an_unsatisfied_cover_are_proved_with_zero_checks() {
@@ -355,8 +355,8 @@ fn tc_040_a_replay_refusal_carries_its_code() {
     assert_eq!(map_settled(&frame), expected);
 }
 
-/// Every failure this repository raises that carries no QSL catalog code maps to `Failed`, so no
-/// `ReplayRefused` value carries a code no QSL refusal value supplied.
+/// Every failure this repository raises that carries no FSL catalog code maps to `Failed`, so no
+/// `ReplayRefused` value carries a code no FSL refusal value supplied.
 #[trace("FR-029-AC-11", "TC-040")]
 #[test]
 fn tc_040_each_failure_this_repository_raises_is_failed() {
@@ -368,7 +368,7 @@ fn tc_040_each_failure_this_repository_raises_is_failed() {
     });
 }
 
-/// Hands `check` the settlement of each failure this repository raises that carries no QSL
+/// Hands `check` the settlement of each failure this repository raises that carries no FSL
 /// catalog code.
 fn for_each_cg_failure(check: impl Fn(ReplaySettlement<'_>)) {
     let spine = [
@@ -463,7 +463,7 @@ fn for_each_cg_failure(check: impl Fn(ReplaySettlement<'_>)) {
     }
 }
 
-/// A replay reproduced in a category other than `violation`: no QSL result states it, and only
+/// A replay reproduced in a category other than `violation`: no FSL result states it, and only
 /// this crate's public `EvidenceFailureCause::Verdict` can.
 fn reproduced_without_violation() -> EvidenceFailureCause {
     EvidenceFailureCause::Verdict {
@@ -474,7 +474,7 @@ fn reproduced_without_violation() -> EvidenceFailureCause {
 }
 
 /// Hands `check` the settlement of each fault wrapper the run-outcome map's fault criterion names,
-/// built from QSL's constructible `InternalFault`, and returns how many it handed over: the
+/// built from FSL's constructible `InternalFault`, and returns how many it handed over: the
 /// call-site fault's own reading (`ReplaySettlement::Fault`), `ReplayRefusal::Fault` and
 /// `ReplayRefusal::Admission(AdmissionFailure::Fault)` bare and as the cause of each replay
 /// error that wraps a `ReplayRefusal`, and `CallSiteRefusal::Fault` bare and wrapped in
@@ -569,7 +569,7 @@ fn with_settlements(mut check: impl FnMut(ReplaySettlement<'_>)) {
 
 /// A non-fault `CallSiteRefusal` and a `DependencyLockError::Input`, each bare and wrapped in
 /// `ReplayPackageError` and `FrameReplayError`, map to `Inconclusive(ReplayRefused)` carrying the
-/// code QSL's refusal supplies, and never to `Declined`.
+/// code FSL's refusal supplies, and never to `Declined`.
 #[trace("FR-029-AC-13", "TC-040")]
 #[test]
 fn tc_040_a_setup_refusal_after_a_refutation_is_replay_refused_never_declined() {
@@ -578,7 +578,7 @@ fn tc_040_a_setup_refusal_after_a_refutation_is_replay_refused_never_declined() 
     });
 }
 
-/// Imported function selection failures preserve QSL's distinct refusal codes; an internal
+/// Imported function selection failures preserve FSL's distinct refusal codes; an internal
 /// call-site fault still fails the run instead of becoming a replay refusal.
 #[trace("FR-029-AC-10", "FR-029-AC-13", "TC-040")]
 #[test]
@@ -621,7 +621,7 @@ fn imported_function_setup_refusals_keep_their_codes() {
     );
 }
 
-/// Hands `check` the code QSL's refusal supplies and the settlement of each non-fault
+/// Hands `check` the code FSL's refusal supplies and the settlement of each non-fault
 /// `CallSiteRefusal` and `DependencyLockError::Input`, bare and wrapped.
 fn for_each_setup_refusal(check: impl Fn(Code, ReplaySettlement<'_>)) {
     let call_sites = || {
@@ -707,7 +707,7 @@ fn for_each_setup_refusal(check: impl Fn(Code, ReplaySettlement<'_>)) {
 }
 
 /// A lock whose only defect is one library identity selected twice is refused by
-/// `ReplayPackage::new` with QSL's `DuplicateIdentity`, and a falsified run with that refusal is
+/// `ReplayPackage::new` with FSL's `DuplicateIdentity`, and a falsified run with that refusal is
 /// `Inconclusive(ReplayRefused)` carrying `invalid_package`.
 #[trace("FR-029-AC-14", "TC-040")]
 #[test]
@@ -721,7 +721,7 @@ fn tc_040_a_repeated_dependency_identity_is_replay_refused_with_invalid_package(
 }
 
 /// The refusal `ReplayPackage::new` returns for a lock whose only defect is a repeated identity,
-/// checked to be QSL's `DuplicateIdentity`.
+/// checked to be FSL's `DuplicateIdentity`.
 fn repeated_identity_refusal() -> ReplayPackageError {
     let unlimited = ScalarLimits {
         integer_bits: u64::MAX,
@@ -758,7 +758,7 @@ fn repeated_identity_refusal() -> ReplayPackageError {
     };
     let refusal = ReplayPackage::new(inputs, "f").expect_err("the repeated identity is refused");
     let ReplayPackageError::Dependencies(DependencyLockError::Input(input)) = &refusal else {
-        panic!("expected a refusal from QSL's dependency input, got {refusal}");
+        panic!("expected a refusal from FSL's dependency input, got {refusal}");
     };
     assert!(
         matches!(input, DependencyInputRefusal::DuplicateIdentity { .. }),
@@ -770,7 +770,7 @@ fn repeated_identity_refusal() -> ReplayPackageError {
 /// The state-clause replay path settles as the other replay paths do (FR-029-AC-16): a
 /// reproduced result is `Refuted` and an inconclusive one `Inconclusive(ReplayParity)` carrying
 /// its cause, a refusal or a call-site or dependency refusal is read by its own code, and each
-/// failure this repository raises that carries no QSL code is `Failed`.
+/// failure this repository raises that carries no FSL code is `Failed`.
 #[trace("FR-029-AC-16", "TC-040")]
 #[test]
 fn tc_040_the_state_clause_replay_reads_as_fr029_ac16() {
@@ -789,7 +789,7 @@ fn tc_040_the_state_clause_replay_reads_as_fr029_ac16() {
         .expect("the replay settles")
     };
     // Both directions of the result: a debiting run reproduces, a crediting run is a disagreement
-    // carrying QSL's own cause.
+    // carrying FSL's own cause.
     assert_eq!(map_settled(&run((5, 0), (4, 0))), TerminalValue::Refuted);
     let cause = DisagreementCause::Verdicts {
         proved: Verdict::from_category(Category::Violation),
@@ -800,7 +800,7 @@ fn tc_040_the_state_clause_replay_reads_as_fr029_ac16() {
         TerminalValue::Inconclusive(InconclusiveCause::ReplayParity(cause))
     );
 
-    // The failures this repository raises, none of which carries a QSL code.
+    // The failures this repository raises, none of which carries a FSL code.
     let empty_packet = || WitnessPacket::<StateClauseCounterexample> {
         obligation_identity: None,
         occurrence_key: None,
@@ -858,7 +858,7 @@ fn tc_040_the_state_clause_replay_reads_as_fr029_ac16() {
         assert_eq!(map_settled(defect), TerminalValue::Failed, "{defect}");
     }
 
-    // The QSL refusals, read as the frame path reads them: by their own code, never `Failed`,
+    // The FSL refusals, read as the frame path reads them: by their own code, never `Failed`,
     // `Incomplete` or `Declined`.
     let refusal = non_fault_refusal();
     let expected = replayed(refusal.code());
@@ -990,7 +990,7 @@ fn tc_041_a_settlement_accompanies_a_counterexample_only() {
 }
 
 /// `Refused`, `InvalidInput` and `IncompleteInput` map to `Declined` with their own cause, and the
-/// outcome's STD-001 code is carried in `DeclineCode::Std001`: not respelled as a QSL catalog code
+/// outcome's STD-001 code is carried in `DeclineCode::Std001`: not respelled as a FSL catalog code
 /// and not refused when STD-001 does not register it.
 #[trace("FR-030-AC-2", "TC-041")]
 #[test]
@@ -1085,7 +1085,7 @@ fn tc_041_a_proof_carries_its_check_count_and_a_reproduced_counterexample_refute
     {
         let above_qsl = u32::MAX as usize + 1;
         let proved = KaniOutcome::proved(above_qsl, "source", "context")
-            .expect("IR accepts a positive count above QSL's range");
+            .expect("IR accepts a positive count above FSL's range");
         assert_eq!(
             ir_outcome_terminal_value(&proved, None),
             Err(TerminalPairError::ProvedCountOutOfRange {
@@ -1309,7 +1309,7 @@ fn tc_041_a_counterexample_disagreement_or_refusal_is_inconclusive_with_its_caus
 }
 
 /// A counterexample settles as `Failed` with a fault walked through every wrapper the run-outcome
-/// map's fault criterion lists and with each failure this repository raises that carries no QSL
+/// map's fault criterion lists and with each failure this repository raises that carries no FSL
 /// catalog code.
 #[trace("FR-030-AC-10", "TC-041")]
 #[test]
@@ -1348,7 +1348,7 @@ fn tc_041_only_a_reproduced_replay_refutes_a_counterexample() {
 }
 
 /// A counterexample with a non-fault `CallSiteRefusal` or a `DependencyLockError::Input`, bare and
-/// wrapped, is `Inconclusive(ReplayRefused)` carrying the code QSL's refusal supplies and never
+/// wrapped, is `Inconclusive(ReplayRefused)` carrying the code FSL's refusal supplies and never
 /// `Declined`.
 #[trace("FR-030-AC-12", "TC-041")]
 #[test]
@@ -1361,7 +1361,7 @@ fn tc_041_a_setup_refusal_after_a_counterexample_is_replay_refused_never_decline
 }
 
 /// A lock whose only defect is one repeated library identity is refused by `ReplayPackage::new`
-/// with QSL's `DuplicateIdentity`, and a counterexample with that refusal is
+/// with FSL's `DuplicateIdentity`, and a counterexample with that refusal is
 /// `Inconclusive(ReplayRefused)` carrying `invalid_package`.
 #[trace("FR-030-AC-13", "TC-041")]
 #[test]

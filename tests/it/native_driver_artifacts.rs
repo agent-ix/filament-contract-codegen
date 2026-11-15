@@ -12,7 +12,7 @@ pub(super) fn dependency(name: &str) -> PathBuf {
     let fingerprints = profile.join(".fingerprint");
     let owner: serde_json::Value = serde_json::from_slice(
         &fs::read(fingerprints.join(format!(
-            "quire-contract-codegen-{hash}/test-integration-test-it.json"
+            "filament-contract-codegen-{hash}/test-integration-test-it.json"
         )))
         .expect("running test Cargo fingerprint"),
     )

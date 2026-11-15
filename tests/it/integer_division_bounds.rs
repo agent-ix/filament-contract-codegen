@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Agent-IX
 
-//! Genuine QSL operand bounds at the scalar derivation/generation boundary.
+//! Genuine FSL operand bounds at the scalar derivation/generation boundary.
 
 use std::{fmt::Write as _, fs, process::Command};
 
+use filament_contract_codegen::{
+    derive_exact_scalar_items, generate_exact_scalar_oracles, ClaimDisposition, ExactScalarItem,
+    ExactScalarOperation, ExactScalarRefusal, OperationProvenance, EXACT_DEPENDENCY_SOURCE,
+};
 use ix_trace_rs::trace;
 use qsl_replay::{
     admit_integer_division, compile_package, compile_package_with_integer_division, CompileUnit,
     DefinitionRole, DependencyInput, ReplayLimits, SourceIdentity, StageLimits,
-};
-use quire_contract_codegen::{
-    derive_exact_scalar_items, generate_exact_scalar_oracles, ClaimDisposition, ExactScalarItem,
-    ExactScalarOperation, ExactScalarRefusal, OperationProvenance, EXACT_DEPENDENCY_SOURCE,
 };
 use quire_contract_model::{
     CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2, CheckedPackageV2ReadResult,
@@ -68,7 +68,7 @@ fn compiled_with_profile(
             ReplayLimits::default(),
         )
     }
-    .expect("QSL compiles genuine integer source under the supplied owner selection");
+    .expect("FSL compiles genuine integer source under the supplied owner selection");
     let mut evidence = CheckedPackageEvidence::new();
     evidence.support_feature("quire.value.complete/v1");
     match CheckedPackageV2::read(
@@ -77,7 +77,7 @@ fn compiled_with_profile(
         &evidence,
     ) {
         CheckedPackageV2ReadResult::Admitted(package) => *package,
-        other => panic!("IR admits the QSL-emitted bytes: {other:?}"),
+        other => panic!("IR admits the FSL-emitted bytes: {other:?}"),
     }
 }
 
@@ -465,8 +465,8 @@ fn meter() -> rt::Meter {
 }
 "#;
 
-/// This is a reader-admitted CG fixture, separate from the genuine QSL producer
-/// cases above. It also admits explicit narrowing shapes that QSL's source
+/// This is a reader-admitted CG fixture, separate from the genuine FSL producer
+/// cases above. It also admits explicit narrowing shapes that FSL's source
 /// range prover may reject before emission.
 fn reader_integer_operation(
     code: u32,

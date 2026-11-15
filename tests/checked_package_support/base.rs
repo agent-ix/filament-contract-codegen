@@ -45,7 +45,7 @@ fn base_package() -> serde_json::Value {
     let source_ref = |identity: &str| definition(identity);
     let edition = serde_json::json!({
         "role": "edition",
-        "definition": definition("quire-edition"),
+        "definition": definition("filament-edition"),
     });
     let model = definition("example-model");
     let source = source_ref("example");

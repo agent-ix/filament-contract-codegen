@@ -367,13 +367,13 @@ const EXIT_STATUS_LIMIT: usize = 64;
 /// The serialization contract is covered by FR-017-AC-38 and TC-027.
 ///
 /// ```compile_fail
-/// let _: quire_contract_codegen::KaniFailureCause = serde_json::from_str("{}").unwrap();
+/// let _: filament_contract_codegen::KaniFailureCause = serde_json::from_str("{}").unwrap();
 /// ```
 ///
 /// Serializing the same value compiles:
 ///
 /// ```
-/// fn serializes(cause: &quire_contract_codegen::KaniFailureCause) -> String {
+/// fn serializes(cause: &filament_contract_codegen::KaniFailureCause) -> String {
 ///     serde_json::to_string(cause).unwrap()
 /// }
 /// # let _ = serializes;

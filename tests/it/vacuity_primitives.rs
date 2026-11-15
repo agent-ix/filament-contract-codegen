@@ -1,8 +1,8 @@
-use ix_trace_rs::trace;
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     classify_clause, parse_llvm_coverage, ClauseCoverage, CoverageErrorCode, SourceProbe,
     MAX_COVERAGE_BYTES,
 };
+use ix_trace_rs::trace;
 use serde_json::{json, Value};
 
 fn export(segments: Value) -> Value {

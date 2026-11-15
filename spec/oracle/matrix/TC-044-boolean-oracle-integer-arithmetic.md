@@ -3,9 +3,9 @@ id: TC-044
 title: "Verify Boolean oracle integer arithmetic and comparison take the exact kernel's meaning"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-031
+  - target: ix://agent-ix/filament-contract-codegen/FR-031
     type: verifies
-  - target: ix://agent-ix/quire-contract-runtime/FR-007
+  - target: ix://agent-ix/filament-contract-runtime/FR-007
     type: references
 ---
 # TC-044: Verify Boolean oracle integer arithmetic and comparison take the exact kernel's meaning
@@ -20,7 +20,7 @@ AC-27 cleanup after native replacement. The original procedure below remains for
 but its old bundle results cannot be cited as V2 proof. QSL-1154 owns the former QI exemplar.
 
 Verify that the native Boolean oracle renders integer add, subtract, multiply, divide and
-remainder as exact-kernel operations (`quire_exact`) and the six integer comparisons as the meaning
+remainder as exact-kernel operations (`filament_exact`) and the six integer comparisons as the meaning
 the kernel gives them, that overflow, a zero divisor and the minimum divided by negative one there
 are the kernel's typed outcomes and never a panic or a wrapped value, that arithmetic over a
 `saturate` integer type is refused with its typed code in both consumers and the interim division
@@ -33,13 +33,13 @@ domain. Finally it verifies that the defect cases fail on the tree before the ch
 after it.
 
 This case is ⚠️ Partially covered. IR-596's earlier real-Kani bundle results in
-`tests/it/kani_generation.rs` are historical after V1 retirement. They do not replace a QSL
+`tests/it/kani_generation.rs` are historical after V1 retirement. They do not replace a FSL
 exemplar run or discharge V2 clause work. The native divide and remainder cases O-3/O-5, zero
 divisor, comparison and saturating refusal are implemented on the IR-1045 branch. The obsolete
 `UnsupportedIntegerDivision` cleanup is tracked by IR-348 after that native replacement.
-The steps that call `quire_exact::divide` or migrate the native oracle (1's divide half, 4's O-3
+The steps that call `filament_exact::divide` or migrate the native oracle (1's divide half, 4's O-3
 and O-5, 5, 7's divide and remainder half, 11's removed-code assertion (FR-031-AC-27), 14 and 16)
-require a compatible dependency graph. At CG's locked revisions, QSL replay passes
+require a compatible dependency graph. At CG's locked revisions, FSL replay passes
 `NonZeroInteger` to `Integer::div_mod_floor`, and CG builds with one kernel source.
 Step 14 follows the settled kernel ownership in FR-031 OD-2. Steps 10's divide and
 remainder bundle shape, 15, and 11's `saturate` refusal rows (FR-031-AC-18) call no
@@ -68,7 +68,7 @@ kernel and can be implemented independently of those kernel calls.
    agreements, not defect proofs.
 3. Generate one oracle per comparison over two arithmetic-free operands, assert the native operator
    the FR-031 comparison table names, compile and run them in a generated crate against
-   `quire-contract-runtime` over the seven boundary values and two interior values, taken pairwise
+   `filament-contract-runtime` over the seven boundary values and two interior values, taken pairwise
    in both orders, and compare each result with `exact::order_numbers` for the four orderings and
    with `check_equality` then `CheckedEquality::evaluate` for equal and not-equal. This step passes
    on the tree before the change and is a held agreement (FR-031-AC-4). Generate one oracle per
@@ -172,7 +172,7 @@ kernel and can be implemented independently of those kernel calls.
     bundle's own option vector and assert it verifies; append ` + 1_i64` after the addition and
     assert the run is falsified with the counterexample `amount_current = 999`; drop the `+ 1`
     and assert the run verifies. These three runs are the exemplar's own runs: the closing change
-    also runs `tests/qsl_kani_exemplar.rs` of the integration repository (IT-011 and IT-010-SC-05)
+    also runs `tests/fsl_kani_exemplar.rs` of the integration repository (IT-011 and IT-010-SC-05)
     against its branch before and after, and records both. Repeat the generation over a `saturate`
     add, subtract, multiply, divide and remainder and assert `ClauseGenerationFailed` retaining
     `UnsupportedSaturatingArithmetic` and no harness. Request the bundle over R-1 (a divide) and
@@ -219,16 +219,16 @@ kernel and can be implemented independently of those kernel calls.
 13. Differential between the two implementations (historical procedure). For add, subtract and multiply,
     generate the native oracle and the Kani bundle oracle of the same typed expression (the
     constructions O-1, O-2 and O-4 and one with no guard), compile both in a generated crate
-    against `quire-contract-runtime` in plain `cargo test` with no Kani (against `quire-exact`
+    against `filament-contract-runtime` in plain `cargo test` with no Kani (against `filament-exact`
     once the migration of step 14 lands), and over a grid of
     vectors inside the declared domain, its edges included, at which the guards pass, assert the
     bundle oracle's `bool` equals the `bool` inside `Completed` of the native oracle.
 14. Kernel family and connectives (FR-031-AC-22, AC-26). Generate a native oracle with an arithmetic node and the
     construction Z-3 (an add and a remainder in one oracle), and assert the source aliases
-    `quire_exact` as `rt`, takes `&mut rt::Meter`, returns `rt::Outcome<bool>`, and holds no
-    `quire_contract_runtime::exact` path. Compile and run them in a generated crate whose manifest
-    names `quire-exact`. Assert CG's `Cargo.toml` names `quire-exact` directly from
-    `agent-ix/quire-exact` at a version with single-member `divide`. Cargo's manifest and
+    `filament_exact` as `rt`, takes `&mut rt::Meter`, returns `rt::Outcome<bool>`, and holds no
+    `filament_contract_runtime::exact` path. Compile and run them in a generated crate whose manifest
+    names `filament-exact`. Assert CG's `Cargo.toml` names `filament-exact` directly from
+    `agent-ix/filament-exact` at a version with single-member `divide`. Cargo's manifest and
     lock determine the resolved dependency; the retired one-copy checker contributes no
     assertion. Assert, for the migrated oracle (FR-031-AC-26), that no
     `operators::*_short_circuit` path appears, that the connectives are inline matches, that the
@@ -248,7 +248,7 @@ kernel and can be implemented independently of those kernel calls.
 16. Differential for divide and remainder (historical procedure). Generate the native oracle and the
     Kani bundle oracle of R-1, R-2 and `y != 0 && x % y <= 0` over `i64::MIN..=i64::MAX`, and of
     a guarded divide and a guarded remainder with negative operands, compile both in a generated
-    crate against `quire-exact` in plain `cargo test` with no Kani, and over a grid inside the
+    crate against `filament-exact` in plain `cargo test` with no Kani, and over a grid inside the
     declared domain with a non-zero divisor, its edges included (the last oracle at `x = i64::MIN`,
     `y = -1` among them), assert the bundle oracle's `bool` equals the `bool` inside `Completed`
     of the native oracle.
@@ -264,7 +264,7 @@ kernel and can be implemented independently of those kernel calls.
 ## Expected Results
 
 For surviving native criteria, every add, subtract, multiply, divide and remainder in the native
-oracle is a `quire_exact` call.
+oracle is a `filament_exact` call.
 Overflow under `reject` is `Refused(IntegerOutOfDomain)`, a zero divisor is
 `Undefined(DivisionByZero)`, a divide or remainder member outside the interval is
 `Refused(DivisionOutOfDomain)`, the minimum divided by negative one is refused with member

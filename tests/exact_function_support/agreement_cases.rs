@@ -4,7 +4,7 @@
 use ix_trace_rs::trace;
 
 mod generated {
-    pub use quire_exact_function_oracles::*;
+    pub use filament_exact_function_oracles::*;
     include!(concat!(env!("CARGO_MANIFEST_DIR"), "/names.rs"));
 }
 
@@ -12,7 +12,7 @@ use qsl_replay::{
     acquire_checked_closure, ApplicationEnvironment, CompileUnit, DependencyInput, LibraryName,
     ReplayLimits, SourceIdentity, StageLimits,
 };
-use quire_contract_codegen::{checked_function_key, CheckedFunctionError, CheckedFunctionSource};
+use filament_contract_codegen::{checked_function_key, CheckedFunctionError, CheckedFunctionSource};
 use quire_contract_model::{
     CheckedNodeId, CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
     CheckedPackageV2ReadResult,
@@ -54,7 +54,7 @@ fn package() -> CheckedPackageV2 {
         StageLimits::default(),
         ReplayLimits::default(),
     )
-    .expect("QSL admits the exact source used by the generator");
+    .expect("FSL admits the exact source used by the generator");
     let mut evidence = CheckedPackageEvidence::new();
     evidence.support_feature("quire.value.complete/v1");
     let read = CheckedPackageV2::read(
@@ -63,7 +63,7 @@ fn package() -> CheckedPackageV2 {
         &evidence,
     );
     let CheckedPackageV2ReadResult::Admitted(package) = read else {
-        panic!("Contract IR admits the same QSL bytes: {read:?}");
+        panic!("Contract IR admits the same FSL bytes: {read:?}");
     };
     *package
 }
@@ -86,7 +86,7 @@ fn unrelated_package() -> CheckedPackageV2 {
         StageLimits::default(),
         ReplayLimits::default(),
     )
-    .expect("QSL admits the unrelated source");
+    .expect("FSL admits the unrelated source");
     let mut evidence = CheckedPackageEvidence::new();
     evidence.support_feature("quire.value.complete/v1");
     let read = CheckedPackageV2::read(
@@ -95,7 +95,7 @@ fn unrelated_package() -> CheckedPackageV2 {
         &evidence,
     );
     let CheckedPackageV2ReadResult::Admitted(package) = read else {
-        panic!("IR admits the unrelated QSL bytes: {read:?}");
+        panic!("IR admits the unrelated FSL bytes: {read:?}");
     };
     *package
 }
@@ -165,18 +165,18 @@ fn direct(
         StageLimits::default(),
         ReplayLimits::default(),
     )
-    .expect("independent QSL acquisition");
+    .expect("independent FSL acquisition");
     let handle = acquired.handle();
     let owner = LibraryName::new(package.name().to_owned()).expect("admitted owner digest");
     let wire = checked_function_key(package, &function(package, name)).expect("admitted wire key");
     let selection = handle
         .lookup_callable(&owner, &wire)
-        .expect("QSL selects the function");
+        .expect("FSL selects the function");
     let mut registry = handle.registry();
     let environment = ApplicationEnvironment::new(ObjectClosure::default());
     registry
         .begin_call(&selection, arguments, &environment, meter)
-        .expect("direct QSL Begin")
+        .expect("direct FSL Begin")
         .run()
         .expect("interpreted body completes")
 }
@@ -349,13 +349,13 @@ fn direct_begin_refusal(
         StageLimits::default(),
         ReplayLimits::default(),
     )
-    .expect("independent QSL acquisition");
+    .expect("independent FSL acquisition");
     let handle = acquired.handle();
     let owner = LibraryName::new(package.name().to_owned()).expect("admitted owner digest");
     let wire = checked_function_key(package, &function(package, "add")).expect("admitted wire key");
     let selection = handle
         .lookup_callable(&owner, &wire)
-        .expect("QSL selects add");
+        .expect("FSL selects add");
     let mut registry = handle.registry();
     let environment = ApplicationEnvironment::new(ObjectClosure::default());
     match registry.begin_call(&selection, arguments, &environment, meter) {
@@ -366,7 +366,7 @@ fn direct_begin_refusal(
 
 #[trace("TC-031", "FR-021-AC-4", "FR-021-AC-5")]
 #[test]
-fn qsl_input_refusals_precede_application_charges_and_arity_precedes_kind() {
+fn fsl_input_refusals_precede_application_charges_and_arity_precedes_kind() {
     let package = package();
     for arguments in [
         vec![Value::Integer(Integer::from(1_u64))],

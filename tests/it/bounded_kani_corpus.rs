@@ -6,9 +6,7 @@
 use std::{fs, process::Command};
 
 use crate::scratch_crate::TemporaryDirectory;
-use ix_trace_rs::trace;
-use jsonschema::{Draft, JSONSchema};
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     classify_kani_run, generate_bounded_kani_corpus_case, parse_assertion_playback,
     prepare_finite_graph_reaches, select_counterexample, BoundedCorpusCase, BoundedCorpusRequest,
     CorpusProofDependencyGraph, EmittedCorpusIdentities, GraphLowering, GraphRequest,
@@ -16,6 +14,8 @@ use quire_contract_codegen::{
     ProofDependencyState, ProofReadiness, ReplayVerdict, WitnessDecodeLimits,
     CORPUS_PROOF_GRAPH_SCHEMA,
 };
+use ix_trace_rs::trace;
+use jsonschema::{Draft, JSONSchema};
 use quire_contract_ir::kani::{
     CapabilityDisposition, CapabilityEntry, DispatchIndex, FiniteInput, FiniteObject,
     FiniteReference, KaniOutcome, KaniOutcomeKind, KaniProfile, ModuleDescriptor,
@@ -321,11 +321,11 @@ fn tc_023_kani_reads_a_corpus_harness_without_its_cover_as_missing_the_cover_sum
     );
 }
 
-/// Captured Kani counterexamples for false corpus cases reproduce through each case's QSL source.
+/// Captured Kani counterexamples for false corpus cases reproduce through each case's FSL source.
 #[trace("FR-015-AC-57", "TC-023")]
 #[test]
 #[ignore = "kani lane: run serially through `make kani`"]
-fn tc_023_real_corpus_playback_replays_through_its_qsl_source() {
+fn tc_023_real_corpus_playback_replays_through_its_fsl_source() {
     let (profile, dispatch, input) = fixture();
     let graph = generate_bounded_kani_corpus_case(
         crate::common::proof_ceilings::proof_ceilings(),
@@ -412,7 +412,7 @@ fn tc_026_corpus_replay_refuses_poisoned_suffixes_at_both_decode_bounds() {
         .expect("over-bound evidence yields a verdict");
     assert!(matches!(
         verdict,
-        ReplayVerdict::EvidenceFailure(quire_contract_codegen::EvidenceFailureCause::Decode(ref cause))
+        ReplayVerdict::EvidenceFailure(filament_contract_codegen::EvidenceFailureCause::Decode(ref cause))
         if cause.code == "cg_witness_decode_bytes_limit"
     ));
     let control = case
@@ -451,7 +451,7 @@ fn tc_026_corpus_replay_refuses_poisoned_suffixes_at_both_decode_bounds() {
         .expect("over-bound value yields a verdict");
     assert!(matches!(
         verdict,
-        ReplayVerdict::EvidenceFailure(quire_contract_codegen::EvidenceFailureCause::Decode(ref cause))
+        ReplayVerdict::EvidenceFailure(filament_contract_codegen::EvidenceFailureCause::Decode(ref cause))
         if cause.code == "cg_witness_decode_values_limit"
     ));
     let control = case
@@ -459,7 +459,7 @@ fn tc_026_corpus_replay_refuses_poisoned_suffixes_at_both_decode_bounds() {
         .expect("extra value yields a decode verdict");
     assert!(matches!(
         control,
-        ReplayVerdict::EvidenceFailure(quire_contract_codegen::EvidenceFailureCause::Decode(ref cause))
+        ReplayVerdict::EvidenceFailure(filament_contract_codegen::EvidenceFailureCause::Decode(ref cause))
         if cause.code == "kani_witness_arity_mismatch"
     ));
 }
@@ -479,7 +479,7 @@ fn tc_026_corpus_replay_refuses_poisoned_suffixes_at_both_decode_bounds() {
 /// out-of-memory abort also exit nonzero with no property decided (IR-220), so the outcome is
 /// read through the classifier and the callers assert it.
 fn classify_corpus(
-    generated: &quire_contract_codegen::BoundedCorpusCase,
+    generated: &filament_contract_codegen::BoundedCorpusCase,
     harness_filter: &str,
 ) -> KaniRunOutcome {
     let directory = TemporaryDirectory::new("quire-codegen-bounded-kani");

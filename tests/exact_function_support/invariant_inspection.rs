@@ -4,7 +4,7 @@ pub(super) fn inspect_environment(
     declaring_package: &CheckedPackageV2,
     acquired: &qsl_replay::CheckedClosureCompilation,
     selection: &qsl_replay::CallableSelection,
-    resources: &quire_contract_codegen::CheckedFunctionResources,
+    resources: &filament_contract_codegen::CheckedFunctionResources,
 ) -> Result<sv::declaration::TypeEnvironment, sv::declaration::EnvironmentFailure> {
     PreparedFunction::new(
         declaring_package,

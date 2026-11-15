@@ -4,13 +4,13 @@ title: "A change that can alter what real Kani proves runs the real-Kani lane be
 type: NFR
 quality_attribute: reliability
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-015
+  - target: ix://agent-ix/filament-contract-codegen/FR-015
     type: constrains
-  - target: ix://agent-ix/quire-contract-codegen/FR-017
+  - target: ix://agent-ix/filament-contract-codegen/FR-017
     type: constrains
-  - target: ix://agent-ix/quire-contract-codegen/FR-031
+  - target: ix://agent-ix/filament-contract-codegen/FR-031
     type: constrains
-  - target: ix://agent-ix/quire-contract-codegen/FR-041
+  - target: ix://agent-ix/filament-contract-codegen/FR-041
     type: constrains
 ---
 # NFR-006: A change that can alter what real Kani proves runs the real-Kani lane before it merges
@@ -122,7 +122,7 @@ reads is Kani's own printed block (IR-29, TC-026), which a synthetic transcript 
 charged to any other change. Real-Kani cost is large. This repository records only partial
 timings: two oracle tests at 111 s (SR-1459); the `skeleton_spine` lane at 157 s on an unmodified head
 (SR-1423); three scalar tests at 908 s (SR-647); nine tests over four modules at 1056 s (SR-690),
-when the lane was smaller than it is now; and the IR-604 ticket's statement that the quire-integration
+when the lane was smaller than it is now; and the IR-604 ticket's statement that the filament-integration
 exemplar takes about 530 s serial. The lane now holds 27 tests across eight files; the full lane
 ran in 1,308 s on the IR-617 pre-PR candidate. A required lane at every change would charge a spec-only or review-only change
 that cost for no evidence, and `make ci` runs twice per change; so the rule keys on paths and `make
@@ -209,7 +209,7 @@ creates no exception for a current V2 claim.
 - Whether a per-path subset of the lane can stand for the whole lane for a runner-only or a replay-only
   change. It needs a per-module cost the repository does not record.
 - Whether `src/core/**`, `Cargo.toml` and `Cargo.lock` belong in the set. They are in it because
-  harness names and identity come from `src/core`, and the QSL, Contract IR and Contract Runtime
+  harness names and identity come from `src/core`, and the FSL, Contract IR and Contract Runtime
   versions reach every real-Kani run; the cost is a lane run for every dependency change. The
   `Makefile` is not in it, so an edit to the `kani` target alone escapes the gate.
 

@@ -1,11 +1,11 @@
 //! Native replay of a postcondition state-clause counterexample: a Kani falsification of an
-//! operation-contract harness (FR-015-AC-26) is put before QSL's `replay_state_clause` as a
+//! operation-contract harness (FR-015-AC-26) is put before FSL's `replay_state_clause` as a
 //! request and an envelope built here (FR-024-AC-11 to AC-19).
 //!
 //! The clause's identities are not computed by this crate: [`qsl_replay::call_site`] compiles the
 //! proved unit, with its domain packages and dependencies, and names the clause, so the envelope's
-//! `clause_node` and `occurrence_key` are QSL's own answer for the clause name. The payload carries
-//! neither identity (QSL FR-122).
+//! `clause_node` and `occurrence_key` are FSL's own answer for the clause name. The payload carries
+//! neither identity (FSL FR-122).
 //!
 //! The invocation document and the two snapshot documents the replay reads are built here from the
 //! decoded playback and the caller's post-state values. Each is a typed record whose bytes
@@ -253,7 +253,7 @@ pub enum StateClauseReplayError {
         /// The member that differs.
         member: StateClauseHarnessMember,
     },
-    /// The harness's QSL `ObligationIdentity` (node, model and ordinal) differs from the identity
+    /// The harness's FSL `ObligationIdentity` (node, model and ordinal) differs from the identity
     /// the caller supplied (FR-024-AC-65 and FR-024-AC-71).
     ObligationIdentityMismatch,
     /// The input already carries playback values; the Kani adapter requires an empty slot.
@@ -262,17 +262,17 @@ pub enum StateClauseReplayError {
     Decode(DecodeFailure),
     /// The selected assertion does not name this harness's postcondition.
     AssertionMismatch,
-    /// QSL selected a clause node other than the one the harness was generated from.
+    /// FSL selected a clause node other than the one the harness was generated from.
     ClauseSelectionMismatch,
     /// The lock's dependency selections are not admitted.
     Dependencies(DependencyLockError),
-    /// QSL could not compile the unit or find the clause in it.
+    /// FSL could not compile the unit or find the clause in it.
     CallSite(Box<CallSiteRefusal>),
     /// A qualified name built from the operation's identifiers is not admitted.
     Name(EmptyQualifiedName),
     /// The harness text would change the witness transcript's field boundaries.
     Transcript(MalformedTranscript),
-    /// The envelope this adapter built is not one QSL admits.
+    /// The envelope this adapter built is not one FSL admits.
     Envelope(WitnessRefusal),
     /// A document could not be built.
     Document(DocumentError),
@@ -336,7 +336,7 @@ pub enum StateClauseReplayError {
     /// A graph playback starts from one object and targets another, which the replay of a
     /// `self, self` claim cannot express.
     GraphStartIsNotTarget,
-    /// QSL refused the request or the envelope before settling a result.
+    /// FSL refused the request or the envelope before settling a result.
     Refused(Box<ReplayRefusal>),
 }
 
@@ -414,7 +414,7 @@ impl fmt::Display for StateClauseReplayError {
 impl std::error::Error for StateClauseReplayError {}
 
 /// A state-clause replay failure, read as the settlement of a falsified run (FR-029-AC-16): the
-/// failures this repository raised carry no QSL code and are defects or limits, and the QSL
+/// failures this repository raised carry no FSL code and are defects or limits, and the FSL
 /// refusals read by their walked content, as the frame path's do.
 impl<'a> From<&'a StateClauseReplayError> for ReplaySettlement<'a> {
     fn from(error: &'a StateClauseReplayError) -> Self {
@@ -476,7 +476,7 @@ impl<'a> From<&'a StateClauseReplayResult> for ReplaySettlement<'a> {
     }
 }
 
-/// A state-clause counterexample ready to replay: QSL's request and the packet the envelope is
+/// A state-clause counterexample ready to replay: FSL's request and the packet the envelope is
 /// reconstructed from.
 pub struct StateClauseReplay {
     /// The request supplying the package reference, byte provision and limits.
@@ -627,7 +627,7 @@ impl StateClauseReplay {
     ///
     /// # Errors
     ///
-    /// [`StateClauseReplayError`] when the lock's dependencies are not admitted, QSL does not
+    /// [`StateClauseReplayError`] when the lock's dependencies are not admitted, FSL does not
     /// compile the unit or find the clause, the operation declares a parameter or a result, a
     /// state field has no playback or post-state value or its playback value is outside its range,
     /// or a document or the transcript is not admitted.
@@ -829,7 +829,7 @@ impl DocumentLabel {
     }
 }
 
-/// The self-declared identity of a state document. QSL validates the full document shape.
+/// The self-declared identity of a state document. FSL validates the full document shape.
 fn document_identity(bytes: &[u8]) -> Option<DocumentRef> {
     #[derive(Deserialize)]
     struct IdentityRead {
@@ -1008,7 +1008,7 @@ fn snapshot(
 }
 
 /// The members of a domain package document this module reads: the `package` identity and version
-/// a model header names. The document itself is QSL's to validate.
+/// a model header names. The document itself is FSL's to validate.
 #[derive(Deserialize)]
 struct DomainPackageHeader {
     package: DomainPackageIdentity,

@@ -2,11 +2,11 @@
 
 use std::{fs, process::Command};
 
-use ix_trace_rs::trace;
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     generate_v2_numeric_strategy, Population, V2NumericErrorCode, V2NumericPolicy,
     V2NumericRequest, V2SelectedClaimKey,
 };
+use ix_trace_rs::trace;
 use quire_contract_model::{CheckedOccurrence, CheckedOccurrenceRole};
 
 use super::{scratch_crate, v2_integer_comparison_admission::admitted};
@@ -33,7 +33,7 @@ fn request<'a>(
     }
 }
 
-/// One QSL-authored selected claim yields one complete source/map bundle and executable runners.
+/// One FSL-authored selected claim yields one complete source/map bundle and executable runners.
 #[trace("TC-020", "FR-011-AC-12", "FR-011-AC-16", "FR-011-AC-17")]
 #[test]
 fn v2_numeric_bundle_keeps_selected_identity_and_runs_both_modes() {
@@ -350,7 +350,7 @@ fn v2_numeric_refusals_keep_first_typed_cause() {
     assert_eq!(diagnostic.path, "Clause");
     assert!(matches!(
         comparison.cause,
-        quire_contract_codegen::V2ComparisonRefusal::Ir(ref error)
+        filament_contract_codegen::V2ComparisonRefusal::Ir(ref error)
             if error.kind
                 == quire_contract_model::CheckedComparisonRefusal::MissingClaimOccurrence
     ));
@@ -437,7 +437,7 @@ fn v2_numeric_refusals_keep_first_typed_cause() {
         .expect("typed population cause is retained");
     assert_eq!(
         population.code,
-        quire_contract_codegen::StrategyErrorCode::EmptyPopulation
+        filament_contract_codegen::StrategyErrorCode::EmptyPopulation
     );
     assert_eq!(population.clause, empty_clause);
     assert_eq!(population.claim_owner, empty_clause);

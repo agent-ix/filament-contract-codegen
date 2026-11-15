@@ -1,10 +1,10 @@
 //! Agreement support for composite equality (FR-018-AC-2, AC-8, AC-9,
 //! AC-11): direct Contract Runtime execution and generated oracles.
 //!
-//! Each original vector is run against an independent direct QSV environment and the
+//! Each original vector is run against an independent direct FSV environment and the
 //! actual emitted prepared oracle. The fixture recompiles its retained original source
 //! through the public replay facade solely to obtain genuine identities and complete enum
-//! membership; it does not claim a third QSL value-oracle or proof leg. Outcomes, ordered
+//! membership; it does not claim a third FSL value-oracle or proof leg. Outcomes, ordered
 //! charges, every counter and every single-charge denial must agree.
 
 #![allow(dead_code, unused_imports)]
@@ -382,7 +382,7 @@ macro_rules! shared_helpers {
         /// An operand's static type for a direct `check_equality` call: a
         /// source type and, for a `convert<T>` operand, its conversion
         /// target — the same shape
-        /// `quire_contract_codegen::composite_equality::EqualityOperandDescriptor`
+        /// `filament_contract_codegen::composite_equality::EqualityOperandDescriptor`
         /// requests. [`direct_equality`] needs this, rather than a bare
         /// `ValueType`, to express a `converted` operand (FR-018-AC-2's
         /// conversion-ordering mutation has nothing to swap without one).

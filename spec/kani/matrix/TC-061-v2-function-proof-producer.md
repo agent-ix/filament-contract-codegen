@@ -3,7 +3,7 @@ id: TC-061
 title: "Verify current-V2 function proof producer and replay binding"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-047
+  - target: ix://agent-ix/filament-contract-codegen/FR-047
     type: verifies
 ---
 # TC-061: Verify current-V2 function proof producer and replay binding
@@ -16,7 +16,7 @@ Use one genuinely admitted checked V2 source and its original request, not a
 test-constructed `KaniObligationIdentity` or `V2FunctionProofIdentity`, V1 claim, scalar conversion or
 hand-built replay package. The independent assertion playback comes from the
 installed backend's complete captured transcript.
-The current QSL FR-485 facade is available; CG's concrete FR-021 consumer is
+The current FSL FR-485 facade is available; CG's concrete FR-021 consumer is
 still Planned under IR-595. The V2 identity/binding API and imported-owner
 function-site selector are Planned; current V1 replay APIs do not back them.
 
@@ -58,7 +58,7 @@ function-site selector are Planned; current V1 replay APIs do not back them.
    `V2FunctionProofIdentity` to `bind_v2_function_replay`; check that only its
    matching `BoundV2FunctionReplay` reaches typed replay. For a function
    declared by a dependency, select its actual declaring package/function
-   occurrence through QSL's planned imported-function site API (IR-1122) and compare
+   occurrence through FSL's planned imported-function site API (IR-1122) and compare
    the original dependency lock; report the branch Planned until that API
    exists, without substituting the unit-only `call_site` (AC-4, AC-5).
 6. Use FR-016-AC-6's required public decode bounds in the V2 entry. Test byte and physical value-count ceilings at the smaller of caller and
@@ -82,5 +82,5 @@ selection failure is typed and leaves healthy sibling output unchanged.
 
 PLANNED under IR-1121. No current-V2 function Kani producer exists on CG main;
 the direct test-only function identity fixture does not back these criteria.
-CG's concrete FR-021 oracle (IR-595) and QSL's imported-function site
+CG's concrete FR-021 oracle (IR-595) and FSL's imported-function site
 selection (IR-1122) remain prerequisites for the respective controls.

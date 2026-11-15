@@ -3,17 +3,17 @@ id: FR-054
 title: "Lower option presence and value in V2 clause Kani harnesses"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/StR-001
+  - target: ix://agent-ix/filament-contract-codegen/StR-001
     type: satisfies
-  - target: ix://agent-ix/quire-contract-codegen/FR-014
+  - target: ix://agent-ix/filament-contract-codegen/FR-014
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-015
+  - target: ix://agent-ix/filament-contract-codegen/FR-015
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-017
+  - target: ix://agent-ix/filament-contract-codegen/FR-017
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-025
+  - target: ix://agent-ix/filament-contract-codegen/FR-025
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-028
+  - target: ix://agent-ix/filament-contract-codegen/FR-028
     type: depends_on
 ---
 # FR-054: Lower option presence and value in V2 clause Kani harnesses
@@ -40,9 +40,9 @@ equality over option operands (FR-015-AC-69 to FR-015-AC-71, IR-264) is a differ
 
 ### Semantic authority
 
-QSL and the Contract IR own option definedness: a read of `quire.op.option.value` is admitted
+FSL and the Contract IR own option definedness: a read of `quire.op.option.value` is admitted
 only where a `Present` fact guards it, so an admitted package never carries an unguarded read
-(IR `OptionPresence` definedness). quire-exact owns the `Undefined::NoneValue` reason, which only
+(IR `OptionPresence` definedness). filament-exact owns the `Undefined::NoneValue` reason, which only
 a direct evaluation of an unlinked expression can meet. FR-014 states no option operation. This
 requirement therefore owns the one CG-side rule that neither states: the generated clause oracle
 reads `option.present` as the presence leaf, reads `option.value` as the payload leaf, and maps
@@ -198,7 +198,7 @@ checked condition".
 - [FR-015](./FR-015-bounded-kani-obligations.md) owns the V2 clause route, FR-015-AC-42 (amended by
   FR-054-AC-23), the thin `ClauseStop` (FR-015-AC-145), `requires_bound` (FR-015-AC-61) and the
   sibling rule (FR-015-AC-23).
-- QSL and the Contract IR own option definedness; quire-exact owns `Undefined::NoneValue`.
+- FSL and the Contract IR own option definedness; filament-exact owns `Undefined::NoneValue`.
 - [FR-017](./FR-017-kani-execution-evidence.md) owns two-phase execution and evidence.
 - [TC-068](../matrix/TC-068-option-clause-harnesses.md) defines the planned verification.
 

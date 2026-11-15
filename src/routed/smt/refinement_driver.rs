@@ -55,11 +55,11 @@ impl<'request, 'input> RefinementSubjects<'request, 'input> {
 /// Why preparation failed before launching any process.
 #[derive(Debug)]
 pub enum RefinementPreparationError {
-    /// Original QSL refusal; `None` means selecting the retained refinement failed.
+    /// Original FSL refusal; `None` means selecting the retained refinement failed.
     Encoding {
         /// Query selected when encoding failed.
         role: Option<RefinementRole>,
-        /// Unmodified QSL refusal or internal fault.
+        /// Unmodified FSL refusal or internal fault.
         refusal: SmtEncodingRefusal,
     },
     /// The caller cancelled between encoding operations.
@@ -77,9 +77,9 @@ pub struct PreparedRefinement<'request, 'input> {
     queries: Vec<(RefinementRole, Vec<u8>)>,
 }
 
-/// Prepare the Base and declaration-order Step queries from one QSL request.
+/// Prepare the Base and declaration-order Step queries from one FSL request.
 ///
-/// QSL owns all query encoding. Refusal or cancellation produces no executable
+/// FSL owns all query encoding. Refusal or cancellation produces no executable
 /// collection and therefore cannot be confused with a solver response.
 pub fn prepare_refinement<'request, 'input>(
     request: &'request RefinementQueryRequest<'input>,
@@ -161,7 +161,7 @@ pub enum RefinementExecutionError<'request, 'input> {
 impl<'request, 'input> PreparedRefinement<'request, 'input> {
     /// Execute each prepared query unchanged, directly, under its own limits.
     ///
-    /// Non-proof statuses remain typed records; no QSL outcome is constructed.
+    /// Non-proof statuses remain typed records; no FSL outcome is constructed.
     pub fn execute(
         self,
         executable: &Path,

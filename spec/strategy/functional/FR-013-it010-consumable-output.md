@@ -3,15 +3,15 @@ id: FR-013
 title: "Emit strategy output consumable by SL IT-010 without a local wire schema"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/StR-001
+  - target: ix://agent-ix/filament-contract-codegen/StR-001
     type: satisfies
-  - target: ix://agent-ix/quire-contract-codegen/FR-010
+  - target: ix://agent-ix/filament-contract-codegen/FR-010
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-011
+  - target: ix://agent-ix/filament-contract-codegen/FR-011
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/interface-001
+  - target: ix://agent-ix/filament-contract-codegen/interface-001
     type: implements
-  - target: ix://agent-ix/quire-spec-language/FR-034
+  - target: ix://agent-ix/filament-spec-language/FR-034
     type: references
 ---
 # FR-013: Emit strategy output consumable by SL IT-010 without a local wire schema
@@ -42,8 +42,8 @@ require any serialized case format or schema owned by this repository for that c
 - Every generated case type shall carry constants rendered from each read's typed V2 declaration identity, provenance kind, selected path and observation, so a consumer needs no mapping table of its own.
 - The generator shall derive field identifiers from the same typed V2 dependency identity and
   observation used by its selected-claim oracle, with deterministic collision handling.
-- Generated output shall depend only on `proptest`, `quire-contract-runtime`, and `core`/`std`.
-- Generated output shall not depend on quire-spec-language, which depends on this crate.
+- Generated output shall depend only on `proptest`, `filament-contract-runtime`, and `core`/`std`.
+- Generated output shall not depend on filament-spec-language, which depends on this crate.
 - The generator shall not emit a JSON, YAML, or other serialized case, census, or summary format.
 - This slice shall add no file under `schemas/`.
 - The generated Rust header shall state the selected checked clause id and authentic claim occurrence.
@@ -53,7 +53,7 @@ require any serialized case format or schema owned by this repository for that c
 
 | ID | Criteria | Verification |
 |----|----------|--------------|
-| FR-013-AC-1 | PLANNED (IR-364). A consumer fixture crate that includes the generated Rust source and whose manifest depends only on `proptest` and `quire-contract-runtime` compiles under denied warnings, draws `VersionUnchanged` cases, and reads the selected `versionNumber` StateField at `"pre"` and `"post"` through the generated typed-identity, path and observation constants. | Test (TC-022) |
+| FR-013-AC-1 | PLANNED (IR-364). A consumer fixture crate that includes the generated Rust source and whose manifest depends only on `proptest` and `filament-contract-runtime` compiles under denied warnings, draws `VersionUnchanged` cases, and reads the selected `versionNumber` StateField at `"pre"` and `"post"` through the generated typed-identity, path and observation constants. | Test (TC-022) |
 | FR-013-AC-2 | PLANNED (IR-364). The generated bundle contains no serialized case, census, or summary file, and the change adds no file under `schemas/`. | Test (TC-022) |
 | FR-013-AC-4 | PLANNED (IR-364). The generated Rust header carries the selected checked clause id and authentic claim occurrence, and generating two distinct selected claims from one package produces different headers and artifact paths. | Test (TC-022) |
 | FR-013-AC-5 | PLANNED (IR-364). interface-001 `bound_strategy_slice.consumer` records the case, census, and runner surface a downstream consumer compiles against. | Inspection |

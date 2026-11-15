@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Generated composite oracle versus independent QSV, with genuine source identities.
+//! Generated composite oracle versus independent FSV, with genuine source identities.
 #[path = "fixture.rs"]
 mod fixture;
 mod generated {

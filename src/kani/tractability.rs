@@ -14,7 +14,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 /// CG's generator version: the version of this crate.
 pub const GENERATOR_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-/// CG's kernel version: the linked `quire-exact` crate's `KERNEL_VERSION`.
+/// CG's kernel version: the linked `filament-exact` crate's `KERNEL_VERSION`.
 pub const KERNEL_VERSION: u32 = quire_exact::KERNEL_VERSION;
 
 fn generator_version() -> String {

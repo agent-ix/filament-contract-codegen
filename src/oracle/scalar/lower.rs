@@ -102,7 +102,7 @@ pub(super) fn check_item<'r, Body: GraphBody>(
             return Err(ExactScalarRefusal::BlockedOnUpstream {
                 unsupported_node_id: requested_node_id.clone(),
                 node_tag: "model",
-                issue: UpstreamBlocker::QuireSpecLanguage120,
+                issue: UpstreamBlocker::FilamentSpecLanguage120,
             }
             .into());
         }
@@ -301,9 +301,9 @@ pub(super) fn unsupported_family(
         issue,
     };
     match tag {
-        CheckedNodeTag::Function => blocked(UpstreamBlocker::QuireContractRuntime34),
+        CheckedNodeTag::Function => blocked(UpstreamBlocker::FilamentContractRuntime34),
         CheckedNodeTag::Model | CheckedNodeTag::Relation => {
-            blocked(UpstreamBlocker::QuireSpecLanguage120)
+            blocked(UpstreamBlocker::FilamentSpecLanguage120)
         }
         CheckedNodeTag::State
         | CheckedNodeTag::Temporal
@@ -434,7 +434,7 @@ fn reference_form<Body: GraphBody>(graph: &Graph<'_, Body>, term: &CheckedTerm) 
 
 /// The scalar form of `type_id`, following one `bounded_domain` step. A parameter typed
 /// `Int[0, 9]` is typed by a `bounded_domain` whose own `semantic_type` is its base scalar type:
-/// QSL emits a bounded domain directly over its scalar base, so one step reaches the type the form
+/// FSL emits a bounded domain directly over its scalar base, so one step reaches the type the form
 /// is read from. A node's result typed by a bounded domain reads the same way.
 pub(crate) fn scalar_type_form<Body: GraphBody>(
     graph: &Graph<'_, Body>,
@@ -466,7 +466,7 @@ pub(crate) fn operand_own_bound<'g, Body: GraphBody>(
 /// The type of a `reference` operand that no `bounded_domain` types; `None` for a literal, a
 /// reference to a literal value node, or an operand with an own bound.
 ///
-/// QSL emits a literal operand as a `reference` to its own `value` node, whose body is the
+/// FSL emits a literal operand as a `reference` to its own `value` node, whose body is the
 /// literal and whose type is the plain scalar type. That is a constant, like an inline literal,
 /// and is decided by the referenced node's body, never by its type: a `value` node with any other
 /// body (a parameter) and a plain type is an unbounded operand.
@@ -481,7 +481,7 @@ fn plain_reference_type<Body: GraphBody>(
     (!is_literal_value(graph, node)).then(|| node.semantic_type.clone())
 }
 
-/// A `value` node whose body is a literal: the node QSL emits for a literal operand.
+/// A `value` node whose body is a literal: the node FSL emits for a literal operand.
 fn is_literal_value<Body: GraphBody>(
     graph: &Graph<'_, Body>,
     node: &CheckedSemanticNodeV2<Body>,
@@ -490,7 +490,7 @@ fn is_literal_value<Body: GraphBody>(
         && matches!(graph.term(&node.node_id), Some(CheckedTerm::Literal { .. }))
 }
 
-/// The catalogued identity of the narrowing conversion QSL wraps a bounded-context expression in.
+/// The catalogued identity of the narrowing conversion FSL wraps a bounded-context expression in.
 pub(super) const NARROW_IDENTITY: &str = "quire.op.numeric.narrow";
 
 /// How the nodes that consume a scalar-typed node bound its result.
@@ -1200,7 +1200,7 @@ impl<Body: GraphBody, NodeBody> Bounds<'_, '_, Body, NodeBody> {
     ///
     /// The result's role is named by the node itself. A result typed by a `bounded_domain` has
     /// that domain as its bound. A result typed by a scalar type has the bound of the narrowing
-    /// conversion that consumes it (QSL's shape for a bounded context); failing one, the one
+    /// conversion that consumes it (FSL's shape for a bounded context); failing one, the one
     /// reachable bound of `form` over that type that is not an operand's own bound; where several
     /// are reachable, exactly one must be outside the operands' own bounds.
     pub(super) fn read<T>(
@@ -1270,7 +1270,7 @@ impl<Body: GraphBody, NodeBody> Bounds<'_, '_, Body, NodeBody> {
     }
 
     /// How the nodes consuming this node narrow it, for a node whose result is typed by a scalar
-    /// type. QSL wraps an expression in a bounded context in a narrowing `conversion` typed by the
+    /// type. FSL wraps an expression in a bounded context in a narrowing `conversion` typed by the
     /// bound, and IR's forward-only `bounds` closure never reaches it from the expression, so the
     /// enclosing conversion is where the result bound is named.
     pub(super) fn narrowing(&self) -> Narrowing<'_, Body> {
@@ -2952,7 +2952,7 @@ pub(super) fn scalar_profile() -> CompleteLoweringProfileV2 {
     CompleteLoweringProfileV2 {
         reference: quire_contract_model::LoweringProfileRef {
             authority: "agent-ix".into(),
-            identity: "quire.codegen.exact-scalar/v1".into(),
+            identity: "filament.codegen.exact-scalar/v1".into(),
         },
         required_source_selections: Vec::new(),
         supported_tags: BTreeSet::from(SCALAR_LOWERING_SUPPORTED_TAGS),

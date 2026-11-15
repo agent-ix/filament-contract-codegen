@@ -84,12 +84,12 @@ pub const BD_TEXT_SIBLING: u32 = 60;
 pub const BD_INTEGER_WRONG_FORM: u32 = 61;
 /// An `integer_range` bound over the boolean scalar `T_BOOLEAN`, which has no bound form.
 pub const BD_BOOLEAN: u32 = 62;
-/// An `integer_range` bound over the base package's enum declaration (QSL's enum type node,
+/// An `integer_range` bound over the base package's enum declaration (FSL's enum type node,
 /// which is not a `scalar_type`).
 pub const BD_ENUM: u32 = 64;
 /// A `collection_bounds` bound over the record `R_POINT`, a base that is not a `scalar_type`.
 pub const BD_OVER_COMPOSITE: u32 = 65;
-/// A `float_rounding` bound over the float scalar `T_FLOAT64`, as QSL emits a float type.
+/// A `float_rounding` bound over the float scalar `T_FLOAT64`, as FSL emits a float type.
 pub const BD_FLOAT_ROUNDING: u32 = 66;
 
 pub const E_RECORD: u32 = 100;
@@ -139,6 +139,6 @@ pub const R_TREE_CYCLE: u32 = 180;
 pub const SEQ_TREE_CYCLE: u32 = 181;
 pub const CB_TREE_CYCLE: u32 = 182;
 pub const E_TREE_CYCLE: u32 = 183;
-pub const T_QSPEC_BOOLEAN: u32 = 190;
-pub const E_QSPEC_LIST: u32 = 191;
-pub const E_QSPEC_TREE: u32 = 192;
+pub const T_FSPEC_BOOLEAN: u32 = 190;
+pub const E_FSPEC_LIST: u32 = 191;
+pub const E_FSPEC_TREE: u32 = 192;

@@ -3,9 +3,9 @@
 
 use super::scalar_playback::{replay_fixture, transcript};
 use super::scalar_replay_binding::{context, observe, plan};
+use filament_contract_codegen::{ScalarBuildError, ScalarSentRequest};
 use ix_trace_rs::trace;
 use qsl_replay::{NativeOutcome, OperatorParityResult};
-use quire_contract_codegen::{ScalarBuildError, ScalarSentRequest};
 use quire_contract_model::{CheckedOccurrenceRole, CheckedScalarOperandChild};
 use quire_exact::Integer;
 
@@ -101,12 +101,12 @@ fn each_integer_operator_and_literal_keep_the_public_reader_body_and_real_route(
         let report = qsl_replay::replay_operator_parity(wire, claim, limits);
         assert!(
             matches!(report.result(), OperatorParityResult::Agrees { .. }),
-            "genuine QSL route: {:?}",
+            "genuine FSL route: {:?}",
             report.result()
         );
         assert!(matches!(
             completed.settlement(&sent, Some(&report)).unwrap(),
-            quire_contract_codegen::ScalarSettlement::Parity(result) if std::ptr::eq(result, report.result())
+            filament_contract_codegen::ScalarSettlement::Parity(result) if std::ptr::eq(result, report.result())
         ));
     }
 }

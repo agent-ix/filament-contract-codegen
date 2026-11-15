@@ -3,15 +3,15 @@ id: FR-038
 title: "Use one typed operator catalog for admitted V2 generation"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/StR-001
+  - target: ix://agent-ix/filament-contract-codegen/StR-001
     type: satisfies
-  - target: ix://agent-ix/quire-contract-codegen/FR-014
+  - target: ix://agent-ix/filament-contract-codegen/FR-014
     type: references
-  - target: ix://agent-ix/quire-contract-codegen/FR-015
+  - target: ix://agent-ix/filament-contract-codegen/FR-015
     type: references
-  - target: ix://agent-ix/quire-contract-codegen/FR-031
+  - target: ix://agent-ix/filament-contract-codegen/FR-031
     type: references
-  - target: ix://agent-ix/quire-contract-codegen/AD-004
+  - target: ix://agent-ix/filament-contract-codegen/AD-004
     type: references
 ---
 # FR-038: Use one typed operator catalog for admitted V2 generation

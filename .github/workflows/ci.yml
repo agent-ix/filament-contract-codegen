@@ -10,11 +10,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check out authoritative QSpec fixtures
+      - name: Check out authoritative FSpec fixtures
         uses: actions/checkout@v4
         with:
-          repository: agent-ix/quire-specification
-          path: quire-specification
+          repository: agent-ix/filament-specification
+          path: filament-specification
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -33,7 +33,7 @@ jobs:
       - name: Test
         run: cargo test
         env:
-          QSPEC_DIR: ${{ github.workspace }}/quire-specification
+          FSPEC_DIR: ${{ github.workspace }}/filament-specification
 
       - name: Rust compatibility
         run: make msrv

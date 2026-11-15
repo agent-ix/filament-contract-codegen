@@ -17,7 +17,7 @@ const PLAYBACK_COVER_MARKER: &str = "/// Check for `cover`";
 /// Caller-supplied bounds for reading and decoding a retained Kani witness.
 ///
 /// ```compile_fail
-/// let _ = quire_contract_codegen::WitnessDecodeLimits::default();
+/// let _ = filament_contract_codegen::WitnessDecodeLimits::default();
 /// ```
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WitnessDecodeLimits {

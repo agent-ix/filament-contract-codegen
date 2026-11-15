@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Reader evidence held from published QSpec definition artifacts, independently of wire claims.
+//! Reader evidence held from published FSpec definition artifacts, independently of wire claims.
 
 use std::{fs, path::Path};
 
@@ -25,7 +25,7 @@ struct PublishedDefinition {
 /// Hold only published typed extension definitions whose full refs the fixture selected.
 /// A wire selection alone supplies neither a definition nor a supported capability.
 pub(crate) fn retain_selected_extensions(
-    qspec: &Path,
+    fspec: &Path,
     wire: &Value,
     evidence: &mut CheckedPackageEvidence,
 ) {
@@ -39,8 +39,8 @@ pub(crate) fn retain_selected_extensions(
         })
         .collect::<Vec<_>>();
     let definitions: PublishedDefinitions = serde_json::from_slice(
-        &fs::read(qspec.join("proposals/checked-package-v2/extension-definitions.json"))
-            .expect("read authoritative QSpec extension definitions"),
+        &fs::read(fspec.join("proposals/checked-package-v2/extension-definitions.json"))
+            .expect("read authoritative FSpec extension definitions"),
     )
     .expect("published typed extension definitions");
     for published in definitions.definitions {
@@ -52,16 +52,16 @@ pub(crate) fn retain_selected_extensions(
     }
 }
 
-/// Hold the domain package document QSpec's `selected-documents.json` pairs with `fixture`
+/// Hold the domain package document FSpec's `selected-documents.json` pairs with `fixture`
 /// (a path under `fixtures/`), so the reader can resolve the fixture's selected model owner.
 /// A fixture with no published pairing needs no document and retains none.
 #[allow(dead_code)] // Each test binary including this module uses a different subset.
 pub(crate) fn retain_selected_document(
-    qspec: &Path,
+    fspec: &Path,
     fixture: &str,
     evidence: &mut CheckedPackageEvidence,
 ) {
-    let root = qspec.join("proposals/checked-package-v2");
+    let root = fspec.join("proposals/checked-package-v2");
     let selections: Value = serde_json::from_slice(
         &fs::read(root.join("selected-documents.json"))
             .expect("published fixture document selections"),
@@ -92,7 +92,7 @@ mod tests {
     use std::path::PathBuf;
 
     fn all_families() -> (PathBuf, Value, Vec<u8>) {
-        let root = PathBuf::from(std::env::var_os("QSPEC_DIR").expect("published QSpec checkout"));
+        let root = PathBuf::from(std::env::var_os("FSPEC_DIR").expect("published FSpec checkout"));
         let wire: Value = serde_json::from_slice(
             &fs::read(
                 root.join("proposals/checked-package-v2/fixtures/positive-all-families.json"),

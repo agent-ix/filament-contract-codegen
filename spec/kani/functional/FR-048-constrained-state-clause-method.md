@@ -3,17 +3,17 @@ id: FR-048
 title: "Retain state-constraint boundaries in Kani method evidence"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/StR-001
+  - target: ix://agent-ix/filament-contract-codegen/StR-001
     type: satisfies
-  - target: ix://agent-ix/quire-contract-codegen/FR-015
+  - target: ix://agent-ix/filament-contract-codegen/FR-015
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-017
+  - target: ix://agent-ix/filament-contract-codegen/FR-017
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-029
+  - target: ix://agent-ix/filament-contract-codegen/FR-029
     type: depends_on
-  - target: ix://agent-ix/quire-spec-language/FR-158
+  - target: ix://agent-ix/filament-spec-language/FR-158
     type: references
-  - target: ix://agent-ix/quire-spec-language/FR-160
+  - target: ix://agent-ix/filament-spec-language/FR-160
     type: references
 ---
 # FR-048: Retain state-constraint boundaries in Kani method evidence
@@ -39,7 +39,7 @@ unconstrained Kani outcomes.
 - A typed optional method selection naming one checked constraint-clause node
   in that same package and its checked state context. The selection is not a
   Boolean expression, display name or caller-provided assertion.
-- The complete initial object snapshot using QSL's existing snapshot value types,
+- The complete initial object snapshot using FSL's existing snapshot value types,
   the complete canonical field and effective-operation census, and an explicit
   implementation binding for every effective operation. Each initial field and
   every operation binder/result must belong to its admitted domain; no unread
@@ -63,7 +63,7 @@ unconstrained Kani outcomes.
   Boundary reachability is `Reached`, `NotReached` or `Unknown`; a cover result
   is not an exact count of distinct boundary states.
 - A typed terminal retaining the selected method through CG's public terminal
-  map, or a typed refusal if the QSL-owned terminal contract cannot represent it.
+  map, or a typed refusal if the FSL-owned terminal contract cannot represent it.
   A method-qualified proof is never presented as an unconditional proof.
 
 ## Behavior
@@ -75,8 +75,8 @@ negotiate_kani_obligations generation entry, and typed execution and result
 conversion entries. Its execution entry SHALL share the bounded launcher and
 strict report reader with FR-017 while preventing its raw backend success from
 escaping through an ordinary proof execution or terminal entry. The public result
-retains the original backend checks and typed QSL/kernel observations under the
-same method identity. Initial snapshot values are retained through QSL's writer,
+retains the original backend checks and typed FSL/kernel observations under the
+same method identity. Initial snapshot values are retained through FSL's writer,
 without a private value wire format. Native integer oracle plans are used only
 where the owner admits complete operand capacity; otherwise the same checked
 condition uses the owner's general integer oracle, without finite enumeration
@@ -90,7 +90,7 @@ If that selection cannot be authenticated, then CG SHALL refuse it before
 backend dispatch, without selecting a sibling clause or inferring a default.
 
 CG SHALL keep the constraint out of the semantic obligation identity, as
-[QSL FR-158](ix://agent-ix/quire-spec-language/FR-158) requires.
+[FSL FR-158](ix://agent-ix/filament-spec-language/FR-158) requires.
 CG SHALL distinguish constrained execution requests from unconstrained requests
 and from requests using another constraint in their method execution identity.
 Changing the constraint SHALL invalidate reuse of execution, replay or terminal
@@ -143,7 +143,7 @@ satisfied boundary cover. An actual safety counterexample retains
 the existing non-proof failure under
 [FR-017](./FR-017-kani-execution-evidence.md).
 If owner evaluation returns `CallFailure`, then CG SHALL stop with the typed
-`runtime_invariant` / `established-invariant-broken` fault, as QSL FR-158
+`runtime_invariant` / `established-invariant-broken` fault, as FSL FR-158
 requires, rather than treat it as Undefined, Refused or a boundary.
 
 No constrained success SHALL be represented as an ordinary unconditional
@@ -152,12 +152,12 @@ No constrained success SHALL be represented as an ordinary unconditional
 an explicitly method-qualified bounded success; with `Unknown`, it remains
 inconclusive. None of those three is an unconditional proof. The
 `NotReached` result may carry method-qualified proof credit only under the
-QSL FR-160 rule below; `Reached` and `Unknown` carry no proof credit. Ordinary non-vacuity failure, cancellation, unwinding failure, timeout,
+FSL FR-160 rule below; `Reached` and `Unknown` carry no proof credit. Ordinary non-vacuity failure, cancellation, unwinding failure, timeout,
 resource exhaustion and malformed backend evidence retain their own causes.
 
 ### Owner mapping
 
-QSL owns state evaluation and the meanings of `Holds`, `Violated`,
+FSL owns state evaluation and the meanings of `Holds`, `Violated`,
 `ConstraintReached`, `Undefined`, refusals and incomplete execution. CG owns
 one typed conversion from those method observations and FR-017 backend evidence
 to the constrained result, and one extension of its public
@@ -170,28 +170,28 @@ invent a second outcome mapping.
 | Safety violation, including at a boundary, with retained falsifying playback | Falsified with the original method identity and evidence | Existing FR-029 replay pairing; `refuted` only after same-method replay reproduces the violation |
 | Constraint evaluation is Undefined | Evaluation violation retaining the undefined cause and original evidence | Existing violation/replay contract when evidence supports it; no success or boundary credit |
 | No safety violation, ordinary cover satisfied, boundary reached | ConstraintReached, boundary observation Reached | Typed inconclusive constrained-method result; never proved |
-| No safety violation, ordinary cover satisfied, completed boundary check not reached, and complete exhaustive evidence within the retained bounds | Method-qualified bounded success, boundary observation NotReached | QSL FR-160 Holds mapping: Proved with Exhaustive basis and Uncertified certification, retaining the constraint in the method; never presented as unconditional |
+| No safety violation, ordinary cover satisfied, completed boundary check not reached, and complete exhaustive evidence within the retained bounds | Method-qualified bounded success, boundary observation NotReached | FSL FR-160 Holds mapping: Proved with Exhaustive basis and Uncertified certification, retaining the constraint in the method; never presented as unconditional |
 | Owner evaluation returns CallFailure | Typed runtime_invariant / established-invariant-broken fault | Stop the item with the original fault; no proof, boundary credit or invented counterexample |
 | Refused or incomplete evaluation, unknown boundary observation or incomplete backend checks | Typed refusal or inconclusive result with the original cause | No proved or refuted terminal inferred from missing information |
 | Ordinary cover unsatisfied, cancellation or resource/unwind failure | Original typed non-proof result and cause | Existing non-proof terminal semantics, retaining the method |
 
-These rows specify semantic correspondence, not a cast of QSL verdict names to
-Kani outcome variants. A QSL `Holds` alone cannot establish a Kani success, and
+These rows specify semantic correspondence, not a cast of FSL verdict names to
+Kani outcome variants. A FSL `Holds` alone cannot establish a Kani success, and
 a `ConstraintReached` alone cannot fabricate installed-backend evidence.
 CG SHALL require agreement of the selected method identity across the backend
-and QSL observation before conversion. For a falsified or Undefined violation
+and FSL observation before conversion. For a falsified or Undefined violation
 whose terminal requires replay, CG SHALL additionally bind that replay to the
 same method under FR-029. Non-falsified constrained outcomes convert without
 a replay settlement; an unexpected settlement retains FR-029's typed pair
 refusal. If a required binding disagrees, then CG SHALL return a typed binding
 refusal with no terminal or proof credit.
 
-QSL owns the terminal value/cause vocabulary and serialization. Until its
+FSL owns the terminal value/cause vocabulary and serialization. Until its
 public API can retain the constrained method and represent these
 method-qualified results, CG SHALL refuse terminal conversion with a typed unsupported result;
 CG SHALL NOT serialize a private terminal variant, drop the method or map the
 result to an unconditional `proved` as a fallback. This requirement does not claim that the
-current QSL terminal API already exposes those representations.
+current FSL terminal API already exposes those representations.
 
 ## Acceptance Criteria
 
@@ -204,12 +204,12 @@ No implementation or installed-backend qualification is claimed by this spec.
 | FR-048-AC-2 | The same safety obligation run without a constraint, with constraint A, and with constraint B has three distinct method execution identities and retains the same semantic obligation identity. Cross-method evidence or replay substitution refuses before conversion; equal requests regenerate identically. | Test |
 | FR-048-AC-3 | An initial boundary state and a later boundary state each undergo safety evaluation. A seeded safety violation at either boundary is falsified with in-domain playback; replacing the boundary branch with an early assumption would fail these controls. Neither boundary expands, stutters or counts as deadlock. | Test |
 | FR-048-AC-4 | A healthy bounded method reaching a boundary satisfies its separate boundary cover and ordinary cover, yields ConstraintReached with Reached observation, and produces no ordinary Verified or proved terminal. A boundary cover records reachability rather than an invented distinct-state count. | Test |
-| FR-048-AC-5 | A healthy method reaching no boundary retains a completed NotReached observation and, only with complete exhaustive evidence, a method-qualified Proved/Exhaustive/Uncertified terminal retaining the constraint under QSL FR-160; it receives no unconditional proof credit. An interrupted or missing boundary check retains Unknown and an inconclusive result. An unmet boundary cover alone cannot classify the ordinary cover as unsatisfied. | Test |
+| FR-048-AC-5 | A healthy method reaching no boundary retains a completed NotReached observation and, only with complete exhaustive evidence, a method-qualified Proved/Exhaustive/Uncertified terminal retaining the constraint under FSL FR-160; it receives no unconditional proof credit. An interrupted or missing boundary check retains Unknown and an inconclusive result. An unmet boundary cover alone cannot classify the ordinary cover as unsatisfied. | Test |
 | FR-048-AC-6 | A constraint that is Undefined at a reached state retains the evaluation violation rather than classifying that state as a boundary. Typed Refused and Incomplete evaluations retain their original causes and cannot become a Boolean assumption or proof. CallFailure instead stops with runtime_invariant / established-invariant-broken, without being recast as Undefined, Refused or a boundary. | Test |
 | FR-048-AC-7 | Removing ordinary non-vacuity evidence, exhausting unwind or resources, cancelling, or supplying malformed backend checks preserves the corresponding non-proof outcome even if the boundary cover was satisfied. Reordering check output does not change classification. | Test |
 | FR-048-AC-8 | The public CG conversion implements every mapping row above using typed evidence and exact method binding. A boundary safety violation follows same-method replay and FR-029 precedence; replay disagreement, refusal, absent playback and identity mismatch never produce refuted or proved by default. | Test |
-| FR-048-AC-9 | A public QSL terminal representation preserves the constraint method, the ConstraintReached non-proof status and the no-boundary method-qualified proof status; where that representation is unavailable, conversion returns a typed unsupported refusal. No private wire variant, missing method or unconditional proved fallback is emitted. | Test |
-| FR-048-AC-10 | Installed-backend healthy-boundary, no-boundary and seeded-boundary-violation controls exercise the generated method and retain their exact typed check evidence. Independent QSL evaluation agrees on the bounded reached states and boundary safety observations. Neither generation-only inspection, saved verdict nor timeout substitutes for this evidence. | Test |
+| FR-048-AC-9 | A public FSL terminal representation preserves the constraint method, the ConstraintReached non-proof status and the no-boundary method-qualified proof status; where that representation is unavailable, conversion returns a typed unsupported refusal. No private wire variant, missing method or unconditional proved fallback is emitted. | Test |
+| FR-048-AC-10 | Installed-backend healthy-boundary, no-boundary and seeded-boundary-violation controls exercise the generated method and retain their exact typed check evidence. Independent FSL evaluation agrees on the bounded reached states and boundary safety observations. Neither generation-only inspection, saved verdict nor timeout substitutes for this evidence. | Test |
 | FR-048-AC-11 | A standalone collection constraint remains unsupported under FR-015-AC-128 with no harness or proof credit. A method constraint never rescues an otherwise unbounded or unsupported state domain. | Test |
 
 ## Dependencies
@@ -219,8 +219,8 @@ No implementation or installed-backend qualification is claimed by this spec.
 - [FR-017](./FR-017-kani-execution-evidence.md) owns original run evidence;
   [FR-029](./FR-029-run-outcome-terminal-record.md) owns replay pairing and the
   public Kani terminal conversion.
-- [QSL FR-158](ix://agent-ix/quire-spec-language/FR-158) owns reached boundary
+- [FSL FR-158](ix://agent-ix/filament-spec-language/FR-158) owns reached boundary
   semantics, constraint selection and semantic obligation identity.
-- [QSL FR-160](ix://agent-ix/quire-spec-language/FR-160) owns the QSL terminal
+- [FSL FR-160](ix://agent-ix/filament-spec-language/FR-160) owns the FSL terminal
   semantics and method record; a representable public constrained-method
   result is an implementation prerequisite, not an assumed existing API.

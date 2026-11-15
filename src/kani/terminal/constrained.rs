@@ -24,9 +24,9 @@ pub enum ConstraintBoundary {
 pub struct ConstrainedOwnerObservation<'a> {
     /// Method whose admitted clauses and snapshot were evaluated.
     pub method: &'a ConstrainedMethodIdentity,
-    /// Original QSL/kernel safety evaluation or original call failure.
+    /// Original FSL/kernel safety evaluation or original call failure.
     pub safety: Result<&'a qsl_replay::ClauseEvaluation, &'a quire_eval::CallFailure>,
-    /// Original QSL/kernel constraint evaluation or original call failure.
+    /// Original FSL/kernel constraint evaluation or original call failure.
     pub constraint: Option<Result<&'a qsl_replay::ClauseEvaluation, &'a quire_eval::CallFailure>>,
     /// Exact backend playback when evaluating a counterexample; absent on a nonfalsified run.
     pub playback: Option<&'a str>,
@@ -110,7 +110,7 @@ pub enum ConstrainedBindingRefusal {
     /// A nonfalsified result carries an unexpected replay settlement.
     #[error("unexpected constrained replay settlement")]
     UnexpectedReplay,
-    /// The public QSL terminal API cannot retain this constraint method.
+    /// The public FSL terminal API cannot retain this constraint method.
     #[error("the public terminal representation cannot retain the constrained method")]
     UnsupportedTerminalRepresentation,
 }
@@ -274,11 +274,11 @@ pub fn classify_constrained_method<'a>(
 pub struct ConstrainedReplaySettlement<'a> {
     /// Method actually replayed.
     pub method: &'a ConstrainedMethodIdentity,
-    /// Original QSL replay reading.
+    /// Original FSL replay reading.
     pub settlement: ReplaySettlement<'a>,
 }
 
-/// Preserve replay pairing, then refuse an unavailable QSL method terminal representation.
+/// Preserve replay pairing, then refuse an unavailable FSL method terminal representation.
 ///
 /// # Errors
 /// Returns a typed binding/pairing refusal, or UnsupportedTerminalRepresentation. No private

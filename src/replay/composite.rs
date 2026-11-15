@@ -1,6 +1,6 @@
-//! Bind QSL composite parity reports to the exact claim sent by the driver (FR-033).
+//! Bind FSL composite parity reports to the exact claim sent by the driver (FR-033).
 //!
-//! QSL owns the result and terminal mapping. A report is readable only after its full claim,
+//! FSL owns the result and terminal mapping. A report is readable only after its full claim,
 //! including the observation, equals the identity retained at the call site.
 // Implements: FR-033-AC-9, FR-029-AC-28
 
@@ -9,10 +9,10 @@ use qsl_replay::{
     VerifiedShadowReport, VerifiedShadowResult,
 };
 
-/// A composite report could not be tied to the claim actually sent to QSL.
+/// A composite report could not be tied to the claim actually sent to FSL.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum CompositeReportError {
-    /// QSL returned no report for the submitted claim.
+    /// FSL returned no report for the submitted claim.
     MissingReport,
     /// The report describes a different claim or observation.
     ClaimMismatch,
@@ -31,39 +31,39 @@ impl std::fmt::Display for CompositeReportError {
 
 impl std::error::Error for CompositeReportError {}
 
-/// A binding-checked falsified composite result and QSL's terminal value for it.
+/// A binding-checked falsified composite result and FSL's terminal value for it.
 #[derive(Debug)]
 pub struct CompositeParitySettlement<'a> {
-    /// QSL's complete F-row result, including native cause or distinct incomplete stage.
+    /// FSL's complete F-row result, including native cause or distinct incomplete stage.
     result: &'a CompositeParityResult,
 }
 
 impl CompositeParitySettlement<'_> {
-    /// QSL's complete result, including native cause or distinct incomplete stage.
+    /// FSL's complete result, including native cause or distinct incomplete stage.
     pub fn result(&self) -> &CompositeParityResult {
         self.result
     }
 
-    /// The value QSL assigned to this result, including its own refusal code.
+    /// The value FSL assigned to this result, including its own refusal code.
     pub fn terminal_value(&self) -> TerminalValue {
         self.result.terminal_value()
     }
 }
 
-/// A binding-checked verified composite result and QSL's terminal value for it.
+/// A binding-checked verified composite result and FSL's terminal value for it.
 #[derive(Debug)]
 pub struct VerifiedShadowSettlement<'a> {
-    /// QSL's complete verified-shadow result.
+    /// FSL's complete verified-shadow result.
     result: &'a VerifiedShadowResult,
 }
 
 impl VerifiedShadowSettlement<'_> {
-    /// QSL's complete verified-shadow result.
+    /// FSL's complete verified-shadow result.
     pub fn result(&self) -> &VerifiedShadowResult {
         self.result
     }
 
-    /// The value QSL assigned to this result.
+    /// The value FSL assigned to this result.
     pub fn terminal_value(&self) -> TerminalValue {
         self.result.terminal_value()
     }
@@ -71,7 +71,7 @@ impl VerifiedShadowSettlement<'_> {
 
 /// Read a falsified composite report only if its full identity matches the sent claim.
 ///
-/// `sent` must be retained from the actual request before invoking QSL. It includes the complete
+/// `sent` must be retained from the actual request before invoking FSL. It includes the complete
 /// falsified observation, so equality checks every claim member without reconstructing a subset.
 /// A CG pre-invocation refusal is handled by the caller before this function is reached.
 ///

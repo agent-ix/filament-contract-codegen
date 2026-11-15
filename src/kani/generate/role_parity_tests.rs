@@ -4,7 +4,7 @@
 #[allow(dead_code)]
 #[path = "../../../tests/state_frame_support/model.rs"]
 mod model;
-// The QSL twin supplies an admitted CheckedPackageV2; this test uses only its package builder.
+// The FSL twin supplies an admitted CheckedPackageV2; this test uses only its package builder.
 #[allow(dead_code)]
 #[path = "../../../tests/state_frame_support/native_twin.rs"]
 mod native_twin;

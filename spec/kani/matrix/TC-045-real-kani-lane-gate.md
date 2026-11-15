@@ -3,7 +3,7 @@ id: TC-045
 title: "Verify the real-Kani lane gate targets"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/NFR-006
+  - target: ix://agent-ix/filament-contract-codegen/NFR-006
     type: verifies
 ---
 # TC-045: Verify the real-Kani lane gate targets

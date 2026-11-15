@@ -4,7 +4,7 @@ use ix_trace_rs::trace;
 use std::{fmt::Write as _, fs, process::Command};
 
 use crate::scratch_crate::{runtime_dependency, write_manifest, TemporaryDirectory};
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     generate_bound_oracles, generate_bound_strategy, BoundGenerationError, BoundStrategyPopulation,
     BoundStrategyRequest, GenerationErrorCode, GenerationTerminalState, StrategyErrorCode,
 };
@@ -133,7 +133,7 @@ fn clause_ref() -> ClauseRef {
 
 fn generate(
     population: BoundStrategyPopulation,
-) -> quire_contract_codegen::GeneratedArtifactBundle {
+) -> filament_contract_codegen::GeneratedArtifactBundle {
     let package = decode(&version_projection());
     generate_bound_strategy(&BoundStrategyRequest {
         package: &package,
@@ -200,7 +200,7 @@ pub(crate) fn generate_projection_population(
     minimum_accepted_cases: u64,
     minimum_rejected_cases: u64,
     maximum_discarded_cases: u64,
-) -> quire_contract_codegen::GeneratedArtifactBundle {
+) -> filament_contract_codegen::GeneratedArtifactBundle {
     let package = decode(value);
     generate_bound_strategy(&BoundStrategyRequest {
         package: &package,
@@ -259,7 +259,7 @@ pub(crate) fn generated_census_runner(source: &str) -> String {
 /// Compiles generated single-integer oracles and checks each accepts exactly `expected` over the
 /// declared `[0, 1000]` domain.
 fn run_integer_oracles(cases: &[(&str, &str)]) {
-    let temporary = TemporaryDirectory::new("quire-bound-integer-oracles");
+    let temporary = TemporaryDirectory::new("filament-bound-integer-oracles");
     let mut root = String::from("//! Generated integer oracles.\n\n");
     let mut checks = String::from("#[cfg(test)]\nmod checks {\n");
     for (index, (generated, expected)) in cases.iter().enumerate() {
@@ -444,7 +444,7 @@ fn tc_017_bound_admission_uses_the_public_clause_and_domain() {
         ClauseId::new("amount-check").unwrap(),
     );
     let arithmetic_oracles = match generate_bound_oracles(&arithmetic).unwrap() {
-        quire_contract_codegen::BoundOracleGeneration::Generated(generated) => generated,
+        filament_contract_codegen::BoundOracleGeneration::Generated(generated) => generated,
         other => panic!("expected generated arithmetic oracle, got {other:?}"),
     };
     assert_eq!(arithmetic_oracles.clauses().len(), 1);
@@ -553,7 +553,7 @@ fn tc_017_bound_admission_uses_the_public_clause_and_domain() {
     .unwrap_err();
     assert_eq!(
         oracle_error.code,
-        quire_contract_codegen::GenerationErrorCode::UnsupportedExpression,
+        filament_contract_codegen::GenerationErrorCode::UnsupportedExpression,
         "{oracle_error:?}"
     );
     assert_eq!(error.code, StrategyErrorCode::UnsupportedClause);
@@ -569,7 +569,7 @@ fn tc_017_bound_admission_uses_the_public_clause_and_domain() {
     // oracle. The strategy still cannot classify the non-scalar relation it receives.
     let obligation = decode(&obligation_value);
     let division_oracles = match generate_bound_oracles(&obligation).unwrap() {
-        quire_contract_codegen::BoundOracleGeneration::Generated(generated) => generated,
+        filament_contract_codegen::BoundOracleGeneration::Generated(generated) => generated,
         other => panic!("expected generated division oracle, got {other:?}"),
     };
     assert!(division_oracles.clauses()[0]
@@ -596,7 +596,7 @@ fn tc_017_bound_admission_uses_the_public_clause_and_domain() {
     assert_eq!(error.clause.as_deref(), Some(&amount_clause));
     // An arithmetic-free oracle is still a plain `bool` function over the declared domain.
     let amount_oracles = match generate_bound_oracles(&decode(&amount_value)).unwrap() {
-        quire_contract_codegen::BoundOracleGeneration::Generated(generated) => generated,
+        filament_contract_codegen::BoundOracleGeneration::Generated(generated) => generated,
         other => panic!("expected generated amount oracle, got {other:?}"),
     };
     let amount_body = amount_oracles.clauses()[0].bundle().rust.contents.clone();
@@ -995,7 +995,7 @@ mod generated_checks {{
 }}
 "##
     ));
-    let temporary = TemporaryDirectory::new("quire-bound-strategy-consumer");
+    let temporary = TemporaryDirectory::new("filament-bound-strategy-consumer");
     write_manifest(
         &temporary.path,
         &format!(
@@ -1077,7 +1077,7 @@ fn tc_020_tc_021_negated_oracle_returns_a_structured_minimal_mismatch() {
             "amount_current",
         ),
     ];
-    let temporary = TemporaryDirectory::new("quire-bound-strategy-mismatch");
+    let temporary = TemporaryDirectory::new("filament-bound-strategy-mismatch");
     let mut root =
         String::from("#![deny(missing_docs)]\n//! Negated-oracle conformance mismatch checks.\n\n");
     let mut checks = String::from("#[cfg(test)]\nmod mismatch_checks {\n");
@@ -1254,7 +1254,7 @@ fn tc_020_all_clause_kinds_and_populations_run_without_discards() {
         ("violating", BoundStrategyPopulation::Violating),
         ("broad", BoundStrategyPopulation::Broad),
     ];
-    let temporary = TemporaryDirectory::new("quire-bound-strategy-all-populations");
+    let temporary = TemporaryDirectory::new("filament-bound-strategy-all-populations");
     let mut root =
         String::from("#![deny(missing_docs)]\n//! Every supported clause kind and population.\n\n");
     let mut checks = String::from("#[cfg(test)]\nmod checks {\n");

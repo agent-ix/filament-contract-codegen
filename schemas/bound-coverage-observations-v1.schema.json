@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://agent-ix.github.io/quire-contract-codegen/schemas/bound-coverage-observations-v1.schema.json",
+  "$id": "https://agent-ix.github.io/filament-contract-codegen/schemas/bound-coverage-observations-v1.schema.json",
   "title": "Complete bound coverage observations, not native qualification",
   "type": "object",
   "additionalProperties": false,

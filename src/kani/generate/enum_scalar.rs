@@ -1,4 +1,4 @@
-//! The enum scalar comparison harness (FR-049): a bounded Kani proof that quire-exact's
+//! The enum scalar comparison harness (FR-049): a bounded Kani proof that filament-exact's
 //! `compare_native_enum` over two `NativeEnum` carriers agrees with the native operator over the
 //! operands' ranks.
 //!
@@ -45,7 +45,7 @@ pub struct EnumScalarRequest<'a> {
     pub ceilings: ProofCeilings,
     /// The loop unwind bound of the harness.
     pub unwind: u32,
-    /// The routed item's QSL occurrence; `None` for a direct request.
+    /// The routed item's FSL occurrence; `None` for a direct request.
     pub requirement_occurrence: Option<&'a crate::core::requirement::RequirementOccurrence>,
     /// Whether the routed item carries a path condition, which this row does not lower.
     pub has_path_condition: bool,
@@ -76,7 +76,7 @@ pub struct EnumScalarHarness {
 pub enum EnumScalarRefusal {
     /// The node is not an enum comparison; its family keeps its own disposition.
     NotEnumComparison,
-    /// The comparison is ill-typed; the cause is quire-exact's own.
+    /// The comparison is ill-typed; the cause is filament-exact's own.
     IllTyped {
         /// The ill-typed cause `compare_native_enum` returned.
         cause: IllTypedCause,
@@ -918,11 +918,11 @@ function same using v(a: Color, b: Color): Boolean pure { a = b }\n";
         assert_eq!(capability, EnumCapability::OwnerAdmittedContext);
     }
 
-    /// QSL admits neither an ordering over an unordered enum nor operands of different enums, so
+    /// FSL admits neither an ordering over an unordered enum nor operands of different enums, so
     /// no source reaches CG with those ill-typed causes.
     #[trace("TC-063", "FR-049-AC-8")]
     #[test]
-    fn qsl_refuses_the_ill_typed_sources_before_cg() {
+    fn fsl_refuses_the_ill_typed_sources_before_cg() {
         for (body, cause) in [
             ("a < b", "IllTyped(OperatorIneligible)"),
             ("a = b", "IllTyped(TypeMismatch)"),
@@ -944,7 +944,7 @@ function same using v(a: Color, b: Color): Boolean pure { a = b }\n";
                 StageLimits::default(),
                 ReplayLimits::default(),
             );
-            let refusal = compiled.expect_err("QSL refuses the source");
+            let refusal = compiled.expect_err("FSL refuses the source");
             let text = format!("{refusal:?}");
             assert!(text.contains("Package(Check"), "{body}: {text}");
             assert!(text.contains(cause), "{body} refuses with {cause}: {text}");

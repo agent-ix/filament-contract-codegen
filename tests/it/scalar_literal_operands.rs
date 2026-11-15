@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Agent-IX
 
-//! FR-032 operand provenance at the QSL-emitted V2 scalar generation seam.
+//! FR-032 operand provenance at the FSL-emitted V2 scalar generation seam.
 //! These controls do not exercise the still-gated scalar replay builder.
 
 use crate::common::proof_ceilings::proof_ceilings;
-use ix_trace_rs::trace;
-use qsl_replay::{compile_package, DependencyInput, ReplayLimits, SourceIdentity, StageLimits};
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     generate_routed, routed_contract_lowering_profile, BackendDescriptor, Candidate,
     ClaimDisposition, ContractDriverResultSelection, ContractRequestPosition, GeneratedScalarClaim,
     GenerationContexts, KaniGenerationContext, KindOutput, ProviderOrigin, RoutedGenerationItem,
 };
+use ix_trace_rs::trace;
+use qsl_replay::{compile_package, DependencyInput, ReplayLimits, SourceIdentity, StageLimits};
 use quire_contract_model::{
     CheckedOccurrenceRole, CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
     CheckedPackageV2ReadResult, CheckedScalarOperandChild, CheckedScalarOperandRange,
@@ -37,7 +37,7 @@ fn compiled(parameters: &str, result: &str, expression: &str) -> CheckedPackageV
         StageLimits::default(),
         ReplayLimits::default(),
     )
-    .expect("QSL compiles the authored scalar source");
+    .expect("FSL compiles the authored scalar source");
     let mut evidence = CheckedPackageEvidence::new();
     evidence.support_feature("quire.value.complete/v1");
     match CheckedPackageV2::read(
@@ -46,7 +46,7 @@ fn compiled(parameters: &str, result: &str, expression: &str) -> CheckedPackageV
         &evidence,
     ) {
         CheckedPackageV2ReadResult::Admitted(package) => *package,
-        other => panic!("IR admits the genuine QSL package: {other:?}"),
+        other => panic!("IR admits the genuine FSL package: {other:?}"),
     }
 }
 

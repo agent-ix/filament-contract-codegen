@@ -16,8 +16,8 @@ pub(crate) mod package;
 #[path = "kani_scalar_native_fixture.rs"]
 mod scalar_native_fixture;
 use crate::common::proof_ceilings::proof_ceilings_with_wall_clock;
-use quire_contract_codegen as scalar_fixture_types;
-use quire_contract_codegen::{
+use filament_contract_codegen as scalar_fixture_types;
+use filament_contract_codegen::{
     generate_routed, Artifact, BackendDescriptor, Candidate, ContractDriverResultSelection,
     ContractRequestPosition, GenerationContexts, KaniGenerationContext, KindOutput, ProviderOrigin,
     RequirementOccurrence, RequirementRecordInput, RequirementRecords, RoutedGenerationItem,
@@ -32,13 +32,8 @@ use std::{
 };
 
 use crate::scratch_crate::{write_manifest, TemporaryDirectory};
-use ix_trace_rs::trace;
-use package::{
-    application, bounded, code_id, corpus_package_for_codes, golden_items, id, integer_add, key,
-    op, reference, Bound, MISSING, MODEL, STATE, T_BOOLEAN, T_INTEGER, UNBOUNDED, V_BOOLEAN,
-};
-use quire_contract_codegen::oracle::operator_catalog::IntegerOperator;
-use quire_contract_codegen::{
+use filament_contract_codegen::oracle::operator_catalog::IntegerOperator;
+use filament_contract_codegen::{
     classify_kani_run, derive_exact_scalar_items, execute_kani_obligation,
     execute_kani_scalar_native, generate_exact_scalar_oracles, negotiate_kani_obligations,
     routed_contract_lowering_profile, run_terminal_value, ClaimDisposition, ClaimMap,
@@ -49,6 +44,11 @@ use quire_contract_codegen::{
     KaniSolver, KaniTool, KaniToolError, ObligationDisposition, ObligationItem, ObligationKind,
     ObligationRecord, ObligationSubject, OperationProvenance, UnsupportedObligation,
     UpstreamBlocker, MAX_OBLIGATION_ITEMS, MAX_OBLIGATION_UNWIND,
+};
+use ix_trace_rs::trace;
+use package::{
+    application, bounded, code_id, corpus_package_for_codes, golden_items, id, integer_add, key,
+    op, reference, Bound, MISSING, MODEL, STATE, T_BOOLEAN, T_INTEGER, UNBOUNDED, V_BOOLEAN,
 };
 use quire_contract_model::{
     CheckedNodeId, CheckedPackageReadLimits, CheckedPackageV2, ContractDependencies,
@@ -119,7 +119,7 @@ pub(crate) fn guard_sources() -> Vec<(&'static str, String)> {
         claim_map: &claim_map,
         node_id: &node,
         claim_index: claim_index(&claim_map, &node),
-        result_selection: &quire_contract_codegen::ContractDriverResultSelection::NotApplicable,
+        result_selection: &filament_contract_codegen::ContractDriverResultSelection::NotApplicable,
     }];
     let (_, scalar_harnesses) =
         emitted_scalar(negotiate_kani_obligations(&request(&items, "crate::subject")).unwrap());
@@ -250,7 +250,7 @@ pub(crate) fn scalar_package() -> (
     scalar_package_with_occurrences(false)
 }
 
-/// The same authored fixture with QSL expression occurrences for FR-049 routing.
+/// The same authored fixture with FSL expression occurrences for FR-049 routing.
 pub(crate) fn routed_scalar_package() -> (
     CheckedPackageV2,
     ClaimMap<ExactScalarClaim>,
@@ -273,7 +273,7 @@ pub(crate) fn admitted_scalar_claims(
     // package graph. The built-in routed profile intentionally excludes those
     // families before Kani settlement.
     let mut profile = routed_contract_lowering_profile();
-    profile.reference.identity = "quire.codegen.kani-direct-test/v1".into();
+    profile.reference.identity = "filament.codegen.kani-direct-test/v1".into();
     profile.supported_tags.extend([
         quire_contract_model::CheckedNodeTag::Model,
         quire_contract_model::CheckedNodeTag::Relation,
@@ -308,7 +308,7 @@ pub(super) fn boolean_implies_scalar_from(
     node: CheckedNodeId,
 ) -> (
     KaniScalarObligationHarness,
-    quire_contract_codegen::Artifact,
+    filament_contract_codegen::Artifact,
     String,
 ) {
     let (mut harnesses, manifest, oracle_crate) =
@@ -329,7 +329,7 @@ pub(super) fn boolean_implies_scalars_from(
     nodes: &[CheckedNodeId],
 ) -> (
     Vec<KaniScalarObligationHarness>,
-    quire_contract_codegen::Artifact,
+    filament_contract_codegen::Artifact,
     String,
 ) {
     let derived = derive_exact_scalar_items(&package, nodes)
@@ -349,11 +349,12 @@ pub(super) fn boolean_implies_scalars_from(
             claim_map: &oracles.claim_map,
             node_id: node,
             claim_index: claim_index(&oracles.claim_map, node),
-            result_selection: &quire_contract_codegen::ContractDriverResultSelection::NotApplicable,
+            result_selection:
+                &filament_contract_codegen::ContractDriverResultSelection::NotApplicable,
         })
         .collect::<Vec<_>>();
     let mut requested = request(&items, "crate::subject");
-    requested.ceilings = quire_contract_codegen::ProofCeilings {
+    requested.ceilings = filament_contract_codegen::ProofCeilings {
         memory_bytes: std::num::NonZeroU64::new(4 * 1024 * 1024 * 1024).unwrap(),
         wall_clock: Duration::from_secs(120),
     };
@@ -376,7 +377,7 @@ pub(super) fn boolean_implies_scalars_from(
 
 pub(super) fn boolean_implies_scalar() -> (
     KaniScalarObligationHarness,
-    quire_contract_codegen::Artifact,
+    filament_contract_codegen::Artifact,
     String,
 ) {
     const IMPLIES: u32 = 7_702;
@@ -443,16 +444,16 @@ fn tc_025_boolean_implication_subject_mutation_is_falsified_with_false_left() {
     assert!(healthy
         .symbolic_arguments
         .iter()
-        .all(|argument| { argument.bounds == quire_contract_codegen::SymbolicBounds::Boolean }));
+        .all(|argument| { argument.bounds == filament_contract_codegen::SymbolicBounds::Boolean }));
     let covers = healthy
         .checks
         .iter()
-        .filter(|check| check.class == quire_contract_codegen::KaniCheckClass::Cover)
+        .filter(|check| check.class == filament_contract_codegen::KaniCheckClass::Cover)
         .collect::<Vec<_>>();
     assert_eq!(covers.len(), 1, "one final cover in the generated source");
     assert_eq!(
         covers[0].status,
-        quire_contract_codegen::KaniCheckStatus::Satisfied
+        filament_contract_codegen::KaniCheckStatus::Satisfied
     );
 
     let subject_call = "quire_contract_runtime::operators::implies_short_circuit(left, || right)";
@@ -603,7 +604,8 @@ fn scalar_records(
             claim_map,
             node_id,
             claim_index: claim_index(claim_map, node_id),
-            result_selection: &quire_contract_codegen::ContractDriverResultSelection::NotApplicable,
+            result_selection:
+                &filament_contract_codegen::ContractDriverResultSelection::NotApplicable,
         })
         .collect::<Vec<_>>();
     negotiate_kani_obligations(&request(&items, "crate::subject"))
@@ -616,7 +618,7 @@ fn scalar_records(
 
 /// Symbolic ranges are the IR's inclusive domains, and every flag is part of the harness
 /// identity.
-/// Upstream: agent-ix/quire-contract-ir FR-036-AC-1, TC-045
+/// Upstream: agent-ix/filament-contract-ir FR-036-AC-1, TC-045
 #[trace("FR-015-AC-2", "FR-015-AC-9", "FR-015-AC-10", "FR-015-AC-11", "TC-025")]
 #[test]
 fn tc_025_symbolic_bounds_equal_ir_domains_and_every_option_is_identity() {
@@ -636,7 +638,7 @@ fn tc_025_symbolic_bounds_equal_ir_domains_and_every_option_is_identity() {
         claim_map: &claim_map,
         node_id: &node_1001,
         claim_index: claim_index(&claim_map, &node_1001),
-        result_selection: &quire_contract_codegen::ContractDriverResultSelection::NotApplicable,
+        result_selection: &filament_contract_codegen::ContractDriverResultSelection::NotApplicable,
     }];
     let (records, scalar_harnesses) =
         emitted_scalar(negotiate_kani_obligations(&request(&items, "crate::subject")).unwrap());
@@ -688,9 +690,9 @@ fn tc_025_symbolic_bounds_equal_ir_domains_and_every_option_is_identity() {
 /// FR-032-AC-8, bounded-addition half: the descriptor with both operands and the result in
 /// `[-1000,1000]` admits an operand pair whose exact sum is outside the result range, and the
 /// decoded retained playback, not an assumed solver choice, gives the expected exact result.
-/// The native observation and QSL parity of this fixture stay gated: QSL's checker refuses the
+/// The native observation and FSL parity of this fixture stay gated: FSL's checker refuses the
 /// source `function subject(x: Int[-1000, 1000], y: Int[-1000, 1000]): Int[-1000, 1000]
-/// { x + y }` (`Unproved(Range)`), so no QSL-emitted package carries these checked ranges.
+/// { x + y }` (`Unproved(Range)`), so no FSL-emitted package carries these checked ranges.
 #[trace("TC-047", "FR-032-AC-8")]
 #[test]
 fn tc_047_bounded_addition_playback_derives_an_out_of_result_range_exact_value() {
@@ -705,7 +707,7 @@ fn tc_047_bounded_addition_playback_derives_an_out_of_result_range_exact_value()
         claim_map: &claim_map,
         node_id: &node_1001,
         claim_index: claim_index(&claim_map, &node_1001),
-        result_selection: &quire_contract_codegen::ContractDriverResultSelection::NotApplicable,
+        result_selection: &filament_contract_codegen::ContractDriverResultSelection::NotApplicable,
     }];
     let (_, scalar_harnesses) =
         emitted_scalar(negotiate_kani_obligations(&request(&items, "crate::subject")).unwrap());
@@ -735,15 +737,15 @@ fn tc_047_bounded_addition_playback_derives_an_out_of_result_range_exact_value()
     };
     let decode = |values: &[i64]| {
         let text = transcript(values);
-        let parsed = quire_contract_codegen::parse_assertion_playback(
+        let parsed = filament_contract_codegen::parse_assertion_playback(
             &text,
             harness.identity.harness_symbol.as_str(),
             harness.identity.module_symbol.as_str(),
-            quire_contract_codegen::SCALAR_PLAYBACK_BYTES,
+            filament_contract_codegen::SCALAR_PLAYBACK_BYTES,
             usize::MAX,
         )
         .expect("the retained playback parses");
-        quire_contract_codegen::decode_scalar_falsification(&harness.identity, &parsed)
+        filament_contract_codegen::decode_scalar_falsification(&harness.identity, &parsed)
     };
     // The illustrative pair; the expected exact result is derived from the decoded operands.
     let operands = decode(&[600, 600]).expect("both operands are admitted");
@@ -783,7 +785,7 @@ fn tc_025_scalar_harness_asserts_the_native_arithmetic_relation() {
         claim_map: &claim_map,
         node_id: &node_1001,
         claim_index: claim_index(&claim_map, &node_1001),
-        result_selection: &quire_contract_codegen::ContractDriverResultSelection::NotApplicable,
+        result_selection: &filament_contract_codegen::ContractDriverResultSelection::NotApplicable,
     }];
     let (_, scalar_harnesses) =
         emitted_scalar(negotiate_kani_obligations(&request(&items, "crate::subject")).unwrap());
@@ -915,7 +917,8 @@ fn tc_025_every_rendered_operation_states_its_own_native_relation() {
             claim_map: &claim_map,
             node_id: &claim.node_id,
             claim_index: claim_index(&claim_map, &claim.node_id),
-            result_selection: &quire_contract_codegen::ContractDriverResultSelection::NotApplicable,
+            result_selection:
+                &filament_contract_codegen::ContractDriverResultSelection::NotApplicable,
         })
         .collect::<Vec<_>>();
     let (_, harnesses) =
@@ -946,7 +949,7 @@ fn tc_025_every_rendered_operation_states_its_own_native_relation() {
 /// `UnsupportedObligation`) are never available to `execute_kani_obligation`, which requires a
 /// a generated harness: an item this test refuses never produces one, so there is no way to
 /// report the refusal as an execution outcome (`KaniRunOutcome`) instead of what it is.
-/// Upstream: agent-ix/quire-contract-ir FR-036-AC-2, TC-045
+/// Upstream: agent-ix/filament-contract-ir FR-036-AC-2, TC-045
 #[trace("FR-015-AC-3", "FR-017-CON-2", "TC-025", "TC-027")]
 #[test]
 fn tc_025_unbounded_non_finite_and_blocked_items_are_refused_without_harnesses() {
@@ -986,7 +989,7 @@ fn tc_025_unbounded_non_finite_and_blocked_items_are_refused_without_harnesses()
         &UnsupportedObligation::BlockedOnUpstream {
             node_id: ids.resolve(&code_id(MODEL)),
             node_tag: "model",
-            issue: UpstreamBlocker::QuireSpecLanguage120,
+            issue: UpstreamBlocker::FilamentSpecLanguage120,
         }
     );
     assert_eq!(
@@ -1005,7 +1008,7 @@ fn tc_025_unbounded_non_finite_and_blocked_items_are_refused_without_harnesses()
         UnsupportedObligation::BlockedOnUpstream {
             node_id: model,
             node_tag: "model",
-            issue: UpstreamBlocker::QuireSpecLanguage120,
+            issue: UpstreamBlocker::FilamentSpecLanguage120,
         }
     } else {
         UnsupportedObligation::NoFiniteEncoding {
@@ -1051,7 +1054,8 @@ fn tc_025_scalar_source_lookup_preserves_multiple_occurrences_per_node() {
             claim_map: &claim_map,
             node_id,
             claim_index: claim_index(&claim_map, node_id),
-            result_selection: &quire_contract_codegen::ContractDriverResultSelection::NotApplicable,
+            result_selection:
+                &filament_contract_codegen::ContractDriverResultSelection::NotApplicable,
         })
         .collect::<Vec<_>>();
     let records = negotiate_kani_obligations(&request(&items, "crate::subject"))
@@ -1112,7 +1116,8 @@ fn tc_025_a_quantity_conversion_claim_is_unrendered_with_no_harness() {
             claim_map: &claim_map,
             node_id,
             claim_index: claim_index(&claim_map, node_id),
-            result_selection: &quire_contract_codegen::ContractDriverResultSelection::NotApplicable,
+            result_selection:
+                &filament_contract_codegen::ContractDriverResultSelection::NotApplicable,
         })
         .collect::<Vec<_>>();
     let KaniObligationOutcome::Emitted {
@@ -1147,7 +1152,7 @@ fn tc_025_a_quantity_conversion_claim_is_unrendered_with_no_harness() {
         claim_map: &control_claims,
         node_id: &control_node,
         claim_index: claim_index(&control_claims, &control_node),
-        result_selection: &quire_contract_codegen::ContractDriverResultSelection::NotApplicable,
+        result_selection: &filament_contract_codegen::ContractDriverResultSelection::NotApplicable,
     };
     let (_, control_harnesses) = emitted_scalar(
         negotiate_kani_obligations(&request(
@@ -1231,7 +1236,7 @@ fn tc_025_a_present_node_with_an_unrecognized_kind_is_refused_rather_than_silent
         claim_map: &claim_map,
         node_id: &node_id,
         claim_index: claim_index(&claim_map, &node_id),
-        result_selection: &quire_contract_codegen::ContractDriverResultSelection::NotApplicable,
+        result_selection: &filament_contract_codegen::ContractDriverResultSelection::NotApplicable,
     }];
     let outcome = negotiate_kani_obligations(&request(&items, "crate::subject")).unwrap();
     let KaniObligationOutcome::Emitted {
@@ -1354,7 +1359,7 @@ fn tc_025_a_claim_naming_a_node_absent_from_the_graph_is_refused_not_silently_su
         claim_map: &claim_map,
         node_id: &missing_node_id,
         claim_index: claim_index(&claim_map, &missing_node_id),
-        result_selection: &quire_contract_codegen::ContractDriverResultSelection::NotApplicable,
+        result_selection: &filament_contract_codegen::ContractDriverResultSelection::NotApplicable,
     }];
     let outcome = negotiate_kani_obligations(&request(&items, "crate::subject")).unwrap();
     let KaniObligationOutcome::Rejected { records } = &outcome else {
@@ -1497,7 +1502,7 @@ fn admitted_integer_division_is_unrendered_and_emits_no_harness() {
         claim_map: &claim_map,
         node_id: &division.node_id,
         claim_index: claim_index(&claim_map, &division.node_id),
-        result_selection: &quire_contract_codegen::ContractDriverResultSelection::NotApplicable,
+        result_selection: &filament_contract_codegen::ContractDriverResultSelection::NotApplicable,
     }];
     let (records, harnesses) =
         emitted_scalar(negotiate_kani_obligations(&request(&items, "crate::subject")).unwrap());
@@ -1546,8 +1551,8 @@ fn tc_025_a_caller_declared_operation_is_refused_with_no_harness() {
     // A guard changes neither the refusal nor its precedence over the guard refusal.
     for guarded in [false, true] {
         let path_condition = if guarded {
-            vec![quire_contract_codegen::RequirementGuard {
-                occurrence: quire_contract_codegen::RequirementOccurrence {
+            vec![filament_contract_codegen::RequirementGuard {
+                occurrence: filament_contract_codegen::RequirementOccurrence {
                     node_id: mismatched.clone(),
                     role: quire_contract_model::CheckedOccurrenceRole::Expression,
                     ordinal: 0,
@@ -1565,7 +1570,8 @@ fn tc_025_a_caller_declared_operation_is_refused_with_no_harness() {
             claim_map: &oracles.claim_map,
             node_id: &mismatched,
             claim_index: claim_index(&oracles.claim_map, &mismatched),
-            result_selection: &quire_contract_codegen::ContractDriverResultSelection::NotApplicable,
+            result_selection:
+                &filament_contract_codegen::ContractDriverResultSelection::NotApplicable,
         }];
         let (records, scalar_harnesses) =
             emitted_scalar(negotiate_kani_obligations(&request(&items, "crate::subject")).unwrap());
@@ -1594,8 +1600,8 @@ fn tc_033_an_unsatisfiable_bound_precedes_the_guard_refusal() {
     let admitted = admitted_scalar_claims(&package, &claim_map);
     for guarded in [false, true] {
         let path_condition = if guarded {
-            vec![quire_contract_codegen::RequirementGuard {
-                occurrence: quire_contract_codegen::RequirementOccurrence {
+            vec![filament_contract_codegen::RequirementGuard {
+                occurrence: filament_contract_codegen::RequirementOccurrence {
                     node_id: node.clone(),
                     role: quire_contract_model::CheckedOccurrenceRole::Expression,
                     ordinal: 0,
@@ -1613,7 +1619,8 @@ fn tc_033_an_unsatisfiable_bound_precedes_the_guard_refusal() {
             claim_map: &claim_map,
             node_id: &node,
             claim_index: claim_index(&claim_map, &node),
-            result_selection: &quire_contract_codegen::ContractDriverResultSelection::NotApplicable,
+            result_selection:
+                &filament_contract_codegen::ContractDriverResultSelection::NotApplicable,
         }];
         let (records, harnesses) =
             emitted_scalar(negotiate_kani_obligations(&request(&items, "crate::subject")).unwrap());
@@ -1634,7 +1641,7 @@ fn tc_033_an_unsatisfiable_bound_precedes_the_guard_refusal() {
 /// too: a rejected `negotiate_kani_obligations` call returns no harness at all,
 /// so `execute_kani_obligation` has nothing to run and nothing to misreport as an execution
 /// outcome in place of the refusal it actually is.
-/// Upstream: agent-ix/quire-contract-ir FR-036-AC-4, TC-045
+/// Upstream: agent-ix/filament-contract-ir FR-036-AC-4, TC-045
 #[trace("FR-015-AC-12", "FR-017-CON-2", "TC-025", "TC-027")]
 #[test]
 fn tc_025_every_item_is_accounted_before_any_harness_is_exposed() {
@@ -1753,7 +1760,7 @@ fn tc_025_every_item_is_accounted_before_any_harness_is_exposed() {
         node_id: &node,
         // PackageMismatch takes precedence over claim selection.
         claim_index: 0,
-        result_selection: &quire_contract_codegen::ContractDriverResultSelection::NotApplicable,
+        result_selection: &filament_contract_codegen::ContractDriverResultSelection::NotApplicable,
     }];
     let outcome = negotiate_kani_obligations(&request(&items, "crate::subject")).unwrap();
     assert_eq!(
@@ -2169,7 +2176,7 @@ fn tc_027_real_kani_unknown_cbmc_option_keeps_exit_code_64_as_the_failure_cause(
 /// exactly as `generate_routed` returns them: the inputs the driver assembles a run from.
 pub(crate) fn routed_scalar_increment() -> (
     KaniScalarObligationHarness,
-    quire_contract_codegen::Artifact,
+    filament_contract_codegen::Artifact,
 ) {
     let (harness, artifacts) = routed_scalar_increment_with_artifacts();
     let manifest = artifacts
@@ -2181,7 +2188,7 @@ pub(crate) fn routed_scalar_increment() -> (
 
 fn routed_scalar_increment_with_artifacts() -> (
     KaniScalarObligationHarness,
-    Vec<quire_contract_codegen::Artifact>,
+    Vec<filament_contract_codegen::Artifact>,
 ) {
     routed_scalar_with_artifacts(
         package::bounded_increment_package(),
@@ -2235,7 +2242,7 @@ fn native_scalar_increment_keeps_original_profile_and_checked_capacity() {
     assert_eq!(native.identity.solver, KaniSolver::Cadical);
     assert_eq!(
         native.identity.integer_representation,
-        quire_contract_codegen::ScalarIntegerRepresentation::Native
+        filament_contract_codegen::ScalarIntegerRepresentation::Native
     );
     let selected = native
         .identity
@@ -2247,7 +2254,7 @@ fn native_scalar_increment_keeps_original_profile_and_checked_capacity() {
     };
     assert_eq!(operation.node_id, native.identity.node_id);
     assert_eq!(operation.operation_identity, "quire.op.integer.add");
-    let endpoints = |interval: &quire_contract_codegen::NativeIntegerIntervalDecision| {
+    let endpoints = |interval: &filament_contract_codegen::NativeIntegerIntervalDecision| {
         (
             interval.lower.parse::<i128>().unwrap(),
             interval.upper.parse::<i128>().unwrap(),
@@ -2369,7 +2376,7 @@ fn native_original_tc027_increment_verifies() {
 
 fn routed_scalar_binary_subtraction_with_artifacts() -> (
     KaniScalarObligationHarness,
-    Vec<quire_contract_codegen::Artifact>,
+    Vec<filament_contract_codegen::Artifact>,
 ) {
     routed_scalar_with_artifacts(
         package::bounded_binary_subtraction_package(),
@@ -2382,7 +2389,7 @@ fn routed_scalar_binary_subtraction_with_artifacts() -> (
 
 fn native_scalar_binary_subtraction_with_artifacts() -> (
     KaniScalarObligationHarness,
-    Vec<quire_contract_codegen::Artifact>,
+    Vec<filament_contract_codegen::Artifact>,
 ) {
     routed_native_scalar_with_artifacts(
         package::bounded_binary_subtraction_package(),
@@ -2397,10 +2404,10 @@ fn native_scalar_binary_subtraction_with_artifacts() -> (
 /// `src/lib.rs`.
 pub(super) fn write_scalar_crate(
     name: &str,
-    manifest: &quire_contract_codegen::Artifact,
+    manifest: &filament_contract_codegen::Artifact,
     library: &str,
 ) -> TemporaryDirectory {
-    let scratch = TemporaryDirectory::new(&format!("quire-kani-obligations-scalar-{name}"));
+    let scratch = TemporaryDirectory::new(&format!("filament-kani-obligations-scalar-{name}"));
     let directory = &scratch.path;
     write_manifest(directory, &manifest.contents);
     fs::write(directory.join("src/lib.rs"), library).unwrap();
@@ -2470,8 +2477,8 @@ fn tc_027_a_routed_scalar_harness_run_classifies_like_a_contract_harness() {
 pub(crate) fn run_scalar_under_real_kani(
     name: &str,
     harness: &KaniScalarObligationHarness,
-    manifest: &quire_contract_codegen::Artifact,
-) -> quire_contract_codegen::KaniExecutionEvidence {
+    manifest: &filament_contract_codegen::Artifact,
+) -> filament_contract_codegen::KaniExecutionEvidence {
     let cancel = quire_exact::Cancel::new();
     let installation = KaniInstallation::discover().expect("cargo-kani is installed");
     let scratch = write_scalar_crate(name, manifest, &harness.rust.contents);
@@ -2718,9 +2725,9 @@ fn tc_027_attested_scalar_subtraction_receipts_bind_both_operand_orders() {
 }
 
 fn assert_retained_scalar_content(
-    receipt: &quire_contract_codegen::KaniScalarNativeReceipt,
+    receipt: &filament_contract_codegen::KaniScalarNativeReceipt,
     harness: &KaniScalarObligationHarness,
-    artifacts: &[quire_contract_codegen::Artifact],
+    artifacts: &[filament_contract_codegen::Artifact],
 ) {
     let entries = receipt.staged_entries();
     assert_eq!(
@@ -2794,11 +2801,11 @@ fn attested_scalar_limits() -> quire_exact::ScalarLimits {
 #[trace("FR-017-AC-28", "FR-017-AC-29")]
 #[test]
 fn tc_027_attested_scalar_rejects_preflight_mismatches_without_launch() {
-    use quire_contract_codegen::{KaniScalarNativeError, KaniScalarNativeRequest};
+    use filament_contract_codegen::{KaniScalarNativeError, KaniScalarNativeRequest};
 
     let (harness, valid_artifacts) = routed_scalar_increment_with_artifacts();
     let cancel = quire_exact::Cancel::new();
-    let control_scratch = TemporaryDirectory::new("quire-kani-obligations-preflight");
+    let control_scratch = TemporaryDirectory::new("filament-kani-obligations-preflight");
     let control_directory = &control_scratch.path;
     let launcher = control_directory.join("fake-cargo-kani");
     let marker = control_directory.join("launched");
@@ -2836,7 +2843,7 @@ fn tc_027_attested_scalar_rejects_preflight_mismatches_without_launch() {
     assert_eq!(changed_path.as_ref().unwrap_err().code(), "invalid_request");
     assert_eq!(
         changed_path.as_ref().unwrap_err().class(),
-        quire_contract_codegen::KaniScalarNativeErrorClass::CompletionRefusal
+        filament_contract_codegen::KaniScalarNativeErrorClass::CompletionRefusal
     );
     assert!(matches!(
         changed_path,
@@ -3016,7 +3023,7 @@ fn run_ac35_native(
     comparison: &str,
     identity: &'static str,
     mutation: Option<(&str, &str)>,
-) -> quire_contract_codegen::KaniExecutionEvidence {
+) -> filament_contract_codegen::KaniExecutionEvidence {
     let (mut harness, manifest) =
         crate::requirement_records::ac35_native_harness(comparison, identity);
     if let Some((site, with)) = mutation {
@@ -3089,7 +3096,7 @@ fn tc_033_native_guarded_harness_mutants_are_detected() {
 #[test]
 #[trace("TC-027", "FR-017-AC-51")]
 fn tc_027_scalar_limits_is_available_at_codegen_root_with_request_type_identity() {
-    use quire_contract_codegen::{KaniScalarNativeRequest, ScalarLimits};
+    use filament_contract_codegen::{KaniScalarNativeRequest, ScalarLimits};
 
     // This function's return type proves that the public root export is the
     // exact type of the existing request field, without naming Runtime.
@@ -3128,7 +3135,7 @@ fn message_safe_label(raw: &str) -> String {
 /// verdict when the proof was falsified: the launcher pipes Kani's report, so `make kani-mutations`
 /// (FR-055) recognises a rejected mutant by this line in the test output.
 fn verified_or_print_verdict<T>(
-    error: &quire_contract_codegen::KaniScalarNativeError,
+    error: &filament_contract_codegen::KaniScalarNativeError,
     what: &str,
 ) -> T {
     if let Some(verdict) = error.falsified_verdict() {
@@ -3207,7 +3214,7 @@ fn ir1530_probe_general_route_two_bit_add() {
         matches!(
             evidence.outcome,
             KaniRunOutcome::Inconclusive {
-                reason: quire_contract_codegen::KaniInconclusiveReason::TimedOut
+                reason: filament_contract_codegen::KaniInconclusiveReason::TimedOut
             }
         ),
         "{:?}",

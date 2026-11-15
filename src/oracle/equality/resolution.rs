@@ -373,7 +373,7 @@ pub(super) fn resolve_type<Body: GraphBody>(
                             return Err(CompositeEqualityRefusal::BlockedOnUpstream {
                                 unsupported_node_id: id,
                                 node_tag: "composite_type.reference",
-                                issue: super::UpstreamBlocker::QuireSpecLanguage120,
+                                issue: super::UpstreamBlocker::FilamentSpecLanguage120,
                             }
                             .into());
                         }

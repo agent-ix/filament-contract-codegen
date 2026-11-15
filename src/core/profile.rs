@@ -37,20 +37,20 @@ pub(crate) fn oracle_crate_manifest(crate_name: &str) -> String {
 /// The concrete function oracle's checked-closure facade and direct leaf dependencies.
 pub(crate) fn function_oracle_crate_manifest(crate_name: &str) -> String {
     format!(
-        "[package]\nname = \"{crate_name}\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[lib]\npath = \"src/lib.rs\"\n\n[dependencies]\nquire-contract-codegen = {{ git = \"https://github.com/agent-ix/quire-contract-codegen\", branch = \"main\" }}\nquire-contract-model = {{ git = \"https://github.com/agent-ix/quire-contract-ir\", branch = \"main\" }}\nqsl-replay = {{ git = \"https://github.com/agent-ix/quire-spec-language\", branch = \"main\" }}\nquire-eval = {{ git = \"https://github.com/agent-ix/quire-eval\", branch = \"main\" }}\nquire-exact = {{ {EXACT_DEPENDENCY_SOURCE} }}\nquire-semantic-value = {{ {SEMANTIC_VALUE_DEPENDENCY_SOURCE} }}\n\n[lints.rust]\nunsafe_code = \"forbid\"\n\n{ORACLE_KANI_METADATA}[workspace]\n"
+        "[package]\nname = \"{crate_name}\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[lib]\npath = \"src/lib.rs\"\n\n[dependencies]\nfilament-contract-codegen = {{ git = \"https://github.com/agent-ix/filament-contract-codegen\", branch = \"main\" }}\nquire-contract-model = {{ git = \"https://github.com/agent-ix/quire-contract-ir\", branch = \"main\" }}\nqsl-replay = {{ git = \"https://github.com/agent-ix/filament-spec-language\", branch = \"main\" }}\nquire-eval = {{ git = \"https://github.com/agent-ix/quire-eval\", branch = \"main\" }}\nquire-exact = {{ {EXACT_DEPENDENCY_SOURCE} }}\nquire-semantic-value = {{ {SEMANTIC_VALUE_DEPENDENCY_SOURCE} }}\n\n[lints.rust]\nunsafe_code = \"forbid\"\n\n{ORACLE_KANI_METADATA}[workspace]\n"
     )
 }
 
 /// The equality ABI alone needs the public admitted-context facade.
 pub(crate) fn equality_oracle_crate_manifest(crate_name: &str) -> String {
     let manifest = oracle_crate_manifest(crate_name);
-    manifest.replacen("[dependencies]\n", "[dependencies]\nquire-contract-model = { git = \"https://github.com/agent-ix/quire-contract-ir\", branch = \"main\" }\nqsl-replay = { git = \"https://github.com/agent-ix/quire-spec-language\", branch = \"main\" }\n", 1)
+    manifest.replacen("[dependencies]\n", "[dependencies]\nquire-contract-model = { git = \"https://github.com/agent-ix/quire-contract-ir\", branch = \"main\" }\nqsl-replay = { git = \"https://github.com/agent-ix/filament-spec-language\", branch = \"main\" }\n", 1)
 }
 
 /// The isolated observer workspace; only its dev dependencies enable charge logging.
 pub(crate) fn scalar_observer_manifest() -> String {
     format!(
-        "[package]\nname = \"quire-scalar-native-observer\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\nautobins = false\nautoexamples = false\n\n[[example]]\nname = \"ir791_native\"\npath = \"../src/bin/ir791_native.rs\"\n\n[dev-dependencies]\nquire-contract-runtime = {{ {RUNTIME_DEPENDENCY_SOURCE}, features = [\"exact\"] }}\nquire-exact = {{ {EXACT_DEPENDENCY_SOURCE}, features = [\"test-support\"] }}\n\n[workspace]\nresolver = \"2\"\n"
+        "[package]\nname = \"filament-scalar-native-observer\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\nautobins = false\nautoexamples = false\n\n[[example]]\nname = \"ir791_native\"\npath = \"../src/bin/ir791_native.rs\"\n\n[dev-dependencies]\nquire-contract-runtime = {{ {RUNTIME_DEPENDENCY_SOURCE}, features = [\"exact\"] }}\nquire-exact = {{ {EXACT_DEPENDENCY_SOURCE}, features = [\"test-support\"] }}\n\n[workspace]\nresolver = \"2\"\n"
     )
 }
 
@@ -112,7 +112,7 @@ mod tests {
     #[test]
     fn only_equality_manifests_acquire_the_admitted_context_facade() {
         let equality = equality_oracle_crate_manifest("equality-probe");
-        assert!(equality.contains("qsl-replay = { git = \"https://github.com/agent-ix/quire-spec-language\", branch = \"main\" }"));
+        assert!(equality.contains("qsl-replay = { git = \"https://github.com/agent-ix/filament-spec-language\", branch = \"main\" }"));
         assert!(!equality.contains("rev ="));
         assert!(!equality.contains("test-support"));
         assert!(!oracle_crate_manifest("scalar-probe").contains("qsl-replay"));
@@ -124,7 +124,7 @@ mod tests {
     fn function_manifest_uses_the_checked_closure_facade_and_direct_leaves() {
         let function = function_oracle_crate_manifest("function-probe");
         for dependency in [
-            "quire-contract-codegen",
+            "filament-contract-codegen",
             "quire-contract-model",
             "qsl-replay",
             "quire-eval",

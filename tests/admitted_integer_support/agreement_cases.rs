@@ -91,7 +91,7 @@ fn unbounded_right_values_outside_sibling_interval_still_complete() {
             EqualityOperand::typed(ValueType::Integer),
             &quire_semantic_value::enumeration::EnumMemberIndex::default(),
         )
-        .expect("QSpec admits Int[0,9] to unbounded Integer");
+        .expect("FSpec admits Int[0,9] to unbounded Integer");
     for left in [0_i64, 9] {
         for right in [-100_i64, -1, 0, 9, 10, 42, 100] {
             let l = Value::Integer(Integer::from(left));

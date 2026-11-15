@@ -3,15 +3,15 @@ id: FR-040
 title: "Observe caller cancellation in bounded Kani execution and retain its source"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/StR-001
+  - target: ix://agent-ix/filament-contract-codegen/StR-001
     type: satisfies
-  - target: ix://agent-ix/quire-contract-codegen/FR-017
+  - target: ix://agent-ix/filament-contract-codegen/FR-017
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-028
+  - target: ix://agent-ix/filament-contract-codegen/FR-028
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-030
+  - target: ix://agent-ix/filament-contract-codegen/FR-030
     type: depends_on
-  - target: ix://agent-ix/quire-contract-ir/FR-030
+  - target: ix://agent-ix/filament-contract-ir/FR-030
     type: references
 ---
 # FR-040: Observe caller cancellation in bounded Kani execution and retain its source
@@ -19,7 +19,7 @@ relationships:
 ## Description
 
 When a caller requests cancellation of a bounded Kani execution, the generator SHALL observe the
-caller-owned `quire_exact::Cancel` handle at the real launcher and retain the cause of the first
+caller-owned `filament_exact::Cancel` handle at the real launcher and retain the cause of the first
 cancellation event that stops that launcher. The caller owns the handle and any timer: a timer can
 call `cancel(CancelCause::Deadline)`, while an elapsed [FR-028](./FR-028-bounded-proof-ceilings.md)
 execution ceiling without a recorded cancellation event remains `TimedOut`. This requirement adds
@@ -28,7 +28,7 @@ outcome received from outside CG as an executed `KaniRunOutcome`.
 
 ## Inputs
 
-- A required `&quire_exact::Cancel` on each public `KaniExecutionRequest`, live or already
+- A required `&filament_exact::Cancel` on each public `KaniExecutionRequest`, live or already
   cancelled. The caller retains the owning handle across the synchronous call and can give clones
   to its request or timer threads. One handle belongs to one concurrent execution group; requests
   with distinct handles cannot share a launcher process. Reuse after a cancelled execution does not
@@ -49,9 +49,9 @@ outcome received from outside CG as an executed `KaniRunOutcome`.
   source observed for that group's launcher, not a later reading of a member's handle.
 - For a stopped single run, one Contract IR
   `KaniOutcomeKind::Cancelled { source: KaniCancellationSource }` constructed from that execution
-  evidence through `KaniOutcome::non_success`, and its QSL terminal
-  `Incomplete(IncompleteCause::Cancelled { source: quire_exact::CancelCause })` through
-  [FR-030](./FR-030-ir-outcome-terminal-map.md). The IR `source` is mapped exhaustively to QSL's
+  evidence through `KaniOutcome::non_success`, and its FSL terminal
+  `Incomplete(IncompleteCause::Cancelled { source: filament_exact::CancelCause })` through
+  [FR-030](./FR-030-ir-outcome-terminal-map.md). The IR `source` is mapped exhaustively to FSL's
   exact cause; `code`, `source_id`, `context` and elapsed time never supply it.
 
 ## Behavior
@@ -89,23 +89,23 @@ outcome received from outside CG as an executed `KaniRunOutcome`.
   its settled `KaniRunOutcome::Cancelled` evidence and pass that outcome to the FR-030 terminal map.
   Other CG-executed run outcomes retain [FR-029](./FR-029-run-outcome-terminal-record.md)'s map;
   external IR outcomes retain FR-030's existing input path. CG SHALL depend directly on
-  `quire-exact` for `Cancel` and `CancelCause` at the same coherent Cargo resolution used by
-  `qsl-replay`, and SHALL continue to obtain every QSL type from `qsl-replay`. No CG copy of either
-  cancellation enum or QSL facade change is required.
+  `filament-exact` for `Cancel` and `CancelCause` at the same coherent Cargo resolution used by
+  `fsl-replay`, and SHALL continue to obtain every FSL type from `fsl-replay`. No CG copy of either
+  cancellation enum or FSL facade change is required.
 
 ## Acceptance Criteria
 
 | ID | Criteria | Verification |
 |----|----------|--------------|
 | FR-040-AC-1 | A caller retains a live `Cancel`, sends its clone through a public single-run request, and the bounded launcher observes it before spawn and during an actual running backend. Pre-spawn cancellation starts no backend; running cancellation confirms owned teardown before evidence returns. | Test |
-| FR-040-AC-2 | In two live single runs, issue `Requested` then `Deadline`, and reverse the calls. Each run's actual launcher stop, `KaniExecutionEvidence.outcome`, constructed IR `Cancelled { source }` and QSL `IncompleteCause::Cancelled { source }` retain the first cause; a later event cannot change them. A hand-built IR outcome alone does not satisfy this criterion. | Test |
+| FR-040-AC-2 | In two live single runs, issue `Requested` then `Deadline`, and reverse the calls. Each run's actual launcher stop, `KaniExecutionEvidence.outcome`, constructed IR `Cancelled { source }` and FSL `IncompleteCause::Cancelled { source }` retain the first cause; a later event cannot change them. A hand-built IR outcome alone does not satisfy this criterion. | Test |
 | FR-040-AC-3 | A run that reaches its execution ceiling with no cancellation event remains `TimedOut`. A `Deadline` event recorded only after completion, memory/capture stop or elapsed-ceiling stop does not turn that result into `Cancelled`. | Test |
 | FR-040-AC-4 | Completion before observed cancellation keeps the report-based result; measured memory exhaustion, memory observation failure, output over-limit, unread capture and unconfirmed cleanup keep their existing result/refusal and confirmed teardown rules when cancellation competes. A cancellation observed first and causing stop is not overwritten by later completion or elapsed time. | Test |
 | FR-040-AC-5 | A multi-member group sharing one handle stops wholly on its observed cause, returns `BatchCancelled { source, members }`, and classifies no member; another group using a distinct handle retains its own result. Reversing the two cause calls changes the cancelled group's source and not the other group's evidence. Distinct handles never share one launcher. | Test |
-| FR-040-AC-6 | The single-run producer constructs an IR `KaniOutcomeKind::Cancelled { source }` from settled execution evidence, and its real call path reaches the FR-030 map. Mapping both IR source variants exhaustively yields the identical `quire_exact::CancelCause` inside QSL's `IncompleteCause::Cancelled`; neither metadata nor a copied enum determines the source. | Test |
-| FR-040-AC-7 | The direct `quire-exact::CancelCause` constructs `qsl-replay::IncompleteCause::Cancelled` through a type-checked exhaustive conversion, while all QSL imports remain through `qsl-replay`; no implicit cancellation control, source fallback, or compatibility overload is present. | Test and Inspection |
+| FR-040-AC-6 | The single-run producer constructs an IR `KaniOutcomeKind::Cancelled { source }` from settled execution evidence, and its real call path reaches the FR-030 map. Mapping both IR source variants exhaustively yields the identical `filament_exact::CancelCause` inside FSL's `IncompleteCause::Cancelled`; neither metadata nor a copied enum determines the source. | Test |
+| FR-040-AC-7 | The direct `filament-exact::CancelCause` constructs `fsl-replay::IncompleteCause::Cancelled` through a type-checked exhaustive conversion, while all FSL imports remain through `fsl-replay`; no implicit cancellation control, source fallback, or compatibility overload is present. | Test and Inspection |
 
 ## Dependencies
 
-- **Upstream**: [FR-017](./FR-017-kani-execution-evidence.md), [FR-028](./FR-028-bounded-proof-ceilings.md), Contract IR `ix://agent-ix/quire-contract-ir/FR-030`.
+- **Upstream**: [FR-017](./FR-017-kani-execution-evidence.md), [FR-028](./FR-028-bounded-proof-ceilings.md), Contract IR `ix://agent-ix/filament-contract-ir/FR-030`.
 - **Verification**: [TC-055](../matrix/TC-055-cancellation-producer.md) has tagged producer, competition, batch and terminal-map controls for AC-1 to AC-7 (IR-701, CG #383). This status does not assert a new real-Kani run on this spec head.

@@ -24,7 +24,7 @@ pub fn compile(
         qsl_replay::StageLimits::default(),
         qsl_replay::ReplayLimits::default(),
     )
-    .expect("the original QSpec color source and model compile");
+    .expect("the original FSpec color source and model compile");
     let wire: serde_json::Value =
         serde_json::from_slice(compiled.package().bytes()).expect("original emission JSON");
     let mut evidence = CheckedPackageEvidence::new();

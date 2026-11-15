@@ -3,20 +3,20 @@ id: TC-006
 title: "Distinguish vacuity and unexecuted control flow"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-004
+  - target: ix://agent-ix/filament-contract-codegen/FR-004
     type: verifies
-  - target: ix://agent-ix/quire-contract-ir/FR-045
+  - target: ix://agent-ix/filament-contract-ir/FR-045
     type: references
 ---
 # TC-006: Distinguish vacuity and unexecuted control flow
 
-The original same-node/different-point case was infeasible under QSpec #449
+The original same-node/different-point case was infeasible under FSpec #449
 and earns no test credit. The node-qualified V2 controls below back Planned AC-26.
 
 ## Description
 
 Verify actual generated-oracle probes against native LLVM export, and ultimately keep measured
-coverage, runtime accounting, generated-campaign execution, QSL clause-run outcome, and obligation
+coverage, runtime accounting, generated-campaign execution, FSL clause-run outcome, and obligation
 discharge distinct.
 
 ## Test Procedure
@@ -31,7 +31,7 @@ Exercise exact positive and zero segment counts for oracle-evaluation and conseq
 multiple consequents with mixed observation, and complete campaign counters. Mutate each input class
 independently: export type/version, absent segments from summary-only output, segment tuple shape,
 missing/duplicate filenames, parent-traversing or ambiguous paths, and requirement or revision
-identity. Use the quire-contract-runtime
+identity. Use the filament-contract-runtime
 `CampaignReport` type rather than constructing a caller-owned counter lookalike.
 
 ## Expected Results
@@ -83,7 +83,7 @@ Also omit or change the LLVM producer tool/version identity. The successful case
 identity and the run's requirement/revision; each mismatch or omission is a structured non-success
 result without measured classification or coverage discharge.
 
-For live-run authority, pass the original `/2` wire bytes through QSL's strict reader exactly once
+For live-run authority, pass the original `/2` wire bytes through FSL's strict reader exactly once
 and consume that returned typed result directly. Inspect that the analyzer neither reserializes the
 typed value nor constructs a second provenance record. Assert callers cannot construct, clone,
 serialize or deserialize the private run context, or attach a foreign-run value to its private
@@ -115,7 +115,7 @@ input gives non-success with no invented classification (AC-24); and neither `Bo
 1. Admit V2 packages with distinct invariant checked clause nodes whose condition and anchor are
    equal but whose accepted points are initialization and handler. Select each exact checked clause
    id and authentic occurrence for V2 strategy generation in turn. Compare the generated runner's
-   verdict point with that node's accepted QSL point, and compare the rederived node and package
+   verdict point with that node's accepted FSL point, and compare the rederived node and package
    identities. Each executable clause node has one expected population entry. In a control, select
    two authentic claims of one pointed node and verify both render its identical point.
 2. Select a wrong-role, wrong-ordinal, and other-node occurrence against that checked clause while
@@ -130,48 +130,48 @@ input gives non-success with no invented classification (AC-24); and neither `Bo
 
 ## Planned native-run-result/2 consumer controls
 
-1. Obtain QSL FR-267's genuine `native-run-result/2` documents for `AllBelow` over `high`
+1. Obtain FSL FR-267's genuine `native-run-result/2` documents for `AllBelow` over `high`
    (decisive counterexample with witness), `AllBelow` over `low` (closed scope without witness),
-   and exhausted work (unavailable without witness). Feed each through QSL's strict reader, then
+   and exhausted work (unavailable without witness). Feed each through FSL's strict reader, then
    the planned CG `analyze_coverage` input. Compare typed stage, category, truth, basis and each
    assigned witness component with independently authored expectations; do not compare the reader
    output to itself as the oracle.
 2. In separate documents change the `format` to `/1` and `/3`, omit `format`, omit or change
    `basis`, omit a required witness component, add an unknown witness member, place a witness on
-   closed scope, or remove one from a decisive basis. The QSL reader must return a located refusal
-   before CG classifies a clause. Feed the QSL FR-267 `unknown_edition` command-error envelope
+   closed scope, or remove one from a decisive basis. The FSL reader must return a located refusal
+   before CG classifies a clause. Feed the FSL FR-267 `unknown_edition` command-error envelope
    through that same strict reader; its distinct typed variant must retain stage `profile`, code
    `unknown_edition`, `basis: unavailable`, no witness and the defined message/details as an
    error, never become a successful clause run. Remove its required member, add a clause-run-only
    member or witness, change its basis, violate code-specific cause/details, or change its format:
    each must yield a located reader refusal before CG in-run binding.
-3. Give CG a genuine QSL semantic-success document with a decisive witness but no execution of
+3. Give CG a genuine FSL semantic-success document with a decisive witness but no execution of
    its generated Rust campaign or no live CG-run source/map binding. Conversely,
-   run a generated campaign and measure its probes while QSL's clause run reports violation,
-   refusal, undefined, incomplete, unsupported or internal failure; exercise a QSpec cancellation
-   form separately only when QSL provides such a producer case. Check that each
+   run a generated campaign and measure its probes while FSL's clause run reports violation,
+   refusal, undefined, incomplete, unsupported or internal failure; exercise a FSpec cancellation
+   form separately only when FSL provides such a producer case. Check that each
    fact stays typed and independent, none is inferred from the other, and no missing generated-run
    evidence or adverse result can discharge coverage or grant IR FR-045 proof credit.
 4. For each valid decoded clause-run or command-error variant, omit the live CG run context, omit
    each required association independently through the controlled producer seam, or supply only
-   caller-declared matching paths, QSL `package_id`, or producer metadata. Check a structured
-   absent, foreign or mismatched binding diagnostic retains the typed QSL outcome and available
+   caller-declared matching paths, FSL `package_id`, or producer metadata. Check a structured
+   absent, foreign or mismatched binding diagnostic retains the typed FSL outcome and available
    input identities, with no campaign qualification or measured classification. In one live CG
-   run, bind the original QSL wire/typed-result pair, producer execution, generated source, source
-   map and exact LLVM export before returning; the QSL outcome remains unchanged. Independently
+   run, bind the original FSL wire/typed-result pair, producer execution, generated source, source
+   map and exact LLVM export before returning; the FSL outcome remains unchanged. Independently
    present a malformed same-run association before binding, including one with matching path or
-   QSL `package_id`; each observable mismatch must be named and refuse measured classification.
+   FSL `package_id`; each observable mismatch must be named and refuse measured classification.
    Try to attach a foreign-run export with the same source/map and LLVM tool/version but different
    probe counts: the private invocation lifetime must prevent constructing that binding request.
    A completed run's context or forwarded report cannot be replayed to
    qualify another run. A bound live run never upgrades a command error or adverse clause-run
    result. The LLVM producer identity and actual probe observations remain CG coverage inputs,
-   not QSL result members.
+   not FSL result members.
 
 These controls are Planned / UNRUN. QSL-520 delivered the public `/2` producer and strict reader;
 CG consumption remains unrun. QSL-688 allocated the result/execution/source/map/export association
 to CG, whose live runner binding still needs implementation. No stored or wire receipt is specified.
-For V2 identity, compare the QSL
+For V2 identity, compare the FSL
 driver-bound FR-331 claim occurrence (node, role, and ordinal) and the same-owner admitted
 `CheckedPackageV2::package_id()` with the campaign, generated map, and analyzed population using
 the FR-011 canonical rendering or exact typed fields. Corrupt one occurrence component and one
@@ -179,7 +179,7 @@ package-id field at a time in controlled generated-map/campaign inputs; refuse n
 without normalizing it. Neither identity alone authenticates the same-run producer/artifact
 association.
 The existing `analyze_bound_coverage` primitive does not
-consume a QSL result and is not evidence for these steps.
+consume a FSL result and is not evidence for these steps.
 
 TC-006 and FR-004 matrix rows remain Planned / UNRUN: primitive controls are partial
 implementation; production live campaign binding and consuming-obligation evidence are unrun.
