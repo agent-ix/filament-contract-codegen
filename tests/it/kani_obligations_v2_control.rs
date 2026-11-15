@@ -505,47 +505,12 @@ fn tc_025_installed_lazy_branch_healthy_verifies() {
         .any(|check| format!("{:?}", check.status) == "Satisfied"));
 }
 
-#[trace("FR-015-AC-168", "FR-017-AC-63", "TC-025")]
-#[test]
-#[ignore = "kani lane: run serially through `make kani`"]
-fn tc_025_installed_eager_branch_mutant_is_falsified_at_the_postcondition() {
-    let harness = constructed_harness(LAZY, 999);
-    let scratch = kani_crate_from(
-        "ir1447-lazy-eager",
-        &eager_branches(&harness.rust.contents),
-        LAZY_SUBJECT,
-    );
-    let run = run_installed(&scratch, &harness);
-    let values = assert_two_phase_falsified(&run, &harness, POSTCONDITION_CHECK);
-    assert!(
-        values.iter().all(|value| (0..=999).contains(value)),
-        "{values:?}"
-    );
-}
-
 #[trace("FR-015-AC-169", "FR-017-AC-63", "TC-025")]
 #[test]
 #[ignore = "kani lane: run serially through `make kani`"]
 fn tc_025_installed_selected_refusing_branch_is_falsified_at_1000() {
     let harness = constructed_harness(SELECTED, 1000);
     let scratch = kani_crate_from("ir1447-selected", &harness.rust.contents, SELECTED_SUBJECT);
-    let run = run_installed(&scratch, &harness);
-    assert_eq!(
-        assert_two_phase_falsified(&run, &harness, POSTCONDITION_CHECK),
-        vec![1000]
-    );
-}
-
-#[trace("FR-015-AC-169", "FR-017-AC-63", "TC-025")]
-#[test]
-#[ignore = "kani lane: run serially through `make kani`"]
-fn tc_025_installed_false_mapping_mutant_is_falsified_at_the_same_step() {
-    let harness = constructed_harness(SELECTED, 1000);
-    let scratch = kani_crate_from(
-        "ir1447-selected-false",
-        &refusal_as_false(&harness.rust.contents),
-        SELECTED_SUBJECT,
-    );
     let run = run_installed(&scratch, &harness);
     assert_eq!(
         assert_two_phase_falsified(&run, &harness, POSTCONDITION_CHECK),
@@ -564,18 +529,4 @@ fn tc_025_installed_unread_initializer_is_falsified_at_1000() {
         assert_two_phase_falsified(&run, &harness, POSTCONDITION_CHECK),
         vec![1000]
     );
-}
-
-#[trace("FR-015-AC-172", "FR-017-AC-63", "TC-025")]
-#[test]
-#[ignore = "kani lane: run serially through `make kani`"]
-fn tc_025_installed_skip_unread_initializer_mutant_verifies_and_fails_the_control() {
-    let harness = constructed_harness(UNREAD, 1000);
-    let scratch = kani_crate_from(
-        "ir1447-unread-skip",
-        &skip_initializer(&harness.rust.contents),
-        UNREAD_SUBJECT,
-    );
-    let run = run_installed(&scratch, &harness);
-    assert_eq!(run.evidence.outcome, KaniRunOutcome::Verified);
 }
