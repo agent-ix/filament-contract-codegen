@@ -9,9 +9,7 @@
 #![allow(clippy::result_large_err)]
 
 use filament_contract_codegen::{
-    KaniObligationOutcome, KaniObligationRequest, KaniRunOutcome, KaniV2ClauseObligationHarness,
-    ObligationDisposition, ObligationItem, OptionNotLoweredReason, ProofCeilings,
-    UnsupportedObligation,
+    KaniRunOutcome, KaniV2ClauseObligationHarness, OptionNotLoweredReason, UnsupportedObligation,
 };
 use ix_trace_rs::trace;
 
@@ -273,7 +271,7 @@ fn tc_068_the_abstract_domain_of_an_int_option_is_exactly_1002_draws() {
         .any(|draw| draw.present && draw.value == 1001));
 }
 
-#[trace("FR-054-AC-8", "FR-054-AC-9", "TC-068")]
+#[trace("FR-054-AC-10", "TC-068")]
 #[test]
 fn tc_068_a_record_option_is_not_reachable_the_checked_record_carries_no_fields() {
     // Measured: the admitted checked package holds the record type as a `record_value_type`
@@ -309,6 +307,27 @@ fn tc_068_the_presence_claim_lowers_to_the_presence_draw() {
         !source.contains("return Err(ClauseStop::Undefined)"),
         "a presence read never stops"
     );
+}
+
+#[trace("FR-054-AC-3", "TC-068")]
+#[test]
+fn tc_068_the_negated_presence_oracle_fails_the_presence_claim_at_every_admitted_draw() {
+    // Host enumeration of the equivalent-package mutant (`not present`) against the subject
+    // `present`: every one of the 1002 admitted draws, presence 1 / payload 0 included, fails.
+    let harness = harness_of(&option_twin(NOT_PRESENT));
+    let draws = enumerate(
+        "ir1448-ac3-host",
+        &harness,
+        &scalar_subject("present"),
+        str::to_owned,
+    );
+    let admitted = admitted_draws(&draws);
+    assert_eq!(admitted.len(), 1002);
+    assert!(
+        admitted.iter().all(|draw| !draw.passed),
+        "no admitted draw passes"
+    );
+    assert!(admitted.iter().any(|draw| draw.present && draw.value == 0));
 }
 
 #[trace("FR-054-AC-4", "FR-054-AC-6", "TC-068")]
@@ -347,7 +366,7 @@ fn value_step(source: &str) -> String {
     source[head + 3..end].trim().to_owned()
 }
 
-#[trace("FR-054-AC-5", "FR-054-AC-22", "TC-068")]
+#[trace("FR-054-AC-5", "TC-068")]
 #[test]
 fn tc_068_the_oracle_value_read_of_an_absent_option_stops_undefined() {
     let source = harness_of(&option_twin(GUARDED)).rust.contents;
@@ -374,7 +393,7 @@ fn tc_068_the_oracle_value_read_of_an_absent_option_stops_undefined() {
     );
 }
 
-#[trace("FR-054-AC-6", "FR-054-AC-22", "TC-068")]
+#[trace("FR-054-AC-6", "TC-068")]
 #[test]
 fn tc_068_the_guarded_oracle_completes_at_the_absent_draw_and_the_unguarded_one_stops() {
     let source = harness_of(&option_twin(GUARDED)).rust.contents;
@@ -401,7 +420,7 @@ fn tc_068_the_guarded_oracle_completes_at_the_absent_draw_and_the_unguarded_one_
     );
 }
 
-#[trace("FR-054-AC-5", "FR-054-AC-6", "TC-068")]
+#[trace("FR-054-AC-5", "TC-068")]
 #[test]
 fn tc_068_the_fsl_checker_refuses_an_unguarded_value_read_so_no_admitted_package_holds_one() {
     let twin = Twin::with_bounded_amount_implication_condition("result = (value(amount) <= 1000)")
@@ -425,15 +444,76 @@ fn option_refusal(twin: &Twin) -> (OptionNotLoweredReason, String) {
     }
 }
 
-#[trace("FR-054-AC-10", "FR-054-AC-14", "TC-068")]
+#[trace("FR-054-AC-10", "TC-068")]
 #[test]
 fn tc_068_a_non_scalar_payload_is_refused_naming_its_family() {
     let twin = Twin::with_bounded_amount_implication_condition(PRESENT)
         .with_scalar_option_amount("string");
     let (reason, detail) = option_refusal(&twin);
     assert_eq!(reason, OptionNotLoweredReason::PayloadNotScalar);
-    assert!(!detail.is_empty(), "the refusal names the payload family");
-    println!("IR1448 string payload family: {detail}");
+    assert_eq!(
+        detail, "text_bounds",
+        "the refusal names the payload family"
+    );
+}
+
+#[trace("FR-054-AC-12", "TC-068")]
+#[test]
+fn tc_068_a_record_field_read_as_an_option_is_refused_nullable_presence() {
+    // The checked package types a `field?` slot and a required `Option<T>` field alike as an
+    // option, so both are refused with the same reason.
+    for (optional, option_typed) in [(true, false), (false, true)] {
+        let twin = Twin::with_bounded_amount_implication_condition("result = present(amount.f)")
+            .with_record_field_amount(optional, option_typed);
+        let (reason, detail) = option_refusal(&twin);
+        assert_eq!(reason, OptionNotLoweredReason::NullablePresence);
+        assert_eq!(detail, "filament.op.record.project");
+    }
+}
+
+#[trace("FR-054-AC-10", "TC-068")]
+#[test]
+fn tc_068_the_refusal_names_the_option_operation_node() {
+    let twin = Twin::with_bounded_amount_implication_condition(PRESENT)
+        .with_scalar_option_amount("string");
+    let (package, clause) = twin.emitted_package("BalanceNeverDrops");
+    let Err(UnsupportedObligation::OptionNotLowered {
+        node_id,
+        option_node_id,
+        ..
+    }) = super::kani_obligations_v2_control::negotiate_package(&package, &clause)
+    else {
+        panic!("expected an option refusal")
+    };
+    assert_eq!(node_id, clause);
+    let operation = package
+        .resolved_graph()
+        .nodes
+        .iter()
+        .find(|node| &*node.semantic_form == "presence_read")
+        .expect("the presence read");
+    assert_eq!(option_node_id, operation.node_id);
+}
+
+#[trace("FR-054-AC-13", "TC-068")]
+#[test]
+fn tc_068_a_some_constructor_leaves_no_option_operation_node_and_is_refused_generically() {
+    // Measured: the FSL checker elides `Some`, so the package holds no `filament.op.option.some`
+    // application and `OptionOperationNotLowered` is not reached; the generic refusal applies.
+    let twin = option_twin("result = (present(amount) implies present(Some(value(amount))))");
+    let (package, clause) = twin.emitted_package("BalanceNeverDrops");
+    let some = package.resolved_graph().nodes.iter().any(|node| {
+        matches!(
+            package.term(&node.node_id),
+            Some(filament_contract_model::CheckedTerm::Application { operation, .. })
+                if operation.identity() == Some("filament.op.option.some")
+        )
+    });
+    assert!(!some, "no option.some application in the package");
+    assert!(matches!(
+        super::kani_obligations_v2_control::negotiate_package(&package, &clause),
+        Err(UnsupportedObligation::V2ClauseConditionNotRendered { .. })
+    ));
 }
 
 #[trace("FR-054-AC-11", "TC-068")]
@@ -453,19 +533,16 @@ fn tc_068_fsl_has_no_spelling_for_an_option_of_an_option_so_nesting_is_unreachab
 
 #[trace("FR-054-AC-16", "TC-068")]
 #[test]
-fn tc_068_an_option_of_an_unbounded_integer_is_refused_at_package_admission() {
-    // Measured: Contract IR refuses `present` over an unbounded integer option as an ineligible
-    // operator, so no admitted package reaches the lowering with an unbounded payload.
+fn tc_068_an_option_of_a_native_integer_is_refused_generically_not_with_requires_bound() {
+    // Measured: Contract IR admits `Option<native Integer>` and it reaches the lowering, which
+    // refuses it with the generic `V2ClauseConditionNotRendered`. The owed `requires_bound`
+    // refusal is not implemented, so AC-16 is PARTIAL.
     let twin = Twin::with_bounded_amount_implication_condition(PRESENT)
-        .with_scalar_option_amount("integer");
-    let panic = std::panic::catch_unwind(|| twin.emitted_package("BalanceNeverDrops"))
-        .expect_err("the package is refused");
-    let text = panic
-        .downcast_ref::<String>()
-        .cloned()
-        .or_else(|| panic.downcast_ref::<&str>().map(|text| (*text).to_owned()))
-        .unwrap_or_default();
-    assert!(text.contains("OperatorIneligible"), "{text}");
+        .with_option_amount_over("ix://filament/native/Integer".to_owned());
+    assert!(matches!(
+        negotiate_twin(&twin),
+        Err(UnsupportedObligation::V2ClauseConditionNotRendered { .. })
+    ));
 }
 
 #[trace("FR-054-AC-15", "TC-068")]
@@ -481,15 +558,16 @@ fn tc_068_a_refused_option_clause_spares_a_supported_sibling() {
         (&refused_package, &refused_clause),
         (&supported_package, &supported_clause),
     ]);
-    let sibling = outcomes.remove(1).expect("the sibling is supported");
-    assert!(sibling.is_some(), "the sibling keeps its harness");
+    let sibling = outcomes
+        .remove(1)
+        .expect("the sibling is supported")
+        .expect("the sibling keeps its harness");
+    let standalone = harness_of(&option_twin(GUARDED));
+    assert_eq!(sibling.rust.contents, standalone.rust.contents);
     assert!(matches!(
         outcomes.remove(0),
         Err(UnsupportedObligation::OptionNotLowered { .. })
     ));
-    let _ = (ObligationDisposition::Unsupported {
-        reason: UnsupportedObligation::RenderFailed,
-    },);
 }
 
 // ---- kani lane (FR-054-AC-21) ----------------------------------------------------------------
@@ -594,13 +672,4 @@ fn tc_068_installed_present_and_value_subject_is_falsified_when_absent() {
         &scalar_subject(AND_SUBJECT),
         &[vec![0], payload(0)],
     );
-}
-
-#[allow(dead_code)]
-fn _types(
-    _: ProofCeilings,
-    _: KaniObligationOutcome,
-    _: KaniObligationRequest<'_>,
-    _: ObligationItem<'_>,
-) {
 }

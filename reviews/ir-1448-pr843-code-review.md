@@ -1,0 +1,70 @@
+---
+id: SR-17940486709564847048014
+title: "IR-1448 PR #843 code-review"
+type: SpecReview
+analysis: code-review
+scope: "agent-ix/filament-contract-codegen PR #843 at ce2221e9, git diff origin/main...HEAD (15 files); src/core/ir/clause.rs, src/kani/generate/clause/v2.rs, src/kani/generate/outcome.rs, src/oracle/clause.rs, src/oracle/clause/native.rs, src/lib.rs, tests/it/kani_obligations_v2_option.rs, tests/it/kani_obligations_v2_clause_controls.rs, tests/state_frame_support/native_twin.rs, docs/qualification/ir1448-kani-option-clause-runs.md"
+review_set: subset
+---
+
+## Summary
+
+Ticket: IR-1448. This is code-review with the rust-review lane folded in.
+
+What the change does:
+- It adds `ClauseLeaf` (whole, presence, payload path) to `ClauseInput`.
+- The clause reader turns `option.present(x)` into the presence input and `option.value(x)` into
+  `ClauseTerm::OptionValue`.
+- The generated oracle renders an absent read as `return Err(ClauseStop::Undefined)`, or as the
+  runtime `NoneValue` stop.
+- The result-postcondition harness draws a presence `bool` and native payload leaves. It assumes
+  canonical payloads when absent and in-bound payloads when present.
+- The independent native expectation adds a `Defined` pseudo-probe, so later arithmetic probes are
+  checked only where the read is defined.
+- `UnsupportedObligation::OptionNotLowered` with four reasons is added beside the existing arms.
+  It is not a parallel family.
+
+Rust-lane checks that passed:
+- No `unwrap`, `expect` or `panic!` was added on a generation path.
+- No `unsafe`. Integer narrowing goes through `i64::try_from` with typed refusals.
+- No pins, `[patch]`, compat re-exports or environment workarounds. Cargo.toml and Cargo.lock are
+  untouched.
+- Each scratch crate label is unique per test (`ir1448-*`), and the package name comes from the
+  label.
+- Host runs fail on `running 0 tests`. The enumeration asserts it visited at least one draw, and
+  the stop probe asserts its `RESULT` line exists.
+- The Kani-lane mutants go through `assert_two_phase_structure(.., RESULT_CHECK)`, which asserts
+  the witness-phase counterexample names the produced-result check. The playback vectors are
+  asserted exactly, in draw order (presence, then payload).
+- Every new test carries `#[trace(..)]`.
+- `clause.rs` adds no `.resolved_graph()` call (role parity).
+- The evidence doc names no tool version.
+
+The equivalent-package mutant of AC-3 (`not present(amount)` against subject `present`) is not
+tautological. The healthy oracle and the mutant oracle differ at every draw.
+
+## Verdict
+
+**FAIL. Medium findings in the code and tests; see also the gap-analysis SR.**
+
+Gate at ce2221e9:
+- `cargo fmt --check`, `cargo clippy --all-targets -D warnings`, `cargo deny check` and
+  `make spec`: all exit 0.
+- whole `--lib`: 604 passed, 0 failed, 36 ignored.
+- whole `--test it`: 1127 passed, 0 failed, 120 ignored.
+- `layout::l_2_*`, `cover_last::tc_025_*` and the role-parity scans pass.
+
+## Findings
+
+| ID | Severity | Summary | Refs |
+| --- | --- | --- | --- |
+| FND-001 | medium | `NullablePresence` misclassifies some reads. `option_refusal` returns it for ANY `option.*` application whose operand is a `filament.op.record.project`, without reading the projected field's `presence` / `nullable` flags. A required (`presence: "required"`) record field typed `Option<T>` is refused as `NullablePresence`, but FR-054 reserves that reason for a `field?` slot of optional presence. No test reaches this branch. | src/kani/generate/clause/v2.rs:1320-1334 |
+| FND-002 | medium | `OptionNotLowered.option_node_id` is documented as "The option type node, or the clause node when the read has none" (and FR-054 Outputs say "retaining the node"). It is filled from the walk's `node`, which is the node of the `option.*` application, not the option type node. No test reads the field: every match uses `..`. | src/kani/generate/outcome.rs:364-375; src/kani/generate/clause/v2.rs:324-335,1244-1255 |
+| FND-003 | medium | Three of the four new `OptionNotLoweredReason` arms have no test: `NestedOption`, `NullablePresence` and `OptionOperationNotLowered`. Only `PayloadNotScalar` is reached (string payload and record payload). IR-1448's AC "Remaining shapes refuse with a specific typed code" rests on one reason. `option_refusal` and `option_shape` are pure functions over a `ClauseGraphView`, so a constructed-package unit test can reach each branch without FSL. | src/kani/generate/clause/v2.rs:1304-1342; src/core/ir/clause.rs:117-202 |
+| FND-004 | medium | Option reads outside the one lowered shape get no FR-054 reason. Such reads include a precondition, an invariant, a state postcondition, a non-Boolean-result postcondition, an option state field, or an option over an unbounded integer payload (measured: `Option<native Integer>` is admitted and refused this way). They fall to the generic `V2ClauseConditionNotRendered`: `option_operand` returns `None` for non-parameter or non-`Leaves` operands, and the post-read check at v2.rs:351-363 returns `refusal()`. FR-054 does not limit lowering to Boolean-result postclauses over parameters, and no test covers these paths, so the ticket's "specific typed code" is not met for them. | src/kani/generate/clause/v2.rs:351-363; src/core/ir/clause.rs:497-505 |
+| FND-005 | medium | The AC-10 test cannot fail on a wrong family. `tc_068_a_non_scalar_payload_is_refused_naming_its_family` asserts only `!detail.is_empty()` and prints the family. The run doc claims family `text_bounds`, but no assertion pins it, and the node is not checked either. FR-054-AC-10 requires "naming the family and node". | tests/it/kani_obligations_v2_option.rs:427-439 |
+| FND-006 | low | The AC-15 test checks `sibling.is_some()` only. FR-054-AC-15 says "with its harness unchanged". Compare the sibling's harness bytes with the harness the same package yields alone (`negotiate_twin(&option_twin(GUARDED))`). | tests/it/kani_obligations_v2_option.rs:472-494 |
+| FND-007 | low | Dead code in the test module keeps unused imports alive: `let _ = (ObligationDisposition::Unsupported { .. },);` in the AC-15 test, and `#[allow(dead_code)] fn _types(..)`. Drop the unused imports instead. | tests/it/kani_obligations_v2_option.rs:490-492,599-605 |
+| FND-008 | low | The `option_refusal` doc says "an unbounded integer payload keeps its bound refusal". No bound refusal exists on this path. `OptionShape::Unbounded` makes `option_operand` return `None`, which yields `V2ClauseConditionNotRendered`. The comment is stale against the rewritten FR-054-AC-16. This path is reachable: `Option<native Integer>` reaches it (spec-review SR FND-001). | src/kani/generate/clause/v2.rs:1305-1307; src/core/ir/clause.rs:112-114,138 |
+
+## Dispositions

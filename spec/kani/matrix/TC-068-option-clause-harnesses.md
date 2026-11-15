@@ -49,8 +49,8 @@ mutant fails the step "produced result agrees with the independent checked condi
    classifying the record-held option leaf as `PayloadNotScalar`, and by lowering `field?` as a
    two-state option; each must fail.
 9. Request a refused clause beside a supported sibling and assert the sibling keeps its harness
-   (FR-054-AC-15). Build an option of an unbounded integer and assert package admission refuses it with
-   `OperatorIneligible` (FR-054-AC-16).
+   (FR-054-AC-15). Request an option of an unbounded integer and assert `requires_bound`; mutate
+   to `PayloadNotScalar` and require failure (FR-054-AC-16).
 10. Request a clause with an unsupported operator at a lower node id than an option refusal, a
     clause with two option refusals, and a clause whose payload is both non-scalar and unbounded;
     assert the reported refusal is the lowest node id, and the shape reason first (FR-054-AC-17).
@@ -72,7 +72,10 @@ distinguishing input; every refusal keeps its own reason and no harness.
 ## Status
 
 PARTIAL (IR-1448): tests are in `tests/it/kani_obligations_v2_option.rs`; installed runs are in
-`docs/qualification/ir1448-kani-option-clause-runs.md`. Steps 1 to 6 run (step 5 as a scratch-crate
-oracle probe, step 6 without a Kani mutant); step 7 is not reachable (the checked record carries no
-fields); step 8 runs for a bounded text payload only; step 9 runs the sibling rule; steps 10 and 11
-are not run. Unreached steps are unowned, planner to assign.
+`docs/qualification/ir1448-kani-option-clause-runs.md`. Steps 1 to 4 and 6 (AC-7) run. Step 5
+runs the generated oracle's `value` step on the host only (no unguarded claim is admitted). Step 6
+runs the healthy guarded claim without a Kani eager-read mutant. Step 7 is not reachable (the
+checked record carries no fields). Step 8 runs for a bounded text payload and for a field read of
+option type; the option-of-option and `Some` shapes are not reachable. Step 9 runs the sibling rule;
+the unbounded-integer request is refused by the generic `V2ClauseConditionNotRendered`, not
+`requires_bound`. Steps 10 and 11 are not run. Unreached steps are unowned, planner to assign.

@@ -1126,6 +1126,45 @@ impl Twin {
         ])
     }
 
+    /// The same twin with `amount` typed by a record `Pair` whose member `f` holds the `balance`
+    /// range, or an option over it when `option_typed`, with optional presence (`f?`) when
+    /// `optional`.
+    pub fn with_record_field_amount(self, optional: bool, option_typed: bool) -> Self {
+        let record = format!("ix://{PACKAGE}/Pair");
+        let option = format!("ix://{PACKAGE}/field_option");
+        let mut member = field(&record, "f");
+        member["typeRef"] = json!(if option_typed {
+            option.clone()
+        } else {
+            range_type("balance")
+        });
+        member["presence"] = json!(if optional { "optional" } else { "required" });
+        let mut declarations = vec![json!({
+            "identity": record,
+            "displayName": record,
+            "kind": {"module": PACKAGE, "name": "record_value_type"},
+            "roles": [],
+            "origin": generated(&record),
+            "constraints": [],
+            "extensions": [],
+            "unknownPolicy": "reject",
+            "supertypes": [],
+            "fields": [member],
+            "operations": [],
+        })];
+        if option_typed {
+            declarations.push(option_declaration(&option, &range_type("balance")));
+        }
+        self.with_amount_type(
+            vec![construct(
+                "record_value_type",
+                "filament.meaning.model.record-value-type/v1",
+            )],
+            declarations,
+            record,
+        )
+    }
+
     /// Declare `constructs` and `declarations` in the domain package and type `amount` by `type_ref`.
     fn with_amount_type(
         mut self,

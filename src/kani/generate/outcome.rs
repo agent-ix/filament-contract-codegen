@@ -252,7 +252,9 @@ pub enum OptionNotLoweredReason {
     PayloadNotScalar,
     /// An option of an option, or a record or tuple payload holding an option leaf.
     NestedOption,
-    /// A record field of optional presence, which admits the `null` state besides present and absent.
+    /// A record field read as an option: the checked package types a `field?` slot and a required
+    /// `Option<T>` field alike as an option, so both are refused here, and either can hold `null`
+    /// besides present and absent.
     NullablePresence,
     /// An option operation other than `present` and `value`.
     OptionOperationNotLowered,
@@ -366,7 +368,8 @@ pub enum UnsupportedObligation {
     OptionNotLowered {
         /// Selected clause node.
         node_id: CheckedNodeId,
-        /// The option type node, or the clause node when the read has none.
+        /// The checked node of the option operation that was refused, or the clause node when the
+        /// walk reached the operation without a node.
         option_node_id: CheckedNodeId,
         /// The closed reason the option read is refused.
         reason: OptionNotLoweredReason,

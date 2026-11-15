@@ -1303,8 +1303,9 @@ fn option_symbolics(name: &str, leaves: &[OptionLeaf]) -> Vec<(ClauseLeaf, Strin
 }
 
 /// The refusal of one `filament.op.option.*` application, from its operation and the shape of the
-/// option it reads (FR-054-AC-10 to FR-054-AC-13). `None` when it is lowered, or when its refusal
-/// belongs to another route (an unbounded integer payload keeps its bound refusal).
+/// option it reads (FR-054-AC-10 to FR-054-AC-13). `None` when it is lowered, or when the clause is
+/// refused later by the generic `V2ClauseConditionNotRendered` (an unbounded integer payload, and
+/// an option read outside a Boolean-result postcondition over an operation parameter).
 fn option_refusal(
     view: &ClauseGraphView<'_>,
     identity: &str,
