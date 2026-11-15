@@ -55,8 +55,14 @@ admitted at payload 1 as well; with the present bound widened payload 1001 is ad
 - Record field read as an option (FR-054-AC-12): a `field?` slot and a required `Option<T>` field
   are both typed option by the checked package, and both are refused `NullablePresence`.
 - `Some` (FR-054-AC-13): the FSL checker elides it, so no `filament.op.option.some` node exists and
-  the clause is refused by the generic `V2ClauseConditionNotRendered`.
-- Option reads outside a Boolean-result postcondition over a parameter: the generic refusal.
+  the clause is refused by the generic `V2ClauseConditionNotRendered`. Rewriting a `present`
+  application's identity to `filament.op.option.some` on the wire is refused at package admission
+  (`UnknownOperation`). Unit tests feed the classifier constructed input for `NestedOption` and
+  `OptionOperationNotLowered` (not reached via FSL).
+- Option reads outside a Boolean-result postcondition over a parameter: a precondition reading the
+  option is refused by the generic `V2ClauseConditionNotRendered` (pinned by a test). An invariant
+  over `self.amount` and a non-Boolean `result = value(amount)` are refused by the FSL checker
+  (`ill_typed`); an option state field fixture is not built (unowned, planner to assign).
 - Non-scalar payload (FR-054-AC-10): only a bounded text payload is run (reason `PayloadNotScalar`,
   family `text_bounds`); the other families are not run.
 - Not run: FR-054-AC-14, AC-17 to AC-20, and the Kani mutant of AC-6.

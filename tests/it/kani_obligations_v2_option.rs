@@ -673,3 +673,64 @@ fn tc_068_installed_present_and_value_subject_is_falsified_when_absent() {
         &[vec![0], payload(0)],
     );
 }
+
+fn panic_text(panic: Box<dyn std::any::Any + Send>) -> String {
+    panic
+        .downcast_ref::<String>()
+        .cloned()
+        .or_else(|| panic.downcast_ref::<&str>().map(|text| (*text).to_owned()))
+        .unwrap_or_default()
+}
+
+#[trace("FR-054-AC-13", "TC-068")]
+#[test]
+fn tc_068_a_rewritten_option_operation_identity_is_refused_at_package_admission() {
+    // Measured: rewriting the `present` application to `filament.op.option.some` on the wire is
+    // refused by Contract IR admission (`UnknownOperation`), so that route cannot reach the lowering.
+    let twin = option_twin(PRESENT);
+    let panic = std::panic::catch_unwind(|| {
+        super::kani_obligations_v2_control::rewrite_nodes(
+            &twin,
+            "BalanceNeverDrops",
+            |_, _, _, node| {
+                if node["body"]["operation"]["identity"] == "filament.op.option.present" {
+                    node["body"]["operation"]["identity"] =
+                        serde_json::json!("filament.op.option.some");
+                    return true;
+                }
+                false
+            },
+        )
+    })
+    .expect_err("admission refuses the rewritten identity");
+    assert!(panic_text(panic).contains("UnknownOperation"));
+}
+
+#[trace("TC-068")]
+#[test]
+fn tc_068_an_option_read_in_a_precondition_is_refused_generically() {
+    // Measured: a precondition reading the option parameter reaches the lowering and is refused by
+    // the generic `V2ClauseConditionNotRendered`. An invariant has no operation parameter, so
+    // `present(self.amount)` is refused by the FSL checker (`ill_typed`, type-mismatch) and a
+    // non-Boolean `result = value(amount)` likewise; an option state field fixture is not built
+    // (unowned, planner to assign).
+    let pre = Twin::with_bounded_amount_implication_condition("present(amount)")
+        .with_option_amount()
+        .with_clause_head("pre BalanceNeverDrops using v on Bank::Account::deposit");
+    assert!(matches!(
+        negotiate_twin(&pre),
+        Err(UnsupportedObligation::V2ClauseConditionNotRendered { .. })
+    ));
+    for twin in [
+        Twin::with_bounded_amount_implication_condition("present(self.amount)")
+            .with_option_amount()
+            .with_clause_head("invariant BalanceNeverDrops using v on Bank::Account at current"),
+        option_twin("result = value(amount)"),
+    ] {
+        let text = panic_text(
+            std::panic::catch_unwind(|| twin.emitted_package("BalanceNeverDrops"))
+                .expect_err("the checker refuses it"),
+        );
+        assert!(text.contains("ill_typed"), "{text}");
+    }
+}

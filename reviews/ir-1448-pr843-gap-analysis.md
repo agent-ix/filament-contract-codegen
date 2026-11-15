@@ -77,3 +77,12 @@ in the spec-review SR.
 | FR-054-AC-23 | examined | FR-015-AC-42 states ... refused with OptionNotLowered |
 
 ## Dispositions
+
+Disposition pass round 1: fix commit 651e88f5 (was ce2221e9). Gate at 651e88f5: fmt, clippy `-D warnings`, `cargo deny check` and `make spec` exit 0; whole `--lib` 604 passed, 0 failed, 36 ignored; whole `--test it` 1131 passed, 0 failed, 120 ignored (the option module alone: 16 passed, 5 ignored). The committed `reviews/` copies of the three SR files cmp-match the review-pass files.
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-001 | fixed | AC-5 is PARTIAL in FR-054 Status, tests.md and TC-068 Status; the run doc says only the guarded oracle's `value` step runs on the host and that the unguarded claim's produced result and the assume-presence mutant are not run. |
+| FND-002 | fixed | AC-22 is PARTIAL on the same grounds, and the `FR-054-AC-22` tags are removed from the two host-probe tests. |
+| FND-003 | fixed | `tc_068_the_negated_presence_oracle_fails_the_presence_claim_at_every_admitted_draw` enumerates the `not present` harness against subject `present` on the host: 1002 admitted draws, none passes, presence 1 / payload 0 among them. The run doc labels it a host enumeration. |
+| FND-004 | fixed | The `FR-054-AC-14` tag is removed from the AC-10 test, and the record-option test is retagged `FR-054-AC-10` (it asserts `PayloadNotScalar`); AC-8 and AC-9 are no longer tagged. The AC-11 tag stays on the intake-refusal test, which matches AC-11 PARTIAL. |

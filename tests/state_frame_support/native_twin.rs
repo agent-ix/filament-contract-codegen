@@ -766,6 +766,19 @@ impl Twin {
         twin
     }
 
+    /// The same unit with the head of the authored clause (`post BalanceNeverDrops using v on
+    /// Bank::Account::deposit`) replaced by `head`.
+    pub fn with_clause_head(mut self, head: &str) -> Self {
+        let source = String::from_utf8(self.unit).expect("native unit");
+        let changed = source.replace(
+            "post BalanceNeverDrops using v on Bank::Account::deposit",
+            head,
+        );
+        assert_ne!(changed, source, "the clause head was replaced");
+        self.unit = changed.into_bytes();
+        self
+    }
+
     /// The same unit with `lines` blank lines before `anchor`, moving every later source span.
     pub fn with_blank_lines_before(mut self, anchor: &str, lines: usize) -> Self {
         let source = String::from_utf8(self.unit).expect("native unit");

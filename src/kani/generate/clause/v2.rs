@@ -1311,11 +1311,8 @@ fn option_refusal(
     identity: &str,
     arguments: &[CheckedTerm],
 ) -> Option<(OptionNotLoweredReason, String)> {
-    if !matches!(identity, OPTION_PRESENT | OPTION_VALUE) {
-        return Some((
-            OptionNotLoweredReason::OptionOperationNotLowered,
-            identity.to_owned(),
-        ));
+    if let Some(refusal) = operation_refusal(identity) {
+        return Some(refusal);
     }
     let [operand] = arguments else {
         return None;
@@ -1335,10 +1332,65 @@ fn option_refusal(
     }
     let target = reference(operand)?;
     let node = view.node(target)?;
-    match option_shape(view, &node.semantic_type)? {
+    shape_refusal(option_shape(view, &node.semantic_type)?)
+}
+
+/// The refusal of an option operation other than `present` and `value`.
+fn operation_refusal(identity: &str) -> Option<(OptionNotLoweredReason, String)> {
+    (!matches!(identity, OPTION_PRESENT | OPTION_VALUE)).then(|| {
+        (
+            OptionNotLoweredReason::OptionOperationNotLowered,
+            identity.to_owned(),
+        )
+    })
+}
+
+/// The refusal of an option payload shape: `None` for the lowered shapes.
+fn shape_refusal(shape: OptionShape) -> Option<(OptionNotLoweredReason, String)> {
+    match shape {
         OptionShape::Leaves(_) | OptionShape::Unbounded => None,
         OptionShape::NotScalar(family) => Some((OptionNotLoweredReason::PayloadNotScalar, family)),
         OptionShape::Nested => Some((OptionNotLoweredReason::NestedOption, "option".to_owned())),
+    }
+}
+
+/// FR-054-AC-11 and FR-054-AC-13: these reasons are not reached through FSL (intake refuses an
+/// option of an option and the checker elides `Some`), so the classifier is fed constructed input.
+#[cfg(test)]
+mod option_refusal_tests {
+    use super::*;
+    use ix_trace_rs::trace;
+
+    #[trace("FR-054-AC-11", "TC-068")]
+    #[test]
+    fn tc_068_constructed_nested_shape_is_refused_nested_option() {
+        assert_eq!(
+            shape_refusal(OptionShape::Nested),
+            Some((OptionNotLoweredReason::NestedOption, "option".to_owned()))
+        );
+        assert_eq!(shape_refusal(OptionShape::Leaves(Vec::new())), None);
+        assert_eq!(shape_refusal(OptionShape::Unbounded), None);
+        assert_eq!(
+            shape_refusal(OptionShape::NotScalar("text_bounds".to_owned())),
+            Some((
+                OptionNotLoweredReason::PayloadNotScalar,
+                "text_bounds".to_owned()
+            ))
+        );
+    }
+
+    #[trace("FR-054-AC-13", "TC-068")]
+    #[test]
+    fn tc_068_constructed_other_option_operation_is_refused_not_lowered() {
+        assert_eq!(
+            operation_refusal("filament.op.option.some"),
+            Some((
+                OptionNotLoweredReason::OptionOperationNotLowered,
+                "filament.op.option.some".to_owned()
+            ))
+        );
+        assert_eq!(operation_refusal(OPTION_PRESENT), None);
+        assert_eq!(operation_refusal(OPTION_VALUE), None);
     }
 }
 

@@ -226,7 +226,9 @@ Implemented: AC-1, AC-2, AC-3, AC-4, AC-7, AC-15, AC-23. PARTIAL:
 - AC-12: both a `field?` slot and a required `Option<T>` field are refused `NullablePresence` (the
   checked package types them alike); no mutant is run.
 - AC-13: FSL elides a `Some` constructor and package admission refuses a rewritten operation
-  identity, so `OptionOperationNotLowered` is not reached (unowned, planner to assign).
+  identity (`UnknownOperation`, recorded by a test), so `OptionOperationNotLowered` is not reached
+  through FSL. Its classifier and that of `NestedOption` are unit-tested on constructed input
+  (AC-11, AC-13), not reached through a package (unowned, planner to assign).
 - AC-16: an `Option<native Integer>` is admitted by Contract IR and reaches the lowering, which
   refuses it with the generic `V2ClauseConditionNotRendered`; `requires_bound` is not emitted
   (unowned, planner to assign).
