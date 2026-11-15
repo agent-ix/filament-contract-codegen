@@ -410,7 +410,7 @@ members against the operation's declaration in the domain package.
 - The generator shall give each snapshot one population marked `complete` that holds the one
   state object, which is the whole of the population the single-`self` harness draws, with every
   declared field of that object as an integer value.
-- The generator shall build the invocation document with `format` `quire.state.invocation/v1`,
+- The generator shall build the invocation document with `format` `filament.state.invocation/v1`,
   the caller's identity label, the model header of the supplied domain package, `context` the
   object type, `operation` the operation's name, `self` the object's population and key, `pre` and
   `post` each the snapshot's two identity labels (authority and identity), `parameters` empty, `result` null
@@ -696,7 +696,7 @@ IR-1086; its FSL-emitted harness without `Twin::aligned` remains planned under I
   to the node ids FSL names (`Twin::aligned`), because the fixture's checked package is hand-built
   and its node ids are its own; the package FSL itself emits carries them (measured below). The frame path's `declared_domains` stays `Some(Vec::new())` (FR-024-AC-29).
 - Node ids, measured: `fsl_replay::call_site` returns the compiled package's
-  `quire.checked-package/v2` bytes (`CallSite::package`), and the model reader admits them given
+  `filament.checked-package/v2` bytes (`CallSite::package`), and the model reader admits them given
   the domain package. In the package FSL emits from the twin's unit, the `operation_anchor` and
   `frame` nodes have exactly the ids `call_site` names as the site's `anchor` and `frame`, and the
   anchor binds that frame (`tc_035_the_node_ids_of_the_package_fsl_emits_are_the_ids_call_site_names`),

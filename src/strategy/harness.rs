@@ -2,7 +2,7 @@
 
 use std::{collections::BTreeMap, fmt::Write as _};
 
-use quire_contract_model::{
+use filament_contract_model::{
     ClauseId, DependencyIdentity, DependencyKind, RequirementRef, StateObservation, TypedExpression,
 };
 use serde::{Deserialize, Serialize};
@@ -420,8 +420,8 @@ pub fn generate_tristate_harness(
         "\n/// Evaluates the generated precondition, subject, and postcondition in contract order.\n\
 pub fn {base_symbol}<'evidence, Invoke>(\n\
 {public_parameter_text}    invoke: Invoke,\n\
-    observations: &'evidence mut [quire_contract_runtime::Observation<'static>; 2],\n\
-) -> quire_contract_runtime::Verdict<'evidence>\n\
+    observations: &'evidence mut [filament_contract_runtime::Observation<'static>; 2],\n\
+) -> filament_contract_runtime::Verdict<'evidence>\n\
 where\n\
     {invoke_bound},\n\
 {{\n\
@@ -439,10 +439,10 @@ where\n\
 \n\
 /// Records and adapts one generated bound harness invocation for the owned campaign runner.\n\
 fn {adapter_symbol}<'evidence, Invoke>(\n\
-    report: &mut quire_contract_runtime::CampaignReport<'static>,\n\
+    report: &mut filament_contract_runtime::CampaignReport<'static>,\n\
     expected_rejection: bool,\n\
 {public_parameter_text}    invoke: Invoke,\n\
-    observations: &'evidence mut [quire_contract_runtime::Observation<'static>; 2],\n\
+    observations: &'evidence mut [filament_contract_runtime::Observation<'static>; 2],\n\
 ) -> proptest::test_runner::TestCaseResult\n\
 where\n\
     {invoke_bound},\n\
@@ -591,7 +591,7 @@ fn {conclude_symbol}_policy(\n\
 \n\
 /// Classifies the framework result and always concludes observed campaign accounting.\n\
 fn {conclude_symbol}(\n\
-    report: &quire_contract_runtime::CampaignReport<'static>,\n\
+    report: &filament_contract_runtime::CampaignReport<'static>,\n\
     run_result: Result<(), proptest::test_runner::TestError<{case_type}>>,\n\
 ) -> Result<{summary_type}, {outcome_error_type}> {{\n\
     let counts = report.counts();\n\
@@ -628,7 +628,7 @@ fn {conclude_symbol}(\n\
 pub fn {runner_symbol}<Strategy, Invoke>(\n\
     runner: &mut proptest::test_runner::TestRunner,\n\
     strategy: &Strategy,\n\
-    report: &mut quire_contract_runtime::CampaignReport<'static>,\n\
+    report: &mut filament_contract_runtime::CampaignReport<'static>,\n\
     invoke: Invoke,\n\
 ) -> Result<{summary_type}, {outcome_error_type}>\n\
 where\n\
@@ -653,16 +653,16 @@ where\n\
             }}\n\
             {disposition_type}::Exercise {{ expected_rejection }} => {{\n\
                 let mut observations = [\n\
-                    quire_contract_runtime::Observation::new(\n\
+                    filament_contract_runtime::Observation::new(\n\
                         {shell_precondition_identity_symbol},\n\
-                        quire_contract_runtime::ClauseKind::Precondition,\n\
-                        quire_contract_runtime::ClauseOutcome::NotEvaluated,\n\
+                        filament_contract_runtime::ClauseKind::Precondition,\n\
+                        filament_contract_runtime::ClauseOutcome::NotEvaluated,\n\
                         None,\n\
                     ),\n\
-                    quire_contract_runtime::Observation::new(\n\
+                    filament_contract_runtime::Observation::new(\n\
                         {shell_postcondition_identity_symbol},\n\
-                        quire_contract_runtime::ClauseKind::Postcondition,\n\
-                        quire_contract_runtime::ClauseOutcome::NotEvaluated,\n\
+                        filament_contract_runtime::ClauseKind::Postcondition,\n\
+                        filament_contract_runtime::ClauseOutcome::NotEvaluated,\n\
                         None,\n\
                     ),\n\
                 ];\n\
@@ -912,20 +912,20 @@ fn generate_harness_shell(request: &HarnessShellRequest<'_>) -> Result<String, H
         "// Requirement: {requirement}@{revision}; Preconditions: {precondition}; Postconditions: {postcondition}\n\
 \n\
 /// Generated contract identity for `{requirement}@{revision}`.\n\
-pub const {identity_symbol}: quire_contract_runtime::ContractIdentity<'static> =\n\
-    quire_contract_runtime::ContractIdentity::new(\n\
-        quire_contract_runtime::RequirementId::new({requirement:?}),\n\
-        quire_contract_runtime::RevisionId::new({:?}),\n\
+pub const {identity_symbol}: filament_contract_runtime::ContractIdentity<'static> =\n\
+    filament_contract_runtime::ContractIdentity::new(\n\
+        filament_contract_runtime::RequirementId::new({requirement:?}),\n\
+        filament_contract_runtime::RevisionId::new({:?}),\n\
     );\n\
 /// Generated execution point for this harness.\n\
-pub const {execution_symbol}: quire_contract_runtime::ExecutionPoint<'static> =\n\
-    quire_contract_runtime::ExecutionPoint::new({:?});\n\
+pub const {execution_symbol}: filament_contract_runtime::ExecutionPoint<'static> =\n\
+    filament_contract_runtime::ExecutionPoint::new({:?});\n\
 /// Generated precondition clause identity.\n\
-pub const {precondition_symbol}: quire_contract_runtime::ClauseId<'static> =\n\
-    quire_contract_runtime::ClauseId::new({precondition:?});\n\
+pub const {precondition_symbol}: filament_contract_runtime::ClauseId<'static> =\n\
+    filament_contract_runtime::ClauseId::new({precondition:?});\n\
 /// Generated postcondition clause identity.\n\
-pub const {postcondition_symbol}: quire_contract_runtime::ClauseId<'static> =\n\
-    quire_contract_runtime::ClauseId::new({postcondition:?});\n\
+pub const {postcondition_symbol}: filament_contract_runtime::ClauseId<'static> =\n\
+    filament_contract_runtime::ClauseId::new({postcondition:?});\n\
 \n\
 /// Snapshots state, checks the precondition, invokes the subject, and checks post-state.\n\
 fn {symbol}<'evidence, Input, State, Snapshot, Precondition, Invoke, Postcondition>(\n\
@@ -935,8 +935,8 @@ fn {symbol}<'evidence, Input, State, Snapshot, Precondition, Invoke, Postconditi
     precondition: Precondition,\n\
     invoke: Invoke,\n\
     postcondition: Postcondition,\n\
-    observations: &'evidence mut [quire_contract_runtime::Observation<'static>; 2],\n\
-) -> quire_contract_runtime::Verdict<'evidence>\n\
+    observations: &'evidence mut [filament_contract_runtime::Observation<'static>; 2],\n\
+) -> filament_contract_runtime::Verdict<'evidence>\n\
 where\n\
     Snapshot: FnOnce(&State) -> State,\n\
     Precondition: FnOnce(&Input, &State) -> bool,\n\
@@ -945,77 +945,77 @@ where\n\
 {{\n\
     let pre_state = snapshot(state);\n\
     if !precondition(input, &pre_state) {{\n\
-        let rejection = quire_contract_runtime::FailureDetail::new(\n\
+        let rejection = filament_contract_runtime::FailureDetail::new(\n\
             {precondition_symbol},\n\
-            quire_contract_runtime::FailureKind::Precondition,\n\
+            filament_contract_runtime::FailureKind::Precondition,\n\
             1,\n\
             Some(\"generated precondition rejected case\"),\n\
         );\n\
-        observations[0] = quire_contract_runtime::Observation::new(\n\
+        observations[0] = filament_contract_runtime::Observation::new(\n\
             {precondition_symbol},\n\
-            quire_contract_runtime::ClauseKind::Precondition,\n\
-            quire_contract_runtime::ClauseOutcome::Rejected,\n\
+            filament_contract_runtime::ClauseKind::Precondition,\n\
+            filament_contract_runtime::ClauseOutcome::Rejected,\n\
             Some(rejection),\n\
         );\n\
-        observations[1] = quire_contract_runtime::Observation::new(\n\
+        observations[1] = filament_contract_runtime::Observation::new(\n\
             {postcondition_symbol},\n\
-            quire_contract_runtime::ClauseKind::Postcondition,\n\
-            quire_contract_runtime::ClauseOutcome::NotEvaluated,\n\
+            filament_contract_runtime::ClauseKind::Postcondition,\n\
+            filament_contract_runtime::ClauseOutcome::NotEvaluated,\n\
             None,\n\
         );\n\
-        let context = quire_contract_runtime::VerdictContext::new(\n\
+        let context = filament_contract_runtime::VerdictContext::new(\n\
             {identity_symbol},\n\
             {execution_symbol},\n\
             observations,\n\
         );\n\
-        return quire_contract_runtime::Verdict::rejected_precondition(context, rejection);\n\
+        return filament_contract_runtime::Verdict::rejected_precondition(context, rejection);\n\
     }}\n\
 \n\
-    observations[0] = quire_contract_runtime::Observation::new(\n\
+    observations[0] = filament_contract_runtime::Observation::new(\n\
         {precondition_symbol},\n\
-        quire_contract_runtime::ClauseKind::Precondition,\n\
-        quire_contract_runtime::ClauseOutcome::Passed,\n\
+        filament_contract_runtime::ClauseKind::Precondition,\n\
+        filament_contract_runtime::ClauseOutcome::Passed,\n\
         None,\n\
     );\n\
     invoke(input, state);\n\
     if postcondition(input, &pre_state, state) {{\n\
-        observations[1] = quire_contract_runtime::Observation::new(\n\
+        observations[1] = filament_contract_runtime::Observation::new(\n\
             {postcondition_symbol},\n\
-            quire_contract_runtime::ClauseKind::Postcondition,\n\
-            quire_contract_runtime::ClauseOutcome::Passed,\n\
+            filament_contract_runtime::ClauseKind::Postcondition,\n\
+            filament_contract_runtime::ClauseOutcome::Passed,\n\
             None,\n\
         );\n\
-        let context = quire_contract_runtime::VerdictContext::new(\n\
+        let context = filament_contract_runtime::VerdictContext::new(\n\
             {identity_symbol},\n\
             {execution_symbol},\n\
             observations,\n\
         );\n\
-        quire_contract_runtime::Verdict::passed(context)\n\
+        filament_contract_runtime::Verdict::passed(context)\n\
     }} else {{\n\
-        let failure = quire_contract_runtime::FailureDetail::new(\n\
+        let failure = filament_contract_runtime::FailureDetail::new(\n\
             {postcondition_symbol},\n\
-            quire_contract_runtime::FailureKind::Postcondition,\n\
+            filament_contract_runtime::FailureKind::Postcondition,\n\
             2,\n\
             Some(\"generated postcondition failed\"),\n\
         );\n\
-        observations[1] = quire_contract_runtime::Observation::new(\n\
+        observations[1] = filament_contract_runtime::Observation::new(\n\
             {postcondition_symbol},\n\
-            quire_contract_runtime::ClauseKind::Postcondition,\n\
-            quire_contract_runtime::ClauseOutcome::Failed,\n\
+            filament_contract_runtime::ClauseKind::Postcondition,\n\
+            filament_contract_runtime::ClauseOutcome::Failed,\n\
             Some(failure),\n\
         );\n\
-        let context = quire_contract_runtime::VerdictContext::new(\n\
+        let context = filament_contract_runtime::VerdictContext::new(\n\
             {identity_symbol},\n\
             {execution_symbol},\n\
             observations,\n\
         );\n\
-        quire_contract_runtime::Verdict::failed_postcondition(context, failure)\n\
+        filament_contract_runtime::Verdict::failed_postcondition(context, failure)\n\
     }}\n\
 }}\n\
 \n\
 /// Records and adapts one generated harness verdict for proptest.\n\
 fn {adapter_symbol}<'evidence, Input, State, Snapshot, Precondition, Invoke, Postcondition>(\n\
-    report: &mut quire_contract_runtime::CampaignReport<'static>,\n\
+    report: &mut filament_contract_runtime::CampaignReport<'static>,\n\
     expected_rejection: bool,\n\
     input: &Input,\n\
     state: &mut State,\n\
@@ -1023,7 +1023,7 @@ fn {adapter_symbol}<'evidence, Input, State, Snapshot, Precondition, Invoke, Pos
     precondition: Precondition,\n\
     invoke: Invoke,\n\
     postcondition: Postcondition,\n\
-    observations: &'evidence mut [quire_contract_runtime::Observation<'static>; 2],\n\
+    observations: &'evidence mut [filament_contract_runtime::Observation<'static>; 2],\n\
 ) -> proptest::test_runner::TestCaseResult\n\
 where\n\
     Snapshot: FnOnce(&State) -> State,\n\
@@ -1035,11 +1035,11 @@ where\n\
         input, state, snapshot, precondition, invoke, postcondition, observations,\n\
     );\n\
     let expectation_matches = if expected_rejection {{\n\
-        verdict.kind() == quire_contract_runtime::VerdictKind::RejectedPrecondition\n\
+        verdict.kind() == filament_contract_runtime::VerdictKind::RejectedPrecondition\n\
     }} else {{\n\
-        verdict.kind() != quire_contract_runtime::VerdictKind::RejectedPrecondition\n\
+        verdict.kind() != filament_contract_runtime::VerdictKind::RejectedPrecondition\n\
     }};\n\
-    let adapted = quire_contract_runtime::proptest_adapter::adapt_recording(report, &verdict);\n\
+    let adapted = filament_contract_runtime::proptest_adapter::adapt_recording(report, &verdict);\n\
     if !expectation_matches {{\n\
         return Err(proptest::test_runner::TestCaseError::fail(format!(\n\
             \"generated expected-domain mismatch: expected_rejection={{expected_rejection}} actual={{:?}}\",\n\

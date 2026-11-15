@@ -11,8 +11,8 @@ use std::{
 use crate::kani::run::launch::{
     failure_phase, run_bounded_process_internal, CaptureStream, LaunchFailurePhase, LaunchOutcome,
 };
-use quire_contract_ir::kani::KaniCancellationSource;
-use quire_exact::{Cancel, CancelCause};
+use filament_contract_ir::kani::KaniCancellationSource;
+use filament_exact::{Cancel, CancelCause};
 
 /// Finite limits for one direct child invocation.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

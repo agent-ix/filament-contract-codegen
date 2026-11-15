@@ -6,7 +6,7 @@ credit for any FR-054 criterion.
 
 ## What was probed
 
-A hand-written scratch crate (one file, no CG, no quire-exact) following the IR-1022 recipe
+A hand-written scratch crate (one file, no CG, no filament-exact) following the IR-1022 recipe
 (`ir1022-kani-clause-measurements.md`): an `Option<Int[0, 1000]>` as a `Copy` struct of a
 presence `bool` and an `i64` payload, the payload assumed in `0..=1000` when present and `0`
 when absent (canonical absent); a `Copy` payload-free `Stop { Undefined, OutOfDomain }`;
@@ -54,10 +54,10 @@ null state, unrecognised operation), not by cost.
 
 ## What this does not establish
 
-- Not CG generation: the harness, oracle and subject are hand-written, no quire-exact kernel
+- Not CG generation: the harness, oracle and subject are hand-written, no filament-exact kernel
   or meter was used, and `option.value` of an absent option is modelled as `Undefined` by
   assumption (FR-054 owns that CG rule; QSL and the Contract IR own option definedness and
-  quire-exact owns `Undefined::NoneValue`).
+  filament-exact owns `Undefined::NoneValue`).
 - Not CG's runner: no two-phase run, no identity record.
 - Not scaled: the probe has one 0..=1000 payload, not a clause with arithmetic over an option, a
   large record payload or several options; those costs are unmeasured.

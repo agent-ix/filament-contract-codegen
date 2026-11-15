@@ -84,10 +84,10 @@ pub(super) fn parameter_nodes(
     corpus: &Corpus,
     index: usize,
 ) -> (
-    quire_contract_model::CheckedNodeId,
-    quire_contract_model::CheckedNodeId,
+    filament_contract_model::CheckedNodeId,
+    filament_contract_model::CheckedNodeId,
 ) {
-    use quire_contract_model::CheckedTerm;
+    use filament_contract_model::CheckedTerm;
     let application = super::admitted_enum_equality::application(&corpus.package, ITEMS[index].1);
     let node = corpus
         .package
@@ -382,7 +382,7 @@ fn tc_025_the_harness_draws_one_value_per_leaf_in_node_then_path_order_and_no_co
         (second, first)
     };
     let operand =
-        |node: &quire_contract_model::CheckedNodeId, name: &str| ShadowOperand::Parameter {
+        |node: &filament_contract_model::CheckedNodeId, name: &str| ShadowOperand::Parameter {
             node: node.clone(),
             name: name.to_owned(),
         };

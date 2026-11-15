@@ -60,7 +60,7 @@ pub const R_PAIR_OF_POINTS: u32 = 31;
 pub const SEQ_INT: u32 = 32;
 /// A record whose one field is a `REF_TYPE` reference: an equality operand reaching a
 /// `reference` composite (FR-018-AC-7). The reference is reached through a record and compared by
-/// `quire.op.structural.eq`.
+/// `filament.op.structural.eq`.
 pub const R_WITH_REF: u32 = 34;
 /// Not registered in `corpus_package()`: used only as a `key()`/`code_id()`
 /// input to build a standalone `TypeEnvironment` for FR-018-AC-6's negative

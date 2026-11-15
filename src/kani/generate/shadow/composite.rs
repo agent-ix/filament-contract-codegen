@@ -29,7 +29,7 @@ use crate::{
         CompositeEqualityClaim, CompositeEqualityRefusal, EqualityOperatorKind,
     },
 };
-use quire_contract_model::CheckedNodeId;
+use filament_contract_model::CheckedNodeId;
 use serde::Serialize;
 
 use super::{

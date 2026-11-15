@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Kernel admission and rendering policy for the shared checked clause plan.
 
-use quire_exact::{NativeIntegerInterval, NativeIntegerOperation, NativeIntegerPlan};
+use filament_exact::{NativeIntegerInterval, NativeIntegerOperation, NativeIntegerPlan};
 
 use super::{
     native_literal, EqualityOperandKind, ExactScalarOperation, NativeClauseCapabilityReason, Step,
@@ -9,8 +9,8 @@ use super::{
 };
 use crate::core::native_integer::{NativeIntegerOperationDecision, NativeIntegerSelection};
 use crate::oracle::operator_catalog::IntegerOperator;
-use quire_contract_model::CheckedNodeId;
-use quire_exact::{IntegerDomain, OrderingOperator};
+use filament_contract_model::CheckedNodeId;
+use filament_exact::{IntegerDomain, OrderingOperator};
 
 fn refusal(
     plan: &[Step],
@@ -66,7 +66,7 @@ pub(super) fn helpers(
     let mut source =
         crate::oracle::scalar::render::render_clause_native_operation_helpers(&booleans)
             .map_err(|_| V2ClauseRefusal::Render)?;
-    source.push_str("\nuse quire_exact as nx;\n");
+    source.push_str("\nuse filament_exact as nx;\n");
     let mut selected = NativeIntegerSelection::new();
     let mut ranges = Vec::<Option<NativeIntegerInterval>>::with_capacity(plan.len());
     for (index, step) in plan.iter().enumerate() {
@@ -90,6 +90,18 @@ pub(super) fn helpers(
             StepTerm::Input(input) => Some(
                 NativeIntegerInterval::new(input.lower, input.upper)
                     .map_err(|_| V2ClauseRefusal::Render)?,
+            ),
+            StepTerm::Binder { source, .. } => ranges.get(*source).copied().flatten(),
+            StepTerm::Let { body, .. } => ranges.get(*body).copied().flatten(),
+            StepTerm::If { then, other, .. } => hull(&[
+                ranges.get(*then).copied().flatten(),
+                ranges.get(*other).copied().flatten(),
+            ]),
+            StepTerm::Case { arms, .. } => hull(
+                &arms
+                    .iter()
+                    .map(|arm| ranges.get(*arm).copied().flatten())
+                    .collect::<Vec<_>>(),
             ),
             StepTerm::Operation {
                 identity,
@@ -224,6 +236,18 @@ pub(super) fn helpers(
     Ok((source, selected))
 }
 
+/// The smallest interval holding every branch interval, or `None` when a branch has none (a Boolean).
+fn hull(branches: &[Option<NativeIntegerInterval>]) -> Option<NativeIntegerInterval> {
+    let mut lower = i128::MAX;
+    let mut upper = i128::MIN;
+    for branch in branches {
+        let branch = (*branch)?;
+        lower = lower.min(branch.lower());
+        upper = upper.max(branch.upper());
+    }
+    NativeIntegerInterval::new(lower, upper).ok()
+}
+
 // Only values that completed the real prior semantic-domain check reach the next
 // operation. Empty successful populations conservatively retain the full image.
 fn completed_interval(
@@ -244,11 +268,11 @@ fn completed_interval(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ix_trace_rs::trace;
-    use quire_exact::{
+    use filament_exact::{
         evaluate_native_integer_arithmetic, Meter, NativeInteger, NativeIntegerOperands, Outcome,
         Refusal, ScalarLimits,
     };
+    use ix_trace_rs::trace;
 
     fn interval(lower: i128, upper: i128) -> NativeIntegerInterval {
         NativeIntegerInterval::new(lower, upper).unwrap()

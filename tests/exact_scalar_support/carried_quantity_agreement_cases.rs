@@ -10,11 +10,11 @@ mod generated {
     include!(concat!(env!("CARGO_MANIFEST_DIR"), "/names.rs"));
 }
 use ix_trace_rs::trace;
-use quire_exact::{
+use filament_exact::{
     CarriedQuantityType, DecimalLoss, DecimalType, IllTyped, Integer, IntegerInterval,
     Outcome, QuantityCarrier, Rational, RationalDomain, RoundingMode,
 };
-use quire_semantic_value::quantity::{Conversion, ConvertedValue};
+use filament_semantic_value::quantity::{Conversion, ConvertedValue};
 use serde_json::Value;
 
 fn carrier(vectors: &Value) -> QuantityCarrier {
@@ -149,7 +149,7 @@ fn published_carried_values_losses_units_and_accounting_agree() {
         if let Some(consumed) = expected["consumed"].as_object() {
             for (name, count) in consumed {
                 let actual = if name == "work_units" {
-                    let position = quire_exact::LimitKind::ALL
+                    let position = filament_exact::LimitKind::ALL
                         .iter()
                         .position(|kind| kind.as_str() == name)
                         .unwrap();

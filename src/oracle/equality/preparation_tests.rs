@@ -10,22 +10,22 @@ use super::{
 use ix_trace_rs::trace;
 use std::{fs, process::Command};
 
-const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nrecord Point { x: Boolean; }\nrecord OtherPoint { x: Boolean; }\nfunction subject using v(a: Boolean, b: Boolean): Boolean pure { a = b }\n";
+const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nrecord Point { x: Boolean; }\nrecord OtherPoint { x: Boolean; }\nfunction subject using v(a: Boolean, b: Boolean): Boolean pure { a = b }\n";
 
 #[trace("TC-029", "FR-018-AC-48", "FR-018-AC-49")]
 #[test]
 fn emitted_preparation_retains_native_errors_and_semantic_precedence() {
-    let compiled = qsl_replay::compile_package(
-        qsl_replay::CompileUnit {
-            source: qsl_replay::SourceIdentity::new("test", "equality-preparation.native"),
+    let compiled = fsl_replay::compile_package(
+        fsl_replay::CompileUnit {
+            source: fsl_replay::SourceIdentity::new("test", "equality-preparation.native"),
             package_name: "equality-native-preparation".to_owned(),
             path: "equality-preparation.native",
             bytes: SOURCE.as_bytes(),
         },
         [],
-        &qsl_replay::DependencyInput::default(),
-        qsl_replay::StageLimits::default(),
-        qsl_replay::ReplayLimits::default(),
+        &fsl_replay::DependencyInput::default(),
+        fsl_replay::StageLimits::default(),
+        fsl_replay::ReplayLimits::default(),
     )
     .expect("the public producer issues real component identities");
     let packet: serde_json::Value = serde_json::from_slice(compiled.bytes()).unwrap();
@@ -33,7 +33,7 @@ fn emitted_preparation_retains_native_errors_and_semantic_precedence() {
     let node_id = serde_json::from_value(
         nodes
             .iter()
-            .find(|node| node["body"]["operation"]["identity"] == "quire.op.boolean.eq")
+            .find(|node| node["body"]["operation"]["identity"] == "filament.op.boolean.eq")
             .unwrap()["node_id"]
             .clone(),
     )
@@ -100,7 +100,7 @@ fn emitted_preparation_retains_native_errors_and_semantic_precedence() {
     fs::write(&library, format!("{emitted}\n{NATIVE_CHECKS}")).unwrap();
     fs::write(scratch.join("source.native"), SOURCE).unwrap();
     fs::write(scratch.join("checked-package.json"), compiled.bytes()).unwrap();
-    let manifest = format!("{}\n[dev-dependencies]\nqsv-failing-allocator = {{ git = \"https://github.com/agent-ix/quire-semantic-value\", branch = \"main\" }}\nquire-exact = {{ {}, features = [\"test-support\"] }}\n", crate::core::profile::equality_oracle_crate_manifest("equality-native-preparation"), crate::core::profile::EXACT_DEPENDENCY_SOURCE);
+    let manifest = format!("{}\n[dev-dependencies]\nfsv-failing-allocator = {{ git = \"https://github.com/agent-ix/filament-semantic-value\", branch = \"main\" }}\nfilament-exact = {{ {}, features = [\"test-support\"] }}\n", crate::core::profile::equality_oracle_crate_manifest("equality-native-preparation"), crate::core::profile::EXACT_DEPENDENCY_SOURCE);
     fs::write(scratch.join("Cargo.toml"), manifest).unwrap();
     fs::copy(root.join("Cargo.lock"), scratch.join("Cargo.lock")).unwrap();
     let metadata = Command::new(env!("CARGO"))
@@ -135,10 +135,10 @@ use super::*;
 use std::cell::Cell;
 use sv::{StorageUnit, TypeCheckError};
 #[global_allocator]
-static ALLOCATOR: qsv_failing_allocator::FailingAllocator = qsv_failing_allocator::FailingAllocator;
+static ALLOCATOR: fsv_failing_allocator::FailingAllocator = fsv_failing_allocator::FailingAllocator;
 thread_local! { static DENY_AT_BOUNDARY: Cell<Option<usize>> = const { Cell::new(None) }; }
 pub(super) fn arm_at_type_boundary() {
-    if let Some(count) = DENY_AT_BOUNDARY.with(Cell::take) { qsv_failing_allocator::arm(count); }
+    if let Some(count) = DENY_AT_BOUNDARY.with(Cell::take) { fsv_failing_allocator::arm(count); }
 }
 const LIMITS: exact::ScalarLimits = exact::ScalarLimits {
     integer_bits: 4096, decimal_digits: 4096, scale_expansion: 4096,
@@ -147,16 +147,16 @@ const LIMITS: exact::ScalarLimits = exact::ScalarLimits {
 };
 #[test]
 fn preparation_preserves_owner_errors_and_semantics() {
-    let compiled = qsl_replay::compile_admitted(qsl_replay::CompileUnit {
-        source: qsl_replay::SourceIdentity::new("test", "equality-preparation.native"),
+    let compiled = fsl_replay::compile_admitted(fsl_replay::CompileUnit {
+        source: fsl_replay::SourceIdentity::new("test", "equality-preparation.native"),
         package_name: "equality-native-preparation".to_owned(), path: "equality-preparation.native",
         bytes: include_bytes!("../source.native"),
-    }, [], &qsl_replay::DependencyInput::default(), qsl_replay::StageLimits::default(), qsl_replay::ReplayLimits::default()).unwrap();
+    }, [], &fsl_replay::DependencyInput::default(), fsl_replay::StageLimits::default(), fsl_replay::ReplayLimits::default()).unwrap();
     let context = compiled.context();
     let direct_environment = sv::TypeEnvironment::default();
-    qsv_failing_allocator::arm(0);
+    fsv_failing_allocator::arm(0);
     let expected = direct_environment.try_check_type(&exact::ValueType::Boolean);
-    let direct_bytes = qsv_failing_allocator::disarm();
+    let direct_bytes = fsv_failing_allocator::disarm();
     let Err(TypeCheckError::Allocation(expected)) = expected else { panic!("real owner type-walk denial"); };
     assert!(direct_bytes.is_some_and(|bytes| bytes > 0));
     assert_eq!(expected.unit(), StorageUnit::AdditionalElements);
@@ -165,7 +165,7 @@ fn preparation_preserves_owner_errors_and_semantics() {
     for allowed in [0, 1] {
         DENY_AT_BOUNDARY.with(|slot| slot.set(Some(allowed)));
         let result = environment_component(Some(context));
-        let denied = qsv_failing_allocator::disarm();
+        let denied = fsv_failing_allocator::disarm();
         assert_eq!(denied, direct_bytes);
         let Err(EnvironmentError::TypeCheck(TypeCheckError::Allocation(actual))) = result else { panic!("native error must stop preparation without a capability"); };
         assert_eq!(actual, expected);
@@ -175,7 +175,7 @@ fn preparation_preserves_owner_errors_and_semantics() {
     let right = exact::Value::Boolean(false);
     let mut meter = exact::Meter::new(LIMITS);
     let actual = oracle_component(&prepared, &left, &right, &mut meter);
-    let checked = direct_environment.check_equality(sv::EqualityOperator::Equal, sv::EqualityOperand::typed(exact::ValueType::Boolean), sv::EqualityOperand::typed(exact::ValueType::Boolean), &quire_semantic_value::enumeration::EnumMemberIndex::default()).unwrap();
+    let checked = direct_environment.check_equality(sv::EqualityOperator::Equal, sv::EqualityOperand::typed(exact::ValueType::Boolean), sv::EqualityOperand::typed(exact::ValueType::Boolean), &filament_semantic_value::enumeration::EnumMemberIndex::default()).unwrap();
     let mut direct_meter = exact::Meter::new(LIMITS);
     assert_eq!(actual, checked.evaluate(&direct_environment, &left, &right, &mut direct_meter));
     assert_eq!(actual, exact::Outcome::Completed(false));
@@ -192,16 +192,16 @@ fn preparation_preserves_owner_errors_and_semantics() {
         private_fault.left_source = missing.clone();
         private_fault.left_target = None;
         // Left consumes its root reservation and refuses. A right walk would hit this denial.
-        qsv_failing_allocator::arm(1);
+        fsv_failing_allocator::arm(1);
         let retained = comparison_type_refusal(&private_fault.environment, &private_fault.left_source, &private_fault.right_source);
-        let denied = qsv_failing_allocator::disarm();
+        let denied = fsv_failing_allocator::disarm();
         assert_eq!(denied, None, "left semantic refusal prevents the right native failure");
         private_fault.type_refusal = retained.unwrap();
         assert_eq!(private_fault.type_refusal, Some(expected));
         let mut meter = exact::Meter::new(LIMITS);
-        qsv_failing_allocator::arm(0);
+        fsv_failing_allocator::arm(0);
         let refused = oracle_component(&private_fault, &left, &right, &mut meter);
-        let repeated_walk = qsv_failing_allocator::disarm();
+        let repeated_walk = fsv_failing_allocator::disarm();
         assert_eq!(repeated_walk, None, "oracle consumes the retained cause without repeating type traversal");
         assert_eq!(refused, exact::Outcome::Refused(exact::Refusal::CheckedInvariant { cause: exact::CheckedInvariantCause::GeneratedTypeCheckRejected { cause: expected.cause } }));
         assert!(meter.admitted_charges().is_empty());

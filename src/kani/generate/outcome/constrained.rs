@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! The constrained method request and refusal vocabulary imports no family implementation.
-use qsl_replay::SnapshotValue;
-use quire_contract_model::{CheckedNodeId, CheckedPackageV2};
+use filament_contract_model::{CheckedNodeId, CheckedPackageV2};
+use fsl_replay::SnapshotValue;
 use serde::Serialize;
 use std::collections::BTreeMap;
 /// An exact clause selection in its admitted package, without a display-name lookup.
@@ -40,7 +40,7 @@ pub struct ConstrainedMethodRequest<'a> {
     /// Inclusive transition horizon; zero still checks the initial state.
     pub maximum_steps: u32,
     /// Caller-owned evaluator provisions, separate from the state constraint.
-    pub evaluator_limits: quire_exact::ScalarLimits,
+    pub evaluator_limits: filament_exact::ScalarLimits,
     /// Work available for the complete operation census.
     pub census_work: u64,
 }
@@ -74,7 +74,7 @@ pub enum ConstrainedMethodRefusal {
     Census {
         /// Original canonical-reader refusal, including its exact context and work provision.
         #[serde(serialize_with = "serialize_census")]
-        source: quire_contract_model::CheckedOperationReadError,
+        source: filament_contract_model::CheckedOperationReadError,
     },
     /// Missing, repeated or extra operation implementation binding.
     #[error("operation bindings disagree with the complete census")]
@@ -94,7 +94,7 @@ pub enum ConstrainedMethodRefusal {
 }
 
 pub(super) fn serialize_census<S: serde::Serializer>(
-    error: &quire_contract_model::CheckedOperationReadError,
+    error: &filament_contract_model::CheckedOperationReadError,
     serializer: S,
 ) -> Result<S::Ok, S::Error> {
     use serde::ser::SerializeStruct;

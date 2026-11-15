@@ -7,7 +7,7 @@ pub(crate) mod guard;
 use crate::oracle::operator_catalog::{
     IntegerOperator, Operator as CatalogOperator, ScalarKaniOperator,
 };
-use quire_contract_model::{CheckedNodeId, CheckedSemanticNodeV2, CheckedTerm};
+use filament_contract_model::{CheckedNodeId, CheckedSemanticNodeV2, CheckedTerm};
 
 #[cfg(test)]
 use crate::{
@@ -28,7 +28,7 @@ use crate::{
     },
     oracle::scalar::{lower::OperandRange, ExactScalarClaim, GeneratedScalarClaim},
 };
-use quire_exact::DivisionProfile;
+use filament_exact::DivisionProfile;
 
 /// An IR-confirmed V2 exact-scalar claim this generator can render: bounded integer arithmetic
 /// or Boolean implication. Other confirmed scalar families have no renderer yet.
@@ -256,7 +256,7 @@ impl ScalarOperands {
 pub(super) fn scalar_stem(operation: &str) -> String {
     format!(
         "kob_scalar_{}",
-        readable_component(operation.strip_prefix("quire.op.").unwrap_or(operation))
+        readable_component(operation.strip_prefix("filament.op.").unwrap_or(operation))
     )
 }
 
@@ -534,7 +534,7 @@ impl LoweredScalarClaim {
 
     pub(super) fn replay_body(
         &self,
-        source: &quire_contract_model::CheckedPackageV2,
+        source: &filament_contract_model::CheckedPackageV2,
     ) -> Result<
         crate::core::scalar_authority::ScalarReplayBody,
         crate::core::scalar_authority::ScalarAuthorityError,
@@ -546,7 +546,7 @@ impl LoweredScalarClaim {
         let body = ScalarReplayBody::admitted(
             source,
             &self.node_id,
-            quire_contract_model::CheckedScalarOperandRange {
+            filament_contract_model::CheckedScalarOperandRange {
                 lower: i128::from(self.lower),
                 upper: i128::from(self.upper),
             },
@@ -639,14 +639,14 @@ mod native_selection_tests {
             }))
             .expect("checked node identity"),
             operation_identity: match operation {
-                ScalarOperation::Add => "quire.op.integer.add",
-                ScalarOperation::Subtract => "quire.op.integer.sub",
-                ScalarOperation::Multiply => "quire.op.integer.mul",
-                ScalarOperation::Negate => "quire.op.integer.negate",
-                ScalarOperation::Implies => "quire.op.boolean.implies",
-                ScalarOperation::Divide(_) => "quire.op.integer.div",
-                ScalarOperation::Remainder(_) => "quire.op.integer.rem",
-                ScalarOperation::Modulo => "quire.op.integer.mod",
+                ScalarOperation::Add => "filament.op.integer.add",
+                ScalarOperation::Subtract => "filament.op.integer.sub",
+                ScalarOperation::Multiply => "filament.op.integer.mul",
+                ScalarOperation::Negate => "filament.op.integer.negate",
+                ScalarOperation::Implies => "filament.op.boolean.implies",
+                ScalarOperation::Divide(_) => "filament.op.integer.div",
+                ScalarOperation::Remainder(_) => "filament.op.integer.rem",
+                ScalarOperation::Modulo => "filament.op.integer.mod",
             }
             .to_owned(),
             oracle_source: String::new(),
@@ -784,7 +784,7 @@ fn count_bounds(minimum: &CheckedTerm, maximum: &CheckedTerm) -> Option<(String,
 ///
 /// Each operand's `kani::assume` is its own bound (the `bounded_domain` typing it; a literal
 /// operand, which is a constant, takes the result's). The operation is genuinely partial over that
-/// domain (`quire.op.integer.add` over `[-1000,1000]` admits `600 + 600`), which is why the
+/// domain (`filament.op.integer.add` over `[-1000,1000]` admits `600 + 600`), which is why the
 /// refused direction is part of the property rather than an unconditional `Completed`. The meter
 /// is unlimited, so `Incomplete` cannot occur. A `kani::cover!` on the `Completed` branch is the
 /// FR-015-AC-7 non-vacuity guard: the property is checked on at least one completing input.
@@ -1278,8 +1278,8 @@ mod {module} {{\n\
 
 #[cfg(test)]
 mod tests {
+    use filament_contract_model::LiteralKind;
     use ix_trace_rs::trace;
-    use quire_contract_model::LiteralKind;
     use serde_json::json;
 
     use super::*;
@@ -1289,8 +1289,8 @@ mod tests {
     #[trace("FR-014-AC-2", "TC-024")]
     #[test]
     fn a_quantity_conversion_has_no_scalar_harness_renderer() {
-        assert!(ScalarOperation::of("quire.op.quantity.convert", None).is_none());
-        assert!(ScalarOperation::of("quire.op.integer.add", None).is_some());
+        assert!(ScalarOperation::of("filament.op.quantity.convert", None).is_none());
+        assert!(ScalarOperation::of("filament.op.integer.add", None).is_some());
     }
 
     use crate::oracle::{
@@ -1309,47 +1309,50 @@ mod tests {
     #[test]
     fn scalar_projection_selects_arithmetic_and_boolean_implication() {
         assert_eq!(
-            ScalarOperation::of("quire.op.integer.add", None),
+            ScalarOperation::of("filament.op.integer.add", None),
             Some(ScalarOperation::Add)
         );
         assert_eq!(
-            ScalarOperation::of("quire.op.integer.sub", None),
+            ScalarOperation::of("filament.op.integer.sub", None),
             Some(ScalarOperation::Subtract)
         );
         assert_eq!(
-            ScalarOperation::of("quire.op.integer.mul", None),
+            ScalarOperation::of("filament.op.integer.mul", None),
             Some(ScalarOperation::Multiply)
         );
         assert_eq!(
-            ScalarOperation::of("quire.op.integer.negate", None),
+            ScalarOperation::of("filament.op.integer.negate", None),
             Some(ScalarOperation::Negate)
         );
         assert_eq!(
-            ScalarOperation::of("quire.op.boolean.implies", None),
+            ScalarOperation::of("filament.op.boolean.implies", None),
             Some(ScalarOperation::Implies)
         );
         for profile in DivisionProfile::ALL {
             assert_eq!(
-                ScalarOperation::of("quire.op.integer.div", Some(profile)),
+                ScalarOperation::of("filament.op.integer.div", Some(profile)),
                 Some(ScalarOperation::Divide(profile))
             );
             assert_eq!(
-                ScalarOperation::of("quire.op.integer.rem", Some(profile)),
+                ScalarOperation::of("filament.op.integer.rem", Some(profile)),
                 Some(ScalarOperation::Remainder(profile))
             );
         }
         assert_eq!(
-            ScalarOperation::of("quire.op.integer.mod", None),
+            ScalarOperation::of("filament.op.integer.mod", None),
             Some(ScalarOperation::Modulo)
         );
         assert_eq!(
-            ScalarOperation::of("quire.op.integer.div", None),
+            ScalarOperation::of("filament.op.integer.div", None),
             None,
             "a division with no law of its own has no renderer"
         );
-        assert_eq!(ScalarOperation::of("quire.op.integer.lt", None), None);
-        assert_eq!(ScalarOperation::of("quire.op.integer.eq", None), None);
-        assert_eq!(ScalarOperation::of("quire.op.integer.unknown", None), None);
+        assert_eq!(ScalarOperation::of("filament.op.integer.lt", None), None);
+        assert_eq!(ScalarOperation::of("filament.op.integer.eq", None), None);
+        assert_eq!(
+            ScalarOperation::of("filament.op.integer.unknown", None),
+            None
+        );
         assert_eq!(
             ScalarOperation::Subtract.operand_names(),
             &["left", "right"]
@@ -1368,7 +1371,7 @@ mod tests {
         let term = CheckedTerm::Aggregate { members };
         let node = CheckedSemanticNodeV2 {
             node_id: checked_node_id("0"),
-            schema_version: "quire.checked-semantic-graph/v2".into(),
+            schema_version: "filament.checked-semantic-graph/v2".into(),
             node_tag: "bounded_domain".into(),
             semantic_form: form.into(),
             semantic_type: checked_node_id("1"),
@@ -1387,7 +1390,7 @@ mod tests {
         CheckedTerm::Literal {
             type_id: checked_node_id("1"),
             value_kind: kind,
-            value: quire_contract_model::CheckedJson::from_serializable(&json!(value))
+            value: filament_contract_model::CheckedJson::from_serializable(&json!(value))
                 .expect("checked json literal"),
         }
     }
@@ -1508,7 +1511,7 @@ mod tests {
         let claim = ExactScalarClaim {
             node_id: checked_node_id("2"),
             operation: OperationClaim {
-                identity: "quire.op.integer.add".to_owned(),
+                identity: "filament.op.integer.add".to_owned(),
                 provenance: OperationProvenance::IrConfirmed,
             },
             result: ClaimDisposition::Generated(Box::new(GeneratedScalarClaim {
@@ -1554,7 +1557,7 @@ mod tests {
                 assert_eq!(got_upper, upper);
             }
             Err(ScalarLoweringRefusal::NoRenderer) => {
-                panic!("quire.op.integer.add has a renderer")
+                panic!("filament.op.integer.add has a renderer")
             }
             Err(ScalarLoweringRefusal::ResultUnreachable { .. }) => {
                 panic!("the domain does not fit i64, so no reachability is computed")
@@ -1576,7 +1579,7 @@ mod tests {
         .expect("node id")
     }
 
-    fn package_identity() -> quire_contract_model::ContractSourceV1 {
+    fn package_identity() -> filament_contract_model::ContractSourceV1 {
         serde_json::from_value(json!({
             "name": "kani-scalar-test",
             "lock": {
@@ -1597,7 +1600,7 @@ mod tests {
         ExactScalarClaim {
             node_id: checked_node_id("2"),
             operation: OperationClaim {
-                identity: "quire.op.integer.add".to_owned(),
+                identity: "filament.op.integer.add".to_owned(),
                 provenance: OperationProvenance::IrConfirmed,
             },
             result: ClaimDisposition::Generated(Box::new(GeneratedScalarClaim {
@@ -1675,7 +1678,7 @@ mod tests {
         let unlowered: Result<guard::GuardPlan, guard::GuardRefusal> = Err(Box::new((
             crate::core::requirement::RequirementOccurrence {
                 node_id: checked_node_id("5"),
-                role: quire_contract_model::CheckedOccurrenceRole::Expression,
+                role: filament_contract_model::CheckedOccurrenceRole::Expression,
                 ordinal: 0,
             },
             crate::kani::generate::outcome::PathGuardRefusal::UnsupportedGuardForm,
@@ -1754,10 +1757,10 @@ mod tests {
         let mut digest_successes = 0;
         let mut digest_refusals = 0;
         for (operation, identity) in [
-            (ScalarOperation::Add, "quire.op.integer.add"),
-            (ScalarOperation::Subtract, "quire.op.integer.sub"),
-            (ScalarOperation::Multiply, "quire.op.integer.mul"),
-            (ScalarOperation::Negate, "quire.op.integer.negate"),
+            (ScalarOperation::Add, "filament.op.integer.add"),
+            (ScalarOperation::Subtract, "filament.op.integer.sub"),
+            (ScalarOperation::Multiply, "filament.op.integer.mul"),
+            (ScalarOperation::Negate, "filament.op.integer.negate"),
         ] {
             let count = operation.operand_names().len();
             let mut cases = vec![
@@ -1876,7 +1879,7 @@ mod tests {
         ] {
             let lowered = LoweredScalarClaim {
                 node_id: checked_node_id("2"),
-                operation_identity: "quire.op.integer.add".into(),
+                operation_identity: "filament.op.integer.add".into(),
                 oracle_source,
                 native_integer_selection: None,
                 oracle_symbol: "oracle_test".into(),

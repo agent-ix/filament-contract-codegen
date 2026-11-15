@@ -197,7 +197,7 @@ pub(super) fn run_mutant_evidence(
         String::from_utf8_lossy(&metadata.stderr)
     );
     let installation = KaniInstallation::discover().expect("cargo-kani is installed");
-    let cancel = quire_exact::Cancel::new();
+    let cancel = filament_exact::Cancel::new();
     let evidence = execute_kani_obligation(&KaniExecutionRequest {
         cancel: &cancel,
         installation: &installation,
@@ -213,7 +213,7 @@ pub(super) fn run_mutant_evidence(
     };
     assert!(
         counterexample.contains("Check for `assertion`")
-            && counterexample.contains("the oracle must complete with exactly the native quire.op.integer.add result when it lies in the checked domain, and refuse otherwise"),
+            && counterexample.contains("the oracle must complete with exactly the native filament.op.integer.add result when it lies in the checked domain, and refuse otherwise"),
         "the generated sound assertion must fail: {counterexample}"
     );
     evidence
@@ -240,8 +240,8 @@ pub(crate) fn native_fixture(wall_clock: Duration) -> (KaniScalarObligationHarne
     )
 }
 
-fn limits() -> quire_exact::ScalarLimits {
-    quire_exact::ScalarLimits {
+fn limits() -> filament_exact::ScalarLimits {
+    filament_exact::ScalarLimits {
         integer_bits: 101,
         decimal_digits: 102,
         scale_expansion: 103,
@@ -260,7 +260,7 @@ fn limits() -> quire_exact::ScalarLimits {
 #[ignore = "real Kani and native cleanup controls: run this private lib control explicitly and serially"]
 fn cleanup_success_and_failure_preserve_real_receipt_after_snapshot_removal() {
     let (harness, artifacts) = native_fixture(Duration::from_secs(600));
-    let cancel = quire_exact::Cancel::new();
+    let cancel = filament_exact::Cancel::new();
     let installation = KaniInstallation::discover().expect("installed Kani");
     let target = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/private-scalar-cleanup");
     let request = KaniScalarNativeRequest {
@@ -362,7 +362,7 @@ fn bounded_single_run_preserves_cancelled_with_start_signal_and_timeout_without_
         fs::write(&launcher, script).unwrap();
         fs::set_permissions(&launcher, fs::Permissions::from_mode(0o700)).unwrap();
         let installation = KaniInstallation::new(launcher);
-        let cancel = quire_exact::Cancel::new();
+        let cancel = filament_exact::Cancel::new();
         let target = control.join("target");
         let completed = AtomicBool::new(false);
         let error = std::thread::scope(|scope| {
@@ -373,7 +373,7 @@ fn bounded_single_run_preserves_cancelled_with_start_signal_and_timeout_without_
                         std::thread::sleep(Duration::from_millis(5));
                     }
                     if started.exists() {
-                        cancel.cancel(quire_exact::CancelCause::Requested);
+                        cancel.cancel(filament_exact::CancelCause::Requested);
                         true
                     } else {
                         false
@@ -408,7 +408,7 @@ fn bounded_single_run_preserves_cancelled_with_start_signal_and_timeout_without_
         };
         let expected = if cancelled {
             KaniRunOutcome::Cancelled {
-                source: quire_contract_ir::kani::KaniCancellationSource::Requested,
+                source: filament_contract_ir::kani::KaniCancellationSource::Requested,
             }
         } else {
             KaniRunOutcome::Inconclusive {
@@ -434,7 +434,7 @@ fn seeded_false_bound_harness_produces_a_paired_completion_refusal() {
     };
     let (original, artifacts) = native_fixture(Duration::from_secs(600));
     let harness = false_bound_harness_for_test(&original, &artifacts);
-    let cancel = quire_exact::Cancel::new();
+    let cancel = filament_exact::Cancel::new();
     let installation = KaniInstallation::discover().expect("installed Kani");
     let target =
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/private-scalar-false-bound");
@@ -484,7 +484,7 @@ fn bounded_paired_runner_propagates_the_native_helpers_oracle_stop() {
     let installation = KaniInstallation::discover()
         .expect("installed real Kani")
         .with_scalar_native_launcher(helper);
-    let cancel = quire_exact::Cancel::new();
+    let cancel = filament_exact::Cancel::new();
     let target =
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/private-scalar-oracle-stop");
     let error = execute_kani_scalar_native(&KaniScalarNativeRequest {
@@ -546,7 +546,7 @@ fn bounded_paired_runner_propagates_the_native_helpers_oracle_stop() {
 #[ignore = "installed Kani codegen and native compiler control: run explicitly and serially; no verification"]
 fn staged_routed_native_companion_retains_custody_and_dev_only_feature_boundary() {
     let (harness, artifacts) = fixture(Duration::from_secs(600));
-    let cancel = quire_exact::Cancel::new();
+    let cancel = filament_exact::Cancel::new();
     let installation = KaniInstallation::discover().expect("installed Kani");
     let target = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target");
     crate::kani::run::scalar::qualify_staged_native_for_test(&KaniScalarNativeRequest {

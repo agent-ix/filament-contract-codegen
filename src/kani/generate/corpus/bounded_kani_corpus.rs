@@ -8,12 +8,12 @@
 
 use std::{collections::BTreeSet, fmt::Write as _};
 
-use quire_canonical::FixedShape;
-use quire_contract_ir::kani::{
+use filament_contract_ir::kani::{
     DispatchIndex, FiniteInput, FiniteObject, FiniteReference, KaniOutcome, KaniProfile,
     ProfileSelection, ValidatedFiniteInput,
 };
-use quire_contract_model::std001_code;
+use filament_contract_model::std001_code;
+use quire_canonical::FixedShape;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -93,7 +93,7 @@ pub struct BoundedCorpusArtifacts {
     /// Kani harness artifact with no input-erasing assumptions.
     pub kani_harness: Artifact,
     /// Real FSL source for this exact finite case; replay compiles these bytes through
-    /// `qsl_replay::call_site` rather than supplying a copied package.
+    /// `fsl_replay::call_site` rather than supplying a copied package.
     pub fsl_source: Artifact,
     /// The locked FSL library source imported by `fsl_source` for this case.
     pub fsl_dependency: Artifact,
@@ -667,7 +667,7 @@ fn render_artifacts(
         artifact_json(&proof_graph_value).map_err(|error| error.to_string())?;
     let fsl_source = String::from(
         "language \"ix:native\" edition \"1-draft\";\n\
-         profile v = \"quire.value.complete/v1\";\n\
+         profile v = \"filament.value.complete/v1\";\n\
          import \"ir-453/corpus-dependency\" as d;\n\
          function corpus_case using v(): Boolean pure { d::corpus_case(true) }\n",
     );
@@ -680,15 +680,15 @@ fn render_artifacts(
     };
     let fsl_dependency = format!(
         "language \"ix:native\" edition \"1-draft\";\n\
-         profile v = \"quire.value.complete/v1\";\n\
+         profile v = \"filament.value.complete/v1\";\n\
          {fsl_functions}\n"
     );
     Ok(BoundedCorpusArtifacts {
         oracle: Artifact::new(format!("corpus/{name}.oracle.rs"), oracle),
         strategy: Artifact::new(format!("corpus/{name}.strategy.rs"), strategy),
         kani_harness: Artifact::new(format!("corpus/{name}.kani.rs"), harness),
-        fsl_source: Artifact::new(format!("corpus/{name}.qsl"), fsl_source),
-        fsl_dependency: Artifact::new(format!("corpus/{name}.dependency.qsl"), fsl_dependency),
+        fsl_source: Artifact::new(format!("corpus/{name}.fsl"), fsl_source),
+        fsl_dependency: Artifact::new(format!("corpus/{name}.dependency.fsl"), fsl_dependency),
         proof_graph: Artifact::new(
             format!("corpus/{name}.proof-graph.json"),
             proof_graph_contents,
@@ -698,13 +698,13 @@ fn render_artifacts(
 
 #[cfg(test)]
 pub(crate) mod tests {
-    use ix_trace_rs::trace;
-    use quire_contract_ir::kani::{
+    use filament_contract_ir::kani::{
         CapabilityDisposition, CapabilityEntry, DispatchIndex, FiniteInput, FiniteObject,
         FiniteReference, KaniOutcome, KaniOutcomeKind, KaniProfile, ModuleDescriptor,
         PopulationCompleteness, ProfileSelection, ResourceBounds, SemanticFamily,
     };
-    use quire_contract_model::std001_code;
+    use filament_contract_model::std001_code;
+    use ix_trace_rs::trace;
 
     use super::{
         generate_bounded_kani_corpus_case, BoundedCorpusRequest, CorpusProofDependencyGraph,
@@ -717,7 +717,7 @@ pub(crate) mod tests {
     type Fixture = (
         KaniProfile,
         DispatchIndex,
-        quire_contract_ir::kani::ValidatedFiniteInput,
+        filament_contract_ir::kani::ValidatedFiniteInput,
     );
 
     pub(crate) fn false_cases() -> Vec<super::BoundedCorpusCase> {

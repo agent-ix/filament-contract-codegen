@@ -9,8 +9,8 @@ use filament_contract_codegen::{
     KaniExecutionEvidence, KaniExecutionRequest, KaniInstallation, KaniRunOutcome,
     KaniShadowHarness,
 };
+use filament_exact::Cancel;
 use ix_trace_rs::trace;
-use quire_exact::Cancel;
 
 use super::composite_equality_closure::corpus;
 use super::composite_shadow::{
@@ -49,7 +49,7 @@ fn crate_with(harness: &KaniShadowHarness, name: &str) -> PathBuf {
     .unwrap();
     fs::write(
         directory.join("Cargo.toml"),
-        "[package]\nname = \"generated-shadow\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[workspace]\n",
+        format!("[package]\nname = \"generated-shadow-{name}\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[workspace]\n"),
     )
     .unwrap();
     fs::write(

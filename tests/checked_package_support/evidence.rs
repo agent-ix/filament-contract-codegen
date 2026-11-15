@@ -3,7 +3,7 @@
 
 use std::{fs, path::Path};
 
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedArtifactRef, CheckedExtensionDefinition, CheckedPackageEvidence,
 };
 use serde::Deserialize;
@@ -85,7 +85,7 @@ pub(crate) fn retain_selected_document(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use quire_contract_model::{
+    use filament_contract_model::{
         CheckedPackageReadLimits, CheckedPackageRefusalCode, CheckedPackageV2,
         CheckedPackageV2ReadResult,
     };
@@ -106,7 +106,7 @@ mod tests {
 
     fn model_evidence(root: &Path, _wire: &Value) -> CheckedPackageEvidence {
         let mut evidence = CheckedPackageEvidence::new();
-        evidence.support_feature("quire.value.complete/v1");
+        evidence.support_feature("filament.value.complete/v1");
         let directory = root.join("proposals/checked-package-v2");
         let selections: Value = serde_json::from_slice(
             &fs::read(directory.join("selected-documents.json"))
@@ -167,7 +167,7 @@ mod tests {
             package.resolved_graph().nodes[34].node_tag.as_ref(),
             "extension"
         );
-        let quire_contract_model::CheckedTerm::ExtensionForm { definition, .. } =
+        let filament_contract_model::CheckedTerm::ExtensionForm { definition, .. } =
             &package.resolved_graph().nodes[34].body
         else {
             panic!("published extension retains its selected definition");

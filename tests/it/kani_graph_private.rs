@@ -39,17 +39,17 @@ use crate::{
     KaniObligationOutcome, KaniObligationRequest, LockedSource, ObligationItem, ProvidedDocument,
     ReplayInputs, StateClauseReplay, WitnessDecodeLimits,
 };
-use ix_trace_rs::trace;
-use qsl_replay::{
+use filament_contract_model::{
+    CheckedNodeId, CheckedOccurrence, CheckedPackageEvidence, CheckedPackageReadLimits,
+    CheckedPackageV2, CheckedPackageV2ReadResult,
+};
+use filament_semantic_value::catalog::Category;
+use fsl_replay::{
     call_site, AnchorKind, ClauseName, DependencyInput, DisagreementCause, Identifier,
     ReplayLimits, ReplayResult, ScalarLimits, SelectedAnchor, SourceIdentity, WitnessSettlement,
     DEFAULT_REPLAY_INPUT_BYTES,
 };
-use quire_contract_model::{
-    CheckedNodeId, CheckedOccurrence, CheckedPackageEvidence, CheckedPackageReadLimits,
-    CheckedPackageV2, CheckedPackageV2ReadResult,
-};
-use quire_semantic_value::catalog::Category;
+use ix_trace_rs::trace;
 use serde_json::{json, Value};
 use std::{fs, path::PathBuf, time::Duration};
 
@@ -89,8 +89,8 @@ fn domain_document() -> Vec<u8> {
         "source": {"identity": SOURCE, "version": "1.0.0", "dialect": "spec-bundle"},
         "package": {"identity": DOMAIN, "version": "1.0.0", "mappingVersions": [], "profileVersions": []},
         "constructs": [
-            construct("entity", "quire.meaning.model.object-type/v1"),
-            construct("population", "quire.meaning.model.population/v1")
+            construct("entity", "filament.meaning.model.object-type/v1"),
+            construct("population", "filament.meaning.model.population/v1")
         ],
         "occurrences": [], "extensions": [],
         "types": [{
@@ -153,7 +153,7 @@ pub(crate) fn authored_over(
         .map(|name| format!("invariant {name} using v on M::Node at current {{ {condition} }}\n"))
         .collect();
     let source = format!(
-        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.model.complete/v1\";\nmodel M = \"{DOMAIN}\";\nbound Nodes on M::CollectionNodes [{maximum}]\npredicate inspect using v (input: M::Node): Boolean {{ true }}\n{invariants}"
+        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.model.complete/v1\";\nmodel M = \"{DOMAIN}\";\nbound Nodes on M::CollectionNodes [{maximum}]\npredicate inspect using v (input: M::Node): Boolean {{ true }}\n{invariants}"
     );
     let site = call_site(
         SourceIdentity::new(AUTHORITY, UNIT),
@@ -166,7 +166,7 @@ pub(crate) fn authored_over(
     )
     .unwrap_or_else(|error| panic!("FSL emits the authored clause: {error:?}"));
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     evidence
         .insert_domain_package_document(DOMAIN, domain.clone())
         .unwrap();
@@ -277,7 +277,7 @@ pub(crate) fn run_outcome(harness: &KaniGraphObligationHarness, label: &str) -> 
     fs::write(
         scratch.0.join("Cargo.toml"),
         format!(
-            "[package]\nname = \"generated-kani-graph\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\nquire-contract-runtime = {{ {}, features = [\"exact\"] }}\n\n[workspace]\n",
+            "[package]\nname = \"generated-kani-graph\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\nfilament-contract-runtime = {{ {}, features = [\"exact\"] }}\n\n[workspace]\n",
             crate::RUNTIME_DEPENDENCY_SOURCE
         ),
     )
@@ -308,7 +308,7 @@ pub(crate) fn run_outcome(harness: &KaniGraphObligationHarness, label: &str) -> 
         String::from_utf8_lossy(&metadata.stderr)
     );
     let installation = KaniInstallation::discover().expect("cargo-kani is installed");
-    let cancel = quire_exact::Cancel::new();
+    let cancel = filament_exact::Cancel::new();
     let started = std::time::Instant::now();
     let evidence = execute_kani_obligation(&KaniExecutionRequest {
         cancel: &cancel,
@@ -402,13 +402,13 @@ fn graph_inputs_for<'a>(
 }
 
 /// Decodes the counterexample into the drawn graph and replays the authored clause over it
-/// through `qsl_replay`.
+/// through `fsl_replay`.
 pub(crate) fn replay(
     authored: &Authored,
     harness: &KaniGraphObligationHarness,
     counterexample: &str,
     relationship: &str,
-) -> (crate::GraphWitness, qsl_replay::StateClauseReplayResult) {
+) -> (crate::GraphWitness, fsl_replay::StateClauseReplayResult) {
     let unbounded = UNBOUNDED;
     let playback = parse_assertion_playback(
         counterexample,
@@ -434,7 +434,7 @@ fn replay_under(
     harness: &KaniGraphObligationHarness,
     counterexample: &str,
     clause_name: &str,
-) -> Result<qsl_replay::StateClauseReplayResult, crate::StateClauseReplayError> {
+) -> Result<fsl_replay::StateClauseReplayResult, crate::StateClauseReplayError> {
     let playback = parse_assertion_playback(
         counterexample,
         harness.identity.harness_symbol.as_str(),
@@ -456,7 +456,7 @@ fn relationship(name: &str) -> String {
 }
 
 pub(crate) fn settled(
-    result: &qsl_replay::StateClauseReplayResult,
+    result: &fsl_replay::StateClauseReplayResult,
 ) -> (WitnessSettlement, Category, Option<DisagreementCause>) {
     let ReplayResult::Witness(arm) = result.result() else {
         panic!("the invariant envelope is on the witness arm");
@@ -468,7 +468,7 @@ pub(crate) fn settled(
     )
 }
 
-pub(crate) fn assert_reproduced(result: &qsl_replay::StateClauseReplayResult) {
+pub(crate) fn assert_reproduced(result: &fsl_replay::StateClauseReplayResult) {
     assert_eq!(
         settled(result),
         (
@@ -480,7 +480,7 @@ pub(crate) fn assert_reproduced(result: &qsl_replay::StateClauseReplayResult) {
 }
 
 /// The authored clause holds on the replayed graph: the harness and the clause disagree.
-pub(crate) fn assert_clause_holds(result: &qsl_replay::StateClauseReplayResult) {
+pub(crate) fn assert_clause_holds(result: &fsl_replay::StateClauseReplayResult) {
     let (settlement, category, cause) = settled(result);
     assert_eq!(settlement, WitnessSettlement::Inconclusive);
     assert_eq!(category, Category::Success);
@@ -733,7 +733,7 @@ fn snapshot_instances(replay: &StateClauseReplay) -> Value {
         .documents
         .iter()
         .filter_map(|bytes| serde_json::from_slice::<Value>(bytes).ok())
-        .find(|document| document["format"] == "quire.state.snapshot/v1")
+        .find(|document| document["format"] == "filament.state.snapshot/v1")
         .expect("the snapshot")["relationships"][0]["instances"]
         .clone()
 }

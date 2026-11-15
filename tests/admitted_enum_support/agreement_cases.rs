@@ -8,14 +8,14 @@ mod generated {
     include!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/lib.rs"));
     include!(concat!(env!("CARGO_MANIFEST_DIR"), "/names.rs"));
 
-    fn wire(key: &exact::NodeKey) -> quire_contract_model::CheckedNodeId {
-        quire_contract_model::CheckedNodeId {
+    fn wire(key: &exact::NodeKey) -> filament_contract_model::CheckedNodeId {
+        filament_contract_model::CheckedNodeId {
             package: key.package().into(),
             path: key.path().into_iter().map(|segment| match segment {
                 exact::PathSegment::Text(name) =>
-                    quire_contract_model::CheckedNodePathSegment::Name(name.into()),
+                    filament_contract_model::CheckedNodePathSegment::Name(name.into()),
                 exact::PathSegment::Node(child) =>
-                    quire_contract_model::CheckedNodePathSegment::Node(std::sync::Arc::new(wire(&child))),
+                    filament_contract_model::CheckedNodePathSegment::Node(std::sync::Arc::new(wire(&child))),
             }).collect(),
             ordinal: key.ordinal(),
         }
@@ -48,7 +48,7 @@ mod generated {
             false,
         );
         assert!(
-            matches!(result, Err(EnvironmentError::Lookup(qsl_replay::AdmittedLookupRefusal::Foreign {
+            matches!(result, Err(EnvironmentError::Lookup(fsl_replay::AdmittedLookupRefusal::Foreign {
             declaration, package,
         })) if declaration == key && package == expected)
         );
@@ -58,7 +58,7 @@ mod generated {
             &exact::Identifier::new("DARK").expect("identifier"),
         );
         assert!(
-            matches!(result, Err(EnvironmentError::Lookup(qsl_replay::AdmittedLookupRefusal::Foreign {
+            matches!(result, Err(EnvironmentError::Lookup(fsl_replay::AdmittedLookupRefusal::Foreign {
             declaration, package,
         })) if declaration == key && package == expected)
         );
@@ -79,7 +79,7 @@ mod generated {
         .expect("structural negative key");
         assert!(
             matches!(prepared.context.expect("genuine retained capability").enum_declaration(&unknown),
-            Err(qsl_replay::AdmittedLookupRefusal::Unknown { declaration, case: None }) if declaration == unknown)
+            Err(fsl_replay::AdmittedLookupRefusal::Unknown { declaration, case: None }) if declaration == unknown)
         );
         let mut members = prepared.enum_members.clone();
         let result = rebuild_enum(
@@ -90,7 +90,7 @@ mod generated {
             true,
         );
         assert!(
-            matches!(result, Err(EnvironmentError::Lookup(qsl_replay::AdmittedLookupRefusal::Unknown {
+            matches!(result, Err(EnvironmentError::Lookup(fsl_replay::AdmittedLookupRefusal::Unknown {
             declaration, case: None,
         })) if declaration == unknown)
         );
@@ -109,7 +109,7 @@ mod generated {
         let absent = exact::Identifier::new("ABSENT").expect("identifier");
         let result = lookup_enum_case(prepared.context, &wire(&key), &absent);
         assert!(
-            matches!(result, Err(EnvironmentError::Lookup(qsl_replay::AdmittedLookupRefusal::Unknown {
+            matches!(result, Err(EnvironmentError::Lookup(fsl_replay::AdmittedLookupRefusal::Unknown {
             declaration, case: Some(case),
         })) if declaration == key && case == absent)
         );
@@ -155,9 +155,9 @@ mod generated {
             });
             assert_eq!(
                 result.0,
-                quire_exact::Outcome::Refused(quire_exact::Refusal::CheckedInvariant {
+                filament_exact::Outcome::Refused(filament_exact::Refusal::CheckedInvariant {
                     cause:
-                        quire_exact::CheckedInvariantCause::GeneratedDescriptorReconstructionFailed,
+                        filament_exact::CheckedInvariantCause::GeneratedDescriptorReconstructionFailed,
                 }),
                 "{fault}"
             );
@@ -167,22 +167,22 @@ mod generated {
     }
 }
 use ix_trace_rs::trace;
-use quire_exact::{
+use filament_exact::{
     ChargePoint, CheckedInvariantCause, InjectedDenial, LimitKind, Meter, Outcome, Refusal,
     ScalarLimits,
 };
-use quire_semantic_value::declaration::{EqualityOperand, EqualityOperator, TypeEnvironment};
+use filament_semantic_value::declaration::{EqualityOperand, EqualityOperator, TypeEnvironment};
 
 type Constructor = for<'ctx> fn(
-    Option<&'ctx qsl_replay::AdmittedContext>,
+    Option<&'ctx fsl_replay::AdmittedContext>,
 ) -> Result<
     generated::PreparedEqualityEnvironment<'ctx>,
     generated::EnvironmentError,
 >;
 type Oracle = fn(
     &generated::PreparedEqualityEnvironment<'_>,
-    &quire_exact::Value,
-    &quire_exact::Value,
+    &filament_exact::Value,
+    &filament_exact::Value,
     &mut Meter,
 ) -> Outcome<bool>;
 
@@ -324,16 +324,16 @@ fn same_case_of_distinct_genuine_declarations_is_not_an_alias() {
     for (left, right) in ordered.members.iter().zip(&other.members) {
         assert_ne!(left.variant(), right.variant());
         let mut meter = Meter::new(LIMITS);
-        let refused = quire_semantic_value::enumeration::compare_enum(
-            quire_exact::ComparisonOperator::Equal,
+        let refused = filament_semantic_value::enumeration::compare_enum(
+            filament_exact::ComparisonOperator::Equal,
             left,
             right,
             &mut meter,
         );
         assert!(matches!(
             refused,
-            Err(quire_exact::IllTyped {
-                cause: quire_exact::IllTypedCause::DistinctEnumDeclarations
+            Err(filament_exact::IllTyped {
+                cause: filament_exact::IllTypedCause::DistinctEnumDeclarations
             })
         ));
         assert!(meter.admitted_charges().is_empty());

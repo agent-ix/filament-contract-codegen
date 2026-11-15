@@ -15,8 +15,10 @@ use filament_contract_codegen::{
     ReplaySettlement, ReplayVerdict, ScopeMember, SelectedTargetMember, SpineReplayError,
     StateClauseReplay, StateClauseReplayError, StateFrameRefusal, TerminalPairError,
 };
-use ix_trace_rs::trace;
-use qsl_replay::{
+use filament_contract_ir::kani::{KaniCancellationSource, KaniOutcome, KaniOutcomeKind};
+use filament_exact::CancelCause;
+use filament_semantic_value::catalog::{Category, InternalFault};
+use fsl_replay::{
     std001_code, AdmissionFailure, CallSiteRefusal, Certification, ClauseName, Code, DeclineCode,
     DependencyInput, DependencyInputRefusal, DisagreementCause, FieldName, FrameCounterexample,
     Identifier, ImportedFunctionName, IncompleteCause, InconclusiveCause, LibraryName,
@@ -26,9 +28,7 @@ use qsl_replay::{
     TerminalValue, UnavailabilityCause, Verdict, Witness, WitnessEnvelope, WitnessFailure,
     WitnessPacket,
 };
-use quire_contract_ir::kani::{KaniCancellationSource, KaniOutcome, KaniOutcomeKind};
-use quire_exact::CancelCause;
-use quire_semantic_value::catalog::{Category, InternalFault};
+use ix_trace_rs::trace;
 
 use crate::kani_obligations_state_frame::{emitted_fixture, native_twin::Twin};
 
@@ -324,7 +324,7 @@ fn tc_040_a_replay_disagreement_carries_its_cause() {
         },
     ] {
         let verdict = ReplayVerdict::EvidenceFailure(EvidenceFailureCause::Verdict {
-            settlement: qsl_replay::WitnessSettlement::Inconclusive,
+            settlement: fsl_replay::WitnessSettlement::Inconclusive,
             category: Category::Violation,
             disagreement: Some(cause.clone()),
         });
@@ -467,7 +467,7 @@ fn for_each_cg_failure(check: impl Fn(ReplaySettlement<'_>)) {
 /// this crate's public `EvidenceFailureCause::Verdict` can.
 fn reproduced_without_violation() -> EvidenceFailureCause {
     EvidenceFailureCause::Verdict {
-        settlement: qsl_replay::WitnessSettlement::ReproducedWithEvaluatedWitness,
+        settlement: fsl_replay::WitnessSettlement::ReproducedWithEvaluatedWitness,
         category: Category::Success,
         disagreement: None,
     }

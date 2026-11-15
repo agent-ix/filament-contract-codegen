@@ -12,7 +12,7 @@
 //! bypasses the real V2 reader.
 //!
 //! FR-021 adds its own function-declaration and call-item nodes on top of
-//! that base. Scalar function roots carry a checked `quire.op.integer.add`
+//! that base. Scalar function roots carry a checked `filament.op.integer.add`
 //! operation and Integer result; the equality root retains its equality
 //! operation, and call-item roots retain their call form. The function
 //! classifier checks scalar operation identity and body arity against the
@@ -28,7 +28,7 @@ use filament_contract_codegen::{
     ContractRequestPosition, ExactFunctionBody, ExactFunctionDeclaration, ExactFunctionItem,
     FunctionParameter,
 };
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedNodeId, CheckedNodePathSegment, CheckedNodeTag, CheckedPackageReadLimits,
     CheckedPackageV2, CompleteLoweringProfileV2, ContractDependencies, ContractPackageReadResult,
     ContractPackageV1, ContractPackageWireV1, LoweringProfileRef,
@@ -220,7 +220,7 @@ fn integer_add_body(arguments: Vec<serde_json::Value>) -> serde_json::Value {
     application(
         "binary",
         serde_json::json!({
-            "identity": "quire.op.integer.add", "laws": [], "mode": null,
+            "identity": "filament.op.integer.add", "laws": [], "mode": null,
             "member": null, "leaves": []
         }),
         T_INTEGER,
@@ -232,7 +232,7 @@ fn call_body(function_code: u32, argument_codes: &[u32], result_type: u32) -> se
     application(
         "call",
         serde_json::json!({
-            "identity": "quire.op.function.call", "laws": [], "mode": null,
+            "identity": "filament.op.function.call", "laws": [], "mode": null,
             "member": null, "leaves": []
         }),
         result_type,
@@ -368,7 +368,7 @@ pub fn ext_corpus_package() -> PackageBuilder {
         let mut body = binary_body(T_INTEGER, T_INTEGER);
         body["arguments"][0] = reference_code(parameter);
         let result_type = if integer_result {
-            body["operation"]["identity"] = serde_json::json!("quire.op.integer.add");
+            body["operation"]["identity"] = serde_json::json!("filament.op.integer.add");
             body["result_type"] = serde_json::json!(code_id(T_INTEGER));
             T_INTEGER
         } else {
@@ -420,7 +420,7 @@ pub fn source_bound_call_package() -> PackageBuilder {
         );
     }
     let add_op = serde_json::json!({
-        "identity": "quire.op.integer.add", "laws": [], "mode": null,
+        "identity": "filament.op.integer.add", "laws": [], "mode": null,
         "member": null, "leaves": []
     });
     let body = serde_json::json!({
@@ -430,7 +430,7 @@ pub fn source_bound_call_package() -> PackageBuilder {
     });
     let other_body = serde_json::json!({
         "term": "application", "operator": "binary",
-        "operation": {"identity": "quire.op.integer.sub", "laws": [], "mode": null,
+        "operation": {"identity": "filament.op.integer.sub", "laws": [], "mode": null,
         "member": null, "leaves": []},
         "result_type": code_id(T_INTEGER),
         "arguments": [source_reference(SOURCE_PARAM_A), source_reference(SOURCE_PARAM_B)]
@@ -459,7 +459,7 @@ pub fn source_bound_call_package() -> PackageBuilder {
             declaration_body(SOURCE_OTHER_BODY),
         );
     let call_op = serde_json::json!({
-        "identity": "quire.op.function.call", "laws": [], "mode": null,
+        "identity": "filament.op.function.call", "laws": [], "mode": null,
         "member": null, "leaves": []
     });
     builder.application_node(
@@ -877,7 +877,7 @@ pub fn byte_ceiling_package_with_shape(body_count: u32, call_count: u32) -> Pack
     let map = wire["source_map"].as_array_mut().expect("source map");
     map.retain(|entry| {
         !replaced.contains(
-            &serde_json::from_value::<quire_contract_model::CheckedNodeId>(
+            &serde_json::from_value::<filament_contract_model::CheckedNodeId>(
                 entry["node_id"].clone(),
             )
             .expect("source node key"),

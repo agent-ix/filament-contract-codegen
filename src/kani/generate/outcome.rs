@@ -2,12 +2,12 @@
 //! request names, the records it returns and the reasons an item has no harness. A leaf inside
 //! `generate/`: it imports no family.
 
-use qsl_replay::ObligationIdentity;
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedModelFieldsError, CheckedNodeId, CheckedNodeTag, CheckedOccurrence,
     CheckedPackageIncomplete, CheckedPackageLimit, CheckedPackageRefusal, CheckedPackageV2,
     CheckedSourceMapEntry, ContractPackageV1,
 };
+use fsl_replay::ObligationIdentity;
 use serde::{Serialize, Serializer};
 
 use crate::{
@@ -227,6 +227,22 @@ pub enum DerivedDomain {
     },
 }
 
+/// Why a `let`, `if` or `case` of a V2 clause has no harness.
+#[non_exhaustive]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+pub enum V2ClauseControlReason {
+    /// A `let` binds a value of a family other than native Integer or Boolean.
+    LetValueNotNativeScalar,
+    /// An `if` selects between branches of a family other than native Integer or Boolean.
+    IfBranchNotNativeScalar,
+    /// A `case` over a union with a payload-carrying member.
+    CaseUnionPayloadNotSupported,
+    /// A `case` over an arity-0 union whose arms are of a family other than native Integer or Boolean.
+    CaseArmNotNativeScalar,
+    /// A `case` whose scrutinee is not an operation parameter of an arity-0 union.
+    CaseScrutineeNotParameter,
+}
+
 /// Why a well-formed item has no harness.
 #[non_exhaustive]
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
@@ -290,7 +306,7 @@ pub enum UnsupportedObligation {
         node_id: CheckedNodeId,
         /// Original typed census refusal with its code, context, work and limit.
         #[serde(serialize_with = "constrained::serialize_census")]
-        source: quire_contract_model::CheckedOperationReadError,
+        source: filament_contract_model::CheckedOperationReadError,
     },
     /// The clause's anchor or ordered binders disagree with its effective signature.
     V2ClauseSignatureMismatch {
@@ -329,6 +345,18 @@ pub enum UnsupportedObligation {
         node_id: CheckedNodeId,
         /// Exact checked operator identity found in the clause body.
         operation_identity: String,
+    },
+    /// An admitted V2 clause holds a `let`, `if` or `case` whose shape the clause harness does not
+    /// lower (FR-015-AC-160 to FR-015-AC-163 and FR-015-AC-171).
+    V2ClauseControlNotSupported {
+        /// Selected clause node.
+        node_id: CheckedNodeId,
+        /// The control node when the walk reached it through a reference, else the clause node.
+        control_node_id: CheckedNodeId,
+        /// The control operation identity.
+        operation_identity: String,
+        /// The closed reason the control is refused.
+        reason: V2ClauseControlReason,
     },
     /// An admitted V2 clause holds an operation that a current measured row records as not
     /// finishing under Kani at or above the operation's width (FR-056-AC-4).
@@ -729,7 +757,7 @@ pub enum GraphUnsupportedReason {
 pub enum GraphAccessorRefusal {
     /// The application node is absent from the graph.
     UnknownNode,
-    /// The node is not a `quire.op.model.reaches` or `quire.op.model.reaches_field`
+    /// The node is not a `filament.op.model.reaches` or `filament.op.model.reaches_field`
     /// application.
     NotReachesApplication,
     /// The application's population no longer resolves.
@@ -1330,7 +1358,7 @@ mod tests {
     fn node(seed: u8) -> CheckedNodeId {
         CheckedNodeId {
             package: "state-frame-test".into(),
-            path: vec![quire_contract_model::CheckedNodePathSegment::Name(
+            path: vec![filament_contract_model::CheckedNodePathSegment::Name(
                 format!("node-{seed}").into(),
             )],
             ordinal: 0,
@@ -1367,12 +1395,12 @@ mod tests {
     /// refusal arms of `NotLowered`, and the variants a request reaches only with a defective
     /// generator or a source over 1 MiB.
     fn table() -> Vec<(&'static str, StateFrameRefusal, ObligationDisposition)> {
-        let refusal_detail = match quire_contract_model::CheckedPackageV2::read(
+        let refusal_detail = match filament_contract_model::CheckedPackageV2::read(
             b"{}",
-            quire_contract_model::CheckedPackageReadLimits::bounded(),
-            &quire_contract_model::CheckedPackageEvidence::new(),
+            filament_contract_model::CheckedPackageReadLimits::bounded(),
+            &filament_contract_model::CheckedPackageEvidence::new(),
         ) {
-            quire_contract_model::CheckedPackageV2ReadResult::Refused(refusal) => refusal,
+            filament_contract_model::CheckedPackageV2ReadResult::Refused(refusal) => refusal,
             other => panic!("an empty package is refused by the reader: {other:?}"),
         };
         let incomplete = CheckedPackageIncomplete {

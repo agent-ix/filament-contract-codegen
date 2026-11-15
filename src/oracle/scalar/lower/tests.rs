@@ -8,8 +8,10 @@ use super::*;
 
 type Graph<'a> = crate::oracle::checked_graph::CheckedGraph<'a, CheckedTerm>;
 use crate::oracle::checked_graph::fixture::Node as FixtureNode;
+use filament_contract_model::{
+    CheckedNodePathSegment, CheckedPackageIncomplete, CheckedPackageLimit,
+};
 use ix_trace_rs::trace;
-use quire_contract_model::{CheckedNodePathSegment, CheckedPackageIncomplete, CheckedPackageLimit};
 
 #[trace("FR-014-AC-3")]
 #[test]
@@ -52,7 +54,7 @@ fn inference_node(
             node_id: id,
             owner: None,
             owner_model: None,
-            schema_version: "quire.checked-semantic-graph/v2".into(),
+            schema_version: "filament.checked-semantic-graph/v2".into(),
             node_tag: tag.into(),
             semantic_form: form.into(),
             semantic_type,
@@ -118,7 +120,7 @@ fn tc_024_nested_inference_reports_missing_cycle_unsupported_and_bad_literals() 
     let root = inference_application_node(
         root_id.clone(),
         &integer,
-        "quire.op.integer.negate",
+        "filament.op.integer.negate",
         vec![reference(&missing)],
     );
     let nodes = [scalar.clone(), root];
@@ -151,7 +153,7 @@ fn tc_024_nested_inference_reports_missing_cycle_unsupported_and_bad_literals() 
     let cycle = inference_application_node(
         root_id.clone(),
         &integer,
-        "quire.op.integer.negate",
+        "filament.op.integer.negate",
         vec![reference(&root_id)],
     );
     let nodes = [scalar.clone(), cycle];
@@ -166,7 +168,7 @@ fn tc_024_nested_inference_reports_missing_cycle_unsupported_and_bad_literals() 
     let unsupported = inference_application_node(
         root_id.clone(),
         &integer,
-        "quire.op.integer.divide",
+        "filament.op.integer.divide",
         Vec::new(),
     );
     let nodes = [scalar.clone(), unsupported];
@@ -175,7 +177,7 @@ fn tc_024_nested_inference_reports_missing_cycle_unsupported_and_bad_literals() 
         infer_integer_range(&graph, &root_id, 1),
         Err(ExactScalarRefusal::OperandUnsupported {
             position: 1,
-            term: "quire.op.integer.divide".to_owned()
+            term: "filament.op.integer.divide".to_owned()
         })
     );
 
@@ -194,7 +196,7 @@ fn tc_024_nested_inference_reports_missing_cycle_unsupported_and_bad_literals() 
             CheckedTerm::Literal {
                 type_id: node_id('0'),
                 value_kind: LiteralKind::from_wire(value_kind).expect("closed fixture kind"),
-                value: quire_contract_model::CheckedJson::from_serializable(&serde_json::json!(
+                value: filament_contract_model::CheckedJson::from_serializable(&serde_json::json!(
                     literal_value
                 ))
                 .expect("checked json literal"),
@@ -203,7 +205,7 @@ fn tc_024_nested_inference_reports_missing_cycle_unsupported_and_bad_literals() 
         let unary = inference_application_node(
             root_id.clone(),
             &integer,
-            "quire.op.integer.negate",
+            "filament.op.integer.negate",
             vec![reference(&literal_id)],
         );
         let nodes = [scalar.clone(), literal, unary];
@@ -245,7 +247,7 @@ fn tc_024_nested_inference_accepts_inline_canonical_integer_literals() {
                     value: Box::new(CheckedTerm::Literal {
                         type_id: node_id('0'),
                         value_kind: LiteralKind::Integer,
-                        value: quire_contract_model::CheckedJson::from_serializable(
+                        value: filament_contract_model::CheckedJson::from_serializable(
                             &serde_json::json!("0"),
                         )
                         .expect("checked json literal"),
@@ -256,7 +258,7 @@ fn tc_024_nested_inference_accepts_inline_canonical_integer_literals() {
                     value: Box::new(CheckedTerm::Literal {
                         type_id: node_id('0'),
                         value_kind: LiteralKind::Integer,
-                        value: quire_contract_model::CheckedJson::from_serializable(
+                        value: filament_contract_model::CheckedJson::from_serializable(
                             &serde_json::json!("9"),
                         )
                         .expect("checked json literal"),
@@ -269,13 +271,13 @@ fn tc_024_nested_inference_accepts_inline_canonical_integer_literals() {
     let application = inference_application_node(
         root.clone(),
         &integer,
-        "quire.op.integer.add",
+        "filament.op.integer.add",
         vec![
             reference(&parameter),
             CheckedTerm::Literal {
                 type_id: node_id('0'),
                 value_kind: LiteralKind::Integer,
-                value: quire_contract_model::CheckedJson::from_serializable(&serde_json::json!(
+                value: filament_contract_model::CheckedJson::from_serializable(&serde_json::json!(
                     "1"
                 ))
                 .expect("checked json literal"),
@@ -318,7 +320,7 @@ fn tc_024_nested_inference_enforces_depth_before_reusing_memoized_nodes() {
                     value: Box::new(CheckedTerm::Literal {
                         type_id: node_id('0'),
                         value_kind: LiteralKind::Integer,
-                        value: quire_contract_model::CheckedJson::from_serializable(
+                        value: filament_contract_model::CheckedJson::from_serializable(
                             &serde_json::json!("0"),
                         )
                         .expect("checked json literal"),
@@ -329,7 +331,7 @@ fn tc_024_nested_inference_enforces_depth_before_reusing_memoized_nodes() {
                     value: Box::new(CheckedTerm::Literal {
                         type_id: node_id('0'),
                         value_kind: LiteralKind::Integer,
-                        value: quire_contract_model::CheckedJson::from_serializable(
+                        value: filament_contract_model::CheckedJson::from_serializable(
                             &serde_json::json!("9"),
                         )
                         .expect("checked json literal"),
@@ -342,13 +344,13 @@ fn tc_024_nested_inference_enforces_depth_before_reusing_memoized_nodes() {
     let shared_expression = inference_application_node(
         shared.clone(),
         &integer,
-        "quire.op.integer.add",
+        "filament.op.integer.add",
         vec![
             reference(&parameter),
             CheckedTerm::Literal {
                 type_id: node_id('0'),
                 value_kind: LiteralKind::Integer,
-                value: quire_contract_model::CheckedJson::from_serializable(&serde_json::json!(
+                value: filament_contract_model::CheckedJson::from_serializable(&serde_json::json!(
                     "1"
                 ))
                 .expect("checked json literal"),
@@ -361,14 +363,14 @@ fn tc_024_nested_inference_enforces_depth_before_reusing_memoized_nodes() {
         nodes.push(inference_application_node(
             node_id.clone(),
             &integer,
-            "quire.op.integer.add",
+            "filament.op.integer.add",
             vec![reference(&parameter), reference(next)],
         ));
     }
     nodes.push(inference_application_node(
         root.clone(),
         &integer,
-        "quire.op.integer.add",
+        "filament.op.integer.add",
         vec![reference(&shared), reference(&chain[0])],
     ));
     let graph = inference_graph(&nodes);
@@ -388,12 +390,12 @@ fn tc_024_nested_inference_enforces_depth_before_reusing_memoized_nodes() {
 #[trace("FR-014-AC-3", "TC-024")]
 #[test]
 fn tc_024_invalid_and_incomplete_bodies_are_typed_refusals() {
-    let refusal = match quire_contract_model::CheckedPackageV2::read(
+    let refusal = match filament_contract_model::CheckedPackageV2::read(
         b"{}",
-        quire_contract_model::CheckedPackageReadLimits::bounded(),
-        &quire_contract_model::CheckedPackageEvidence::new(),
+        filament_contract_model::CheckedPackageReadLimits::bounded(),
+        &filament_contract_model::CheckedPackageEvidence::new(),
     ) {
-        quire_contract_model::CheckedPackageV2ReadResult::Refused(refusal) => refusal,
+        filament_contract_model::CheckedPackageV2ReadResult::Refused(refusal) => refusal,
         other => panic!("an empty package is refused by the reader: {other:?}"),
     };
     let invalid = CompleteLoweringRecordV2::InvalidBody {
@@ -487,7 +489,9 @@ fn tc_024_a_failed_record_is_refused_by_its_limit_kind() {
 #[trace("FR-014-AC-3", "TC-024")]
 #[test]
 fn tc_024_catalogued_operation_identity_refuses_a_node_whose_operation_has_no_identity() {
-    use quire_contract_model::{CheckedApplicationOperation, CheckedApplicationOperationFixture};
+    use filament_contract_model::{
+        CheckedApplicationOperation, CheckedApplicationOperationFixture,
+    };
     let operation = CheckedApplicationOperation::from_test_fixture(
         CheckedApplicationOperationFixture::default(),
     )
@@ -545,8 +549,10 @@ fn binding_member(name: &str, value: &str) -> CheckedTerm {
         value: Box::new(CheckedTerm::Literal {
             type_id: node_id('1'),
             value_kind: LiteralKind::Integer,
-            value: quire_contract_model::CheckedJson::from_serializable(&serde_json::json!(value))
-                .expect("checked json literal"),
+            value: filament_contract_model::CheckedJson::from_serializable(&serde_json::json!(
+                value
+            ))
+            .expect("checked json literal"),
         }),
     }
 }
@@ -558,8 +564,10 @@ fn text_member(name: &str, value: &str) -> CheckedTerm {
         value: Box::new(CheckedTerm::Literal {
             type_id: node_id('1'),
             value_kind: LiteralKind::Text,
-            value: quire_contract_model::CheckedJson::from_serializable(&serde_json::json!(value))
-                .expect("checked json literal"),
+            value: filament_contract_model::CheckedJson::from_serializable(&serde_json::json!(
+                value
+            ))
+            .expect("checked json literal"),
         }),
     }
 }
@@ -647,7 +655,7 @@ fn tc_024_a_conversion_narrows_only_its_one_referenced_argument() {
         &target
     ));
     assert!(!narrows_fixture(
-        &conversion('c', "quire.op.numeric.convert", vec![reference_to('2')]),
+        &conversion('c', "filament.op.numeric.convert", vec![reference_to('2')]),
         &target
     ));
     assert!(!narrows_fixture(
@@ -688,7 +696,7 @@ fn tc_024_integer_range_is_read_from_binding_members_and_refuses_bare_literals()
     let bare = |value: &str| CheckedTerm::Literal {
         type_id: node_id('0'),
         value_kind: LiteralKind::Integer,
-        value: quire_contract_model::CheckedJson::from_serializable(&serde_json::json!(value))
+        value: filament_contract_model::CheckedJson::from_serializable(&serde_json::json!(value))
             .expect("checked json literal"),
     };
     nodes.push(v2_node(
@@ -872,7 +880,7 @@ fn wrong_form_and_wrong_base_bounds_keep_typed_defensive_refusals() {
         let body = CheckedTerm::Application {
             operator: ApplicationOperator::Binary,
             operation: serde_json::from_value(
-                serde_json::json!({"identity":"quire.op.integer.add"}),
+                serde_json::json!({"identity":"filament.op.integer.add"}),
             )
             .expect("typed operation"),
             result_type: node_id(result),
@@ -888,7 +896,7 @@ fn wrong_form_and_wrong_base_bounds_keep_typed_defensive_refusals() {
                 CheckedTerm::Application {
                     operator: ApplicationOperator::Convert,
                     operation: serde_json::from_value(
-                        serde_json::json!({"identity":"quire.op.numeric.narrow"}),
+                        serde_json::json!({"identity":"filament.op.numeric.narrow"}),
                     )
                     .expect("typed narrow"),
                     result_type: node_id('7'),
@@ -947,8 +955,10 @@ fn quantity_multiply_with_integer_result_refuses_before_emission() {
     );
     let body = CheckedTerm::Application {
         operator: ApplicationOperator::Binary,
-        operation: serde_json::from_value(serde_json::json!({"identity":"quire.op.quantity.mul"}))
-            .expect("typed operation"),
+        operation: serde_json::from_value(
+            serde_json::json!({"identity":"filament.op.quantity.mul"}),
+        )
+        .expect("typed operation"),
         result_type: node_id('1'),
         arguments: vec![reference_to('2'), reference_to('3')],
     };
@@ -987,13 +997,13 @@ fn quantity_multiply_with_integer_result_refuses_before_emission() {
 fn sqrt_and_fma_refuse_a_call_form_node_with_another_body_operator() {
     for (identity, operator, width, arguments) in [
         (
-            "quire.op.ieee.float32.sqrt",
+            "filament.op.ieee.float32.sqrt",
             IeeeArithmeticOperator::SquareRoot,
             IeeeWidth::Binary32,
             1,
         ),
         (
-            "quire.op.ieee.float64.fma",
+            "filament.op.ieee.float64.fma",
             IeeeArithmeticOperator::FusedMultiplyAdd,
             IeeeWidth::Binary64,
             3,

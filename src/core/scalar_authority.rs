@@ -1,6 +1,6 @@
 //! Original admitted positional scalar body retained by the scalar renderer (FR-032).
 
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedNodeId, CheckedOccurrence, CheckedOccurrenceRole, CheckedPackageV2,
     CheckedScalarOperand, CheckedScalarOperandError,
 };
@@ -36,7 +36,7 @@ pub struct ScalarReplayBody {
     /// One admitted operand per argument position, including repeated and inline operands.
     pub operands: Vec<CheckedScalarOperand>,
     /// The exact result interval supplied by the integer renderer.
-    pub result_range: quire_contract_model::CheckedScalarOperandRange,
+    pub result_range: filament_contract_model::CheckedScalarOperandRange,
 }
 
 /// Why generation cannot supply replay authority. Generation itself remains available.
@@ -60,7 +60,7 @@ pub enum ScalarAuthorityError {
 
 impl ScalarReplayBody {
     pub(crate) fn record(&self) -> serde_json::Value {
-        use quire_contract_model::CheckedScalarOperandChild;
+        use filament_contract_model::CheckedScalarOperandChild;
         let operands = self.operands.iter().map(|operand| {
             let child = match &operand.child {
                 CheckedScalarOperandChild::GraphChild(node) => serde_json::json!({"graphChild": node}),
@@ -74,7 +74,7 @@ impl ScalarReplayBody {
     pub(crate) fn admitted(
         package: &CheckedPackageV2,
         node: &CheckedNodeId,
-        result_range: quire_contract_model::CheckedScalarOperandRange,
+        result_range: filament_contract_model::CheckedScalarOperandRange,
     ) -> Result<Self, ScalarAuthorityError> {
         let node_record = package
             .resolved_graph()
@@ -83,7 +83,7 @@ impl ScalarReplayBody {
             .find(|entry| &entry.node_id == node)
             .ok_or(ScalarAuthorityError::Occurrence)?;
         let operation_identity = match package.term(node) {
-            Some(quire_contract_model::CheckedTerm::Application { operation, .. }) => operation
+            Some(filament_contract_model::CheckedTerm::Application { operation, .. }) => operation
                 .identity()
                 .ok_or(ScalarAuthorityError::Operation)?
                 .to_owned(),

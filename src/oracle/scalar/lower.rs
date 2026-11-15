@@ -18,18 +18,18 @@ use crate::oracle::checked_graph::{term_name, CheckedGraph as Graph, GraphBody};
 use crate::oracle::claim::{ClaimDisposition, OracleGenerationError, UpstreamBlocker};
 use crate::oracle::operator_catalog::{IntegerOperator, Operator as CatalogOperator};
 use crate::oracle::{classify_lowering_failure, direct_unsupported_form, LoweringFailure};
-use num_bigint::BigInt;
-use quire_contract_model::{
+use filament_contract_model::{
     ApplicationOperator, BoundedDomainForm, CheckedJson, CheckedNodeId, CheckedNodeTag,
     CheckedOccurrenceRole, CheckedSemanticNodeV2, CheckedTerm, CompleteContractNodeV2,
     CompleteLoweringRecordV2, ContractOccurrenceKeyV1, ContractPackageV1, ContractResultContextV1,
     ContractResultViewV1, ContractSourceKeyV1,
 };
-use quire_exact::{
+use filament_exact::{
     ComparisonOperator, IeeeComparison, IeeeWidth, IntegerDomain, IntegerInterval,
     OrderingOperator, RoundingMode,
 };
-use quire_semantic_value::declaration::EqualityOperator;
+use filament_semantic_value::declaration::EqualityOperator;
+use num_bigint::BigInt;
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::{
@@ -46,7 +46,7 @@ use crate::core::ir::scalar_bounds::{
     read_decimal_range, read_float_rounding, read_integer_range, read_rational_range,
     read_text_bounds,
 };
-use quire_contract_model::{CheckedPackageV2, CompleteLoweringProfileV2};
+use filament_contract_model::{CheckedPackageV2, CompleteLoweringProfileV2};
 
 /// The lowered node and the bounds its descriptor was checked against.
 type CheckedItem<'r> = (&'r CompleteContractNodeV2, Vec<CheckedNodeId>);
@@ -212,9 +212,9 @@ pub(super) fn division_operand_bound_refusal<Body: GraphBody>(
     }
     let identity = scalar_ir::identity(graph.term(node_id));
     let admitted_operation = match identity {
-        Some("quire.op.integer.mod") => true,
-        Some("quire.op.integer.div") => {
-            quire_exact::DivisionProfile::ALL
+        Some("filament.op.integer.mod") => true,
+        Some("filament.op.integer.div") => {
+            filament_exact::DivisionProfile::ALL
                 .into_iter()
                 .filter(|profile| {
                     scalar_ir::has_law(graph.term(node_id), profile.definition_identity())
@@ -491,7 +491,7 @@ fn is_literal_value<Body: GraphBody>(
 }
 
 /// The catalogued identity of the narrowing conversion FSL wraps a bounded-context expression in.
-pub(super) const NARROW_IDENTITY: &str = "quire.op.numeric.narrow";
+pub(super) const NARROW_IDENTITY: &str = "filament.op.numeric.narrow";
 
 /// How the nodes that consume a scalar-typed node bound its result.
 pub(super) enum Narrowing<'g, Body> {
@@ -518,7 +518,7 @@ impl<Body> Narrowing<'_, Body> {
 
 /// Whether `consumer` is a narrowing conversion of the node `id`: an `expression` of form
 /// `conversion` whose body is a `convert` application with the catalogued identity
-/// `quire.op.numeric.narrow` and exactly one argument, a `reference` to `id`.
+/// `filament.op.numeric.narrow` and exactly one argument, a `reference` to `id`.
 pub(super) fn narrows<Body: GraphBody>(
     graph: &Graph<'_, Body>,
     consumer: &CheckedSemanticNodeV2<Body>,
@@ -1077,7 +1077,7 @@ impl<'n> BoundView<'n, CheckedTerm> {
 
 impl<'n> BoundView<'n, CheckedJson> {
     pub(super) fn admitted(
-        closure: &'n quire_contract_model::ContractReachedClosureV1<'_>,
+        closure: &'n filament_contract_model::ContractReachedClosureV1<'_>,
         selected: SelectedResult<'n>,
     ) -> Self {
         Self {
@@ -1095,7 +1095,7 @@ pub(super) enum DivisionBounds {
     /// The quotient of `div`.
     Quotient,
     /// The remainder of `rem` under one law.
-    Remainder(quire_exact::DivisionProfile),
+    Remainder(filament_exact::DivisionProfile),
     /// The Euclidean remainder of `mod`.
     Modulo,
 }
@@ -1206,17 +1206,18 @@ impl<Body: GraphBody, NodeBody> Bounds<'_, '_, Body, NodeBody> {
             if magnitude.is_zero() {
                 magnitude.clone()
             } else {
-                magnitude.sub(&quire_exact::Integer::one())
+                magnitude.sub(&filament_exact::Integer::one())
             }
         };
         let domain = match member {
             DivisionBounds::Quotient => IntegerInterval::spanning(magnitude.neg(), magnitude),
             DivisionBounds::Modulo
-            | DivisionBounds::Remainder(quire_exact::DivisionProfile::Euclidean) => {
-                IntegerInterval::spanning(quire_exact::Integer::zero(), window_upper())
+            | DivisionBounds::Remainder(filament_exact::DivisionProfile::Euclidean) => {
+                IntegerInterval::spanning(filament_exact::Integer::zero(), window_upper())
             }
             DivisionBounds::Remainder(
-                quire_exact::DivisionProfile::Truncating | quire_exact::DivisionProfile::Floor,
+                filament_exact::DivisionProfile::Truncating
+                | filament_exact::DivisionProfile::Floor,
             ) => {
                 let upper = window_upper();
                 IntegerInterval::spanning(upper.neg(), upper)
@@ -1622,7 +1623,7 @@ impl Shape {
         }
     }
 
-    /// `quire::value::ieee::sqrt` and `fma`: the catalogued `call` body operator with the
+    /// `filament::value::ieee::sqrt` and `fma`: the catalogued `call` body operator with the
     /// `call` semantic form only. IEEE `add`'s binary shape is not reused.
     fn call(operands: &'static [ScalarForm], result: ScalarForm) -> Self {
         Self {
@@ -1883,16 +1884,16 @@ pub(super) fn catalogued_operation(
     use ExactScalarOperation as Op;
     Ok(match operation {
         Op::Boolean { operator, .. } => plain(match operator {
-            BooleanOperator::And => "quire.op.boolean.and",
-            BooleanOperator::Or => "quire.op.boolean.or",
-            BooleanOperator::Not => "quire.op.boolean.not",
-            BooleanOperator::Implies => "quire.op.boolean.implies",
+            BooleanOperator::And => "filament.op.boolean.and",
+            BooleanOperator::Or => "filament.op.boolean.or",
+            BooleanOperator::Not => "filament.op.boolean.not",
+            BooleanOperator::Implies => "filament.op.boolean.implies",
         }),
         Op::Equality { operator, operands } => plain(match (operands, operator) {
-            (EqualityOperandKind::Boolean, EqualityOperator::Equal) => "quire.op.boolean.eq",
-            (EqualityOperandKind::Boolean, EqualityOperator::NotEqual) => "quire.op.boolean.ne",
-            (EqualityOperandKind::Integer, EqualityOperator::Equal) => "quire.op.integer.eq",
-            (EqualityOperandKind::Integer, EqualityOperator::NotEqual) => "quire.op.integer.ne",
+            (EqualityOperandKind::Boolean, EqualityOperator::Equal) => "filament.op.boolean.eq",
+            (EqualityOperandKind::Boolean, EqualityOperator::NotEqual) => "filament.op.boolean.ne",
+            (EqualityOperandKind::Integer, EqualityOperator::Equal) => "filament.op.integer.eq",
+            (EqualityOperandKind::Integer, EqualityOperator::NotEqual) => "filament.op.integer.ne",
         }),
         Op::IntegerArithmetic { operator, .. } => plain(match operator {
             IntegerOperator::Add => CatalogOperator::Add.entry().identity,
@@ -1900,28 +1901,34 @@ pub(super) fn catalogued_operation(
             IntegerOperator::Multiply => CatalogOperator::Multiply.entry().identity,
             IntegerOperator::Negate => CatalogOperator::Negate.entry().identity,
         }),
-        Op::IntegerDivision { .. } => plain("quire.op.integer.div"),
-        Op::IntegerRemainder { .. } => plain("quire.op.integer.rem"),
-        Op::IntegerModulo { .. } => plain("quire.op.integer.mod"),
+        Op::IntegerDivision { .. } => plain("filament.op.integer.div"),
+        Op::IntegerRemainder { .. } => plain("filament.op.integer.rem"),
+        Op::IntegerModulo { .. } => plain("filament.op.integer.mod"),
         Op::RationalArithmetic { operator, .. } => plain(match operator {
-            RationalOperator::Add => "quire.op.rational.add",
-            RationalOperator::Subtract => "quire.op.rational.sub",
-            RationalOperator::Multiply => "quire.op.rational.mul",
+            RationalOperator::Add => "filament.op.rational.add",
+            RationalOperator::Subtract => "filament.op.rational.sub",
+            RationalOperator::Multiply => "filament.op.rational.mul",
             // `rational.div`'s operands are `rational_promotable` (integer or
             // rational): there is no separate catalogued "integer division to
             // a rational result" identity.
-            RationalOperator::Divide | RationalOperator::IntegerDivide => "quire.op.rational.div",
-            RationalOperator::Negate => "quire.op.rational.negate",
+            RationalOperator::Divide | RationalOperator::IntegerDivide => {
+                "filament.op.rational.div"
+            }
+            RationalOperator::Negate => "filament.op.rational.negate",
         }),
         Op::Ordering { operator, operands } => plain(ordering_identity(operands, operator)?),
         Op::DecimalArithmetic { operator, target } => match operator {
-            DecimalOperator::Add => with_rounding("quire.op.decimal.add", target.rounding()),
-            DecimalOperator::Subtract => with_rounding("quire.op.decimal.sub", target.rounding()),
-            DecimalOperator::Multiply => with_rounding("quire.op.decimal.mul", target.rounding()),
-            DecimalOperator::Divide => with_rounding("quire.op.decimal.div", target.rounding()),
-            DecimalOperator::Negate => plain("quire.op.decimal.negate"),
+            DecimalOperator::Add => with_rounding("filament.op.decimal.add", target.rounding()),
+            DecimalOperator::Subtract => {
+                with_rounding("filament.op.decimal.sub", target.rounding())
+            }
+            DecimalOperator::Multiply => {
+                with_rounding("filament.op.decimal.mul", target.rounding())
+            }
+            DecimalOperator::Divide => with_rounding("filament.op.decimal.div", target.rounding()),
+            DecimalOperator::Negate => plain("filament.op.decimal.negate"),
             DecimalOperator::Round => {
-                with_rounding("quire.op.numeric.convert_rounding", target.rounding())
+                with_rounding("filament.op.numeric.convert_rounding", target.rounding())
             }
         },
         Op::IeeeArithmetic {
@@ -1930,45 +1937,49 @@ pub(super) fn catalogued_operation(
             rounding,
         } => {
             let identity = match (width, operator) {
-                (IeeeWidth::Binary32, IeeeArithmeticOperator::Add) => "quire.op.ieee.float32.add",
+                (IeeeWidth::Binary32, IeeeArithmeticOperator::Add) => {
+                    "filament.op.ieee.float32.add"
+                }
                 (IeeeWidth::Binary32, IeeeArithmeticOperator::Subtract) => {
-                    "quire.op.ieee.float32.sub"
+                    "filament.op.ieee.float32.sub"
                 }
                 (IeeeWidth::Binary32, IeeeArithmeticOperator::Multiply) => {
-                    "quire.op.ieee.float32.mul"
+                    "filament.op.ieee.float32.mul"
                 }
                 (IeeeWidth::Binary32, IeeeArithmeticOperator::Divide) => {
-                    "quire.op.ieee.float32.div"
+                    "filament.op.ieee.float32.div"
                 }
-                (IeeeWidth::Binary64, IeeeArithmeticOperator::Add) => "quire.op.ieee.float64.add",
+                (IeeeWidth::Binary64, IeeeArithmeticOperator::Add) => {
+                    "filament.op.ieee.float64.add"
+                }
                 (IeeeWidth::Binary64, IeeeArithmeticOperator::Subtract) => {
-                    "quire.op.ieee.float64.sub"
+                    "filament.op.ieee.float64.sub"
                 }
                 (IeeeWidth::Binary64, IeeeArithmeticOperator::Multiply) => {
-                    "quire.op.ieee.float64.mul"
+                    "filament.op.ieee.float64.mul"
                 }
                 (IeeeWidth::Binary64, IeeeArithmeticOperator::Divide) => {
-                    "quire.op.ieee.float64.div"
+                    "filament.op.ieee.float64.div"
                 }
                 (IeeeWidth::Binary32, IeeeArithmeticOperator::SquareRoot) => {
-                    "quire.op.ieee.float32.sqrt"
+                    "filament.op.ieee.float32.sqrt"
                 }
                 (IeeeWidth::Binary64, IeeeArithmeticOperator::SquareRoot) => {
-                    "quire.op.ieee.float64.sqrt"
+                    "filament.op.ieee.float64.sqrt"
                 }
                 (IeeeWidth::Binary32, IeeeArithmeticOperator::FusedMultiplyAdd) => {
-                    "quire.op.ieee.float32.fma"
+                    "filament.op.ieee.float32.fma"
                 }
                 (IeeeWidth::Binary64, IeeeArithmeticOperator::FusedMultiplyAdd) => {
-                    "quire.op.ieee.float64.fma"
+                    "filament.op.ieee.float64.fma"
                 }
             };
             with_rounding(identity, *rounding)
         }
         Op::IeeeComparison { comparison, .. } => plain(match comparison {
-            IeeeComparison::NumericEqual => "quire.op.ieee.numeric_equal",
-            IeeeComparison::TotalOrder => "quire.op.ieee.total_order",
-            IeeeComparison::BitIdentical => "quire.op.ieee.bit_identical",
+            IeeeComparison::NumericEqual => "filament.op.ieee.numeric_equal",
+            IeeeComparison::TotalOrder => "filament.op.ieee.total_order",
+            IeeeComparison::BitIdentical => "filament.op.ieee.bit_identical",
         }),
         Op::IeeeWidthConversion {
             source,
@@ -1976,15 +1987,15 @@ pub(super) fn catalogued_operation(
             rounding,
         } => match (source, target) {
             (IeeeWidth::Binary64, IeeeWidth::Binary32) => {
-                with_rounding("quire.op.ieee.to_float32", *rounding)
+                with_rounding("filament.op.ieee.to_float32", *rounding)
             }
-            (IeeeWidth::Binary32, IeeeWidth::Binary64) => plain("quire.op.ieee.to_float64"),
+            (IeeeWidth::Binary32, IeeeWidth::Binary64) => plain("filament.op.ieee.to_float64"),
             // Same-width "conversion" has no catalogued identity at all; a
             // descriptor naming one can never be confirmed.
             (IeeeWidth::Binary32, IeeeWidth::Binary32)
             | (IeeeWidth::Binary64, IeeeWidth::Binary64) => None,
         },
-        Op::TextAdmission { .. } => plain("quire.op.numeric.convert"),
+        Op::TextAdmission { .. } => plain("filament.op.numeric.convert"),
         // `text.*`/`enum.*` comparisons carry a catalogued `text_profile` mode
         // (`"nfc"`), but the descriptor itself has no profile-bearing field to
         // compare it against, so only the identity is checked.
@@ -1999,11 +2010,11 @@ pub(super) fn catalogued_operation(
             with_rounding(QUANTITY_CONVERT_IDENTITY, carrier_rounding(carrier))
         }
         Op::QuantityArithmetic { operator } => plain(match operator {
-            QuantityOperator::Add => "quire.op.quantity.add",
-            QuantityOperator::Subtract => "quire.op.quantity.sub",
-            QuantityOperator::Multiply => "quire.op.quantity.mul",
-            QuantityOperator::Divide => "quire.op.quantity.div",
-            QuantityOperator::Power => "quire.op.quantity.pow",
+            QuantityOperator::Add => "filament.op.quantity.add",
+            QuantityOperator::Subtract => "filament.op.quantity.sub",
+            QuantityOperator::Multiply => "filament.op.quantity.mul",
+            QuantityOperator::Divide => "filament.op.quantity.div",
+            QuantityOperator::Power => "filament.op.quantity.pow",
         }),
         Op::QuantityComparison { operator } => {
             plain(comparison_identity(ComparisonFamily::Quantity, operator)?)
@@ -2011,7 +2022,7 @@ pub(super) fn catalogued_operation(
     })
 }
 
-/// `quire.op.<family>.<lt|le|gt|ge>` for an integer, rational or decimal
+/// `filament.op.<family>.<lt|le|gt|ge>` for an integer, rational or decimal
 /// `Ordering` descriptor, one catalogued identity per (operands, operator).
 fn ordering_identity(
     operands: &OrderingOperandKind,
@@ -2025,14 +2036,14 @@ fn ordering_identity(
             .ok_or_else(|| OracleGenerationError::unknown_variant("OrderingOperator"));
     }
     Ok(match (operands, operator) {
-        (Kind::Rational, Op::Less) => "quire.op.rational.lt",
-        (Kind::Rational, Op::LessOrEqual) => "quire.op.rational.le",
-        (Kind::Rational, Op::Greater) => "quire.op.rational.gt",
-        (Kind::Rational, Op::GreaterOrEqual) => "quire.op.rational.ge",
-        (Kind::Decimal, Op::Less) => "quire.op.decimal.lt",
-        (Kind::Decimal, Op::LessOrEqual) => "quire.op.decimal.le",
-        (Kind::Decimal, Op::Greater) => "quire.op.decimal.gt",
-        (Kind::Decimal, Op::GreaterOrEqual) => "quire.op.decimal.ge",
+        (Kind::Rational, Op::Less) => "filament.op.rational.lt",
+        (Kind::Rational, Op::LessOrEqual) => "filament.op.rational.le",
+        (Kind::Rational, Op::Greater) => "filament.op.rational.gt",
+        (Kind::Rational, Op::GreaterOrEqual) => "filament.op.rational.ge",
+        (Kind::Decimal, Op::Less) => "filament.op.decimal.lt",
+        (Kind::Decimal, Op::LessOrEqual) => "filament.op.decimal.le",
+        (Kind::Decimal, Op::Greater) => "filament.op.decimal.gt",
+        (Kind::Decimal, Op::GreaterOrEqual) => "filament.op.decimal.ge",
         (Kind::Integer, _) => {
             return Err(OracleGenerationError::unknown_variant(
                 "OrderingOperandKind",
@@ -2050,7 +2061,7 @@ enum ComparisonFamily {
     Quantity,
 }
 
-/// `quire.op.<family>.<suffix>` for one of the catalog's six comparison
+/// `filament.op.<family>.<suffix>` for one of the catalog's six comparison
 /// identities per family.
 fn comparison_identity(
     family: ComparisonFamily,
@@ -2059,24 +2070,24 @@ fn comparison_identity(
     use ComparisonFamily as F;
     use ComparisonOperator as Op;
     Ok(match (family, operator) {
-        (F::Text, Op::Equal) => "quire.op.text.eq",
-        (F::Text, Op::NotEqual) => "quire.op.text.ne",
-        (F::Text, Op::Less) => "quire.op.text.lt",
-        (F::Text, Op::LessOrEqual) => "quire.op.text.le",
-        (F::Text, Op::Greater) => "quire.op.text.gt",
-        (F::Text, Op::GreaterOrEqual) => "quire.op.text.ge",
-        (F::Enum, Op::Equal) => "quire.op.enum.eq",
-        (F::Enum, Op::NotEqual) => "quire.op.enum.ne",
-        (F::Enum, Op::Less) => "quire.op.enum.lt",
-        (F::Enum, Op::LessOrEqual) => "quire.op.enum.le",
-        (F::Enum, Op::Greater) => "quire.op.enum.gt",
-        (F::Enum, Op::GreaterOrEqual) => "quire.op.enum.ge",
-        (F::Quantity, Op::Equal) => "quire.op.quantity.eq",
-        (F::Quantity, Op::NotEqual) => "quire.op.quantity.ne",
-        (F::Quantity, Op::Less) => "quire.op.quantity.lt",
-        (F::Quantity, Op::LessOrEqual) => "quire.op.quantity.le",
-        (F::Quantity, Op::Greater) => "quire.op.quantity.gt",
-        (F::Quantity, Op::GreaterOrEqual) => "quire.op.quantity.ge",
+        (F::Text, Op::Equal) => "filament.op.text.eq",
+        (F::Text, Op::NotEqual) => "filament.op.text.ne",
+        (F::Text, Op::Less) => "filament.op.text.lt",
+        (F::Text, Op::LessOrEqual) => "filament.op.text.le",
+        (F::Text, Op::Greater) => "filament.op.text.gt",
+        (F::Text, Op::GreaterOrEqual) => "filament.op.text.ge",
+        (F::Enum, Op::Equal) => "filament.op.enum.eq",
+        (F::Enum, Op::NotEqual) => "filament.op.enum.ne",
+        (F::Enum, Op::Less) => "filament.op.enum.lt",
+        (F::Enum, Op::LessOrEqual) => "filament.op.enum.le",
+        (F::Enum, Op::Greater) => "filament.op.enum.gt",
+        (F::Enum, Op::GreaterOrEqual) => "filament.op.enum.ge",
+        (F::Quantity, Op::Equal) => "filament.op.quantity.eq",
+        (F::Quantity, Op::NotEqual) => "filament.op.quantity.ne",
+        (F::Quantity, Op::Less) => "filament.op.quantity.lt",
+        (F::Quantity, Op::LessOrEqual) => "filament.op.quantity.le",
+        (F::Quantity, Op::Greater) => "filament.op.quantity.gt",
+        (F::Quantity, Op::GreaterOrEqual) => "filament.op.quantity.ge",
     })
 }
 
@@ -2089,7 +2100,7 @@ fn comparison_identity(
 /// `operation.laws` names the descriptor's own division profile. IR's
 /// `integer_division` law role and this crate's own
 /// `DivisionProfile::definition_identity()` name the same three law
-/// definitions (`quire.value.integer-division.{truncating,floor,euclidean}/v1`
+/// definitions (`filament.value.integer-division.{truncating,floor,euclidean}/v1`
 /// -- see `operation_identity`'s own use of `profile.definition_identity()`),
 /// so comparing them is not a bridge between codegen's and IR's vocabularies:
 /// it is one vocabulary, read from two places. Every other family either has
@@ -2501,7 +2512,7 @@ pub(super) fn selected_result_bound_node(
 
 pub(super) fn contract_checked_operation<'a>(
     graph: &Graph<'_>,
-    closure: &'a quire_contract_model::ContractReachedClosureV1<'_>,
+    closure: &'a filament_contract_model::ContractReachedClosureV1<'_>,
     tag: Option<CheckedNodeTag>,
     node_id: &CheckedNodeId,
     items: &PackageItems<'_>,
@@ -2611,7 +2622,7 @@ pub(super) fn node_implication_count<Body: GraphBody, NodeBody>(
     graph: &Graph<'_, Body>,
     node: &CheckedSemanticNodeV2<NodeBody>,
 ) -> u32 {
-    u32::from(scalar_ir::identity(graph.term(&node.node_id)) == Some("quire.op.boolean.implies"))
+    u32::from(scalar_ir::identity(graph.term(&node.node_id)) == Some("filament.op.boolean.implies"))
 }
 
 /// Checked selected claims before oracle source is rendered.
@@ -2978,7 +2989,7 @@ pub(super) fn plan_exact_scalar_oracles(
         // limit; every record is then `Failed` and refused per item, so the plan still names the
         // checked package it was requested from.
         source: lowering.package.wire().map_or_else(
-            || quire_contract_model::ContractSourceV1 {
+            || filament_contract_model::ContractSourceV1 {
                 name: package.name().into(),
                 lock: package.lock().clone(),
             },
@@ -2989,9 +3000,9 @@ pub(super) fn plan_exact_scalar_oracles(
     })
 }
 
-pub(super) fn scalar_profile() -> CompleteLoweringProfileV2 {
+pub(crate) fn scalar_profile() -> CompleteLoweringProfileV2 {
     CompleteLoweringProfileV2 {
-        reference: quire_contract_model::LoweringProfileRef {
+        reference: filament_contract_model::LoweringProfileRef {
             authority: "agent-ix".into(),
             identity: "filament.codegen.exact-scalar/v1".into(),
         },

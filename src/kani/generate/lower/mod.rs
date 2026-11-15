@@ -3,10 +3,10 @@ pub(crate) mod bounded_kani_profile;
 // Finite reference graph reachability admission.
 pub(crate) mod finite_reference_graphs;
 
-use quire_contract_ir::kani::{
+use filament_contract_ir::kani::{
     CapabilityDisposition, DispatchIndex, KaniOutcome, KaniProfile, SemanticFamily,
 };
-use quire_contract_model::{std001_code, Std001Code};
+use filament_contract_model::{std001_code, Std001Code};
 
 /// Admit one construct through the shared profile and dispatch authorities.
 fn admit_family(
@@ -53,16 +53,16 @@ fn admit_family(
 
 #[cfg(test)]
 mod tests {
-    use ix_trace_rs::trace;
-    use quire_contract_ir::kani::{
+    use filament_contract_ir::kani::{
         CapabilityDisposition, CapabilityEntry, DispatchIndex, FiniteInput, FiniteObject,
         FiniteReference, KaniOutcomeKind, KaniProfile, ModuleDescriptor, PopulationCompleteness,
         ProfileSelection, ResourceBounds, SemanticFamily, ValidatedFiniteInput,
     };
-    use quire_contract_model::{std001_code, Std001Code};
+    use filament_contract_model::{std001_code, Std001Code};
+    use ix_trace_rs::trace;
 
     use super::finite_reference_graphs::{prepare_finite_graph_reaches, GraphRequest};
-    use quire_contract_ir::kani::KaniOutcome;
+    use filament_contract_ir::kani::KaniOutcome;
 
     fn fixture(
         disposition: impl Fn(&str) -> CapabilityDisposition,

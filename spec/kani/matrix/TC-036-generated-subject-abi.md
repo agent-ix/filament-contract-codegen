@@ -159,7 +159,7 @@ yield no harness.
 19. One arity-0 union operand of a `case` scrutinee has one grouped `i64` binding with its
     declaration, ordered member list and index bounds `0..member_count`; a valid index replays as the member
     at that declared position, and each out-of-range, missing, duplicate or foreign binding refuses with a
-    typed reason and no replay (FR-025-AC-19, PLANNED, IR-1447).
+    typed reason and no replay (FR-025-AC-19, PARTIAL, IR-1447: the union parameter binding is not built).
 
 ## Status
 

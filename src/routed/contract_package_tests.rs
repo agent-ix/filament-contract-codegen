@@ -27,12 +27,7 @@ mod tests {
         generate_routed as generate_routed_impl, GenerationContexts, KaniGenerationContext,
         KindOutput, RoutedGeneration, RoutedGenerationError, RoutedGenerationItem,
     };
-    use ix_trace_rs::trace;
-    use qsl_replay::{
-        compile_package, DependencyInput, ReplayLimits, SourceIdentity, StageLimits,
-        SuppliedLibrary,
-    };
-    use quire_contract_model::{
+    use filament_contract_model::{
         CheckedNodeId, CheckedNodeTag, CheckedOccurrenceRole, CheckedPackageEvidence,
         CheckedPackageReadLimits, CheckedPackageRefusalCode, CheckedPackageV2,
         CheckedPackageV2ReadResult, CheckedSemanticNodeV2, CheckedTerm, CompleteLoweringProfileV2,
@@ -40,6 +35,11 @@ mod tests {
         ContractOccurrenceKeyV1, ContractPackageReadResult, ContractPackageWireV1,
         ContractRootViewV1, LoweringProfileRef,
     };
+    use fsl_replay::{
+        compile_package, DependencyInput, ReplayLimits, SourceIdentity, StageLimits,
+        SuppliedLibrary,
+    };
+    use ix_trace_rs::trace;
 
     use super::exact_function_fixture;
 
@@ -97,7 +97,7 @@ mod tests {
     /// context reading the matching records.
     fn generate_routed(
         source: &CheckedPackageV2,
-        package: &quire_contract_model::ContractPackageV1,
+        package: &filament_contract_model::ContractPackageV1,
         positions: &[ContractRequestPosition],
         routed: &[RoutedGenerationItem],
         contexts: &GenerationContexts<'_>,
@@ -280,11 +280,11 @@ mod tests {
     fn imported_integer_function_case(
     ) -> (Box<CheckedPackageV2>, Vec<CheckedNodeId>, CheckedPackageV2) {
         let library_source = "language \"ix:native\" edition \"1-draft\";\n\
-            profile v = \"quire.value.complete/v1\";\n\
+            profile v = \"filament.value.complete/v1\";\n\
             function add using v(a: Integer): Integer pure { a + a }\n";
         let library_source_id = SourceIdentity::new("test", "reader-library");
         let library_compiled = compile_package(
-            qsl_replay::CompileUnit {
+            fsl_replay::CompileUnit {
                 source: library_source_id.clone(),
                 package_name: "test/reader-library".to_owned(),
                 path: "reader-library.native",
@@ -297,7 +297,7 @@ mod tests {
         )
         .expect("integer library compiles");
         let mut library_evidence = CheckedPackageEvidence::new();
-        library_evidence.support_feature("quire.value.complete/v1");
+        library_evidence.support_feature("filament.value.complete/v1");
         let library = match CheckedPackageV2::read(
             library_compiled.bytes(),
             CheckedPackageReadLimits::bounded(),
@@ -307,7 +307,7 @@ mod tests {
             other => panic!("integer library must admit: {other:?}"),
         };
         let program_source = "language \"ix:native\" edition \"1-draft\";\n\
-            profile v = \"quire.value.complete/v1\";\n\
+            profile v = \"filament.value.complete/v1\";\n\
             import \"test/reader-library\" as g;\n\
             function q using v(a: Integer): Integer pure { a + g::add(a) }\n\
             function r using v(a: Integer): Integer pure { q(a) }\n";
@@ -319,7 +319,7 @@ mod tests {
         }])
         .expect("one imported library");
         let program = compile_package(
-            qsl_replay::CompileUnit {
+            fsl_replay::CompileUnit {
                 source: SourceIdentity::new("test", "reader-program"),
                 package_name: "reader-program".to_owned(),
                 path: "reader-program.native",
@@ -332,7 +332,7 @@ mod tests {
         )
         .expect("imported integer call compiles");
         let mut evidence = CheckedPackageEvidence::new();
-        evidence.support_feature("quire.value.complete/v1");
+        evidence.support_feature("filament.value.complete/v1");
         let library_copy = (*library).clone();
         evidence
             .insert_dependency_package("test/reader-library", std::sync::Arc::new(*library))
@@ -377,7 +377,7 @@ mod tests {
             .nodes
             .iter()
             .find(|node| {
-                application_identity(node) == Some("quire.op.function.call")
+                application_identity(node) == Some("filament.op.function.call")
                     && argument_target(node, 0) == Some(&function_id)
             })
             .expect("r calls q");
@@ -522,12 +522,14 @@ mod tests {
     }
 
     const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\n\
-        profile v = \"quire.value.complete/v1\";\n\
+        profile v = \"filament.value.complete/v1\";\n\
         function f using v(a: Int[0, 9]): Boolean pure { a = a }\n";
 
     /// A lowered package's own node identities. Package identity is structural: the source name
     /// and lock alone do not tell two packages of one name apart, their node identities do.
-    fn package_node_ids(package: &quire_contract_model::ContractPackageV1) -> Vec<CheckedNodeId> {
+    fn package_node_ids(
+        package: &filament_contract_model::ContractPackageV1,
+    ) -> Vec<CheckedNodeId> {
         package
             .wire()
             .semantic_graph
@@ -550,7 +552,7 @@ mod tests {
     fn admitted_source_with_identity(name: &str, identity: &str, source: &str) -> CheckedPackageV2 {
         let path = format!("{name}.native");
         let compiled = compile_package(
-            qsl_replay::CompileUnit {
+            fsl_replay::CompileUnit {
                 source: SourceIdentity::new("test", identity),
                 package_name: name.to_owned(),
                 path: &path,
@@ -563,7 +565,7 @@ mod tests {
         )
         .expect("FSL compiles the source");
         let mut evidence = CheckedPackageEvidence::new();
-        evidence.support_feature("quire.value.complete/v1");
+        evidence.support_feature("filament.value.complete/v1");
         match CheckedPackageV2::read(
             compiled.bytes(),
             CheckedPackageReadLimits::bounded(),
@@ -615,7 +617,7 @@ mod tests {
 
     fn excluded_fixture() -> (
         CheckedPackageV2,
-        quire_contract_model::ContractPackageV1,
+        filament_contract_model::ContractPackageV1,
         Vec<ContractRequestPosition>,
         CheckedNodeId,
         CheckedNodeId,
@@ -1627,7 +1629,7 @@ mod tests {
             .clone();
         let absent = CheckedNodeId {
             package: source.name().into(),
-            path: vec![quire_contract_model::CheckedNodePathSegment::Name(
+            path: vec![filament_contract_model::CheckedNodePathSegment::Name(
                 "absent".into(),
             )],
             ordinal: 0,
@@ -1833,8 +1835,8 @@ mod tests {
     fn independently_admitted_fsl_operations_reach_distinct_package_nodes() {
         let not_equal = SOURCE.replace("a = a", "a != a");
         let variants = [
-            (SOURCE, "quire.op.integer.eq"),
-            (&not_equal, "quire.op.integer.ne"),
+            (SOURCE, "filament.op.integer.eq"),
+            (&not_equal, "filament.op.integer.ne"),
         ];
         let mut identities = Vec::new();
         for (source_text, operation) in variants {
@@ -1886,8 +1888,12 @@ mod tests {
     fn admitted_ordering_variants_change_routed_oracle_bytes_and_keep_refused_sibling() {
         let mut emitted = Vec::new();
         for (symbol, operation, rendered) in [
-            ("<", "quire.op.integer.lt", "rt::OrderingOperator::Less"),
-            (">", "quire.op.integer.gt", "rt::OrderingOperator::Greater"),
+            ("<", "filament.op.integer.lt", "rt::OrderingOperator::Less"),
+            (
+                ">",
+                "filament.op.integer.gt",
+                "rt::OrderingOperator::Greater",
+            ),
         ] {
             let source = SOURCE.replace("a = a", &format!("a {symbol} a"));
             let checked = admitted_source(&source);
@@ -1901,7 +1907,7 @@ mod tests {
                 .clone();
             let absent = CheckedNodeId {
                 package: checked.name().into(),
-                path: vec![quire_contract_model::CheckedNodePathSegment::Name(
+                path: vec![filament_contract_model::CheckedNodePathSegment::Name(
                     "absent".into(),
                 )],
                 ordinal: 0,
@@ -1925,7 +1931,10 @@ mod tests {
                 .expect("admitted accounting key has a source entry");
             assert_eq!(
                 admitted.source_key_at(accounted_index),
-                quire_contract_model::ContractSourceKeyV1::from_v2_request(&checked, &requested[0])
+                filament_contract_model::ContractSourceKeyV1::from_v2_request(
+                    &checked,
+                    &requested[0]
+                )
             );
             let descriptor = BackendDescriptor {
                 identity: "kani".to_owned(),
@@ -2033,7 +2042,7 @@ mod tests {
             .resolved_graph()
             .nodes
             .iter()
-            .find(|node| application_identity(node) == Some("quire.op.integer.lt"))
+            .find(|node| application_identity(node) == Some("filament.op.integer.lt"))
             .expect("FSL ordering application")
             .node_id
             .clone();
@@ -2109,7 +2118,7 @@ mod tests {
 
         let checked = admitted_source(
             "language \"ix:native\" edition \"1-draft\";\n\
-             profile v = \"quire.value.complete/v1\";\n\
+             profile v = \"filament.value.complete/v1\";\n\
              function g using v(p: Int[0, 10]): Boolean pure { true }\n\
              function h using v(q: Int[0, 20]): Boolean pure { true }\n\
              function f using v(x: Int[0, 9]): Boolean pure { g(x + 1) and h(x + 1) }\n",
@@ -2118,7 +2127,7 @@ mod tests {
             .resolved_graph()
             .nodes
             .iter()
-            .filter(|node| application_identity(node) == Some("quire.op.integer.add"))
+            .filter(|node| application_identity(node) == Some("filament.op.integer.add"))
             .collect::<Vec<_>>();
         let [add] = adds.as_slice() else {
             panic!("RR-16 must share one addition node");
@@ -2143,7 +2152,7 @@ mod tests {
             .nodes
             .iter()
             .filter(|node| {
-                application_identity(node) == Some("quire.op.numeric.narrow")
+                application_identity(node) == Some("filament.op.numeric.narrow")
                     && argument_target(node, 0) == Some(&add)
             })
             .map(|node| {
@@ -2664,7 +2673,7 @@ mod tests {
             .resolved_graph()
             .nodes
             .iter()
-            .find(|node| application_identity(node) == Some("quire.op.integer.add"))
+            .find(|node| application_identity(node) == Some("filament.op.integer.add"))
             .expect("FSL integer addition")
             .node_id
             .clone();
@@ -2673,7 +2682,7 @@ mod tests {
             .nodes
             .iter()
             .filter(|node| {
-                application_identity(node) == Some("quire.op.numeric.narrow")
+                application_identity(node) == Some("filament.op.numeric.narrow")
                     && argument_target(node, 0) == Some(&expression)
             })
             .collect::<Vec<_>>();
@@ -2745,7 +2754,7 @@ mod tests {
         maximum: u32,
     ) -> (
         CheckedPackageV2,
-        quire_contract_model::ContractPackageV1,
+        filament_contract_model::ContractPackageV1,
         Vec<ContractRequestPosition>,
         CheckedNodeId,
     ) {
@@ -2758,7 +2767,7 @@ mod tests {
             .resolved_graph()
             .nodes
             .iter()
-            .find(|node| application_identity(node) == Some("quire.op.integer.add"))
+            .find(|node| application_identity(node) == Some("filament.op.integer.add"))
             .expect("FSL integer addition")
             .node_id
             .clone();
@@ -2767,7 +2776,7 @@ mod tests {
             .nodes
             .iter()
             .filter(|node| {
-                application_identity(node) == Some("quire.op.numeric.narrow")
+                application_identity(node) == Some("filament.op.numeric.narrow")
                     && argument_target(node, 0) == Some(&expression)
             })
             .collect::<Vec<_>>();
@@ -2894,7 +2903,7 @@ mod tests {
             "distinct admitted authorities"
         );
         let generate = |source: &CheckedPackageV2,
-                        package: &quire_contract_model::ContractPackageV1,
+                        package: &filament_contract_model::ContractPackageV1,
                         positions: &[ContractRequestPosition]| {
             let (generated, indexes) =
                 generate_contract_scalar_oracles(source, package, positions, &[0])
@@ -2969,7 +2978,7 @@ mod tests {
             .resolved_graph()
             .nodes
             .iter()
-            .find(|node| application_identity(node) == Some("quire.op.integer.eq"))
+            .find(|node| application_identity(node) == Some("filament.op.integer.eq"))
             .expect("FSL equality expression")
             .node_id
             .clone();
@@ -3024,7 +3033,7 @@ mod tests {
         use crate::oracle::operator_catalog::IntegerOperator;
 
         let source = "language \"ix:native\" edition \"1-draft\";\n\
-            profile v = \"quire.value.complete/v1\";\n\
+            profile v = \"filament.value.complete/v1\";\n\
             function add using v(a: Integer, b: Integer): Integer pure { a + b }\n\
             function caller using v(a: Integer, b: Integer): Integer pure { add(a, b) }\n";
         let checked = admitted_source(source);
@@ -3032,7 +3041,7 @@ mod tests {
             .resolved_graph()
             .nodes
             .iter()
-            .find(|node| application_identity(node) == Some("quire.op.integer.add"))
+            .find(|node| application_identity(node) == Some("filament.op.integer.add"))
             .expect("FSL addition body")
             .node_id
             .clone();
@@ -3128,7 +3137,7 @@ mod tests {
         );
         assert!(serialized.get("ir_id").is_none());
         let source_key =
-            quire_contract_model::ContractSourceKeyV1::from_v2_request(&checked, &requested[1])
+            filament_contract_model::ContractSourceKeyV1::from_v2_request(&checked, &requested[1])
                 .expect("admitted source-frame key");
         let ContractRootViewV1::Lowered(closure) = admitted
             .reached_closure(&source_key)
@@ -3175,14 +3184,14 @@ mod tests {
         use crate::oracle::scalar::{generate_contract_scalar_oracles, ExactScalarRefusal};
 
         let source = "language \"ix:native\" edition \"1-draft\";\n\
-            profile v = \"quire.value.complete/v1\";\n\
+            profile v = \"filament.value.complete/v1\";\n\
             function add using v(a: Integer, b: Integer): Integer pure { a + b }\n\
             function caller using v(a: Integer, b: Integer): Integer pure { add(a, b) }\n\
             function same using v(a: Integer): Boolean pure { a = a }\n\
             function mixed using v(a: Int[0, 9], p: Integer): Integer pure { a + p }\n";
         let checked = admitted_source(source);
-        let genuine = qsl_replay::compile_admitted(
-            qsl_replay::CompileUnit {
+        let genuine = fsl_replay::compile_admitted(
+            fsl_replay::CompileUnit {
                 source: SourceIdentity::new("test", "package-items.native"),
                 package_name: "package-items".to_owned(),
                 path: "package-items.native",
@@ -3195,7 +3204,7 @@ mod tests {
         )
         .expect("same original source supplies the admitted context");
         let mut evidence = CheckedPackageEvidence::new();
-        evidence.support_feature("quire.value.complete/v1");
+        evidence.support_feature("filament.value.complete/v1");
         let recompiled = match CheckedPackageV2::read(
             genuine.package().bytes(),
             CheckedPackageReadLimits::bounded(),
@@ -3226,7 +3235,7 @@ mod tests {
             .nodes
             .iter()
             .find(|node| {
-                application_identity(node) == Some("quire.op.integer.add")
+                application_identity(node) == Some("filament.op.integer.add")
                     && argument_target(node, 1)
                         .and_then(|target| {
                             checked
@@ -3255,7 +3264,7 @@ mod tests {
             .resolved_graph()
             .nodes
             .iter()
-            .find(|node| application_identity(node) == Some("quire.op.integer.eq"))
+            .find(|node| application_identity(node) == Some("filament.op.integer.eq"))
             .expect("FSL integer equality")
             .node_id
             .clone();
@@ -3444,7 +3453,7 @@ mod tests {
             SOURCE.replace("a = a", "a < 5")
         );
         let library_compiled = compile_package(
-            qsl_replay::CompileUnit {
+            fsl_replay::CompileUnit {
                 source: SourceIdentity::new("test", "geometry"),
                 package_name: "test/geometry".to_owned(),
                 path: "geometry.native",
@@ -3457,7 +3466,7 @@ mod tests {
         )
         .expect("library compiles with its own identity");
         let mut library_evidence = CheckedPackageEvidence::new();
-        library_evidence.support_feature("quire.value.complete/v1");
+        library_evidence.support_feature("filament.value.complete/v1");
         let library = match CheckedPackageV2::read(
             library_compiled.bytes(),
             CheckedPackageReadLimits::bounded(),
@@ -3495,7 +3504,7 @@ mod tests {
         let import = "import \"test/geometry\" as g;\n";
         let program_source = format!(
             "language \"ix:native\" edition \"1-draft\";\n\
-             profile v = \"quire.value.complete/v1\";\n\
+             profile v = \"filament.value.complete/v1\";\n\
              {import}\
              function f using v(a: Int[0, 9]): Boolean pure {{ a < 5 }}\n\
              function p using v(a: Int[0, 9]): Boolean pure {{ g::f(a) and g::h(a) }}\n"
@@ -3508,7 +3517,7 @@ mod tests {
         }])
         .expect("one supplied library");
         let compiled = compile_package(
-            qsl_replay::CompileUnit {
+            fsl_replay::CompileUnit {
                 source: SourceIdentity::new("test", "program"),
                 package_name: "program".to_owned(),
                 path: "program.native",
@@ -3521,7 +3530,7 @@ mod tests {
         )
         .expect("imported call compiles");
         let mut evidence = CheckedPackageEvidence::new();
-        evidence.support_feature("quire.value.complete/v1");
+        evidence.support_feature("filament.value.complete/v1");
         evidence
             .insert_dependency_package("test/geometry", std::sync::Arc::new(library.clone()))
             .expect("retain imported geometry package");

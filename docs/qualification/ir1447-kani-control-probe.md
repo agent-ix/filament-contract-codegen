@@ -5,7 +5,7 @@ scratch code, not a delivery and not CG evidence: no CG generator, harness or ru
 
 ## What was probed
 
-A scratch crate outside the repository (one `lib.rs`, no dependency on CG, quire-exact or the contract
+A scratch crate outside the repository (one `lib.rs`, no dependency on CG, filament-exact or the contract
 runtime), following the IR-1022 recipe of `ir1022-kani-clause-measurements.md`: native `i64` integers, no
 `Outcome`/`Value` heap arm, an independent `i128` oracle evaluated by substitution. Each clause is a
 postcondition with a Boolean result: the subject returns the Boolean, the harness asserts it equals the
@@ -61,13 +61,13 @@ falsified in 0.02 s, but it is not a Contract IR form and is not in the table.
   cardinality; "cover satisfied" shows reachability, not non-vacuity of every branch. The delivering ticket's
   harnesses carry FR-015-AC-7's completion cover.
 - The probe has none of the IR-1022 cost drivers: no `Outcome<_>`/`Value` heap arm, no meter, no kernel
-  evaluation of the operators. The real harness runs the quire-exact kernel (43.5 s healthy and 11.6 GB falsified
+  evaluation of the operators. The real harness runs the filament-exact kernel (43.5 s healthy and 11.6 GB falsified
   for the clause of `ir1509-kani-clause-controls.md`), so the probe predicts only that control adds little to that
   baseline, not the real wall or memory. The union is a plain `i64` index here; the spec requires that
   carrier (FR-015-AC-154), because a kernel `Value::Union` arm is the fat-enum cost driver of
   `ir1022-kani-clause-measurements.md` and was not probed. The real measurement belongs to the delivering ticket.
 - A `case` scrutinee in Contract IR is a `union` (QSpec FR-440 and FR-322 `union_arms`, enforced at admission
-  by quire-contract-ir FR-038), one arm per member in declaration order. No integer-range `case` reaches CG,
+  by filament-contract-ir FR-038), one arm per member in declaration order. No integer-range `case` reaches CG,
   and a QSL `enum` is the separate `enum` family and is never a `case` scrutinee. The spec therefore lowers
   only arity-0 unions and refuses a union with a payload member (FR-015-AC-162).
 - The union is probed as a plain index; FR-025-AC-19 (PLANNED, IR-1447) adds the missing subject-ABI row for it.

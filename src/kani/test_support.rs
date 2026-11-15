@@ -41,7 +41,7 @@ pub(crate) fn named_state_frame_harness(
     property: StateFrameProperty,
     options: Vec<String>,
 ) -> StateFrameHarness {
-    let id = |digit: &str| -> quire_contract_model::CheckedNodeId {
+    let id = |digit: &str| -> filament_contract_model::CheckedNodeId {
         serde_json::from_value(serde_json::json!({
             "package": "test-kani-harness",
             "path": [digit],
@@ -245,7 +245,7 @@ pub(crate) fn scalar_source_fixture(
             "ordinal": 0,
         }))
         .expect("generated host_scalar::oracle structural node id"),
-        operation_identity: "quire.op.integer.add".into(),
+        operation_identity: "filament.op.integer.add".into(),
         oracle_symbol: "oracle".into(),
         module_symbol: ModuleSymbol::try_from("host_scalar").unwrap(),
         harness_symbol: HarnessSymbol::try_from("check").unwrap(),
@@ -322,23 +322,23 @@ fn legacy_fixture_never_invents_scalar_authority() {
 /// The producer identity a V2 clause claim carries for `clause`: the key CG resolves for it from
 /// `package` (FR-015-AC-135). For fixtures that do not exercise the binding itself.
 pub(crate) fn clause_obligation(
-    package: &quire_contract_model::CheckedPackageV2,
-    clause: &quire_contract_model::CheckedNodeId,
-) -> qsl_replay::ObligationIdentity {
+    package: &filament_contract_model::CheckedPackageV2,
+    clause: &filament_contract_model::CheckedNodeId,
+) -> fsl_replay::ObligationIdentity {
     let node = package
         .structural_key(clause)
         .and_then(crate::core::ir::node_key::checked_node_key)
         .expect("admitted clause node has a structural key");
-    qsl_replay::ObligationIdentity::new(node, None, 0)
+    fsl_replay::ObligationIdentity::new(node, None, 0)
 }
 
 /// A producer identity for fixtures that do not exercise FR-015-AC-48.
-pub(crate) fn fixture_obligation() -> qsl_replay::ObligationIdentity {
-    let node = qsl_replay::NodeKey::new(
+pub(crate) fn fixture_obligation() -> fsl_replay::ObligationIdentity {
+    let node = fsl_replay::NodeKey::new(
         "fixture",
-        vec![quire_exact::PathSegment::Text("clause".to_owned())],
+        vec![filament_exact::PathSegment::Text("clause".to_owned())],
         0,
     )
     .expect("fixture node");
-    qsl_replay::ObligationIdentity::new(node, None, 0)
+    fsl_replay::ObligationIdentity::new(node, None, 0)
 }

@@ -17,8 +17,8 @@ use filament_contract_codegen::{
     KaniShadowHarness, RefinementBudget, RefinementClass, RefinementEvidence, RefinementOutcome,
     RefinementVersions,
 };
+use filament_exact::Cancel;
 use ix_trace_rs::trace;
-use quire_exact::Cancel;
 
 use super::composite_equality_agreement::fixture;
 use super::composite_equality_closure::{corpus, generated, Corpus};
@@ -37,7 +37,7 @@ use super::scratch_crate::{
 const SUBJECT_ADAPTER: &str = r#"
     pub mod subject {
         use super::*;
-        pub use quire_exact as exact;
+        pub use filament_exact as exact;
 
         pub struct Environment {
             prepared: PreparedEqualityEnvironment<'static>,

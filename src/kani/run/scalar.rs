@@ -8,8 +8,8 @@ use std::{
     time::Instant,
 };
 
-use quire_exact::Cancel;
-use quire_exact::{
+use filament_exact::Cancel;
+use filament_exact::{
     ChargePoint, Incomplete, Integer, IntegerInterval, LimitKind, Outcome, Refusal, ScalarLimits,
     Undefined,
 };
@@ -40,10 +40,13 @@ use crate::{
 static NEXT_SNAPSHOT: AtomicU64 = AtomicU64::new(0);
 const LOCKED_DEPENDENCIES: [(&str, &str); 2] = [
     (
-        "quire-contract-runtime",
-        "https://github.com/agent-ix/quire-contract-runtime",
+        "filament-contract-runtime",
+        "https://github.com/agent-ix/filament-contract-runtime",
     ),
-    ("quire-exact", "https://github.com/agent-ix/quire-exact"),
+    (
+        "filament-exact",
+        "https://github.com/agent-ix/filament-exact",
+    ),
 ];
 
 /// Input retained by a caller that already admitted the routed scalar occurrence.
@@ -818,7 +821,7 @@ fn write_observer(
     let helper = format!(
         r#"
 #[path = "../lib.rs"] mod generated;
-use quire_exact as rt;
+use filament_exact as rt;
 fn next_argument(arguments: &mut impl Iterator<Item = String>) -> Result<String, std::io::Error> {{
  arguments.next().ok_or_else(|| std::io::Error::new(std::io::ErrorKind::InvalidInput, "missing native request argument"))
 }}
@@ -1616,7 +1619,7 @@ mod tests {
         .expect("checked source key");
         let (oracle, _) = crate::oracle::scalar::native::select(
             &node_id,
-            "quire.op.integer.add",
+            "filament.op.integer.add",
             "checked_oracle",
             crate::oracle::operator_catalog::IntegerOperator::Add,
             &[(0, 9), (1, 1)],
@@ -1691,9 +1694,9 @@ mod tests {
         fs::write(
             root.join("src/lib.rs"),
             "pub enum OracleStop { IllTyped(String), InvalidConstant, OperandWidth }\n\
-             pub fn oracle(value: &quire_exact::Integer, _meter: &mut quire_exact::Meter)\n\
-             -> Result<quire_exact::Outcome<quire_exact::Integer>, OracleStop> {\n\
-             Ok(quire_exact::Outcome::Completed(value.clone())) }\n",
+             pub fn oracle(value: &filament_exact::Integer, _meter: &mut filament_exact::Meter)\n\
+             -> Result<filament_exact::Outcome<filament_exact::Integer>, OracleStop> {\n\
+             Ok(filament_exact::Outcome::Completed(value.clone())) }\n",
         )
         .unwrap();
         write_observer("oracle", 1, ScalarIntegerRepresentation::General, root).unwrap();
@@ -1724,10 +1727,13 @@ mod tests {
             run(&directory, &["generate-lockfile", "--offline"]);
             for (package, repository) in [
                 (
-                    "quire-contract-runtime",
-                    "https://github.com/agent-ix/quire-contract-runtime",
+                    "filament-contract-runtime",
+                    "https://github.com/agent-ix/filament-contract-runtime",
                 ),
-                ("quire-exact", "https://github.com/agent-ix/quire-exact"),
+                (
+                    "filament-exact",
+                    "https://github.com/agent-ix/filament-exact",
+                ),
             ] {
                 let staged_lock = fs::read_to_string(directory.join("Cargo.lock")).unwrap();
                 let version = lock_owning_version(&staged_lock, package, repository)
@@ -1765,10 +1771,13 @@ mod tests {
                 .unwrap();
             for (name, repository) in [
                 (
-                    "quire-contract-runtime",
-                    "https://github.com/agent-ix/quire-contract-runtime",
+                    "filament-contract-runtime",
+                    "https://github.com/agent-ix/filament-contract-runtime",
                 ),
-                ("quire-exact", "https://github.com/agent-ix/quire-exact"),
+                (
+                    "filament-exact",
+                    "https://github.com/agent-ix/filament-exact",
+                ),
             ] {
                 let mut matches = metadata["packages"]
                     .as_array()
@@ -1808,7 +1817,7 @@ mod tests {
                 .as_array()
                 .unwrap()
                 .iter()
-                .find(|package| package["name"] == "quire-exact")
+                .find(|package| package["name"] == "filament-exact")
                 .unwrap();
             let node = metadata["resolve"]["nodes"]
                 .as_array()
@@ -2104,8 +2113,8 @@ mod tests {
         let snapshot = PrivateSnapshot::create().unwrap();
         let root = snapshot.path();
         fs::create_dir(root.join("observer")).unwrap();
-        let runtime = "[[package]]\nname = \"quire-contract-runtime\"\nversion = \"0.1.0\"\nsource = \"git+https://github.com/agent-ix/quire-contract-runtime?branch=main#";
-        let exact = "[[package]]\nname = \"quire-exact\"\nversion = \"0.2.0\"\nsource = \"git+https://github.com/agent-ix/quire-exact?branch=main#";
+        let runtime = "[[package]]\nname = \"filament-contract-runtime\"\nversion = \"0.1.0\"\nsource = \"git+https://github.com/agent-ix/filament-contract-runtime?branch=main#";
+        let exact = "[[package]]\nname = \"filament-exact\"\nversion = \"0.2.0\"\nsource = \"git+https://github.com/agent-ix/filament-exact?branch=main#";
         let complete = format!("{runtime}one\"\n{exact}two\"\n");
         fs::write(root.join("Cargo.lock"), &complete).unwrap();
         fs::write(root.join("observer/Cargo.lock"), &complete).unwrap();
@@ -2118,13 +2127,13 @@ mod tests {
         assert!(verify_staged_locks(root).is_ok());
 
         for invalid in [
-            complete.replace("name = \"quire-exact\"", "name = \"missing-exact\""),
+            complete.replace("name = \"filament-exact\"", "name = \"missing-exact\""),
             complete.replace(
-                "https://github.com/agent-ix/quire-exact",
-                "https://example.org/quire-exact",
+                "https://github.com/agent-ix/filament-exact",
+                "https://example.org/filament-exact",
             ),
             complete.replace(
-                "source = \"git+https://github.com/agent-ix/quire-exact?branch=main#two\"\n",
+                "source = \"git+https://github.com/agent-ix/filament-exact?branch=main#two\"\n",
                 "",
             ),
             format!("{complete}{exact}two\"\n"),
@@ -2402,7 +2411,7 @@ mod tests {
                 total: 1,
             },
             KaniRunOutcome::Cancelled {
-                source: quire_contract_ir::kani::KaniCancellationSource::Requested,
+                source: filament_contract_ir::kani::KaniCancellationSource::Requested,
             },
             KaniRunOutcome::Inconclusive {
                 reason: I::FailedWithoutCounterexample,
@@ -2516,7 +2525,7 @@ mod tests {
                 timeout: std::time::Duration::from_secs(1),
             },
             KaniExecutionRefusal::BatchCancelled {
-                source: quire_contract_ir::kani::KaniCancellationSource::Requested,
+                source: filament_contract_ir::kani::KaniCancellationSource::Requested,
                 members: 1,
             },
             KaniExecutionRefusal::OutputUnread {

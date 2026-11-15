@@ -3,7 +3,7 @@
 
 //! Source lowering for the six closed direct integer comparisons.
 
-use quire_contract_model::{CheckedClauseComparison, CheckedComparisonOperator};
+use filament_contract_model::{CheckedClauseComparison, CheckedComparisonOperator};
 
 /// Which side of the comparison, as written, the primary read occupies.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

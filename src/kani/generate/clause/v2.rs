@@ -9,7 +9,7 @@ mod model;
 #[path = "../../../../tests/state_frame_support/native_twin.rs"]
 mod native_twin;
 
-use quire_contract_model::{
+use filament_contract_model::{
     ApplicationOperator, CheckedMemberType, CheckedModelOperations, CheckedNodeId, CheckedNodeKind,
     CheckedOperationParameter, CheckedOperationReadError, CheckedPackageV2, CheckedTerm,
     CompositeTypeForm, ContractSourceV1, LiteralKind, ScalarTypeForm,
@@ -18,7 +18,7 @@ use quote::ToTokens;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
 
-use qsl_replay::ObligationIdentity;
+use fsl_replay::ObligationIdentity;
 
 use crate::kani::tractability::{
     ClauseFeatures, Decision, InputBound, IntegerRoute, OperationWidth, TractabilityDecider,
@@ -27,15 +27,18 @@ use crate::{
     core::ir::{
         checked_term::{application, bound_members, literal, reference},
         clause::{
-            read_clause, ClauseCondition, ClauseGraphView, ClauseInput, ClauseInputSide,
-            ClauseTerm, MAX_CONDITION_TERMS,
+            read_clause, union_members, ClauseCondition, ClauseGraphView, ClauseInput,
+            ClauseInputSide, ClauseTerm, CONTROL_CASE, CONTROL_IF, CONTROL_LET,
+            MAX_CONDITION_TERMS,
         },
     },
     kani::{
         abi::{KaniPrimitiveType, KaniSolver},
         census::{dependency_readiness, ProofDependencyEdge, ProofExecutionState},
         generate::{
-            outcome::{node_label, KaniObligationRequest, UnsupportedObligation},
+            outcome::{
+                node_label, KaniObligationRequest, UnsupportedObligation, V2ClauseControlReason,
+            },
             record::{harness_path, record},
             render,
             spec::{
@@ -179,11 +182,26 @@ fn lower_with_census<'a>(
     let refusal = || UnsupportedObligation::V2ClauseConditionNotRendered {
         node_id: clause.clone(),
     };
-    if let Some(operation_identity) = unsupported_checked_clause_operator(view, clause) {
-        return Err(UnsupportedObligation::V2ClauseOperatorNotSupported {
-            node_id: clause.clone(),
+    match unsupported_checked_clause_operator(view, clause) {
+        Some(ClauseRefusal::Operator(operation_identity)) => {
+            return Err(UnsupportedObligation::V2ClauseOperatorNotSupported {
+                node_id: clause.clone(),
+                operation_identity,
+            });
+        }
+        Some(ClauseRefusal::Control {
+            reason,
             operation_identity,
-        });
+            node,
+        }) => {
+            return Err(UnsupportedObligation::V2ClauseControlNotSupported {
+                node_id: clause.clone(),
+                control_node_id: node.unwrap_or_else(|| clause.clone()),
+                operation_identity,
+                reason,
+            });
+        }
+        None => {}
     }
     let condition = read_clause(clause, view).ok_or_else(refusal)?;
     if let Some(operation_identity) = unsupported_clause_operator(&condition.term) {
@@ -267,10 +285,10 @@ fn lower_with_census<'a>(
             .any(|identity| {
                 matches!(
                     identity.as_str(),
-                    "quire.op.integer.add"
-                        | "quire.op.integer.sub"
-                        | "quire.op.integer.mul"
-                        | "quire.op.integer.negate"
+                    "filament.op.integer.add"
+                        | "filament.op.integer.sub"
+                        | "filament.op.integer.mul"
+                        | "filament.op.integer.negate"
                 )
             })
     {
@@ -303,6 +321,7 @@ fn lower_with_census<'a>(
         let expectation = native_term(
             &condition.term,
             &[NativeBinding::parameter(input_name, &symbolic_name)],
+            &[],
             &mut arithmetic,
         )
         .and_then(NativeTerm::boolean)
@@ -321,6 +340,7 @@ fn lower_with_census<'a>(
                 (MachineScalar::Integer { .. }, Some(term)) => native_term(
                     term,
                     &[NativeBinding::parameter(&parameter.name, &symbolic_name)],
+                    &[],
                     &mut arithmetic,
                 )
                 .and_then(NativeTerm::boolean),
@@ -564,7 +584,7 @@ fn read_state_postcondition(
         bindings.push(NativeBinding::parameter(&parameter.name, &parameter.drawn));
     }
     let mut arithmetic = Vec::new();
-    let expectation = native_term(&condition.term, &bindings, &mut arithmetic)
+    let expectation = native_term(&condition.term, &bindings, &[], &mut arithmetic)
         .and_then(NativeTerm::boolean)
         .ok_or_else(refusal)?;
     // A sibling is assumed through its own native oracle on the state the subject receives. An
@@ -584,10 +604,10 @@ fn read_state_postcondition(
             .any(|identity| {
                 matches!(
                     identity.as_str(),
-                    "quire.op.integer.add"
-                        | "quire.op.integer.sub"
-                        | "quire.op.integer.mul"
-                        | "quire.op.integer.negate"
+                    "filament.op.integer.add"
+                        | "filament.op.integer.sub"
+                        | "filament.op.integer.mul"
+                        | "filament.op.integer.negate"
                 )
             })
         {
@@ -707,7 +727,7 @@ fn binder_matches_scalar(
             };
             view.kind(&node.semantic_type)
                 == Some(CheckedNodeKind::BoundedDomain(
-                    quire_contract_model::BoundedDomainForm::IntegerRange,
+                    filament_contract_model::BoundedDomainForm::IntegerRange,
                 ))
                 && number("min") == Some(*minimum)
                 && number("max") == Some(*maximum)
@@ -750,7 +770,7 @@ fn read_postcondition_signature<'a>(
     let [binders, anchor, _] = application(
         package.term(clause).ok_or_else(mismatch)?,
         ApplicationOperator::StateClause,
-        "quire.op.state.clause",
+        "filament.op.state.clause",
     )
     .ok_or_else(mismatch)?
     else {
@@ -868,22 +888,148 @@ fn validate_signature_binders(
     Ok(ResultPostcondition { result, parameters })
 }
 
+/// The first refusal the depth-first, left-to-right walk of a clause body meets.
+enum ClauseRefusal {
+    Operator(String),
+    Control {
+        reason: V2ClauseControlReason,
+        operation_identity: String,
+        node: Option<CheckedNodeId>,
+    },
+}
+
+#[derive(Clone, Copy, Eq, PartialEq)]
+enum Family {
+    Boolean,
+    Integer,
+    Other,
+}
+
+impl Family {
+    fn native_scalar(self) -> bool {
+        self != Self::Other
+    }
+}
+
+fn type_family(view: &ClauseGraphView<'_>, type_node: &CheckedNodeId) -> Family {
+    match view.kind(type_node) {
+        Some(CheckedNodeKind::ScalarType(ScalarTypeForm::Boolean)) => Family::Boolean,
+        Some(
+            CheckedNodeKind::ScalarType(ScalarTypeForm::Integer)
+            | CheckedNodeKind::BoundedDomain(
+                filament_contract_model::BoundedDomainForm::IntegerRange,
+            ),
+        ) => Family::Integer,
+        _ => Family::Other,
+    }
+}
+
+/// The value family of a checked term: a literal's own kind, an application's result type and a
+/// referenced node's semantic type.
+fn term_family(view: &ClauseGraphView<'_>, term: &CheckedTerm) -> Family {
+    match term {
+        CheckedTerm::Literal { value_kind, .. } => match value_kind {
+            LiteralKind::Boolean => Family::Boolean,
+            LiteralKind::Integer => Family::Integer,
+            _ => Family::Other,
+        },
+        CheckedTerm::Reference { target } => view
+            .node(target)
+            .map_or(Family::Other, |node| type_family(view, &node.semantic_type)),
+        CheckedTerm::Application { result_type, .. } => type_family(view, result_type),
+        _ => Family::Other,
+    }
+}
+
+/// The shape check of one control application, run on entering its node before its operands are
+/// walked. Returns the reason it is refused, or the terms its operands contribute to the walk in
+/// source order.
+fn control_operands<'a>(
+    view: &ClauseGraphView<'a>,
+    identity: &str,
+    arguments: &'a [CheckedTerm],
+    parameters: &[CheckedNodeId],
+) -> Result<Vec<&'a CheckedTerm>, V2ClauseControlReason> {
+    match (identity, arguments) {
+        (CONTROL_LET, [CheckedTerm::Binding { value, .. }, body]) => {
+            if !term_family(view, value).native_scalar() {
+                return Err(V2ClauseControlReason::LetValueNotNativeScalar);
+            }
+            Ok(vec![value.as_ref(), body])
+        }
+        (CONTROL_IF, [_, then, other]) => {
+            if !term_family(view, then).native_scalar() || !term_family(view, other).native_scalar()
+            {
+                return Err(V2ClauseControlReason::IfBranchNotNativeScalar);
+            }
+            Ok(arguments.iter().collect())
+        }
+        (CONTROL_CASE, [scrutinee, arms @ ..]) => {
+            let declared = match scrutinee {
+                CheckedTerm::Reference { target } if parameters.contains(target) => view
+                    .node(target)
+                    .and_then(|node| union_members(view.package(), view, &node.semantic_type)),
+                _ => None,
+            };
+            let Some(members) = declared else {
+                return Err(V2ClauseControlReason::CaseScrutineeNotParameter);
+            };
+            if members.iter().any(|(_, arity)| *arity != 0) {
+                return Err(V2ClauseControlReason::CaseUnionPayloadNotSupported);
+            }
+            let mut bodies = Vec::with_capacity(arms.len());
+            for arm in arms {
+                let CheckedTerm::Binding { value, .. } = arm else {
+                    continue;
+                };
+                let CheckedTerm::Aggregate { members: parts } = value.as_ref() else {
+                    continue;
+                };
+                let [_, body] = parts.as_slice() else {
+                    continue;
+                };
+                if !term_family(view, body).native_scalar() {
+                    return Err(V2ClauseControlReason::CaseArmNotNativeScalar);
+                }
+                bodies.push(body);
+            }
+            Ok(bodies)
+        }
+        _ => Ok(arguments.iter().collect()),
+    }
+}
+
 fn unsupported_checked_clause_operator(
     view: &ClauseGraphView<'_>,
     clause: &CheckedNodeId,
-) -> Option<String> {
-    let [_, _, condition] = application(
+) -> Option<ClauseRefusal> {
+    let [declared, _, condition] = application(
         view.package().term(clause)?,
         ApplicationOperator::StateClause,
-        "quire.op.state.clause",
+        "filament.op.state.clause",
     )?
     else {
         return None;
     };
-    let mut terms = vec![condition];
+    // The operation parameters the clause declares: every declared binder but `self` and `result`.
+    let parameters = match declared {
+        CheckedTerm::Aggregate { members } => members
+            .iter()
+            .skip(1)
+            .filter_map(reference)
+            .filter(|id| {
+                view.package()
+                    .parameter_declaration(id)
+                    .is_ok_and(|declaration| declaration.name.as_ref() != "result")
+            })
+            .cloned()
+            .collect::<Vec<_>>(),
+        _ => Vec::new(),
+    };
+    let mut terms = vec![(condition, None::<&CheckedNodeId>)];
     let mut visited = BTreeSet::new();
     let mut visits = 0;
-    while let Some(term) = terms.pop() {
+    while let Some((term, node)) = terms.pop() {
         if visits >= MAX_CONDITION_TERMS {
             return None;
         }
@@ -891,7 +1037,7 @@ fn unsupported_checked_clause_operator(
         match term {
             CheckedTerm::Reference { target } => {
                 if visited.insert(target) {
-                    terms.push(view.package().term(target)?);
+                    terms.push((view.package().term(target)?, Some(target)));
                 }
             }
             CheckedTerm::Application {
@@ -902,14 +1048,31 @@ fn unsupported_checked_clause_operator(
                 let identity = operation.identity()?;
                 if matches!(
                     identity,
-                    "quire.op.state.pre" | "quire.op.record.project" | "quire.op.model.deref"
+                    "filament.op.state.pre"
+                        | "filament.op.record.project"
+                        | "filament.op.model.deref"
                 ) {
                     continue;
                 }
-                if !supported_clause_operator(identity) {
-                    return Some(identity.to_owned());
+                if matches!(identity, CONTROL_LET | CONTROL_IF | CONTROL_CASE) {
+                    match control_operands(view, identity, arguments, &parameters) {
+                        Ok(operands) => {
+                            terms.extend(operands.into_iter().rev().map(|term| (term, None)));
+                            continue;
+                        }
+                        Err(reason) => {
+                            return Some(ClauseRefusal::Control {
+                                reason,
+                                operation_identity: identity.to_owned(),
+                                node: node.cloned(),
+                            });
+                        }
+                    }
                 }
-                terms.extend(arguments.iter().rev());
+                if !supported_clause_operator(identity) {
+                    return Some(ClauseRefusal::Operator(identity.to_owned()));
+                }
+                terms.extend(arguments.iter().rev().map(|term| (term, None)));
             }
             _ => {}
         }
@@ -918,39 +1081,51 @@ fn unsupported_checked_clause_operator(
 }
 
 fn unsupported_clause_operator(term: &ClauseTerm) -> Option<&str> {
-    let ClauseTerm::Operation {
-        identity,
-        arguments,
-        ..
-    } = term
-    else {
-        return None;
-    };
-    if !supported_clause_operator(identity) {
-        return Some(identity);
+    match term {
+        ClauseTerm::Operation {
+            identity,
+            arguments,
+            ..
+        } => {
+            if !supported_clause_operator(identity) {
+                return Some(identity);
+            }
+            arguments.iter().find_map(unsupported_clause_operator)
+        }
+        ClauseTerm::Let { value, body, .. } => {
+            unsupported_clause_operator(value).or_else(|| unsupported_clause_operator(body))
+        }
+        ClauseTerm::If {
+            condition,
+            then,
+            other,
+        } => [condition, then, other]
+            .into_iter()
+            .find_map(|term| unsupported_clause_operator(term)),
+        ClauseTerm::Case { arms, .. } => arms.iter().find_map(unsupported_clause_operator),
+        _ => None,
     }
-    arguments.iter().find_map(unsupported_clause_operator)
 }
 
 fn supported_clause_operator(identity: &str) -> bool {
     matches!(
         identity,
-        "quire.op.boolean.and"
-            | "quire.op.boolean.or"
-            | "quire.op.boolean.not"
-            | "quire.op.boolean.implies"
-            | "quire.op.boolean.eq"
-            | "quire.op.boolean.ne"
-            | "quire.op.integer.eq"
-            | "quire.op.integer.ne"
-            | "quire.op.integer.lt"
-            | "quire.op.integer.le"
-            | "quire.op.integer.gt"
-            | "quire.op.integer.ge"
-            | "quire.op.integer.add"
-            | "quire.op.integer.sub"
-            | "quire.op.integer.mul"
-            | "quire.op.integer.negate"
+        "filament.op.boolean.and"
+            | "filament.op.boolean.or"
+            | "filament.op.boolean.not"
+            | "filament.op.boolean.implies"
+            | "filament.op.boolean.eq"
+            | "filament.op.boolean.ne"
+            | "filament.op.integer.eq"
+            | "filament.op.integer.ne"
+            | "filament.op.integer.lt"
+            | "filament.op.integer.le"
+            | "filament.op.integer.gt"
+            | "filament.op.integer.ge"
+            | "filament.op.integer.add"
+            | "filament.op.integer.sub"
+            | "filament.op.integer.mul"
+            | "filament.op.integer.negate"
     )
 }
 
@@ -963,7 +1138,7 @@ fn result_expectation_term(term: &ClauseTerm) -> Option<&ClauseTerm> {
     else {
         return None;
     };
-    if identity != "quire.op.boolean.eq" {
+    if identity != "filament.op.boolean.eq" {
         return None;
     }
     let [left, right] = arguments.as_slice() else {
@@ -2108,6 +2283,7 @@ fn render_postcondition(
         record,
     ))
 }
+#[derive(Clone)]
 enum NativeTerm {
     Integer {
         expression: String,
@@ -2180,6 +2356,65 @@ fn bind_native_arithmetic_probes(
     Ok(())
 }
 
+/// One native selection: a `match` over a Boolean condition (`true` and `false`) or over a member
+/// index (one pattern per arm, the last being the exhaustive pattern). Both branch values are of
+/// one family; an Integer selection holds the hull of its branches.
+fn select_native<const N: usize>(
+    head: String,
+    arms: [(String, NativeTerm); N],
+) -> Option<NativeTerm> {
+    select_native_vec(head, arms.to_vec())
+}
+
+fn select_native_vec(head: String, arms: Vec<(String, NativeTerm)>) -> Option<NativeTerm> {
+    let compose = |values: Vec<String>, patterns: &[String]| -> String {
+        let body = values
+            .iter()
+            .zip(patterns)
+            .map(|(value, pattern)| format!("{pattern} => {value},"))
+            .collect::<Vec<_>>()
+            .join(" ");
+        format!("({head} {{ {body} }})")
+    };
+    let patterns = arms
+        .iter()
+        .map(|(pattern, _)| pattern.clone())
+        .collect::<Vec<_>>();
+    if arms
+        .iter()
+        .all(|(_, value)| matches!(value, NativeTerm::Boolean(_)))
+    {
+        let values = arms
+            .iter()
+            .map(|(_, value)| value.clone_boolean())
+            .collect::<Option<Vec<_>>>()?;
+        return Some(NativeTerm::Boolean(compose(values, &patterns)));
+    }
+    let integers = arms
+        .iter()
+        .map(|(_, value)| value.clone_integer())
+        .collect::<Option<Vec<_>>>()?;
+    let lower = integers.iter().map(|(_, lower, _, _)| *lower).min()?;
+    let upper = integers.iter().map(|(_, _, upper, _)| *upper).max()?;
+    let small_values = integers
+        .iter()
+        .map(|(_, _, _, small)| small.clone())
+        .collect::<Option<Vec<_>>>();
+    let small_expression = small_values
+        .filter(|_| i64::try_from(lower).is_ok() && i64::try_from(upper).is_ok())
+        .map(|values| compose(values, &patterns));
+    let values = integers
+        .into_iter()
+        .map(|(expression, _, _, _)| expression)
+        .collect();
+    Some(NativeTerm::Integer {
+        expression: compose(values, &patterns),
+        lower,
+        upper,
+        small_expression,
+    })
+}
+
 impl NativeTerm {
     fn boolean(self) -> Option<String> {
         match self {
@@ -2206,12 +2441,75 @@ impl<'a> NativeBinding<'a> {
     }
 }
 
+/// The independent `i128` expectation of a clause term. `scope` holds the value each enclosing `let`
+/// binder was bound to: a read of the binder substitutes that value's expression, which was probed
+/// once where the `let` initializer evaluated. An `if` or `case` guards the probes of each branch or
+/// arm by its selection, so a probe runs only where the oracle evaluates that node.
 fn native_term(
     term: &ClauseTerm,
     bindings: &[NativeBinding<'_>],
+    scope: &[(usize, NativeTerm)],
     arithmetic: &mut Vec<ArithmeticProbe>,
 ) -> Option<NativeTerm> {
     match term {
+        ClauseTerm::Binder { binder } => scope
+            .iter()
+            .rev()
+            .find_map(|(bound, value)| (bound == binder).then(|| value.clone())),
+        ClauseTerm::Let {
+            binder,
+            value,
+            body,
+        } => {
+            let value = native_term(value, bindings, scope, arithmetic)?;
+            let mut inner = scope.to_vec();
+            inner.push((*binder, value));
+            native_term(body, bindings, &inner, arithmetic)
+        }
+        ClauseTerm::If {
+            condition,
+            then,
+            other,
+        } => {
+            let selector = native_term(condition, bindings, scope, arithmetic)?.clone_boolean()?;
+            let first_then = arithmetic.len();
+            let then = native_term(then, bindings, scope, arithmetic)?;
+            let first_other = arithmetic.len();
+            let other = native_term(other, bindings, scope, arithmetic)?;
+            for probe in &mut arithmetic[first_then..first_other] {
+                probe.guard = format!("({}) && ({selector})", probe.guard);
+            }
+            for probe in &mut arithmetic[first_other..] {
+                probe.guard = format!("({}) && !({selector})", probe.guard);
+            }
+            // The expectation is an expression text that may hold no block, so the selection is a
+            // `match` over the condition.
+            select_native(
+                format!("match {selector}"),
+                [("true".to_owned(), then), ("false".to_owned(), other)],
+            )
+        }
+        ClauseTerm::Case { scrutinee, arms } => {
+            let selector = bindings
+                .iter()
+                .find(|binding| {
+                    binding.side == ClauseInputSide::Parameter && binding.name == scrutinee.name
+                })?
+                .symbolic;
+            let mut selected = Vec::with_capacity(arms.len());
+            for (member, arm) in arms.iter().enumerate() {
+                let first = arithmetic.len();
+                let value = native_term(arm, bindings, scope, arithmetic)?;
+                for probe in &mut arithmetic[first..] {
+                    probe.guard = format!("({}) && ({selector} == {member}_i64)", probe.guard);
+                }
+                selected.push((format!("{member}_i64"), value));
+            }
+            let (last, leading) = selected.split_last()?;
+            let mut arms = leading.to_vec();
+            arms.push(("_".to_owned(), last.1.clone()));
+            select_native_vec(format!("match {selector}"), arms)
+        }
         ClauseTerm::Boolean(value) => Some(NativeTerm::Boolean(value.to_string())),
         ClauseTerm::Integer(value) => {
             let parsed = value.parse::<i128>().ok()?;
@@ -2247,20 +2545,20 @@ fn native_term(
             arguments,
             ..
         } => {
-            if identity == "quire.op.numeric.narrow" {
+            if identity == "filament.op.numeric.narrow" {
                 let literal = crate::oracle::clause::admitted_literal_narrow(term)?;
-                return native_term(literal, bindings, arithmetic);
+                return native_term(literal, bindings, scope, arithmetic);
             }
             if let [left, right] = arguments.as_slice() {
                 let gate = match identity.as_str() {
-                    "quire.op.boolean.and" | "quire.op.boolean.implies" => Some(false),
-                    "quire.op.boolean.or" => Some(true),
+                    "filament.op.boolean.and" | "filament.op.boolean.implies" => Some(false),
+                    "filament.op.boolean.or" => Some(true),
                     _ => None,
                 };
                 if let Some(invert) = gate {
-                    let left = native_term(left, bindings, arithmetic)?.clone_boolean()?;
+                    let left = native_term(left, bindings, scope, arithmetic)?.clone_boolean()?;
                     let first_right = arithmetic.len();
-                    let right = native_term(right, bindings, arithmetic)?.clone_boolean()?;
+                    let right = native_term(right, bindings, scope, arithmetic)?.clone_boolean()?;
                     let condition = if invert {
                         format!("!({left})")
                     } else {
@@ -2270,9 +2568,9 @@ fn native_term(
                         probe.guard = format!("({}) && ({condition})", probe.guard);
                     }
                     let expression = match identity.as_str() {
-                        "quire.op.boolean.and" => format!("({left} && {right})"),
-                        "quire.op.boolean.or" => format!("({left} || {right})"),
-                        "quire.op.boolean.implies" => format!("(!{left} || {right})"),
+                        "filament.op.boolean.and" => format!("({left} && {right})"),
+                        "filament.op.boolean.or" => format!("({left} || {right})"),
+                        "filament.op.boolean.implies" => format!("(!{left} || {right})"),
                         _ => return None,
                     };
                     return Some(NativeTerm::Boolean(expression));
@@ -2280,29 +2578,27 @@ fn native_term(
             }
             let values = arguments
                 .iter()
-                .map(|argument| native_term(argument, bindings, arithmetic))
+                .map(|argument| native_term(argument, bindings, scope, arithmetic))
                 .collect::<Option<Vec<_>>>()?;
             match (identity.as_str(), values.as_slice()) {
-                ("quire.op.boolean.not", [value]) => Some(NativeTerm::Boolean(format!(
+                ("filament.op.boolean.not", [value]) => Some(NativeTerm::Boolean(format!(
                     "(!{})",
                     value.clone_boolean()?
                 ))),
-                ("quire.op.boolean.and", [left, right]) => Some(NativeTerm::Boolean(format!(
+                ("filament.op.boolean.and", [left, right]) => Some(NativeTerm::Boolean(format!(
                     "({} && {})",
                     left.clone_boolean()?,
                     right.clone_boolean()?
                 ))),
-                ("quire.op.boolean.or", [left, right]) => Some(NativeTerm::Boolean(format!(
+                ("filament.op.boolean.or", [left, right]) => Some(NativeTerm::Boolean(format!(
                     "({} || {})",
                     left.clone_boolean()?,
                     right.clone_boolean()?
                 ))),
-                ("quire.op.boolean.implies", [left, right]) => Some(NativeTerm::Boolean(format!(
-                    "(!{} || {})",
-                    left.clone_boolean()?,
-                    right.clone_boolean()?
-                ))),
-                ("quire.op.integer.negate", [value]) => {
+                ("filament.op.boolean.implies", [left, right]) => Some(NativeTerm::Boolean(
+                    format!("(!{} || {})", left.clone_boolean()?, right.clone_boolean()?),
+                )),
+                ("filament.op.integer.negate", [value]) => {
                     let (expression, lower, upper, small) = value.clone_integer()?;
                     let operand_bounds = vec![(lower, upper)];
                     let expected = format!("(-{expression})");
@@ -2335,19 +2631,21 @@ fn native_term(
                     })
                 }
                 (
-                    "quire.op.integer.add" | "quire.op.integer.sub" | "quire.op.integer.mul",
+                    "filament.op.integer.add"
+                    | "filament.op.integer.sub"
+                    | "filament.op.integer.mul",
                     [left, right],
                 ) => {
                     let (a, al, ah, a_small) = left.clone_integer()?;
                     let (b, bl, bh, b_small) = right.clone_integer()?;
                     let (operator, operation, bounds) = match identity.as_str() {
-                        "quire.op.integer.add" => {
+                        "filament.op.integer.add" => {
                             ("+", "Add", (al.checked_add(bl)?, ah.checked_add(bh)?))
                         }
-                        "quire.op.integer.sub" => {
+                        "filament.op.integer.sub" => {
                             ("-", "Subtract", (al.checked_sub(bh)?, ah.checked_sub(bl)?))
                         }
-                        "quire.op.integer.mul" => {
+                        "filament.op.integer.mul" => {
                             let corners = [
                                 al.checked_mul(bl)?,
                                 al.checked_mul(bh)?,
@@ -2394,27 +2692,27 @@ fn native_term(
                     })
                 }
                 (
-                    "quire.op.integer.lt"
-                    | "quire.op.integer.le"
-                    | "quire.op.integer.gt"
-                    | "quire.op.integer.ge",
+                    "filament.op.integer.lt"
+                    | "filament.op.integer.le"
+                    | "filament.op.integer.gt"
+                    | "filament.op.integer.ge",
                     [left, right],
                 ) => {
                     let (a, _, _, _) = left.clone_integer()?;
                     let (b, _, _, _) = right.clone_integer()?;
                     let operator = match identity.as_str() {
-                        "quire.op.integer.lt" => "<",
-                        "quire.op.integer.le" => "<=",
-                        "quire.op.integer.gt" => ">",
-                        "quire.op.integer.ge" => ">=",
+                        "filament.op.integer.lt" => "<",
+                        "filament.op.integer.le" => "<=",
+                        "filament.op.integer.gt" => ">",
+                        "filament.op.integer.ge" => ">=",
                         _ => return None,
                     };
                     Some(NativeTerm::Boolean(format!("({a} {operator} {b})")))
                 }
-                ("quire.op.integer.eq" | "quire.op.integer.ne", [left, right]) => {
+                ("filament.op.integer.eq" | "filament.op.integer.ne", [left, right]) => {
                     let (a, _, _, _) = left.clone_integer()?;
                     let (b, _, _, _) = right.clone_integer()?;
-                    let operator = if identity == "quire.op.integer.eq" {
+                    let operator = if identity == "filament.op.integer.eq" {
                         "=="
                     } else {
                         "!="
@@ -2458,10 +2756,10 @@ mod unsupported_operator_tests {
     #[test]
     fn nested_absolute_value_names_its_exact_operator() {
         let term = ClauseTerm::Operation {
-            identity: "quire.op.integer.ge".to_owned(),
+            identity: "filament.op.integer.ge".to_owned(),
             arguments: vec![
                 ClauseTerm::Operation {
-                    identity: "quire.op.integer.abs".to_owned(),
+                    identity: "filament.op.integer.abs".to_owned(),
                     arguments: vec![ClauseTerm::Integer("-2".to_owned())],
                     result_bound: None,
                 },
@@ -2471,7 +2769,7 @@ mod unsupported_operator_tests {
         };
         assert_eq!(
             unsupported_clause_operator(&term),
-            Some("quire.op.integer.abs")
+            Some("filament.op.integer.abs")
         );
     }
 }
@@ -2479,8 +2777,8 @@ mod unsupported_operator_tests {
 #[cfg(test)]
 mod postcondition_signature_tests {
     use super::*;
+    use filament_contract_model::CheckedOperationReadErrorCode;
     use ix_trace_rs::trace;
-    use quire_contract_model::CheckedOperationReadErrorCode;
 
     #[trace("FR-025-AC-11", "TC-036")]
     #[test]
@@ -2497,7 +2795,7 @@ mod postcondition_signature_tests {
                 record: crate::kani::identity::V2ClauseObligationRecord {
                     occurrence: crate::core::requirement::RequirementOccurrence {
                         node_id: clause.clone(),
-                        role: quire_contract_model::CheckedOccurrenceRole::Expression,
+                        role: filament_contract_model::CheckedOccurrenceRole::Expression,
                         ordinal: 0,
                     },
                     kind: ObligationKind::Postcondition,
@@ -2554,7 +2852,7 @@ mod postcondition_signature_tests {
         ] {
             let read_context = context.clone();
             let refusal = match read_postcondition_signature(&view, &clause, move |_, _| {
-                Err(quire_contract_model::CheckedOperationReadError {
+                Err(filament_contract_model::CheckedOperationReadError {
                     code,
                     context: read_context,
                     work: 7,
@@ -2598,7 +2896,7 @@ mod postcondition_signature_tests {
         let [CheckedTerm::Aggregate { members }, _, _] = application(
             package.term(&clause).expect("admitted clause body"),
             ApplicationOperator::StateClause,
-            "quire.op.state.clause",
+            "filament.op.state.clause",
         )
         .expect("admitted state clause") else {
             panic!("admitted ordered binders");
@@ -2659,7 +2957,7 @@ mod native_probe_tests {
     #[test]
     fn native_clause_expectation_accepts_only_in_range_literal_narrows() {
         let narrow = |value: &str| ClauseTerm::Operation {
-            identity: "quire.op.numeric.narrow".to_owned(),
+            identity: "filament.op.numeric.narrow".to_owned(),
             arguments: vec![ClauseTerm::Integer(value.to_owned())],
             result_bound: Some((0, 1000)),
         };
@@ -2667,6 +2965,7 @@ mod native_probe_tests {
             native_term(
                 &narrow(value),
                 &[NativeBinding::parameter("amount", "amount_current")],
+                &[],
                 &mut Vec::new(),
             )
         };
@@ -2685,11 +2984,12 @@ mod native_probe_tests {
         let wide = |value: &str, lower: i128, upper: i128| {
             native_term(
                 &ClauseTerm::Operation {
-                    identity: "quire.op.numeric.narrow".to_owned(),
+                    identity: "filament.op.numeric.narrow".to_owned(),
                     arguments: vec![ClauseTerm::Integer(value.to_owned())],
                     result_bound: Some((lower, upper)),
                 },
                 &[NativeBinding::parameter("amount", "amount_current")],
+                &[],
                 &mut Vec::new(),
             )
         };
@@ -2724,7 +3024,7 @@ mod native_probe_tests {
     #[trace("FR-015-AC-125", "TC-025")]
     #[test]
     fn bounded_add_feeding_multiply_uses_the_typed_completed_interval() {
-        let node_id: quire_contract_model::CheckedNodeId =
+        let node_id: filament_contract_model::CheckedNodeId =
             serde_json::from_value(serde_json::json!({
                 "package": "kani-clause-v2-test",
                 "path": ["bounded-add"],
@@ -2740,7 +3040,7 @@ mod native_probe_tests {
             Decision {
                 node_id: node_id.clone(),
                 step: 0,
-                operation_identity: "quire.op.integer.add".to_owned(),
+                operation_identity: "filament.op.integer.add".to_owned(),
                 operands: vec![interval(0, 1000), interval(1, 1)],
                 capacity: Some(interval(1, 1001)),
                 semantic_domain: Some(interval(0, 1000)),
@@ -2748,7 +3048,7 @@ mod native_probe_tests {
             Decision {
                 node_id,
                 step: 1,
-                operation_identity: "quire.op.integer.mul".to_owned(),
+                operation_identity: "filament.op.integer.mul".to_owned(),
                 operands: vec![interval(1, 1000), interval(2, 2)],
                 capacity: Some(interval(2, 2000)),
                 semantic_domain: None,
@@ -2756,7 +3056,7 @@ mod native_probe_tests {
         ];
         let mut probes = vec![
             ArithmeticProbe {
-                operation_identity: "quire.op.integer.add".to_owned(),
+                operation_identity: "filament.op.integer.add".to_owned(),
                 operation: "Add",
                 operands: vec!["amount".to_owned(), "1".to_owned()],
                 expected: "amount + 1".to_owned(),
@@ -2765,7 +3065,7 @@ mod native_probe_tests {
                 guard: "true".to_owned(),
             },
             ArithmeticProbe {
-                operation_identity: "quire.op.integer.mul".to_owned(),
+                operation_identity: "filament.op.integer.mul".to_owned(),
                 operation: "Multiply",
                 operands: vec!["amount + 1".to_owned(), "2".to_owned()],
                 expected: "(amount + 1) * 2".to_owned(),
@@ -2787,8 +3087,8 @@ mod state_postcondition_shape_tests {
         ResultPostcondition, StateFieldDomains, StateParameter,
     };
     use crate::core::ir::clause::{ClauseInput, ClauseInputSide};
+    use filament_contract_model::CheckedNodeId;
     use ix_trace_rs::trace;
-    use quire_contract_model::CheckedNodeId;
 
     fn node(name: &str) -> CheckedNodeId {
         serde_json::from_value(serde_json::json!({
@@ -2866,5 +3166,194 @@ mod state_postcondition_shape_tests {
         let mut once = StateFieldDomains::new();
         assert!(record_state_input(&mut once, &[], &first).is_some());
         assert_eq!(state_reads(once).expect("one field").len(), 1);
+    }
+}
+
+#[cfg(test)]
+mod control_expectation_tests {
+    use super::*;
+    use ix_trace_rs::trace;
+
+    fn integer(value: &str) -> ClauseTerm {
+        ClauseTerm::Integer(value.to_owned())
+    }
+
+    fn input(name: &str, upper: i128) -> ClauseInput {
+        ClauseInput {
+            name: name.to_owned(),
+            side: ClauseInputSide::Parameter,
+            declaring_node_id: None,
+            boolean: false,
+            lower: 0,
+            upper,
+        }
+    }
+
+    /// FR-015-AC-154: the independent expectation of a `case` is a `match` on the same member index,
+    /// one arm per member, the last holding the exhaustive pattern.
+    #[trace("FR-015-AC-154", "TC-025")]
+    #[test]
+    fn a_case_expectation_matches_the_member_index_in_declaration_order() {
+        let term = ClauseTerm::Case {
+            scrutinee: input("kind", 2),
+            arms: vec![integer("1"), integer("2"), integer("0")],
+        };
+        let value = native_term(
+            &term,
+            &[NativeBinding::parameter("kind", "parameter_kind_current")],
+            &[],
+            &mut Vec::new(),
+        )
+        .expect("the case has an expectation");
+        let NativeTerm::Integer { expression, .. } = value else {
+            panic!("an integer-valued case");
+        };
+        assert_eq!(
+            expression,
+            "(match parameter_kind_current { 0_i64 => 1_i128, 1_i64 => 2_i128, _ => 0_i128, })"
+        );
+    }
+
+    /// FR-015-AC-170 and FR-015-AC-173: a read of a binder is the value of the innermost enclosing
+    /// binder with that number, so a rebinding resolves each read to its own `let`.
+    #[trace("FR-015-AC-152", "TC-025")]
+    #[test]
+    fn a_binder_read_resolves_to_the_innermost_binding() {
+        let amount = ClauseTerm::Input(input("amount", 999));
+        let add = |left: ClauseTerm, right: &str| ClauseTerm::Operation {
+            identity: "filament.op.integer.add".to_owned(),
+            arguments: vec![left, integer(right)],
+            result_bound: None,
+        };
+        // let a = amount + 1 in (let a' = a + 1 in a' + 0), with each read by its own binder number.
+        let term = ClauseTerm::Let {
+            binder: 0,
+            value: Box::new(add(amount, "1")),
+            body: Box::new(ClauseTerm::Let {
+                binder: 1,
+                value: Box::new(add(ClauseTerm::Binder { binder: 0 }, "1")),
+                body: Box::new(add(ClauseTerm::Binder { binder: 1 }, "0")),
+            }),
+        };
+        let mut arithmetic = Vec::new();
+        let value = native_term(
+            &term,
+            &[NativeBinding::parameter("amount", "amount_current")],
+            &[],
+            &mut arithmetic,
+        )
+        .expect("the nested let has an expectation");
+        let NativeTerm::Integer { expression, .. } = value else {
+            panic!("an integer-valued let");
+        };
+        assert_eq!(
+            arithmetic.len(),
+            3,
+            "each initializer and the body add is probed once"
+        );
+        assert_eq!(
+            expression,
+            "(((i128::from(amount_current) + 1_i128) + 1_i128) + 0_i128)"
+        );
+    }
+
+    /// FR-015-AC-153: a branch probe runs only where its branch is selected.
+    #[trace("FR-015-AC-153", "FR-015-AC-168", "TC-025")]
+    #[test]
+    fn a_branch_probe_is_guarded_by_its_selection() {
+        let amount = || ClauseTerm::Input(input("amount", 1000));
+        let operation = |identity: &str, right: &str| ClauseTerm::Operation {
+            identity: identity.to_owned(),
+            arguments: vec![amount(), integer(right)],
+            result_bound: None,
+        };
+        let term = ClauseTerm::If {
+            condition: Box::new(operation("filament.op.integer.lt", "500")),
+            then: Box::new(operation("filament.op.integer.add", "1")),
+            other: Box::new(operation("filament.op.integer.sub", "1")),
+        };
+        let mut arithmetic = Vec::new();
+        native_term(
+            &term,
+            &[NativeBinding::parameter("amount", "amount_current")],
+            &[],
+            &mut arithmetic,
+        )
+        .expect("the if has an expectation");
+        let [then, other] = arithmetic.as_slice() else {
+            panic!("one probe per branch");
+        };
+        assert!(then.guard.ends_with("< 500_i128))") && !then.guard.contains("!("));
+        assert!(other.guard.contains("!(") && other.guard.contains("< 500_i128"));
+    }
+}
+
+#[cfg(test)]
+mod control_shape_tests {
+    use super::*;
+    use crate::core::ir::clause::control_fixture::{applications, package, read_node};
+    use ix_trace_rs::trace;
+
+    /// `control_operands` over the `n`th application of `identity` in the fixture package, with the
+    /// scrutinee's parameter declared unless `declared` is false.
+    fn shape(
+        identity: &str,
+        position: usize,
+        declared: bool,
+    ) -> Result<usize, V2ClauseControlReason> {
+        let package = package();
+        let view = ClauseGraphView::new(&package);
+        let arguments = applications(&package, identity)[position];
+        let parameters = if declared {
+            vec![read_node(&arguments[0]).clone()]
+        } else {
+            Vec::new()
+        };
+        control_operands(&view, identity, arguments, &parameters).map(|operands| operands.len())
+    }
+
+    #[trace("FR-015-AC-154", "TC-025")]
+    #[test]
+    fn a_case_over_an_arity_0_union_with_native_arms_contributes_its_arm_bodies() {
+        assert_eq!(shape(CONTROL_CASE, 0, true), Ok(3));
+    }
+
+    #[trace("FR-015-AC-161", "TC-025")]
+    #[test]
+    fn an_if_with_a_non_native_branch_is_refused_and_native_branches_contribute_all_operands() {
+        // The two `if` functions are `texts` (Text branches) and `plain` (Integer branches).
+        let mut outcomes = [shape(CONTROL_IF, 0, true), shape(CONTROL_IF, 1, true)];
+        outcomes.sort_by_key(Result::is_ok);
+        assert_eq!(
+            outcomes,
+            [Err(V2ClauseControlReason::IfBranchNotNativeScalar), Ok(3)]
+        );
+    }
+
+    #[trace("FR-015-AC-162", "TC-025")]
+    #[test]
+    fn a_case_over_a_union_with_a_payload_member_is_refused_for_the_payload() {
+        assert_eq!(
+            shape(CONTROL_CASE, 2, true),
+            Err(V2ClauseControlReason::CaseUnionPayloadNotSupported)
+        );
+    }
+
+    #[trace("FR-015-AC-163", "TC-025")]
+    #[test]
+    fn a_case_with_a_non_native_arm_body_is_refused_for_the_arm() {
+        assert_eq!(
+            shape(CONTROL_CASE, 1, true),
+            Err(V2ClauseControlReason::CaseArmNotNativeScalar)
+        );
+    }
+
+    #[trace("FR-015-AC-171", "TC-025")]
+    #[test]
+    fn a_case_whose_scrutinee_is_not_a_declared_operation_parameter_is_refused() {
+        assert_eq!(
+            shape(CONTROL_CASE, 0, false),
+            Err(V2ClauseControlReason::CaseScrutineeNotParameter)
+        );
     }
 }

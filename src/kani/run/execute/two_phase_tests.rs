@@ -472,7 +472,9 @@ fn a_witness_phase_cancelled_by_its_source_is_cancelled() {
         let worker = scope.spawn(|| run(&stand_in, &harness));
         // The witness launch writes here only once it has started, so this read ends then.
         fs::read_to_string(&fifo).unwrap();
-        stand_in.cancel.cancel(quire_exact::CancelCause::Requested);
+        stand_in
+            .cancel
+            .cancel(filament_exact::CancelCause::Requested);
         worker.join().unwrap()
     });
     assert!(matches!(evidence.outcome, KaniRunOutcome::Cancelled { .. }));

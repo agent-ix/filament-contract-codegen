@@ -9,21 +9,21 @@ use filament_contract_codegen::{
     CompositeBuildError, CompositePacketMember, DependencyLock, LockedSource,
     OriginalCompositeEqContext, OriginalCompositeEqRequest, ReplayInputs,
 };
-use ix_trace_rs::trace;
-use qsl_replay::{
+use filament_contract_model::{
+    CheckedCompositeOperandDomain, CheckedCompositeOperandError, CheckedNodeId,
+    CheckedNodePathSegment, CheckedOccurrence, CheckedPackageEvidence, CheckedPackageReadLimits,
+    CheckedPackageV2, CheckedPackageV2ReadResult, CheckedScalarOperandChild, CheckedTerm,
+    CheckedUnsupportedCompositeOperand, ContractSourceKeyV1,
+};
+use filament_exact::PathSegment;
+use fsl_replay::{
     compile_package, parity_obligation, DependencyInput, Domain, DomainKey, DomainKind,
     EqualityOperator, FiniteBound, InconclusiveCause, Integer, NodeKey, OperandIdentity,
     ParityBoundRefusal, ProofBound, Refinement, ReplayLimits, ReplayRefusal, ReplayRequest,
     ReplayTarget, ScalarIdentityMismatch, ScalarLimits, SourceIdentity, StageLimits,
     SuppliedLibrary, TerminalValue, VerifiedShadow, VerifiedShadowResult,
 };
-use quire_contract_model::{
-    CheckedCompositeOperandDomain, CheckedCompositeOperandError, CheckedNodeId,
-    CheckedNodePathSegment, CheckedOccurrence, CheckedPackageEvidence, CheckedPackageReadLimits,
-    CheckedPackageV2, CheckedPackageV2ReadResult, CheckedScalarOperandChild, CheckedTerm,
-    CheckedUnsupportedCompositeOperand, ContractSourceKeyV1,
-};
-use quire_exact::PathSegment;
+use ix_trace_rs::trace;
 
 fn node_key(package: &CheckedPackageV2, id: &CheckedNodeId) -> NodeKey {
     let key = ContractSourceKeyV1::from_v2_request(package, id)
@@ -56,7 +56,7 @@ fn checked_operation_identity(body: &CheckedTerm) -> Option<&str> {
 }
 
 pub(super) const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\n\
-    profile v = \"quire.value.complete/v1\";\n\
+    profile v = \"filament.value.complete/v1\";\n\
     record Q { x: Integer; }\n\
     function f using v(a: Sequence<Int[0, 9]>[0, 3], b: Sequence<Int[0, 9]>[0, 3]): Boolean pure { a = b }\n\
     function n using v(a: Sequence<Int[0, 9]>[0, 3], b: Sequence<Int[0, 9]>[0, 3]): Boolean pure { a != b }\n\
@@ -69,7 +69,7 @@ pub(super) const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\n\
     function opt_none using v(a: Option<Boolean>): Boolean pure { a = none }\n";
 
 const REPEATED_SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\n\
-    profile v = \"quire.value.complete/v1\";\n\
+    profile v = \"filament.value.complete/v1\";\n\
     function repeated using v(a: Sequence<Int[0, 9]>[0, 3], b: Sequence<Int[0, 9]>[0, 3]): Boolean pure { (a = b) and (a = b) }\n";
 
 fn limits() -> ScalarLimits {
@@ -108,7 +108,7 @@ fn inputs(source: &str) -> ReplayInputs {
 #[derive(Clone)]
 struct OriginalPackage {
     checked: CheckedPackageV2,
-    raw: qsl_replay::ReplayPackage,
+    raw: fsl_replay::ReplayPackage,
 }
 impl std::ops::Deref for OriginalPackage {
     type Target = CheckedPackageV2;
@@ -134,7 +134,7 @@ fn checked(source: &str) -> OriginalPackage {
 
 fn evidence() -> CheckedPackageEvidence {
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     evidence
 }
 
@@ -146,9 +146,9 @@ fn checked_with_dependencies(
     read_checked(compiled(source, dependencies).bytes(), evidence)
 }
 
-fn compiled(source: &str, dependencies: &DependencyInput) -> qsl_replay::CompiledPackage {
+fn compiled(source: &str, dependencies: &DependencyInput) -> fsl_replay::CompiledPackage {
     compile_package(
-        qsl_replay::CompileUnit {
+        fsl_replay::CompileUnit {
             source: SourceIdentity::new("test", "original-eq.native"),
             package_name: "original-eq".to_owned(),
             path: "original-eq.native",
@@ -166,7 +166,7 @@ fn read_checked(bytes: &[u8], evidence: &CheckedPackageEvidence) -> OriginalPack
     match CheckedPackageV2::read(bytes, CheckedPackageReadLimits::bounded(), evidence) {
         CheckedPackageV2ReadResult::Admitted(package) => OriginalPackage {
             checked: *package,
-            raw: qsl_replay::ReplayPackage::read(bytes, u64::MAX).unwrap(),
+            raw: fsl_replay::ReplayPackage::read(bytes, u64::MAX).unwrap(),
         },
         other => panic!("FSL fixture must admit in IR: {other:?}"),
     }
@@ -175,7 +175,7 @@ fn read_checked(bytes: &[u8], evidence: &CheckedPackageEvidence) -> OriginalPack
 // Adversarial emitted-package metadata is admitted through IR's owning reader; no report is built.
 fn checked_with_extra_source(
     source: &str,
-    extra: &quire_contract_model::CheckedSourceRef,
+    extra: &filament_contract_model::CheckedSourceRef,
 ) -> OriginalPackage {
     let compiled = compiled(source, &DependencyInput::default());
     let mut wire: serde_json::Value = serde_json::from_slice(compiled.bytes()).unwrap();
@@ -233,7 +233,7 @@ impl OriginalRequestFixture for OriginalCompositeEqContext {
 }
 
 fn application(package: &CheckedPackageV2, function: &str) -> (CheckedNodeId, CheckedOccurrence) {
-    application_with_operator(package, function, "quire.op.structural.eq")
+    application_with_operator(package, function, "filament.op.structural.eq")
 }
 
 fn application_with_operator(
@@ -383,7 +383,7 @@ fn original_parameter_operands_build_positional_identity_and_public_verified_rep
     let obligation = parity_obligation(request.preimage()).unwrap();
     assert_eq!(
         obligation,
-        qsl_replay::ObligationIdentity::new(
+        fsl_replay::ObligationIdentity::new(
             node_key(&package, &node),
             None,
             u32::try_from(occurrence.ordinal).expect("admitted occurrence ordinal fits"),
@@ -497,7 +497,7 @@ fn original_literal_operands_retain_graph_children_and_empty_bounds() {
 #[test]
 fn original_ne_parameter_operands_keep_order_and_operator() {
     let package = checked(SOURCE);
-    let (node, occurrence) = application_with_operator(&package, "n", "quire.op.structural.ne");
+    let (node, occurrence) = application_with_operator(&package, "n", "filament.op.structural.ne");
     let original = package
         .composite_application_operands(&node, &occurrence, 100_000)
         .unwrap();
@@ -547,7 +547,7 @@ fn original_ne_parameter_operands_keep_order_and_operator() {
 #[test]
 fn original_ne_literal_operand_keeps_empty_bounds() {
     let package = checked(SOURCE);
-    let (node, occurrence) = application_with_operator(&package, "m", "quire.op.structural.ne");
+    let (node, occurrence) = application_with_operator(&package, "m", "filament.op.structural.ne");
     let request = context(package.clone(), "m")
         .request(&node, &occurrence, EqualityOperator::NotEqual, &[], 100_000)
         .unwrap();
@@ -591,8 +591,8 @@ fn original_operator_mismatch_refuses_with_typed_operators() {
     ] {
         let package = checked(SOURCE);
         let identity = match node_operator {
-            EqualityOperator::Equal => "quire.op.structural.eq",
-            EqualityOperator::NotEqual => "quire.op.structural.ne",
+            EqualityOperator::Equal => "filament.op.structural.eq",
+            EqualityOperator::NotEqual => "filament.op.structural.ne",
         };
         let (node, occurrence) = application_with_operator(&package, function, identity);
         assert!(matches!(
@@ -634,7 +634,7 @@ fn a_non_equality_operation_refuses_as_an_ineligible_operator() {
     assert_ineligible_operator(
         "function k using v(a: Int[0, 9], b: Int[0, 9]): Boolean pure { a < b }",
         "k",
-        "quire.op.integer.lt",
+        "filament.op.integer.lt",
     );
 }
 
@@ -645,7 +645,7 @@ fn a_quantity_conversion_refuses_as_an_ineligible_operator() {
     assert_ineligible_operator(
         "dimension Length;\nunit m : Length = rational(1, 1);\nunit cm : Length = rational(1, 100) * m;\nfunction c using v(a: Quantity<cm, Int[0, 1000]>): Quantity<m> pure { convert<Quantity<m>>(a) }",
         "c",
-        "quire.op.quantity.convert",
+        "filament.op.quantity.convert",
     );
 }
 
@@ -656,7 +656,7 @@ fn repeated_requests_keep_each_nodes_original_operation() {
     let package = checked(SOURCE);
     let (equal_node, equal_occurrence) = application(&package, "f");
     let (not_equal_node, not_equal_occurrence) =
-        application_with_operator(&package, "n", "quire.op.structural.ne");
+        application_with_operator(&package, "n", "filament.op.structural.ne");
     let context = context(package.clone(), "f");
 
     let equal = context
@@ -730,7 +730,7 @@ fn self_comparison_keeps_two_positional_arguments() {
 fn original_ne_literal_literal_keeps_two_empty_bounds_children() {
     let package = checked(SOURCE);
     let (node, occurrence) =
-        application_with_operator(&package, "ne_lits", "quire.op.structural.ne");
+        application_with_operator(&package, "ne_lits", "filament.op.structural.ne");
     let request = context(package.clone(), "ne_lits")
         .request(&node, &occurrence, EqualityOperator::NotEqual, &[], 100_000)
         .unwrap();
@@ -791,7 +791,7 @@ fn original_ne_literal_literal_keeps_two_empty_bounds_children() {
 fn original_ne_self_comparison_keeps_two_positional_arguments() {
     let package = checked(SOURCE);
     let (node, occurrence) =
-        application_with_operator(&package, "ne_same", "quire.op.structural.ne");
+        application_with_operator(&package, "ne_same", "filament.op.structural.ne");
     let bounds = vec![ProofBound::new(
         DomainKey::Node {
             node: node_key(&package, &first_child(&package, &node, &occurrence)),
@@ -893,7 +893,7 @@ fn opt_none_with_inline_operand() -> OriginalPackage {
         .unwrap()
         .iter()
         .position(|node| {
-            node["body"]["operation"]["identity"] == "quire.op.structural.eq"
+            node["body"]["operation"]["identity"] == "filament.op.structural.eq"
                 && is_none(&node["body"]["arguments"][1]["target"])
         })
         .expect("opt_none application");
@@ -929,7 +929,7 @@ fn opt_none_with_inline_operand() -> OriginalPackage {
     ]);
     node["dependencies"] = serde_json::json!([parameter_id]);
     node["node_id"] = id(serde_json::json!([
-        "expression", "binary", {"operand": 4}, "quire.op.structural.eq", "binary", {"operand": 3}
+        "expression", "binary", {"operand": 4}, "filament.op.structural.eq", "binary", {"operand": 3}
     ]));
     // The function holding the application names it by id; renumber that id and its row.
     let function = wire["semantic_graph"]["nodes"]
@@ -948,7 +948,7 @@ fn opt_none_with_inline_operand() -> OriginalPackage {
     wire["semantic_graph"]["operand_rows"][function] =
         serde_json::json!([f_text, f_integer, f_option, f_parameter, f_boolean]);
     let application_id = id(serde_json::json!([
-        "expression", "binary", {"operand": 3}, "quire.op.structural.eq", "binary", {"operand": 4}
+        "expression", "binary", {"operand": 3}, "filament.op.structural.eq", "binary", {"operand": 4}
     ]));
     let function_node = &mut wire["semantic_graph"]["nodes"][function];
     function_node["body"]["members"][1]["value"]["target"] = application_id.clone();
@@ -983,7 +983,7 @@ fn opt_none_with_inline_operand() -> OriginalPackage {
 fn inline_non_integer_operand_refuses_through_operands_without_a_request() {
     let inline = opt_none_with_inline_operand();
     let (node, occurrence) =
-        application_with_operator(&inline, "opt_none", "quire.op.structural.eq");
+        application_with_operator(&inline, "opt_none", "filament.op.structural.eq");
     let Err(refusal) = context(inline.clone(), "opt_none").request(
         &node,
         &occurrence,
@@ -1007,7 +1007,7 @@ fn inline_non_integer_operand_refuses_through_operands_without_a_request() {
 
     let graph = checked(SOURCE);
     let (node, occurrence) =
-        application_with_operator(&graph, "opt_none", "quire.op.structural.eq");
+        application_with_operator(&graph, "opt_none", "filament.op.structural.eq");
     let Err(control) = context(graph, "opt_none").request(
         &node,
         &occurrence,
@@ -1192,8 +1192,8 @@ fn tc_035_original_composite_request_requires_its_own_packet() {
     );
 
     let mut wrong_arm = packet.clone();
-    wrong_arm.source = Some(qsl_replay::EnvelopeSource::Witness(
-        qsl_replay::Witness::parse("<<<assertion|h|c|>>>").expect("valid fixture witness"),
+    wrong_arm.source = Some(fsl_replay::EnvelopeSource::Witness(
+        fsl_replay::Witness::parse("<<<assertion|h|c|>>>").expect("valid fixture witness"),
     ));
     assert!(matches!(
         context.request_from_packet(
@@ -1237,9 +1237,9 @@ fn tc_035_original_composite_request_requires_its_own_packet() {
     let mut wrong_occurrence = context
         .parity_packet(&node, &occurrence, EqualityOperator::Equal, &[], 100_000)
         .expect("the checked claim supplies another packet");
-    wrong_occurrence.occurrence_key = Some(qsl_replay::OccurrenceKey::new(
+    wrong_occurrence.occurrence_key = Some(fsl_replay::OccurrenceKey::new(
         node_key(&package, &node),
-        qsl_replay::Origin::new(qsl_replay::Role::new("expression"), u64::MAX),
+        fsl_replay::Origin::new(fsl_replay::Role::new("expression"), u64::MAX),
     ));
     assert!(matches!(
         context.request_from_packet(
@@ -1258,9 +1258,9 @@ fn tc_035_original_composite_request_requires_its_own_packet() {
     let mut wrong_target = context
         .parity_packet(&node, &occurrence, EqualityOperator::Equal, &[], 100_000)
         .expect("the checked claim supplies another packet");
-    wrong_target.replay_target = qsl_replay::ReplayTargetMembers::function(
-        qsl_replay::QualifiedName::new(vec![
-            qsl_replay::Identifier::new("g").expect("valid function name")
+    wrong_target.replay_target = fsl_replay::ReplayTargetMembers::function(
+        fsl_replay::QualifiedName::new(vec![
+            fsl_replay::Identifier::new("g").expect("valid function name")
         ])
         .expect("valid function selection"),
     );
@@ -1281,7 +1281,7 @@ fn tc_035_original_composite_request_requires_its_own_packet() {
     let mut wrong_obligation = context
         .parity_packet(&node, &occurrence, EqualityOperator::Equal, &[], 100_000)
         .expect("the checked claim supplies another packet");
-    wrong_obligation.obligation_identity = Some(qsl_replay::ObligationIdentity::new(
+    wrong_obligation.obligation_identity = Some(fsl_replay::ObligationIdentity::new(
         node_key(&package, &node),
         None,
         1,
@@ -1314,7 +1314,7 @@ fn tc_035_original_composite_request_requires_its_own_packet() {
             100_000,
         ),
         Err(CompositeBuildError::PacketAdmission(ref cause))
-            if matches!(**cause, qsl_replay::WitnessRefusal::MissingMember("occurrence_key"))
+            if matches!(**cause, fsl_replay::WitnessRefusal::MissingMember("occurrence_key"))
     ));
 }
 
@@ -1329,7 +1329,7 @@ fn tc_035_original_composite_packets_bind_distinct_real_occurrences() {
         .nodes
         .iter()
         .find(|node| {
-            checked_operation_identity(&node.body) == Some("quire.op.structural.eq")
+            checked_operation_identity(&node.body) == Some("filament.op.structural.eq")
                 && node.occurrences.len() >= 2
         })
         .expect("FSL emits one structural equality node with two actual occurrences");
@@ -1516,7 +1516,7 @@ fn original_stage_limit_stops_recompile_before_invocation() {
         )
         .unwrap();
     assert!(
-        matches!(context.request(&node, &occurrence, EqualityOperator::Equal, &[], 100_000), Err(CompositeBuildError::Recompile(cause)) if matches!(*cause, qsl_replay::AdmittedRefusal::Resource(qsl_replay::AdmittedResource::StageLimit(_))))
+        matches!(context.request(&node, &occurrence, EqualityOperator::Equal, &[], 100_000), Err(CompositeBuildError::Recompile(cause)) if matches!(*cause, fsl_replay::AdmittedRefusal::Resource(fsl_replay::AdmittedResource::StageLimit(_))))
     );
 }
 
@@ -1537,7 +1537,7 @@ fn duplicate_positional_bound_refuses_without_an_obligation() {
             100_000
         ),
         Err(CompositeBuildError::Identity(
-            qsl_replay::IdentityEncodeError::DuplicateKey { .. }
+            fsl_replay::IdentityEncodeError::DuplicateKey { .. }
         ))
     ));
 }
@@ -1548,14 +1548,14 @@ fn duplicate_positional_bound_refuses_without_an_obligation() {
 fn original_imported_context_refuses_before_invocation() {
     let source = SOURCE.replace("record Q", "import \"test/eq-library\" as d;\nrecord Q");
     let library = |comparison: &str| {
-        let bytes = format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nfunction big using v(x: Int[0, 9]): Boolean pure {{ {comparison} }}\n").into_bytes();
+        let bytes = format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nfunction big using v(x: Int[0, 9]): Boolean pure {{ {comparison} }}\n").into_bytes();
         let source = LockedSource {
             authority: "test".to_owned(),
             identity: "eq-library.native".to_owned(),
             bytes,
         };
         let compiled = compile_package(
-            qsl_replay::CompileUnit {
+            fsl_replay::CompileUnit {
                 source: SourceIdentity::new("test", "eq-library.native"),
                 package_name: "test/eq-library".to_owned(),
                 path: "eq-library.native",
@@ -1574,7 +1574,7 @@ fn original_imported_context_refuses_before_invocation() {
         ) {
             CheckedPackageV2ReadResult::Admitted(package) => OriginalPackage {
                 checked: *package,
-                raw: qsl_replay::ReplayPackage::read(compiled.bytes(), u64::MAX).unwrap(),
+                raw: fsl_replay::ReplayPackage::read(compiled.bytes(), u64::MAX).unwrap(),
             },
             other => panic!("genuine library admits: {other:?}"),
         };
@@ -1667,7 +1667,7 @@ fn original_request_preserves_the_above_reader_resource_refusal() {
     assert!(
         matches!(original.request(&node, &occurrence, EqualityOperator::Equal, &[], 100_000),
         Err(CompositeBuildError::Recompile(cause))
-            if matches!(*cause, qsl_replay::AdmittedRefusal::Resource(qsl_replay::AdmittedResource::AboveReader(_))))
+            if matches!(*cause, fsl_replay::AdmittedRefusal::Resource(fsl_replay::AdmittedResource::AboveReader(_))))
     );
 }
 
@@ -1690,7 +1690,7 @@ fn retained_context_kr_families_preserve_complete_request_outputs_and_refused_si
             let original_package_name = package.name().to_owned();
             let (equal_node, equal_occurrence) = application(&package, "f");
             let (not_equal_node, not_equal_occurrence) =
-                application_with_operator(&package, "n", "quire.op.structural.ne");
+                application_with_operator(&package, "n", "filament.op.structural.ne");
             let retained = package
                 .into_context(
                     &inputs(&source).source,

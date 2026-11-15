@@ -24,7 +24,7 @@ required dependency or target path.
 
 ## Test Procedure
 
-1. Build an admitted `quire.checked-package/v2` package under FSpec FR-322.
+1. Build an admitted `filament.checked-package/v2` package under FSpec FR-322.
    Bind each requested function to its admitted V2 `function` declaration
    node (whose body is the root), ordered `value`/`parameter` node ids and
    declared types. Build scalar, equality and nested-call expression bodies
@@ -146,7 +146,7 @@ required dependency or target path.
 12b. Planned owner-path corpus (AC-2, AC-4, AC-5, AC-9, AC-17, AC-32,
      AC-35 through AC-37; FSL FR-485 delivered by merged #1483,
      IR-595 Planned). For each retained function
-     vector, call `fsl_replay::acquire_checked_closure` with the seven supplied
+     vector, call `fsl_replay::acfilament_checked_closure` with the seven supplied
      inputs, take `CheckedClosureCompilation::handle()`, and use
      `CheckedClosureHandle::lookup_callable(owner_package_id, wire_node_id)`.
      From that same handle create `registry()`, register the generated
@@ -167,13 +167,13 @@ required dependency or target path.
      makes an application charge; keep any unreachable refusal open until a
      valid triggering fixture exists. For own and admitted dependency
      functions, derive the FSL lookup owner from the declaring V2 package's
-     `quire.package.semantic/v2` domain and exact digest and the `WireNodeId`
-     from the admitted `quire.checked-semantic-node/v1` function node digest.
+     `filament.package.semantic/v2` domain and exact digest and the `WireNodeId`
+     from the admitted `filament.checked-semantic-node/v1` function node digest.
      Verify the caller supplied all seven FR-485 acquisition inputs alongside
      the independently admitted Contract IR package, that each generated or
      direct run acquired its closure once, and that CG neither rechecked nor
      reconstructed the package.
-     Give `acquire_checked_closure` malformed source bytes and a separately
+     Give `acfilament_checked_closure` malformed source bytes and a separately
      valid source with an insufficient stage or replay limit. Preserve each
      exact `AdmittedRefusal` and assert no `CheckedClosureHandle`, registry,
      body invocation or application charge is produced for either failure.

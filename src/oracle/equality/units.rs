@@ -1,7 +1,7 @@
 //! Attach the original admitted owner's unit metadata to a checked environment.
 
-use qsl_replay::AdmittedContext;
-use quire_semantic_value::declaration::TypeEnvironment;
+use filament_semantic_value::declaration::TypeEnvironment;
+use fsl_replay::AdmittedContext;
 
 /// Call after package/context validation and nominal closure reconstruction.
 /// A missing context preserves the caller's existing context-free environment;
@@ -19,12 +19,12 @@ pub(super) fn attach_owner_units(
 #[cfg(test)]
 mod tests {
     use super::attach_owner_units;
-    use ix_trace_rs::trace;
-    use qsl_replay::{
+    use filament_exact::{Integer, Quantity, Rational, ValueType};
+    use filament_semantic_value::declaration::TypeEnvironment;
+    use fsl_replay::{
         compile_admitted, CompileUnit, DependencyInput, ReplayLimits, SourceIdentity, StageLimits,
     };
-    use quire_exact::{Integer, Quantity, Rational, ValueType};
-    use quire_semantic_value::declaration::TypeEnvironment;
+    use ix_trace_rs::trace;
 
     #[trace("TC-029", "FR-018-AC-45")]
     #[test]
@@ -35,7 +35,7 @@ mod tests {
                 package_name: "unit-environment".to_owned(),
                 path: "unit-environment.native",
                 bytes: br#"language "ix:native" edition "1-draft";
-profile v = "quire.value.complete/v1";
+profile v = "filament.value.complete/v1";
 dimension Length;
 unit m : Length = rational(1, 1);
 unit km : Length = rational(1000, 1) * m;

@@ -188,6 +188,7 @@ pub use core::requirement::{
     RequirementGuard, RequirementOccurrence, RequirementRecordInput, RequirementRecordMismatch,
     RequirementRecords, RoutedRequirement,
 };
+pub use filament_exact::ScalarLimits;
 pub use kani::abi::{KaniBindingRole, KaniIntegerBounds, KaniPrimitiveType, KaniSolver};
 pub use kani::census::{
     ProofDependencyEdge, ProofDependencyKind, ProofDependencyRequest, ProofDependencyState,
@@ -264,7 +265,6 @@ pub use kani::terminal::{
     ir_outcome_terminal_value, run_terminal_value, scalar_ir_outcome_terminal_value,
     scalar_run_terminal_value, ReplaySettlement, ScalarSettlement, TerminalPairError,
 };
-pub use quire_exact::ScalarLimits;
 pub use routed::capability::{
     negotiate_backend_provider, negotiate_contract_package, project_contract_package_incomplete,
     project_contract_package_refusal, BackendDescriptor, BackendId, BackendKind,
@@ -317,7 +317,7 @@ pub use kani::generate::outcome::{
     KaniObligationOutcome, KaniObligationRequest, ModelMemberRangeReason, ObligationDisposition,
     ObligationItem, ObligationRecord, ObligationSubject, PathGuardRefusal,
     StateFrameLoweringRefusal, StateFrameRefusal, StateFrameRole, UnsupportedFrameEffect,
-    UnsupportedObligation, MAX_OBLIGATION_ITEMS, MAX_OBLIGATION_UNWIND,
+    UnsupportedObligation, V2ClauseControlReason, MAX_OBLIGATION_ITEMS, MAX_OBLIGATION_UNWIND,
 };
 pub use kani::identity::{
     CollectionElementIdentity, CollectionKindIdentity, CollectionObjectFieldIdentity,

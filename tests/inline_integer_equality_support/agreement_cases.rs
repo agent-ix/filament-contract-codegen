@@ -6,8 +6,8 @@ mod generated {
     include!(concat!(env!("CARGO_MANIFEST_DIR"), "/names.rs"));
 }
 
-use quire_exact::{Integer, Meter, Outcome, ScalarLimits, Value, ValueType};
-use quire_semantic_value::declaration::{EqualityOperand, EqualityOperator, TypeEnvironment};
+use filament_exact::{Integer, Meter, Outcome, ScalarLimits, Value, ValueType};
+use filament_semantic_value::declaration::{EqualityOperand, EqualityOperator, TypeEnvironment};
 
 const LIMITS: ScalarLimits = ScalarLimits {
     integer_bits: u64::MAX,

@@ -35,8 +35,8 @@ whose cardinality and element domains both have nonzero inclusive endpoints,
 and clauses/function bodies that apply `forall` and `exists` to that selected
 field. Emit each package through FSL's public replay path and admit the emitted
 V2 package through Contract IR. Inspect that the admitted claim is the clause /
-function body and that its `quire.op.collection.forall` or
-`quire.op.collection.exists` operation identifies the selected field path; do
+function body and that its `filament.op.collection.forall` or
+`filament.op.collection.exists` operation identifies the selected field path; do
 not map these operations to the finite-input `QueryKind` as if they were the
 claim. Also use a bounded Boolean collection field. No copied package wire,
 hand-built package builder, concrete `Vec` input or caller semantic ceiling is
@@ -536,7 +536,7 @@ referenced operators and an inline Boolean literal. Other V2 controls retain the
     identity, no harness for any of the three, and the supported sibling's one harness. The Text
     equality case exercises operator classification before clause operand reading. The traced
     `nested_absolute_value_names_its_exact_operator` unit test checks that a nested
-    `quire.op.integer.abs` term is selected by the operator audit. The closed authoritative
+    `filament.op.integer.abs` term is selected by the operator audit. The closed authoritative
     checked-operation catalog does not contain an absolute-value entry, so an admitted absolute
     clause cannot be constructed yet. The nonclause and absent-node request cases in this step
     remain separate FR-015-AC-14 evidence to complete.
@@ -1131,17 +1131,19 @@ with the required author `make kani-gate`; independent review and final acceptan
     verdicts are in `docs/qualification/ir1509-kani-clause-controls.md`. Require the `amount + 2` playback
     control to fail at the produced-result comparison, not at a preamble. The Kani-backed playback through
     `execute_kani_concrete_playback` is TC-027 step 5 (FR-017-AC-60, IR-917; `docs/qualification/ir917-kani-playback.md`).
-    PLANNED: the subject compiled by the pipeline (blocked on FSL operation bodies).
+    PLANNED: the subject compiled by the pipeline. The FSL carrier is delivered and the body of the fixture's
+    `deposit` operation is read as a function node (`the_fsl_source_of_the_clause_fixture_carries_the_deposit_body_as_a_function_node`);
+    the CG step that renders it into the subject is not built (owned by IR-1548 (terra:IR writes the spec first, CG code after; it blocks IR-1509)).
 
 ## Control construct lowering (IR-1447)
 
-57. FR-015-AC-152 to FR-015-AC-173 (PLANNED, IR-1447; FR-025-AC-19 is TC-036 step 19). Control construct lowering.
+57. FR-015-AC-152 to FR-015-AC-173 (PARTIAL, IR-1447: `let`, `if`, nested and the laziness, refusal and unread-initializer fixtures are executed, the union `case`, collection and shadowing fixtures are not; the eager-branch and skip-unread mutants of AC-168 and AC-172 run as equivalent packages (the runner requires the generated source byte for byte), the `false`-mapping mutant of AC-169 as a host stop probe only; AC-166 has no test for the `option.value` clause; FR-025-AC-19 is TC-036 step 19). Control construct lowering.
     Generate a native V2 clause harness for each fixture of FR-015-AC-152 to FR-015-AC-155,
     FR-015-AC-164, FR-015-AC-170 and FR-015-AC-173 (`let`, `if`, `case` over a three-member arity-0
     union drawn as an `i64` member index, an `if` in an invariant collection `forall`, the nested
     `let`/`if`, and the shadowing and nested-rebinding `let`, the last two as constructed packages
     because FSL refuses shadowing) and require one harness each, the native `let`, `if` and `match`
-    forms (no wildcard arm for the `case`), the union parameter bound as one `i64` (FR-025-AC-19) and
+    forms (one `case` arm per member, the last holding the exhaustive pattern, none for a value outside the members), the union parameter bound as one `i64` (FR-025-AC-19) and
     the independent `i128` expectation, with each fixture's arithmetic-node bounds as its criterion states them
     (the kernel checks an integer result only against the arithmetic node's own bound, never an `if`, `let` or
     `case` node). Then, one Kani job at a time, run each fixture through CG's
@@ -1167,7 +1169,7 @@ with the required author `make kani-gate`; independent review and final acceptan
     operation identity, no harness, and an unaffected supported sibling) and the precedence
     fixtures of FR-015-AC-166 (an unsupported operator before a failing control, a failing control
     before an unsupported operator, a `let` binding an option-typed parameter expecting
-    `LetValueNotNativeScalar`, a `let` binding `quire.op.option.value` of an Integer result decided
+    `LetValueNotNativeScalar`, a `let` binding `filament.op.option.value` of an Integer result decided
     by FR-054, two failing controls) with the last-refusal-met mutant, and the collapse mutant of
     FR-015-AC-167. The probe that fixed the tractability expectation is
     `docs/qualification/ir1447-kani-control-probe.md`.
@@ -1179,7 +1181,7 @@ with the required author `make kani-gate`; independent review and final acceptan
   frame of a `postcondition` state clause over one integer field is instead generated with that
   clause by `generate_state_frame_obligations` (FR-015-AC-26 to FR-015-AC-32).
 - V2 scalar harnesses outside `IntegerArithmetic`: an IR-confirmed claim over
-  one of the four `quire.op.integer.{add,sub,mul,negate}` identities reaches a
+  one of the four `filament.op.integer.{add,sub,mul,negate}` identities reaches a
   real harness unless a ground independent of the operation (an
   i64-unrepresentable endpoint, the source ceiling) displaces it. Every other
   confirmed family is refused as `OperationNotRendered`, an unbuilt renderer in

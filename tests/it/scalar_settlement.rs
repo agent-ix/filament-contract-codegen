@@ -12,14 +12,14 @@ use filament_contract_codegen::{
     OriginalScalarContext, ReplayInputs, ScalarAuthorityError, ScalarBuildError, ScalarSentRequest,
     ScalarSettlement, TerminalPairError, WitnessDecodeLimits, SCALAR_PLAYBACK_BYTES,
 };
-use ix_trace_rs::trace;
-use qsl_replay::{
+use filament_contract_ir::kani::{KaniCancellationSource, KaniOutcome, KaniOutcomeKind};
+use filament_contract_model::CheckedPackageReadLimits;
+use filament_exact::Integer;
+use fsl_replay::{
     Code, IdentityEncodeError, IncompleteCause, InconclusiveCause, NativeOutcome,
     OperatorParityReport, OperatorParityResult, ReplayLimits, Std001Code, TerminalValue,
 };
-use quire_contract_ir::kani::{KaniCancellationSource, KaniOutcome, KaniOutcomeKind};
-use quire_contract_model::CheckedPackageReadLimits;
-use quire_exact::Integer;
+use ix_trace_rs::trace;
 use std::collections::BTreeMap;
 
 fn falsified() -> KaniRunOutcome {
@@ -63,7 +63,7 @@ fn completed_sum(fixture: &ReplayFixture) -> (CompletedScalarReplay, ScalarSentR
 
 fn sum_fixture() -> ReplayFixture {
     replay_fixture(
-        "quire.op.integer.add",
+        "filament.op.integer.add",
         "x: Int[0, 9]",
         "Int[0, 18]",
         "x + x",
@@ -93,7 +93,7 @@ fn reachable_reports(
         driver.outcome = outcome;
         let completed = plan(fixture, &[2, 4]).complete(driver).unwrap();
         let sent = sent_of(&completed);
-        let report = qsl_replay::replay_operator_parity(
+        let report = fsl_replay::replay_operator_parity(
             sent.wire.clone(),
             sent.claim.clone(),
             sent.replay_limits,
@@ -140,11 +140,11 @@ fn step_10_refused_input_exact_incomplete_and_refusal_readings_come_from_genuine
     let limits = sent.replay_limits;
 
     let mut out_of_range = claim.clone();
-    let qsl_replay::ScalarOperation::Add { left, .. } = &mut out_of_range.operation else {
+    let fsl_replay::ScalarOperation::Add { left, .. } = &mut out_of_range.operation else {
         panic!("addition")
     };
     left.value = 10;
-    let refused_input = qsl_replay::replay_operator_parity(wire.clone(), out_of_range, limits);
+    let refused_input = fsl_replay::replay_operator_parity(wire.clone(), out_of_range, limits);
     assert!(matches!(
         refused_input.result(),
         OperatorParityResult::RefusedInput(_)
@@ -156,7 +156,7 @@ fn step_10_refused_input_exact_incomplete_and_refusal_readings_come_from_genuine
 
     let mut exhausted = claim.clone();
     exhausted.limits.work_units = 0;
-    let incomplete = qsl_replay::replay_operator_parity(wire.clone(), exhausted, limits);
+    let incomplete = fsl_replay::replay_operator_parity(wire.clone(), exhausted, limits);
     assert!(matches!(
         incomplete.result(),
         OperatorParityResult::Incomplete(_)
@@ -167,11 +167,11 @@ fn step_10_refused_input_exact_incomplete_and_refusal_readings_come_from_genuine
     );
 
     let mut occurrence = claim.clone();
-    occurrence.occurrence = qsl_replay::Origin::new(
-        qsl_replay::Role::new("expression"),
+    occurrence.occurrence = fsl_replay::Origin::new(
+        fsl_replay::Role::new("expression"),
         claim.occurrence.ordinal() + 1,
     );
-    let refused = qsl_replay::replay_operator_parity(wire, occurrence, limits);
+    let refused = fsl_replay::replay_operator_parity(wire, occurrence, limits);
     let OperatorParityResult::Refused(refusal) = refused.result() else {
         panic!("a changed occurrence is refused: {:?}", refused.result())
     };
@@ -201,7 +201,7 @@ fn step_10_refused_input_exact_incomplete_and_refusal_readings_come_from_genuine
 fn step_10_settlement_refuses_a_changed_input_bytes_budget_and_a_missing_report() {
     let fixture = sum_fixture();
     let (completed, sent) = completed_sum(&fixture);
-    let report = qsl_replay::replay_operator_parity(
+    let report = fsl_replay::replay_operator_parity(
         sent.wire.clone(),
         sent.claim.clone(),
         sent.replay_limits,
@@ -216,7 +216,7 @@ fn step_10_settlement_refuses_a_changed_input_bytes_budget_and_a_missing_report(
         replay_limits: smaller,
     };
     let changed_report =
-        qsl_replay::replay_operator_parity(sent.wire.clone(), sent.claim.clone(), smaller);
+        fsl_replay::replay_operator_parity(sent.wire.clone(), sent.claim.clone(), smaller);
     assert!(matches!(
         completed.settlement(&changed, Some(&changed_report)),
         Err(ScalarBuildError::SentContext)
@@ -523,7 +523,7 @@ fn step_12_an_omitted_or_refused_settlement_leaves_no_terminal_value() {
     // Another run's report: a genuine report over a claim with a different native outcome.
     let mut other = sent.clone_for_test();
     other.claim.generated = NativeOutcome::Completed(Integer::from(7_i64));
-    let other_report = qsl_replay::replay_operator_parity(
+    let other_report = fsl_replay::replay_operator_parity(
         other.wire.clone(),
         other.claim.clone(),
         other.replay_limits,
@@ -832,7 +832,7 @@ fn step_13_each_reachable_setup_error_is_classified_and_pairs_as_specified() {
         replay_limits: smaller,
     };
     let budget_report =
-        qsl_replay::replay_operator_parity(sent.wire.clone(), sent.claim.clone(), smaller);
+        fsl_replay::replay_operator_parity(sent.wire.clone(), sent.claim.clone(), smaller);
     let sent_context = completed
         .settlement(&budget, Some(&budget_report))
         .unwrap_err();
@@ -840,7 +840,7 @@ fn step_13_each_reachable_setup_error_is_classified_and_pairs_as_specified() {
     assert_classified("sent context", &sent_context);
     let mut other = sent.clone_for_test();
     other.claim.generated = NativeOutcome::Completed(Integer::from(7_i64));
-    let other_report = qsl_replay::replay_operator_parity(
+    let other_report = fsl_replay::replay_operator_parity(
         other.wire.clone(),
         other.claim.clone(),
         other.replay_limits,
@@ -865,7 +865,7 @@ fn step_13_causes_no_public_input_reaches_keep_their_classification() {
         (
             "authority operands",
             ScalarBuildError::Authority(ScalarAuthorityError::Operands(
-                quire_contract_model::CheckedScalarOperandError::UnknownNode,
+                filament_contract_model::CheckedScalarOperandError::UnknownNode,
             )),
         ),
         (
@@ -937,7 +937,7 @@ fn step_14_the_flow_uses_only_the_scalar_identity_and_the_scan_finds_nothing() {
         claim: claim.clone(),
         replay_limits: limits,
     };
-    let report = qsl_replay::replay_operator_parity(wire, claim, limits);
+    let report = fsl_replay::replay_operator_parity(wire, claim, limits);
     let settlement = completed.settlement(&sent, Some(&report)).unwrap();
     assert!(
         scalar_run_terminal_value(&synthetic_evidence(falsified(), 0), Some(settlement)).is_ok()
@@ -958,7 +958,7 @@ fn step_14_the_flow_uses_only_the_scalar_identity_and_the_scan_finds_nothing() {
         assert!(!text.contains("KaniObligationIdentity"), "{name}");
         for (at, _) in text.match_indices("ReplayPackage") {
             assert!(
-                text[..at].ends_with("qsl_replay::"),
+                text[..at].ends_with("fsl_replay::"),
                 "{name}: CG's ReplayPackage at byte {at}"
             );
         }
@@ -980,7 +980,7 @@ fn step_14_the_flow_uses_only_the_scalar_identity_and_the_scan_finds_nothing() {
 #[test]
 fn increment_fixture_has_no_out_of_result_range_value_and_agrees_natively() {
     let fixture = replay_fixture(
-        "quire.op.integer.add",
+        "filament.op.integer.add",
         "x: Int[0, 9]",
         "Int[0, 10]",
         "x + 1",
@@ -1037,7 +1037,7 @@ fn increment_fixture_has_no_out_of_result_range_value_and_agrees_natively() {
     );
     let completed = original.complete(observation).unwrap();
     let sent = sent_of(&completed);
-    let report = qsl_replay::replay_operator_parity(
+    let report = fsl_replay::replay_operator_parity(
         sent.wire.clone(),
         sent.claim.clone(),
         sent.replay_limits,

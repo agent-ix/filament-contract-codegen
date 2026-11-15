@@ -80,7 +80,7 @@ and which failure states stay distinct.
 
 ### Generation view
 
-The admitted `quire.checked-package/v2` remains the source of native meaning
+The admitted `filament.checked-package/v2` remains the source of native meaning
 for Contract IR lowering (ADR-001). The planned production CG decision boundary
 is its one admitted FR-330 `ContractPackage` projection, under
 [FR-039](../core/functional/FR-039-contract-package-consumption.md). Its typed

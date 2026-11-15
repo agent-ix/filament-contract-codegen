@@ -1,7 +1,7 @@
 //! Classification of one Kani run from the report Kani exported for it (FR-017).
 
-use quire_contract_ir::kani::{KaniCancellationSource, KaniOutcome, KaniOutcomeKind};
-use quire_contract_model::Std001Code;
+use filament_contract_ir::kani::{KaniCancellationSource, KaniOutcome, KaniOutcomeKind};
+use filament_contract_model::Std001Code;
 use serde::Serialize;
 
 use crate::kani::{
@@ -37,7 +37,7 @@ pub enum KaniInconclusiveReason {
     MissingCoverSummary,
     /// Kani's report lists zero successful checks: no check in the obligation actually held, so
     /// a `Proved`-looking run proved nothing. This settles
-    /// [`quire_contract_ir::kani::KaniOutcomeKind::Inconclusive`]'s `kani_vacuous_proof` cause
+    /// [`filament_contract_ir::kani::KaniOutcomeKind::Inconclusive`]'s `kani_vacuous_proof` cause
     /// for the execution path, using the check count this module itself reads from the
     /// backend's own report — never a generation-time value — so it is an execution outcome this
     /// module observed, not a generation-time classification reported as one (FR-017-CON-2).

@@ -22,8 +22,8 @@ use crate::kani::generate::outcome::{
     StateFrameLoweringRefusal, StateFrameRefusal, StateFrameRole, UnsupportedObligation,
 };
 use crate::kani::identity::StateFrameHarness;
+use filament_contract_model::{CheckedNodeId, CheckedSemanticNodeV2, CheckedTerm};
 use ix_trace_rs::trace;
-use quire_contract_model::{CheckedNodeId, CheckedSemanticNodeV2, CheckedTerm};
 use std::cell::Cell;
 
 use crate::core::ir::clause::{ClauseGraphView, ClauseNodeIndex};
@@ -39,18 +39,18 @@ const SUBJECT_PATH: &str = "crate::subject::deposit";
 /// Two hand-written role identities that differ in node, model and ordinal.
 fn role_identities() -> StateFrameRoleIdentities {
     let node = |name: &str| {
-        quire_exact::NodeKey::new(
+        filament_exact::NodeKey::new(
             "fixture",
-            vec![quire_exact::PathSegment::Text(name.to_owned())],
+            vec![filament_exact::PathSegment::Text(name.to_owned())],
             0,
         )
         .expect("a node key")
     };
     StateFrameRoleIdentities::new(
-        qsl_replay::ObligationIdentity::new(node("contract"), None, 3),
-        qsl_replay::ObligationIdentity::new(
+        fsl_replay::ObligationIdentity::new(node("contract"), None, 3),
+        fsl_replay::ObligationIdentity::new(
             node("frame"),
-            Some(qsl_replay::ModelIdentity::new("model")),
+            Some(fsl_replay::ModelIdentity::new("model")),
             4,
         ),
     )
@@ -60,7 +60,7 @@ fn role_identities() -> StateFrameRoleIdentities {
 fn role_identity(
     identities: &StateFrameRoleIdentities,
     role: StateFrameRole,
-) -> &qsl_replay::ObligationIdentity {
+) -> &fsl_replay::ObligationIdentity {
     match role {
         StateFrameRole::Contract => identities.contract(),
         StateFrameRole::Frame => identities.frame(),
@@ -70,7 +70,7 @@ fn role_identity(
 fn clause_test_id(number: u8) -> CheckedNodeId {
     CheckedNodeId {
         package: "fixture".into(),
-        path: vec![quire_contract_model::CheckedNodePathSegment::Name(
+        path: vec![filament_contract_model::CheckedNodePathSegment::Name(
             number.to_string().into(),
         )],
         ordinal: 0,
@@ -81,7 +81,7 @@ fn clause_test_node(number: u8, label: &str) -> CheckedSemanticNodeV2 {
     CheckedSemanticNodeV2 {
         node_id: clause_test_id(number),
         owner_model: None,
-        schema_version: "quire.checked-semantic-graph/v2".into(),
+        schema_version: "filament.checked-semantic-graph/v2".into(),
         node_tag: "expression".into(),
         semantic_form: "literal".into(),
         semantic_type: clause_test_id(0),

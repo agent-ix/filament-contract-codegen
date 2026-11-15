@@ -6,10 +6,10 @@ use filament_contract_codegen::{
     LockedSource, OriginalScalarContext, ReplayInputs, ScalarBuildError, ScalarDriverObservation,
     ScalarReplayPlan, ScalarSentRequest, WitnessDecodeLimits, SCALAR_PLAYBACK_BYTES,
 };
+use filament_contract_model::CheckedPackageReadLimits;
+use filament_exact::{Integer, IntegerInterval};
+use fsl_replay::{NativeOutcome, OperatorParityResult, ReplayLimits};
 use ix_trace_rs::trace;
-use qsl_replay::{NativeOutcome, OperatorParityResult, ReplayLimits};
-use quire_contract_model::CheckedPackageReadLimits;
-use quire_exact::{Integer, IntegerInterval};
 use std::{collections::BTreeMap, fs, path::PathBuf, process::Command};
 
 fn source(fixture: &ReplayFixture) -> LockedSource {
@@ -104,14 +104,14 @@ pub(super) fn observe(
         fs::write(path, changed).unwrap();
     }
     let deps = target.join("debug/deps");
-    let exact = super::native_driver_artifacts::dependency("quire_exact");
+    let exact = super::native_driver_artifacts::dependency("filament_exact");
     let arguments = plan
         .operands()
         .iter()
         .map(|value| format!("&rt::Integer::from({value}_i64)"))
         .collect::<Vec<_>>()
         .join(", ");
-    let main = format!("#[path=\"src/lib.rs\"] mod generated;\nuse quire_exact as rt;\nuse rt::ScalarLimits;\nfn main() {{ let mut meter = rt::Meter::new({:?});\n let outcome = generated::{}({arguments}, &mut meter).expect(\"actual generated oracle\");\n match outcome {{ rt::Outcome::Completed(value) => println!(\"completed:{{value}}\"), rt::Outcome::Refused(rt::Refusal::IntegerOutOfDomain {{..}}) => println!(\"out_of_range\"), rt::Outcome::Undefined(_) => println!(\"undefined\"), rt::Outcome::Incomplete(_) => println!(\"incomplete\"), other => panic!(\"unexpected native outcome: {{other:?}}\") }} }}", plan.scalar_limits(), fixture.harness.identity.oracle_symbol);
+    let main = format!("#[path=\"src/lib.rs\"] mod generated;\nuse filament_exact as rt;\nuse rt::ScalarLimits;\nfn main() {{ let mut meter = rt::Meter::new({:?});\n let outcome = generated::{}({arguments}, &mut meter).expect(\"actual generated oracle\");\n match outcome {{ rt::Outcome::Completed(value) => println!(\"completed:{{value}}\"), rt::Outcome::Refused(rt::Refusal::IntegerOutOfDomain {{..}}) => println!(\"out_of_range\"), rt::Outcome::Undefined(_) => println!(\"undefined\"), rt::Outcome::Incomplete(_) => println!(\"incomplete\"), other => panic!(\"unexpected native outcome: {{other:?}}\") }} }}", plan.scalar_limits(), fixture.harness.identity.oracle_symbol);
     fs::write(scratch.0.join("driver.rs"), main).unwrap();
     let binary = scratch.0.join("driver");
     let mut compiler = Command::new("timeout");
@@ -120,7 +120,7 @@ pub(super) fn observe(
         .args(["120", "rustc", "--edition=2021", "--cap-lints=allow"])
         .arg(scratch.0.join("driver.rs"))
         .arg("--extern")
-        .arg(format!("quire_exact={}", exact.display()))
+        .arg(format!("filament_exact={}", exact.display()))
         .arg("-L")
         .arg(format!("dependency={}", deps.display()))
         .arg("-o")
@@ -188,13 +188,13 @@ pub(super) fn observe(
 #[test]
 fn original_scalar_driver_executes_independent_repeated_draws_and_binds_real_qsl() {
     let fixture = replay_fixture(
-        "quire.op.integer.add",
+        "filament.op.integer.add",
         "x: Int[0, 9]",
         "Int[0, 18]",
         "x + x",
     );
     let body = fixture.harness.scalar_replay_body().unwrap();
-    let admitted = fixture.checked.resolved_graph().nodes.iter().find(|node| matches!(&node.body, quire_contract_model::CheckedTerm::Application { operation, .. } if operation.identity() == Some("quire.op.integer.add"))).unwrap();
+    let admitted = fixture.checked.resolved_graph().nodes.iter().find(|node| matches!(&node.body, filament_contract_model::CheckedTerm::Application { operation, .. } if operation.identity() == Some("filament.op.integer.add"))).unwrap();
     assert_eq!(
         body.node, admitted.node_id,
         "CG retains the actual admitted application"
@@ -227,7 +227,7 @@ fn original_scalar_driver_executes_independent_repeated_draws_and_binds_real_qsl
         claim: claim.clone(),
         replay_limits: limits,
     };
-    let report = qsl_replay::replay_operator_parity(wire.clone(), claim.clone(), limits);
+    let report = fsl_replay::replay_operator_parity(wire.clone(), claim.clone(), limits);
     assert!(
         matches!(report.result(), OperatorParityResult::Agrees { .. }),
         "real FSL result: {:?}",
@@ -241,11 +241,11 @@ fn original_scalar_driver_executes_independent_repeated_draws_and_binds_real_qsl
     // Both are otherwise genuine membership-valid FSL claims. Structural
     // identity alone cannot authenticate the original range or opaque kind.
     let mut range = claim.clone();
-    let qsl_replay::ScalarOperation::Add { left, .. } = &mut range.operation else {
+    let fsl_replay::ScalarOperation::Add { left, .. } = &mut range.operation else {
         panic!("addition")
     };
     left.range = IntegerInterval::spanning(Integer::from(0_i64), Integer::from(8_i64));
-    let range_report = qsl_replay::replay_operator_parity(wire.clone(), range, limits);
+    let range_report = fsl_replay::replay_operator_parity(wire.clone(), range, limits);
     assert!(matches!(
         range_report.result(),
         OperatorParityResult::Agrees { .. }
@@ -256,7 +256,7 @@ fn original_scalar_driver_executes_independent_repeated_draws_and_binds_real_qsl
     ));
     let mut kind = claim.clone();
     kind.obligation_kind = "other_opaque_kind".to_owned();
-    let kind_report = qsl_replay::replay_operator_parity(wire.clone(), kind, limits);
+    let kind_report = fsl_replay::replay_operator_parity(wire.clone(), kind, limits);
     assert!(matches!(
         kind_report.result(),
         OperatorParityResult::Agrees { .. }
@@ -302,7 +302,7 @@ fn original_scalar_driver_executes_independent_repeated_draws_and_binds_real_qsl
 #[test]
 fn scalar_actual_sent_context_and_every_driver_tie_are_independently_checked() {
     let fixture = replay_fixture_with_extra(
-        "quire.op.integer.add",
+        "filament.op.integer.add",
         "x: Int[0, 9]",
         "Int[0, 18]",
         "x + x",
@@ -312,7 +312,7 @@ fn scalar_actual_sent_context_and_every_driver_tie_are_independently_checked() {
     let observation = observe(&fixture, &original, false);
     let completed = original.complete(observation.clone()).unwrap();
     let (wire, claim, limits) = completed.request();
-    let report = qsl_replay::replay_operator_parity(wire.clone(), claim.clone(), limits);
+    let report = fsl_replay::replay_operator_parity(wire.clone(), claim.clone(), limits);
     assert!(matches!(
         report.result(),
         OperatorParityResult::Agrees { .. }
@@ -327,17 +327,17 @@ fn scalar_actual_sent_context_and_every_driver_tie_are_independently_checked() {
         "absent report supplies no settlement"
     );
     let mut other_wire = wire.clone();
-    other_wire.replay_target = qsl_replay::RequestTargetWire::function(
-        qsl_replay::QualifiedName::new(vec![qsl_replay::Identifier::new("elsewhere").unwrap()])
+    other_wire.replay_target = fsl_replay::RequestTargetWire::function(
+        fsl_replay::QualifiedName::new(vec![fsl_replay::Identifier::new("elsewhere").unwrap()])
             .unwrap(),
-        qsl_replay::OccurrenceKey::new(claim.node.clone(), claim.occurrence.clone()),
+        fsl_replay::OccurrenceKey::new(claim.node.clone(), claim.occurrence.clone()),
     );
     let other_sent = ScalarSentRequest {
         wire: other_wire.clone(),
         claim: claim.clone(),
         replay_limits: limits,
     };
-    let other_report = qsl_replay::replay_operator_parity(other_wire, claim.clone(), limits);
+    let other_report = fsl_replay::replay_operator_parity(other_wire, claim.clone(), limits);
     assert_eq!(other_report.claim(), report.claim(), "the actual equal-claim/different-function report exposes why claim equality is insufficient");
     assert!(matches!(
         completed.settlement(&other_sent, Some(&other_report)),
@@ -345,7 +345,7 @@ fn scalar_actual_sent_context_and_every_driver_tie_are_independently_checked() {
     ));
     let smaller_limits = limits.with_input_bytes(limits.input_bytes - 1);
     let changed_budget_report =
-        qsl_replay::replay_operator_parity(wire.clone(), claim.clone(), smaller_limits);
+        fsl_replay::replay_operator_parity(wire.clone(), claim.clone(), smaller_limits);
     let changed_budget = ScalarSentRequest {
         wire: wire.clone(),
         claim: claim.clone(),
@@ -359,7 +359,7 @@ fn scalar_actual_sent_context_and_every_driver_tie_are_independently_checked() {
     let mut changed_bytes = wire.clone();
     changed_bytes.byte_provision[0].2.push(b' ');
     let changed_bytes_report =
-        qsl_replay::replay_operator_parity(changed_bytes.clone(), claim.clone(), limits);
+        fsl_replay::replay_operator_parity(changed_bytes.clone(), claim.clone(), limits);
     assert_eq!(changed_bytes_report.claim(), report.claim());
     assert!(matches!(
         completed.settlement(
@@ -382,15 +382,15 @@ fn scalar_actual_sent_context_and_every_driver_tie_are_independently_checked() {
             1 => changed.generated = NativeOutcome::Incomplete,
             2 => changed.generated = NativeOutcome::ExecutionFault,
             3 => {
-                let qsl_replay::ScalarOperation::Add { left, .. } = &mut changed.operation else {
+                let fsl_replay::ScalarOperation::Add { left, .. } = &mut changed.operation else {
                     panic!("addition")
                 };
                 left.value = 10;
             }
             4 => changed.limits.work_units = 0,
             5 => {
-                changed.occurrence = qsl_replay::Origin::new(
-                    qsl_replay::Role::new("expression"),
+                changed.occurrence = fsl_replay::Origin::new(
+                    fsl_replay::Role::new("expression"),
                     claim.occurrence.ordinal() + 1,
                 )
             }
@@ -405,7 +405,7 @@ fn scalar_actual_sent_context_and_every_driver_tie_are_independently_checked() {
             claim: changed.clone(),
             replay_limits: limits,
         };
-        let changed_report = qsl_replay::replay_operator_parity(wire.clone(), changed, limits);
+        let changed_report = fsl_replay::replay_operator_parity(wire.clone(), changed, limits);
         match member {
             0 => assert!(matches!(
                 changed_report.result(),
@@ -468,7 +468,7 @@ fn scalar_actual_sent_context_and_every_driver_tie_are_independently_checked() {
             1 => identity
                 .node_id
                 .path
-                .push(quire_contract_model::CheckedNodePathSegment::Name(
+                .push(filament_contract_model::CheckedNodePathSegment::Name(
                     "other-path".into(),
                 )),
             2 => identity.node_id.ordinal += 1,
@@ -534,12 +534,12 @@ fn playback_code(error: &ScalarBuildError) -> &str {
 #[test]
 fn a_narrowed_guarded_harness_plans_witnesses_inside_its_narrowed_range() {
     let fixture = replay_fixture_guarded(
-        "quire.op.integer.add",
+        "filament.op.integer.add",
         "x: Int[0, 9]",
         "Int[0, 200]",
         "if x > 5 then x + 100 else 0",
         "",
-        Some(("quire.op.integer.gt", true)),
+        Some(("filament.op.integer.gt", true)),
     );
     let arguments = fixture
         .harness
@@ -563,12 +563,12 @@ fn a_narrowed_guarded_harness_plans_witnesses_inside_its_narrowed_range() {
 #[test]
 fn a_guard_input_playback_plans_through_the_builder() {
     let fixture = replay_fixture_guarded(
-        "quire.op.integer.add",
+        "filament.op.integer.add",
         "x: Int[0, 9], y: Int[0, 9]",
         "Int[0, 200]",
         "if x < y then x + 100 else 0",
         "",
-        Some(("quire.op.integer.lt", true)),
+        Some(("filament.op.integer.lt", true)),
     );
     assert_eq!(fixture.harness.identity.guard_inputs.len(), 1);
     let planned = plan(&fixture, &[3, 100, 9]);

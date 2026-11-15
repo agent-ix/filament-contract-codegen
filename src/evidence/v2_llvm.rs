@@ -5,7 +5,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use quire_contract_model::{CheckedNodeId, CheckedPackageV2};
+use filament_contract_model::{CheckedNodeId, CheckedPackageV2};
 use serde::Serialize;
 
 use crate::{

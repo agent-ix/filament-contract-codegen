@@ -6,13 +6,13 @@ use filament_contract_codegen::{
     OriginalCompositeArtifactBinding, OriginalCompositeEqContext, ReplayInputs,
     WitnessDecodeLimits,
 };
-use ix_trace_rs::trace;
-use qsl_replay::{EqualityOperator, ReplayLimits, WitnessValue};
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedNodeId, CheckedOccurrence, CheckedOccurrenceRole, CheckedPackageReadLimits,
     CheckedPackageV2,
 };
-use quire_exact::Outcome;
+use filament_exact::Outcome;
+use fsl_replay::{EqualityOperator, ReplayLimits, WitnessValue};
+use ix_trace_rs::trace;
 use std::{collections::BTreeMap, fs, path::PathBuf, process::Command};
 
 fn source() -> LockedSource {
@@ -22,8 +22,8 @@ fn source() -> LockedSource {
         bytes: composite_original_eq::SOURCE.as_bytes().to_vec(),
     }
 }
-fn limits() -> quire_exact::ScalarLimits {
-    quire_exact::ScalarLimits {
+fn limits() -> filament_exact::ScalarLimits {
+    filament_exact::ScalarLimits {
         integer_bits: u64::MAX,
         decimal_digits: u64::MAX,
         scale_expansion: u64::MAX,
@@ -38,7 +38,7 @@ fn limits() -> quire_exact::ScalarLimits {
 }
 fn context(
     package: &CheckedPackageV2,
-    raw_package: qsl_replay::ReplayPackage,
+    raw_package: fsl_replay::ReplayPackage,
 ) -> OriginalCompositeEqContext {
     OriginalCompositeEqContext::new(
         package.clone(),
@@ -65,14 +65,14 @@ fn context(
 }
 pub(super) fn binding(
     package: &CheckedPackageV2,
-    compiled: &qsl_replay::AdmittedCompilation,
+    compiled: &fsl_replay::AdmittedCompilation,
     generated: &CompositeEqualityOracles,
     node: &CheckedNodeId,
     occurrence: &CheckedOccurrence,
 ) -> Result<OriginalCompositeArtifactBinding, CompositeBuildError> {
     context(
         package,
-        qsl_replay::ReplayPackage::read(compiled.package().bytes(), u64::MAX).unwrap(),
+        fsl_replay::ReplayPackage::read(compiled.package().bytes(), u64::MAX).unwrap(),
     )
     .retain_generated_artifact(
         generated,
@@ -132,11 +132,11 @@ fn observe(
     fs::write(scratch.0.join("original.native"), &source().bytes).unwrap();
     let program = format!(
         r#"#[path="src/lib.rs"] mod generated;
-use quire_exact as exact;
+use filament_exact as exact;
 use exact::{{ScalarLimits, Integer, IntegerInterval, Value, ValueType, CollectionType, CollectionKind, CardinalityBound, Meter}};
 fn main() {{
  let source=include_bytes!("original.native");
- let compiled=qsl_replay::compile_admitted(qsl_replay::CompileUnit {{ source:qsl_replay::SourceIdentity::new("test", "composite-agreement.native"),package_name:"composite-agreement".to_owned(),path:"composite-agreement.native",bytes:source }},[],&qsl_replay::DependencyInput::default(),qsl_replay::StageLimits::default(),qsl_replay::ReplayLimits::default()).expect("same actual original context");
+ let compiled=fsl_replay::compile_admitted(fsl_replay::CompileUnit {{ source:fsl_replay::SourceIdentity::new("test", "composite-agreement.native"),package_name:"composite-agreement".to_owned(),path:"composite-agreement.native",bytes:source }},[],&fsl_replay::DependencyInput::default(),fsl_replay::StageLimits::default(),fsl_replay::ReplayLimits::default()).expect("same actual original context");
  let environment=generated::{}(Some(compiled.context())).expect("original generated environment");
  let limits={:?};
  let ty=CollectionType::new(CollectionKind::Sequence,ValueType::Int(IntegerInterval::new(Integer::from(0_i64),Integer::from(9_i64)).unwrap()),Some(CardinalityBound::new(0,3).unwrap()));
@@ -163,11 +163,11 @@ fn main() {{
         .arg("-o")
         .arg(scratch.0.join("driver"));
     for name in [
-        "quire_exact",
-        "quire_semantic_value",
-        "quire_contract_model",
-        "qsl_replay",
-        "quire_contract_runtime",
+        "filament_exact",
+        "filament_semantic_value",
+        "filament_contract_model",
+        "fsl_replay",
+        "filament_contract_runtime",
         "serde_json",
         "quire_canonical",
     ] {
@@ -257,18 +257,18 @@ fn original_composite_body_and_actual_emitted_bytes_have_independent_authority()
         .unwrap();
     // Supplied verified evidence is independent of native execution. This real
     // facade call supplies no generated backend proof or native pair-count credit.
-    let report = qsl_replay::settle_verified_shadow(
+    let report = fsl_replay::settle_verified_shadow(
         wire.clone(),
         claim,
-        qsl_replay::VerifiedShadow {
+        fsl_replay::VerifiedShadow {
             success_checks: 1,
-            refinement: qsl_replay::Refinement::NotExhausted,
+            refinement: fsl_replay::Refinement::NotExhausted,
         },
         replay_limits,
     );
     assert!(matches!(
         report.result(),
-        qsl_replay::VerifiedShadowResult::Tested
+        fsl_replay::VerifiedShadowResult::Tested
     ));
     for member in 0..4 {
         let held = binding(&package, &compiled, &generated, &node, &occurrence).unwrap();
@@ -276,7 +276,7 @@ fn original_composite_body_and_actual_emitted_bytes_have_independent_authority()
         let original_node = held.body().node.clone();
         match member {
             0 => {
-                changed.node = quire_exact::NodeKey::new(
+                changed.node = filament_exact::NodeKey::new(
                     "other-package",
                     original_node.path(),
                     original_node.ordinal(),
@@ -285,8 +285,8 @@ fn original_composite_body_and_actual_emitted_bytes_have_independent_authority()
             }
             1 => {
                 let mut path = original_node.path();
-                path.push(quire_exact::PathSegment::Text("other-path".to_owned()));
-                changed.node = quire_exact::NodeKey::new(
+                path.push(filament_exact::PathSegment::Text("other-path".to_owned()));
+                changed.node = filament_exact::NodeKey::new(
                     original_node.package(),
                     path,
                     original_node.ordinal(),
@@ -294,7 +294,7 @@ fn original_composite_body_and_actual_emitted_bytes_have_independent_authority()
                 .unwrap();
             }
             2 => {
-                changed.node = quire_exact::NodeKey::new(
+                changed.node = filament_exact::NodeKey::new(
                     original_node.package(),
                     original_node.path(),
                     original_node.ordinal() + 1,
@@ -304,8 +304,8 @@ fn original_composite_body_and_actual_emitted_bytes_have_independent_authority()
             3 => changed.obligation_kind = "other_opaque_kind".to_owned(),
             _ => unreachable!(),
         }
-        let original_identity = qsl_replay::parity_obligation(held.body()).unwrap();
-        let changed_identity = qsl_replay::parity_obligation(&changed).unwrap();
+        let original_identity = fsl_replay::parity_obligation(held.body()).unwrap();
+        let changed_identity = fsl_replay::parity_obligation(&changed).unwrap();
         if member == 3 {
             assert_eq!(
                 changed_identity, original_identity,
@@ -330,8 +330,8 @@ fn original_composite_body_and_actual_emitted_bytes_have_independent_authority()
     let mut reordered_body = changed_bounds.body().clone();
     reordered_body.arguments.swap(0, 1);
     assert_eq!(
-        qsl_replay::parity_obligation(&reordered_body).unwrap(),
-        qsl_replay::parity_obligation(changed_bounds.body()).unwrap()
+        fsl_replay::parity_obligation(&reordered_body).unwrap(),
+        fsl_replay::parity_obligation(changed_bounds.body()).unwrap()
     );
     assert!(matches!(
         changed_bounds.complete(&reordered_body, observed.clone()),

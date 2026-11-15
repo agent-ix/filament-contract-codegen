@@ -15,15 +15,15 @@ use filament_contract_codegen::{
     ObligationItem, ObligationRecord, OracleGenerationError, ProviderOrigin, RoutedGeneration,
     RoutedGenerationError, RoutedGenerationItem, UnsupportedObligation,
 };
-use ix_trace_rs::trace;
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedNodeId, CheckedOccurrenceRole, CheckedPackageEvidence, CheckedPackageReadLimits,
     CheckedPackageV2, CheckedPackageV2ReadResult, CheckedTerm, ContractDependencies,
     ContractFeatureRecordV1, ContractOccurrenceKeyV1, ContractPackageReadResult, ContractPackageV1,
     ContractPackageWireV1,
 };
+use ix_trace_rs::trace;
 
-use qsl_replay::{compile_package, DependencyInput, ReplayLimits, SourceIdentity, StageLimits};
+use fsl_replay::{compile_package, DependencyInput, ReplayLimits, SourceIdentity, StageLimits};
 
 use crate::common::requirements;
 use crate::kani_obligations::{package, routed_scalar_package, scalar_package};
@@ -50,9 +50,9 @@ fn operation_identity(body: &CheckedTerm) -> Option<&str> {
 }
 
 const RENDERED: [&str; 3] = [
-    "quire.op.integer.add",
-    "quire.op.integer.sub",
-    "quire.op.integer.negate",
+    "filament.op.integer.add",
+    "filament.op.integer.sub",
+    "filament.op.integer.negate",
 ];
 
 /// An external driver can name the scalar rendering envelope's typed source
@@ -195,7 +195,7 @@ fn admitted_routing_input_with_limits<'a>(
             source.node_id == node_id && source.role == CheckedOccurrenceRole::Expression
         });
         let conversion = checked.resolved_graph().nodes.iter().find(|node| {
-            operation_identity(&node.body) == Some("quire.op.numeric.narrow")
+            operation_identity(&node.body) == Some("filament.op.numeric.narrow")
                 && application_arguments(&node.body)
                     .and_then(|arguments| arguments.first())
                     .and_then(reference_target)
@@ -294,10 +294,10 @@ fn build_fixture() -> Fixture {
             !RENDERED.contains(&claim.operation.identity.as_str())
                 && !matches!(
                     claim.operation.identity.as_str(),
-                    "quire.op.integer.mul"
-                        | "quire.op.integer.div"
-                        | "quire.op.integer.rem"
-                        | "quire.op.integer.mod"
+                    "filament.op.integer.mul"
+                        | "filament.op.integer.div"
+                        | "filament.op.integer.rem"
+                        | "filament.op.integer.mod"
                 )
         })
         .map(|claim| claim.node_id.clone())
@@ -735,7 +735,7 @@ fn fr015(
         .iter()
         .map(|node_id| filament_contract_codegen::RequirementOccurrence {
             node_id: (*node_id).clone(),
-            role: quire_contract_model::CheckedOccurrenceRole::Expression,
+            role: filament_contract_model::CheckedOccurrenceRole::Expression,
             ordinal: 0,
         })
         .collect::<Vec<_>>();
@@ -1254,7 +1254,10 @@ fn tc_033_bounded_increment_over_a_bounded_parameter_is_supported_with_a_scalar_
         "{record:#?}"
     );
     let harness = harness.expect("a supported item carries its harness");
-    assert_eq!(harness.identity.operation_identity, "quire.op.integer.add");
+    assert_eq!(
+        harness.identity.operation_identity,
+        "filament.op.integer.add"
+    );
     assert_eq!(
         harness
             .identity
@@ -1312,31 +1315,31 @@ fn tc_033_bounded_parameters_are_supported_with_a_per_operand_scalar_harness() {
     for (code, identity, expected, result) in [
         (
             package::TWO_PARAMETER_SUM,
-            "quire.op.integer.add",
+            "filament.op.integer.add",
             vec![(0, 9), (10, 20)],
             (0, 29),
         ),
         (
             package::TWO_PARAMETER_LITERAL,
-            "quire.op.integer.add",
+            "filament.op.integer.add",
             vec![(0, 9), (1, 1)],
             (0, 29),
         ),
         (
             package::BOUNDED_NEGATE,
-            "quire.op.integer.negate",
+            "filament.op.integer.negate",
             vec![(1, 9)],
             (-9, -1),
         ),
         (
             package::BOUNDED_PRODUCT,
-            "quire.op.integer.mul",
+            "filament.op.integer.mul",
             vec![(1, 9), (100, 200)],
             (100, 1800),
         ),
         (
             package::TWO_PARAMETER_WIDE,
-            "quire.op.integer.add",
+            "filament.op.integer.add",
             vec![(0, 9), (0, 50)],
             (0, 29),
         ),
@@ -1455,12 +1458,12 @@ fn tc_033_routed_operand_refusals_leave_healthy_sibling_unchanged() {
     let mut builder = package::fsl_shaped_package();
     let integer = package::key(package::T_INTEGER);
     let division_law =
-        package::integer_division_definition(quire_exact::DivisionProfile::Truncating);
+        package::integer_division_definition(filament_exact::DivisionProfile::Truncating);
     builder.select_definition(division_law.clone());
     let division = package::application(
         "binary",
         package::op_full(
-            "quire.op.integer.div",
+            "filament.op.integer.div",
             vec![package::law("integer_division", division_law)],
             None,
             None,
@@ -1474,7 +1477,7 @@ fn tc_033_routed_operand_refusals_leave_healthy_sibling_unchanged() {
     builder.application_bounded(DIVISION, "expression", "binary", &integer, division, &[]);
     let nested = package::application(
         "binary",
-        package::op("quire.op.integer.add"),
+        package::op("filament.op.integer.add"),
         &integer,
         vec![
             package::reference(&package::key(DIVISION)),
@@ -1600,19 +1603,19 @@ fn tc_033_fsl_shaped_increment_sum_and_negation_are_supported() {
     for (code, identity, expected, result) in [
         (
             package::FSL_INC,
-            "quire.op.integer.add",
+            "filament.op.integer.add",
             vec![(0, 9), (1, 1)],
             (0, 10),
         ),
         (
             package::FSL_ADD,
-            "quire.op.integer.add",
+            "filament.op.integer.add",
             vec![(0, 9), (10, 20)],
             (10, 29),
         ),
         (
             package::FSL_NEGATE,
-            "quire.op.integer.negate",
+            "filament.op.integer.negate",
             vec![(0, 9)],
             (-9, 0),
         ),
@@ -1674,7 +1677,7 @@ fn tc_033_fsl_shaped_plain_operands_refuse_and_selected_narrowing_generates() {
 }
 
 const NESTED_QSL_SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\n\
-profile v = \"quire.value.complete/v1\";\n\
+profile v = \"filament.value.complete/v1\";\n\
 function add_nested using v(x: Int[0, 9]): Int[0, 20] pure { (x + 1) + 1 }\n\
 function multiply_negative using v(x: Int[1, 9]): Int[-9, -1] pure { x * -1 }\n\
 function negate_nested using v(x: Int[0, 9]): Int[-10, -1] pure { -(x + 1) }\n\
@@ -1684,7 +1687,7 @@ function huge_nested using v(x: Int[0, 9]): Int[0, 9] pure { (x + 10000000000000
 
 fn nested_fsl_package() -> CheckedPackageV2 {
     let compiled = compile_package(
-        qsl_replay::CompileUnit {
+        fsl_replay::CompileUnit {
             source: SourceIdentity::new("test", "ir306-nested.native"),
             package_name: "ir306-nested".to_owned(),
             path: "ir306-nested.native",
@@ -1697,7 +1700,7 @@ fn nested_fsl_package() -> CheckedPackageV2 {
     )
     .expect("nested operand fixture compiles through FSL's public facade");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     match CheckedPackageV2::read(
         compiled.bytes(),
         CheckedPackageReadLimits::bounded(),
@@ -1711,10 +1714,10 @@ fn nested_fsl_package() -> CheckedPackageV2 {
 fn deep_fsl_package() -> CheckedPackageV2 {
     let expression = (0..66).fold("x".to_owned(), |value, _| format!("({value} + 0)"));
     let source = format!(
-        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nfunction deep_nested using v(x: Int[0, 9]): Int[0, 9] pure {{ {expression} }}\nfunction sibling using v(x: Int[0, 9]): Int[0, 10] pure {{ x + 1 }}\n"
+        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nfunction deep_nested using v(x: Int[0, 9]): Int[0, 9] pure {{ {expression} }}\nfunction sibling using v(x: Int[0, 9]): Int[0, 10] pure {{ x + 1 }}\n"
     );
     let compiled = compile_package(
-        qsl_replay::CompileUnit {
+        fsl_replay::CompileUnit {
             source: SourceIdentity::new("test", "ir306-deep.native"),
             package_name: "ir306-deep".to_owned(),
             path: "ir306-deep.native",
@@ -1727,7 +1730,7 @@ fn deep_fsl_package() -> CheckedPackageV2 {
     )
     .expect("deep operand fixture compiles through FSL's public facade");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     match CheckedPackageV2::read(
         compiled.bytes(),
         CheckedPackageReadLimits::bounded(),
@@ -1752,10 +1755,10 @@ fn wide_fsl_package() -> CheckedPackageV2 {
     }
     let wide_product = product_tree(0, 40);
     let source = format!(
-        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nfunction wide_nested using v(x: Int[1, 1]): Int[0, 0] pure {{ ({wide_product}) - ({wide_product}) }}\n"
+        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nfunction wide_nested using v(x: Int[1, 1]): Int[0, 0] pure {{ ({wide_product}) - ({wide_product}) }}\n"
     );
     let compiled = compile_package(
-        qsl_replay::CompileUnit {
+        fsl_replay::CompileUnit {
             source: SourceIdentity::new("test", "ir306-wide.native"),
             package_name: "ir306-wide".to_owned(),
             path: "ir306-wide.native",
@@ -1768,7 +1771,7 @@ fn wide_fsl_package() -> CheckedPackageV2 {
     )
     .expect("wide endpoint fixture compiles through FSL's public facade");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     match CheckedPackageV2::read(
         compiled.bytes(),
         CheckedPackageReadLimits::bounded(),
@@ -1795,10 +1798,10 @@ fn work_fsl_package() -> CheckedPackageV2 {
     }
     let expression = format!("({}) + 0", balanced(0, 2049));
     let source = format!(
-        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nfunction work_nested using v(x: Int[0, 0]): Int[0, 2098176] pure {{ {expression} }}\nfunction sibling using v(x: Int[0, 9]): Int[0, 10] pure {{ x + 1 }}\n"
+        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nfunction work_nested using v(x: Int[0, 0]): Int[0, 2098176] pure {{ {expression} }}\nfunction sibling using v(x: Int[0, 9]): Int[0, 10] pure {{ x + 1 }}\n"
     );
     let compiled = compile_package(
-        qsl_replay::CompileUnit {
+        fsl_replay::CompileUnit {
             source: SourceIdentity::new("test", "ir306-work.native"),
             package_name: "ir306-work".to_owned(),
             path: "ir306-work.native",
@@ -1811,7 +1814,7 @@ fn work_fsl_package() -> CheckedPackageV2 {
     )
     .expect("high-work operand fixture compiles through FSL's public facade");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     match CheckedPackageV2::read(
         compiled.bytes(),
         CheckedPackageReadLimits {
@@ -1932,19 +1935,19 @@ fn tc_033_fsl_emitted_nested_integer_operands_are_bounded_or_require_bounds() {
     for (function, identity, expected, result) in [
         (
             "add_nested",
-            "quire.op.integer.add",
+            "filament.op.integer.add",
             vec![(1, 10), (1, 1)],
             (0, 20),
         ),
         (
             "multiply_negative",
-            "quire.op.integer.mul",
+            "filament.op.integer.mul",
             vec![(1, 9), (-1, -1)],
             (-9, -1),
         ),
         (
             "negate_nested",
-            "quire.op.integer.negate",
+            "filament.op.integer.negate",
             vec![(1, 10)],
             (-10, -1),
         ),
@@ -2031,7 +2034,7 @@ fn tc_033_fsl_emitted_nested_integer_operands_are_bounded_or_require_bounds() {
         huge.disposition,
         ObligationDisposition::Unsupported {
             reason: UnsupportedObligation::DomainNotRepresentableInI64 {
-                operation_identity: "quire.op.integer.add".to_owned(),
+                operation_identity: "filament.op.integer.add".to_owned(),
                 lower: "100000000000000000000000".to_owned(),
                 upper: "100000000000000000000009".to_owned(),
             }
@@ -2246,7 +2249,7 @@ fn tc_033_fsl_shaped_literal_and_consumer_refusals_have_no_harness() {
         record.disposition,
         ObligationDisposition::Unsupported {
             reason: UnsupportedObligation::ResultBoundUnreachable {
-                operation_identity: "quire.op.integer.add".to_owned(),
+                operation_identity: "filament.op.integer.add".to_owned(),
                 lower: 0,
                 upper: 10,
                 reachable_lower: "100".to_owned(),
@@ -2261,7 +2264,7 @@ fn tc_033_fsl_shaped_literal_and_consumer_refusals_have_no_harness() {
         record.disposition,
         ObligationDisposition::Unsupported {
             reason: UnsupportedObligation::DomainNotRepresentableInI64 {
-                operation_identity: "quire.op.integer.add".to_owned(),
+                operation_identity: "filament.op.integer.add".to_owned(),
                 lower: huge.clone(),
                 upper: huge,
             }
@@ -2378,7 +2381,7 @@ fn tc_033_an_underivable_item_keeps_its_refusal_and_its_siblings_are_unaffected(
         .enumerate()
         .map(|(index, node)| route(index, node))
         .collect::<Vec<_>>();
-    let (refused, identity) = (&derived.refused, "quire.op.numeric.narrow");
+    let (refused, identity) = (&derived.refused, "filament.op.numeric.narrow");
     let mut routed = with_siblings.clone();
     routed.push(route(9, refused));
     let mixed_input = admitted_routing_input(&derived.package, &routed);
@@ -2481,7 +2484,7 @@ fn tc_033_quantity_conversion_has_an_oracle_and_no_harness() {
         assert!(
             matches!(&record.disposition, ObligationDisposition::Unsupported {
             reason: UnsupportedObligation::OperationNotRendered { operation_identity, .. }
-        } if operation_identity == "quire.op.quantity.convert")
+        } if operation_identity == "filament.op.quantity.convert")
         );
         let wire = serde_json::to_value(&record.disposition).expect("serializes");
         assert_eq!(wire["reason"]["code"], "operation_not_rendered");
@@ -2587,7 +2590,7 @@ fn tc_033_unauthenticated_view_refusal_uses_lowest_request_index() {
         .resolved_graph()
         .nodes
         .iter()
-        .find(|node| operation_identity(&node.body) == Some("quire.op.integer.div"))
+        .find(|node| operation_identity(&node.body) == Some("filament.op.integer.div"))
         .expect("genuine integer division")
         .node_id;
     let integer = derived.generated.first().expect("genuine integer add");
@@ -2647,7 +2650,7 @@ fn tc_033_record_refusals_precede_the_unauthenticated_view_refusal() {
         .resolved_graph()
         .nodes
         .iter()
-        .find(|node| operation_identity(&node.body) == Some("quire.op.integer.div"))
+        .find(|node| operation_identity(&node.body) == Some("filament.op.integer.div"))
         .expect("genuine integer division")
         .node_id;
     let integer = derived.generated.first().expect("genuine integer add");
@@ -3026,7 +3029,7 @@ fn tc_033_an_underivable_claim_is_underived_and_carries_the_nodes_identity() {
         .iter()
         .find(|claim| claim.node_id == derived.refused)
         .expect("the refused node has a claim");
-    assert_eq!(claim.operation.identity, "quire.op.numeric.narrow");
+    assert_eq!(claim.operation.identity, "filament.op.numeric.narrow");
     assert_eq!(
         claim.operation.provenance,
         filament_contract_codegen::OperationProvenance::Underived
@@ -3043,7 +3046,7 @@ fn tc_033_an_underivable_claim_is_underived_and_carries_the_nodes_identity() {
             reason: UnsupportedObligation::NoDerivableClaim {
                 node_id: derived.refused.clone(),
                 reason: ClaimDerivationRefusal::OperationNotDerivable {
-                    operation_identity: "quire.op.numeric.narrow".to_owned(),
+                    operation_identity: "filament.op.numeric.narrow".to_owned(),
                 },
             },
         }

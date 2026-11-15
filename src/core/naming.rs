@@ -5,7 +5,7 @@
 
 use std::{collections::BTreeMap, fmt::Write as _};
 
-use quire_contract_model::StateObservation;
+use filament_contract_model::StateObservation;
 
 pub(crate) fn reference_identifier(name: &str, observation: Option<StateObservation>) -> String {
     format!("{}_{}", rust_component(name), observation_name(observation))

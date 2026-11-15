@@ -6,7 +6,7 @@
 //! expression that rebuilds it through its genuine public constructors inside the
 //! proof. Rendering is iterative, so type and key depth do not use the call stack.
 
-use quire_exact::{
+use filament_exact::{
     CardinalityBound, CarriedQuantityType, CollectionKind, CollectionType, DecimalType,
     EffectiveId, EnumShape, FloatType, IeeeWidth, Integer, IntegerInterval, MapType, NodeKey,
     PathSegment, Quantity, QuantityCarrier, RationalDomain, RoundingMode, TextProfile, UnitId,

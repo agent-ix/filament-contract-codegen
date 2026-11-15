@@ -7,7 +7,7 @@
 
 use std::{fs, io, num::NonZeroUsize, path::Path, time::Instant};
 
-use quire_exact::Cancel;
+use filament_exact::Cancel;
 
 use serde::Serialize;
 
@@ -105,7 +105,7 @@ pub enum KaniRefinementRefusal {
     /// a signal (FR-028-AC-24), so it yields no evidence and no strength.
     Cancelled {
         /// The first observed cancellation source.
-        source: quire_contract_ir::kani::KaniCancellationSource,
+        source: filament_contract_ir::kani::KaniCancellationSource,
     },
     /// The program exited unsuccessfully on its own, which is neither a verdict nor a signal.
     ProcessFailed {

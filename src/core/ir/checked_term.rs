@@ -3,8 +3,8 @@
 
 //! Shared typed walkers over admitted checked terms.
 
-use quire_contract_model::{ApplicationOperator, CheckedNodeId, CheckedTerm, LiteralKind};
-use quire_exact::Integer;
+use filament_contract_model::{ApplicationOperator, CheckedNodeId, CheckedTerm, LiteralKind};
+use filament_exact::Integer;
 
 /// The node named by a checked reference term.
 pub(crate) fn reference(term: &CheckedTerm) -> Option<&CheckedNodeId> {

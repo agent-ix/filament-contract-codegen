@@ -10,14 +10,14 @@
 //! closure, generates the package-backed oracles, and calls
 //! [`negotiate_kani_obligations`] once over the routed Kani items in ascending
 //! request index. The oracle crate FR-014 generated is returned beside the claim map. Each harness
-//! embeds its own oracle's source, which uses `quire_contract_runtime`, so the driver writes the
+//! embeds its own oracle's source, which uses `filament_contract_runtime`, so the driver writes the
 //! returned `Cargo.toml` and the harness's own source as `src/lib.rs`, and not the returned
 //! `src/lib.rs`. That generator numbers its records by position; this module maps every position
 //! back to the driver's request index and pairs each harness with its record by `harness_symbol`.
 
 use std::collections::{btree_map::Entry, BTreeMap, BTreeSet};
 
-use quire_contract_model::{CheckedNodeId, CheckedTerm, ContractPackageV1, ContractSourceV1};
+use filament_contract_model::{CheckedNodeId, CheckedTerm, ContractPackageV1, ContractSourceV1};
 
 use crate::{
     core::artifact::Artifact,
@@ -333,7 +333,7 @@ struct ArmItemOutput {
 /// Trace: TC-033
 // Implements: FR-022
 pub fn generate_routed(
-    source: &quire_contract_model::CheckedPackageV2,
+    source: &filament_contract_model::CheckedPackageV2,
     package: &ContractPackageV1,
     positions: &[ContractRequestPosition],
     routed: &[RoutedGenerationItem],
@@ -347,12 +347,12 @@ pub fn generate_routed(
 /// family and every record it produces is as [`generate_routed`] (or, with `native`, as
 /// [`generate_routed_native`]) produces it.
 pub fn generate_routed_admitted(
-    source: &quire_contract_model::CheckedPackageV2,
+    source: &filament_contract_model::CheckedPackageV2,
     package: &ContractPackageV1,
     positions: &[ContractRequestPosition],
     routed: &[RoutedGenerationItem],
     contexts: &GenerationContexts<'_>,
-    admitted: &qsl_replay::AdmittedContext,
+    admitted: &fsl_replay::AdmittedContext,
     native: bool,
 ) -> Result<RoutedGeneration, RoutedGenerationError> {
     generate_routed_with_integer_policy(
@@ -369,7 +369,7 @@ pub fn generate_routed_admitted(
 /// Generate routed Kani scalar claims with the kernel-admitted native integer
 /// policy. Capacity ineligibility retains a typed unsupported disposition.
 pub fn generate_routed_native(
-    source: &quire_contract_model::CheckedPackageV2,
+    source: &filament_contract_model::CheckedPackageV2,
     package: &ContractPackageV1,
     positions: &[ContractRequestPosition],
     routed: &[RoutedGenerationItem],
@@ -379,13 +379,13 @@ pub fn generate_routed_native(
 }
 
 fn generate_routed_with_integer_policy(
-    source: &quire_contract_model::CheckedPackageV2,
+    source: &filament_contract_model::CheckedPackageV2,
     package: &ContractPackageV1,
     positions: &[ContractRequestPosition],
     routed: &[RoutedGenerationItem],
     contexts: &GenerationContexts<'_>,
     native: bool,
-    admitted_context: Option<&qsl_replay::AdmittedContext>,
+    admitted_context: Option<&fsl_replay::AdmittedContext>,
 ) -> Result<RoutedGeneration, RoutedGenerationError> {
     let mut ordered = routed.iter().collect::<Vec<_>>();
     ordered.sort_by(|a, b| {
@@ -463,7 +463,7 @@ fn generate_routed_with_integer_policy(
                             continue;
                         };
                         let needs_view = match operation.identity() {
-                            Some("quire.op.state.clause" | "quire.op.record.project") => true,
+                            Some("filament.op.state.clause" | "filament.op.record.project") => true,
                             Some(identity) => {
                                 crate::oracle::scalar::derive::needs_authenticated_operation_view(
                                     identity,
@@ -732,13 +732,13 @@ fn refuse_inconsistent_routing(
 
 /// The Kani arm, and the claim map and oracle crate it derived: one `negotiate_kani_obligations` call over `group`, in ascending request index.
 fn generate_kani(
-    source: &quire_contract_model::CheckedPackageV2,
+    source: &filament_contract_model::CheckedPackageV2,
     package: &ContractPackageV1,
     positions: &[ContractRequestPosition],
     group: &[&RoutedGenerationItem],
     contexts: &GenerationContexts<'_>,
     native: bool,
-    admitted_context: Option<&qsl_replay::AdmittedContext>,
+    admitted_context: Option<&fsl_replay::AdmittedContext>,
 ) -> Result<(ArmOutput, ClaimMap<ExactScalarClaim>, Vec<Artifact>), RoutedGenerationError> {
     let Some(context) = contexts.kani else {
         return Err(RoutedGenerationError::MissingKindContext {
@@ -883,7 +883,7 @@ fn generate_kani(
 /// its capability with no harness. A record of any other disposition or family is left exactly as
 /// negotiation produced it.
 fn settle_float_items(
-    source: &quire_contract_model::CheckedPackageV2,
+    source: &filament_contract_model::CheckedPackageV2,
     context: KaniGenerationContext<'_>,
     group: &[&RoutedGenerationItem],
     records: &mut [ObligationRecord],
@@ -941,8 +941,8 @@ fn settle_float_items(
 /// disposition: a supported record and harness, or a typed refusal with no harness. A record of
 /// any other disposition or family is left exactly as negotiation produced it.
 fn settle_enum_items(
-    source: &quire_contract_model::CheckedPackageV2,
-    admitted: &qsl_replay::AdmittedContext,
+    source: &filament_contract_model::CheckedPackageV2,
+    admitted: &fsl_replay::AdmittedContext,
     context: KaniGenerationContext<'_>,
     group: &[&RoutedGenerationItem],
     records: &mut [ObligationRecord],
@@ -963,7 +963,7 @@ fn settle_enum_items(
         else {
             continue;
         };
-        if !operation_identity.starts_with("quire.op.enum.") {
+        if !operation_identity.starts_with("filament.op.enum.") {
             continue;
         }
         let outcome = generate_enum_scalar_harness(&EnumScalarRequest {
@@ -1085,7 +1085,7 @@ mod tests {
     };
     use ix_trace_rs::trace;
 
-    fn node_id() -> quire_contract_model::CheckedNodeId {
+    fn node_id() -> filament_contract_model::CheckedNodeId {
         serde_json::from_value(serde_json::json!({
             "package": "routed-fixture", "path": ["node"], "ordinal": 0,
         }))
@@ -1283,7 +1283,7 @@ mod tests {
                 native_integer_selection: None,
                 ceilings: crate::kani::test_support::proof_ceilings::proof_ceilings(),
                 node_id,
-                operation_identity: "quire.op.integer.add".to_owned(),
+                operation_identity: "filament.op.integer.add".to_owned(),
                 oracle_symbol: "oracle".to_owned(),
                 module_symbol: ModuleSymbol::try_from(module).expect("a module symbol"),
                 harness_symbol: HarnessSymbol::try_from(symbol).expect("a harness symbol"),

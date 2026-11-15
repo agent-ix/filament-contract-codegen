@@ -5,8 +5,8 @@ use filament_contract_codegen::{
     EnumCapability, EnumScalarHarness, EnumScalarOutcome, EnumScalarRefusal, EnumScalarRequest,
     KaniRunOutcome,
 };
+use filament_contract_model::{CheckedNodeId, CheckedPackageV2};
 use ix_trace_rs::trace;
-use quire_contract_model::{CheckedNodeId, CheckedPackageV2};
 
 use super::admitted_enum_equality::application;
 use super::admitted_enum_equality::checked;
@@ -14,7 +14,7 @@ use super::admitted_enum_fixture::compile;
 use super::routed_generation::{admitted_routing_input_with_context_roots, kani_parts, route};
 
 const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\n\
-profile v = \"quire.value.complete/v1\";\n\
+profile v = \"filament.value.complete/v1\";\n\
 ordered enum Level { LOW, MID, HIGH }\n\
 enum Color { RED, GREEN, BLUE }\n\
 function lt using v(a: Level, b: Level): Boolean pure { a < b }\n\
@@ -34,7 +34,7 @@ function text_eq using v(a: Text[0, 16; nfc], b: Text[0, 16; nfc]): Boolean pure
 function seq_eq using v(a: Sequence<Int[0, 9]>[0, 3], b: Sequence<Int[0, 9]>[0, 3]): Boolean pure { a = b }\n";
 
 struct Corpus {
-    compiled: qsl_replay::AdmittedCompilation,
+    compiled: fsl_replay::AdmittedCompilation,
     package: CheckedPackageV2,
 }
 
@@ -139,13 +139,13 @@ impl Corpus {
                     .iter()
                     .find(|entry| {
                         &entry.node_id == node_id
-                            && entry.role == quire_contract_model::CheckedOccurrenceRole::Expression
+                            && entry.role == filament_contract_model::CheckedOccurrenceRole::Expression
                     })
                     .expect("the node has an expression occurrence")
                     .ordinal;
                 let occurrence = filament_contract_codegen::RequirementOccurrence {
                     node_id: node_id.clone(),
-                    role: quire_contract_model::CheckedOccurrenceRole::Expression,
+                    role: filament_contract_model::CheckedOccurrenceRole::Expression,
                     ordinal,
                 };
                 let path_condition = match (&guard_node, guarded) {
@@ -157,14 +157,14 @@ impl Corpus {
                             .find(|entry| {
                                 &entry.node_id == node
                                     && entry.role
-                                        == quire_contract_model::CheckedOccurrenceRole::Expression
+                                        == filament_contract_model::CheckedOccurrenceRole::Expression
                             })
                             .expect("the guard has an expression occurrence")
                             .ordinal;
                         vec![filament_contract_codegen::RequirementGuard {
                             occurrence: filament_contract_codegen::RequirementOccurrence {
                                 node_id: node.clone(),
-                                role: quire_contract_model::CheckedOccurrenceRole::Expression,
+                                role: filament_contract_model::CheckedOccurrenceRole::Expression,
                                 ordinal,
                             },
                             holds: true,
@@ -262,12 +262,12 @@ impl Corpus {
 }
 
 const OPERATORS: [(&str, &str, &str); 6] = [
-    ("lt", "quire.op.enum.lt", "<"),
-    ("le", "quire.op.enum.le", "<="),
-    ("gt", "quire.op.enum.gt", ">"),
-    ("ge", "quire.op.enum.ge", ">="),
-    ("eq", "quire.op.enum.eq", "=="),
-    ("ne", "quire.op.enum.ne", "!="),
+    ("lt", "filament.op.enum.lt", "<"),
+    ("le", "filament.op.enum.le", "<="),
+    ("gt", "filament.op.enum.gt", ">"),
+    ("ge", "filament.op.enum.ge", ">="),
+    ("eq", "filament.op.enum.eq", "=="),
+    ("ne", "filament.op.enum.ne", "!="),
 ];
 
 fn proof_body(harness: &EnumScalarHarness) -> &str {
@@ -284,8 +284,8 @@ fn every_operator_generates_one_native_carrier_harness_from_its_node() {
     let corpus = corpus();
     let cases = OPERATORS.map(|(function, identity, native)| (function, identity, native, true));
     let colors = [
-        ("color_eq", "quire.op.enum.eq", "=="),
-        ("color_ne", "quire.op.enum.ne", "!="),
+        ("color_eq", "filament.op.enum.eq", "=="),
+        ("color_ne", "filament.op.enum.ne", "!="),
     ]
     .map(|(function, identity, native)| (function, identity, native, false));
     for (function, identity, native, ordered) in cases.into_iter().chain(colors) {
@@ -460,7 +460,7 @@ fn the_record_retains_declaration_operator_encoding_unwind_and_options() {
         serde_json::json!(["LOW", "MID", "HIGH"])
     );
     assert_eq!(identity["enumScalar"]["ordered"], true);
-    assert_eq!(identity["enumScalar"]["operator"], "quire.op.enum.ge");
+    assert_eq!(identity["enumScalar"]["operator"], "filament.op.enum.ge");
     assert_eq!(
         identity["enumScalar"]["declaration"]["path"],
         serde_json::json!(["Level"])
@@ -522,7 +522,7 @@ fn a_valid_binding_pair_decodes_to_the_declared_members() {
         (witness.left_member.as_str(), witness.right_member.as_str()),
         ("HIGH", "LOW")
     );
-    assert_eq!(witness.operator, "quire.op.enum.lt");
+    assert_eq!(witness.operator, "filament.op.enum.lt");
 }
 
 /// An out-of-range, missing, duplicated or foreign binding is refused with a typed cause and
@@ -587,7 +587,7 @@ fn an_enum_schema_with_bounds_off_the_member_list_is_refused() {
 
 /// The selected corpus function recompiled by FSL's replay facade, as the owner route holds it.
 fn owner_package(function: &str) -> filament_contract_codegen::ReplayPackage {
-    let unlimited = qsl_replay::ScalarLimits {
+    let unlimited = fsl_replay::ScalarLimits {
         integer_bits: u64::MAX,
         decimal_digits: u64::MAX,
         scale_expansion: u64::MAX,
@@ -615,11 +615,11 @@ fn owner_package(function: &str) -> filament_contract_codegen::ReplayPackage {
             accounting_limits: unlimited,
             stage_limits: std::collections::BTreeMap::from([(
                 "s1.input_bytes".to_owned(),
-                qsl_replay::DEFAULT_REPLAY_INPUT_BYTES,
+                fsl_replay::DEFAULT_REPLAY_INPUT_BYTES,
             )]),
             supplied_limits: None,
             declared_domains: Vec::new(),
-            replay_limits: qsl_replay::ReplayLimits::default(),
+            replay_limits: fsl_replay::ReplayLimits::default(),
         },
         function,
     )
@@ -627,7 +627,7 @@ fn owner_package(function: &str) -> filament_contract_codegen::ReplayPackage {
 }
 
 /// The owner's key for the declaration an enum harness's operands are declared with.
-fn owner_declaration(corpus: &Corpus, generated: &EnumScalarHarness) -> qsl_replay::NodeKey {
+fn owner_declaration(corpus: &Corpus, generated: &EnumScalarHarness) -> fsl_replay::NodeKey {
     let wanted = &generated
         .harness
         .identity
@@ -664,7 +664,7 @@ fn owner_result(function: &str, draws: &[i64]) -> (filament_contract_codegen::En
     (witness, owner)
 }
 
-/// A decoded counterexample is replayed through `qsl_replay` over the declaration's members, and
+/// A decoded counterexample is replayed through `fsl_replay` over the declaration's members, and
 /// the owner's result is the native operator over the ranks, whichever the operator and order.
 #[trace("TC-063", "FR-049-AC-5")]
 #[trace("TC-063", "FR-049-AC-10")]
@@ -1043,7 +1043,7 @@ fn a_refused_enum_sibling_in_one_request_leaves_the_supported_enum_nodes_unchang
             .expect("lt generates")
             .identity
             .operation_identity,
-        "quire.op.enum.lt"
+        "filament.op.enum.lt"
     );
 }
 
@@ -1114,7 +1114,7 @@ fn run_with_launcher(
     )
     .unwrap();
     std::fs::set_permissions(&launcher, std::fs::Permissions::from_mode(0o755)).unwrap();
-    let cancel = quire_exact::Cancel::new();
+    let cancel = filament_exact::Cancel::new();
     filament_contract_codegen::execute_kani_obligation(
         &filament_contract_codegen::KaniExecutionRequest {
             cancel: &cancel,
@@ -1218,7 +1218,7 @@ fn a_timeout_and_a_missing_verdict_settle_the_enum_harness_inconclusive() {
     );
     assert_eq!(
         run_terminal_value(&timed, None).unwrap(),
-        qsl_replay::TerminalValue::Incomplete(qsl_replay::IncompleteCause::TimedOut)
+        fsl_replay::TerminalValue::Incomplete(fsl_replay::IncompleteCause::TimedOut)
     );
     assert_eq!(
         timed.ceilings.wall_clock,
@@ -1237,7 +1237,7 @@ fn a_timeout_and_a_missing_verdict_settle_the_enum_harness_inconclusive() {
     );
     assert_eq!(
         run_terminal_value(&silent, None).unwrap(),
-        qsl_replay::TerminalValue::Failed
+        fsl_replay::TerminalValue::Failed
     );
     assert_eq!(silent.unwind, 1);
     assert_eq!(

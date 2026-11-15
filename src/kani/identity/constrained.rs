@@ -2,8 +2,8 @@
 //! Method identities sit below both generation and execution.
 use super::{ProofCeilings, SymbolicBounds};
 use crate::core::artifact::Artifact;
-use qsl_replay::SnapshotValue;
-use quire_contract_model::{CheckedNodeId, ContractSourceV1};
+use filament_contract_model::{CheckedNodeId, ContractSourceV1};
+use fsl_replay::SnapshotValue;
 use serde::{Serialize, Serializer};
 /// The semantic obligation identity, deliberately excluding the selected method.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]

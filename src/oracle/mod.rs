@@ -24,7 +24,7 @@ pub(crate) mod scalar;
 // Shared typed identities for admitted V2 operator consumers.
 pub mod operator_catalog;
 
-use quire_contract_model::{
+use filament_contract_model::{
     ApplicationOperator, CheckedNodeTag, CheckedPackageLimit, CheckedSemanticNodeV2, CheckedTerm,
     CompleteLoweringRecordV2,
 };
@@ -129,7 +129,7 @@ pub(crate) fn classify_lowering_failure(
 /// case and the kinds Contract IR never emits are reachable only this way.
 #[cfg(test)]
 pub(crate) mod failed_records {
-    use quire_contract_model::{CheckedNodeId, CheckedPackageLimit, CompleteLoweringRecordV2};
+    use filament_contract_model::{CheckedNodeId, CheckedPackageLimit, CompleteLoweringRecordV2};
 
     /// The snake_case name FR-014 gives a limit kind that is neither `work` nor `bytes`, and
     /// `None` for those two. The match names every kind with no wildcard arm, so a kind Contract
@@ -169,7 +169,7 @@ pub(crate) mod failed_records {
         CompleteLoweringRecordV2::Failed {
             node_id: CheckedNodeId {
                 package: "fixture".into(),
-                path: vec![quire_contract_model::CheckedNodePathSegment::Name(
+                path: vec![filament_contract_model::CheckedNodePathSegment::Name(
                     "a".into(),
                 )],
                 ordinal: 0,

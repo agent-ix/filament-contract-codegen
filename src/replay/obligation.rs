@@ -5,7 +5,7 @@
 
 use std::fmt;
 
-use qsl_replay::{Identifier, NodeKey, ObligationIdentity, OccurrenceKey, OperationSite};
+use fsl_replay::{Identifier, NodeKey, ObligationIdentity, OccurrenceKey, OperationSite};
 
 use crate::kani::{
     abi::KaniPrimitiveType,
@@ -200,9 +200,9 @@ pub(crate) fn frame_identity(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use filament_exact::PathSegment;
+    use fsl_replay::{Origin, Role};
     use ix_trace_rs::trace;
-    use qsl_replay::{Origin, Role};
-    use quire_exact::PathSegment;
 
     fn node(name: &str) -> NodeKey {
         NodeKey::new("fixture", vec![PathSegment::Text(name.to_owned())], 0).expect("fixture node")

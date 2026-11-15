@@ -6,12 +6,12 @@
 
 use super::CheckedGraph;
 use crate::core::contract_package::routed_contract_lowering_profile;
-use ix_trace_rs::trace;
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedNodeId, CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
     CheckedPackageV2ReadResult, CheckedTerm, ContractDependencies, ContractPackageReadResult,
     ContractPackageV1, ContractPackageWireV1,
 };
+use ix_trace_rs::trace;
 use std::{fs, path::PathBuf, ptr};
 
 // The published-fixture evidence helpers, mounted here as this module's own instance.
@@ -26,7 +26,7 @@ fn published_package(fixture: &str) -> CheckedPackageV2 {
     // Preserve the published document while canonicalizing its JSON encoding.
     let document: serde_json::Value = serde_json::from_slice(&bytes).expect("published JSON");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     checked_package_evidence::retain_selected_document(
         std::path::Path::new(&std::env::var_os("FSPEC_DIR").expect("published FSpec checkout")),
         fixture,
@@ -124,9 +124,10 @@ fn assert_associations(source: &CheckedPackageV2, package: &ContractPackageV1) {
         .collect::<std::collections::BTreeMap<_, _>>();
     let mut keys = std::collections::BTreeMap::new();
     for node in &source.resolved_graph().nodes {
-        let key = quire_contract_model::ContractSourceKeyV1::from_v2_request(source, &node.node_id)
-            .expect("source request");
-        if let quire_contract_model::ContractRootViewV1::Lowered(view) = package
+        let key =
+            filament_contract_model::ContractSourceKeyV1::from_v2_request(source, &node.node_id)
+                .expect("source request");
+        if let filament_contract_model::ContractRootViewV1::Lowered(view) = package
             .reached_closure(&key)
             .expect("admitted source closure")
         {

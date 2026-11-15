@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! FR-021: apply a generated body through FSL's retained checked closure.
 
-use qsl_replay::{
-    acquire_checked_closure, AdmittedRefusal, ApplicationBeginRefusal, ApplicationEnvironment,
+use filament_contract_model::{
+    encode_checked_package_v2, CheckedNodeId, CheckedOccurrenceRole, CheckedPackageSidecarsRef,
+    CheckedPackageSourceCorrespondenceRef, CheckedPackageV2, ContractSourceKeyV1,
+};
+use filament_eval::{Admission, BodyFactory, CallFailure, Evaluation};
+use filament_exact::{Meter, NodeKey, Value};
+use filament_semantic_value::object_closure::ObjectClosure;
+use fsl_replay::{
+    acfilament_checked_closure, AdmittedRefusal, ApplicationBeginRefusal, ApplicationEnvironment,
     CallableLookupRefusal, CallableSelection, CheckedClosureCompilation, ClosureOwnerRefusal,
     CompileUnit, DependencyInput, LibraryName, NestedCallOccurrence, NestedCallSite,
     NestedCallSiteRefusal, NominalDeclaration, NominalDeclarationMember, NominalDeclarationRefusal,
     ReplayLimits, SelectionRefusal, SourceIdentity, StageLimits,
 };
-use quire_contract_model::{
-    encode_checked_package_v2, CheckedNodeId, CheckedOccurrenceRole, CheckedPackageSidecarsRef,
-    CheckedPackageSourceCorrespondenceRef, CheckedPackageV2, ContractSourceKeyV1,
-};
-use quire_eval::{Admission, BodyFactory, CallFailure, Evaluation};
-use quire_exact::{Meter, NodeKey, Value};
-use quire_semantic_value::object_closure::ObjectClosure;
 
 use super::ExactFunctionRefusal;
 
@@ -22,9 +22,9 @@ use super::ExactFunctionRefusal;
 #[derive(Clone, Default)]
 pub struct CheckedFunctionResources {
     /// Limits for assembling the selected owner's nominal environment.
-    pub environment_limits: quire_semantic_value::declaration::TypeEnvironmentLimits,
+    pub environment_limits: filament_semantic_value::declaration::TypeEnvironmentLimits,
     /// The original cancellation handle, retained for typed work-stop attribution.
-    pub cancel: quire_exact::Cancel,
+    pub cancel: filament_exact::Cancel,
 }
 
 /// The caller-owned inputs to one checked-closure acquisition.
@@ -285,6 +285,7 @@ fn package_bytes(package: &CheckedPackageV2) -> Result<Vec<u8>, CheckedFunctionE
             temporal_clause_names: package.temporal_clause_names(),
             schedulability_claims: package.schedulability_claim_rows(),
             operation_effects: package.operation_effect_rows(),
+            operation_bodies: package.operation_body_rows(),
         },
         package.capability_report(),
         package.diagnostics(),
@@ -329,7 +330,7 @@ pub fn select_checked_callable(
 
 fn validate_selected_callable(
     owner: &LibraryName,
-    function: &quire_exact::NodeKey,
+    function: &filament_exact::NodeKey,
     selection: &CallableSelection,
 ) -> Result<(), CheckedFunctionError> {
     if selection.owner_package_name() != owner || selection.key() != function {
@@ -463,31 +464,31 @@ pub fn checked_function_declarations(
     }
     while let Some(value_type) = pending.pop() {
         match value_type {
-            quire_exact::ValueType::Option(payload) => pending.push(payload),
-            quire_exact::ValueType::Collection(collection) => pending.push(collection.element()),
-            quire_exact::ValueType::Map(map) => pending.push(map.values()),
-            quire_exact::ValueType::Composite(key) if !keys.contains(key) => {
+            filament_exact::ValueType::Option(payload) => pending.push(payload),
+            filament_exact::ValueType::Collection(collection) => pending.push(collection.element()),
+            filament_exact::ValueType::Map(map) => pending.push(map.values()),
+            filament_exact::ValueType::Composite(key) if !keys.contains(key) => {
                 return Err(CheckedFunctionError::NominalDeclaration(
                     NominalDeclarationRefusal::Unknown,
                 ));
             }
-            quire_exact::ValueType::Composite(_)
-            | quire_exact::ValueType::Boolean
-            | quire_exact::ValueType::Integer
-            | quire_exact::ValueType::Int(_)
-            | quire_exact::ValueType::Rational(_)
-            | quire_exact::ValueType::Decimal(_)
-            | quire_exact::ValueType::Float(_)
-            | quire_exact::ValueType::Quantity(_)
-            | quire_exact::ValueType::BoundedQuantity(_)
-            | quire_exact::ValueType::Text(_)
-            | quire_exact::ValueType::String
-            | quire_exact::ValueType::Uuid
-            | quire_exact::ValueType::Timestamp
-            | quire_exact::ValueType::Enum(_)
-            | quire_exact::ValueType::Reference(_)
-            | quire_exact::ValueType::Population(_)
-            | quire_exact::ValueType::CarriedQuantity(_) => {}
+            filament_exact::ValueType::Composite(_)
+            | filament_exact::ValueType::Boolean
+            | filament_exact::ValueType::Integer
+            | filament_exact::ValueType::Int(_)
+            | filament_exact::ValueType::Rational(_)
+            | filament_exact::ValueType::Decimal(_)
+            | filament_exact::ValueType::Float(_)
+            | filament_exact::ValueType::Quantity(_)
+            | filament_exact::ValueType::BoundedQuantity(_)
+            | filament_exact::ValueType::Text(_)
+            | filament_exact::ValueType::String
+            | filament_exact::ValueType::Uuid
+            | filament_exact::ValueType::Timestamp
+            | filament_exact::ValueType::Enum(_)
+            | filament_exact::ValueType::Reference(_)
+            | filament_exact::ValueType::Population(_)
+            | filament_exact::ValueType::CarriedQuantity(_) => {}
         }
     }
     Ok(declarations)
@@ -499,7 +500,7 @@ pub(crate) fn acquire_checked_source(
     admitted_unit: &CheckedPackageV2,
     source: &CheckedFunctionSource<'_>,
 ) -> Result<CheckedClosureCompilation, CheckedFunctionError> {
-    acquire_checked_closure(
+    acfilament_checked_closure(
         CompileUnit {
             source: source.source.clone(),
             package_name: admitted_unit.name().to_owned(),
@@ -523,11 +524,11 @@ pub(crate) fn acquire_checked_source(
 /// Returns [`CheckedFunctionError::InvalidIdentity`] for such a malformed view.
 pub fn checked_composite_declarations(
     owner: &[NominalDeclaration],
-) -> Result<Vec<quire_semantic_value::declaration::CompositeDeclaration>, CheckedFunctionError> {
-    use qsl_replay::NominalDeclarationForm as Form;
-    use quire_semantic_value::declaration::{
+) -> Result<Vec<filament_semantic_value::declaration::CompositeDeclaration>, CheckedFunctionError> {
+    use filament_semantic_value::declaration::{
         CompositeDeclaration, CompositeShape, FieldDeclaration, UnionMemberDeclaration,
     };
+    use fsl_replay::NominalDeclarationForm as Form;
     let mut declarations = Vec::with_capacity(owner.len());
     for view in owner {
         let shape = match view.form() {
@@ -566,7 +567,7 @@ pub fn checked_composite_declarations(
                         NominalDeclarationMember::UnionMember {
                             member, payload, ..
                         } => Ok(UnionMemberDeclaration::resolved(
-                            quire_exact::Identifier::new(member.identifier())
+                            filament_exact::Identifier::new(member.identifier())
                                 .map_err(|_| CheckedFunctionError::InvalidIdentity)?,
                             payload.clone(),
                         )),
@@ -579,7 +580,7 @@ pub fn checked_composite_declarations(
             view.key().clone(),
             view.qualified_name()
                 .iter()
-                .map(quire_exact::Identifier::as_str)
+                .map(filament_exact::Identifier::as_str)
                 .collect::<Vec<_>>()
                 .join("."),
             shape,
@@ -629,31 +630,31 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ix_trace_rs::trace;
-    use quire_contract_model::{
+    use filament_contract_model::{
         CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
         CheckedPackageV2ReadResult,
     };
-    use quire_eval::{Body, ChildRequest, FamilyOutcome, Resume, Transition};
-    use quire_exact::{Integer, LimitKind, NodeKey, Outcome, ScalarLimits};
-    use quire_semantic_value::catalog::InternalFault;
-    use quire_semantic_value::location::ExpressionLocation as Location;
+    use filament_eval::{Body, ChildRequest, FamilyOutcome, Resume, Transition};
+    use filament_exact::{Integer, LimitKind, NodeKey, Outcome, ScalarLimits};
+    use filament_semantic_value::catalog::InternalFault;
+    use filament_semantic_value::location::ExpressionLocation as Location;
+    use ix_trace_rs::trace;
     use std::sync::Arc;
 
     const SOURCE: &str = concat!(
         "language \"ix:native\" edition \"1-draft\";\n",
-        "profile v = \"quire.value.complete/v1\";\n",
+        "profile v = \"filament.value.complete/v1\";\n",
         "function f using v(x: Integer): Integer pure { x }\n",
         "function g using v(x: Integer): Integer pure { x }\n",
     );
     const OTHER_SOURCE: &str = concat!(
         "language \"ix:native\" edition \"1-draft\";\n",
-        "profile v = \"quire.value.complete/v1\";\n",
+        "profile v = \"filament.value.complete/v1\";\n",
         "function f using v(x: Integer): Integer pure { x }\n",
     );
     const LIBRARY_SOURCE: &str = concat!(
         "language \"ix:native\" edition \"1-draft\";\n",
-        "profile v = \"quire.value.complete/v1\";\n",
+        "profile v = \"filament.value.complete/v1\";\n",
         "function imported using v(x: Integer): Integer pure { x }\n",
         "function outer using v(x: Integer): Integer pure { imported(x) }\n",
     );
@@ -663,7 +664,7 @@ mod tests {
     }
 
     fn admitted() -> (CheckedPackageV2, CheckedNodeId, CheckedNodeId) {
-        let compiled = acquire_checked_closure(
+        let compiled = acfilament_checked_closure(
             CompileUnit {
                 source: identity(),
                 package_name: "function-owner".to_owned(),
@@ -677,7 +678,7 @@ mod tests {
         )
         .expect("genuine checked source");
         let mut evidence = CheckedPackageEvidence::new();
-        evidence.support_feature("quire.value.complete/v1");
+        evidence.support_feature("filament.value.complete/v1");
         let read = CheckedPackageV2::read(
             compiled.package().bytes(),
             CheckedPackageReadLimits::bounded(),
@@ -706,7 +707,7 @@ mod tests {
     }
 
     fn separately_admitted_unit() -> CheckedPackageV2 {
-        let compiled = acquire_checked_closure(
+        let compiled = acfilament_checked_closure(
             CompileUnit {
                 source: identity(),
                 package_name: "function-owner".to_owned(),
@@ -720,7 +721,7 @@ mod tests {
         )
         .expect("second genuine checked source");
         let mut evidence = CheckedPackageEvidence::new();
-        evidence.support_feature("quire.value.complete/v1");
+        evidence.support_feature("filament.value.complete/v1");
         let CheckedPackageV2ReadResult::Admitted(package) = CheckedPackageV2::read(
             compiled.package().bytes(),
             CheckedPackageReadLimits::bounded(),
@@ -739,7 +740,7 @@ mod tests {
         String,
     ) {
         let library_source = SourceIdentity::new("agent-ix", "function-library");
-        let library_compiled = acquire_checked_closure(
+        let library_compiled = acfilament_checked_closure(
             CompileUnit {
                 source: library_source.clone(),
                 package_name: "test/function-library".to_owned(),
@@ -753,7 +754,7 @@ mod tests {
         )
         .expect("genuine library source");
         let mut library_evidence = CheckedPackageEvidence::new();
-        library_evidence.support_feature("quire.value.complete/v1");
+        library_evidence.support_feature("filament.value.complete/v1");
         let library_read = CheckedPackageV2::read(
             library_compiled.package().bytes(),
             CheckedPackageReadLimits::bounded(),
@@ -777,18 +778,18 @@ mod tests {
             .clone();
         let unit_source = concat!(
             "language \"ix:native\" edition \"1-draft\";\n",
-            "profile v = \"quire.value.complete/v1\";\n",
+            "profile v = \"filament.value.complete/v1\";\n",
             "import \"test/function-library\" as lib;\n",
             "function caller using v(x: Integer): Integer pure { lib::imported(x) }\n",
         );
-        let dependencies = DependencyInput::new([qsl_replay::SuppliedLibrary {
+        let dependencies = DependencyInput::new([fsl_replay::SuppliedLibrary {
             identity: "test/function-library".to_owned(),
             source: library_source,
             path: "function-library.native".to_owned(),
             bytes: LIBRARY_SOURCE.as_bytes().to_vec(),
         }])
         .expect("one authentic supplied library");
-        let unit_compiled = acquire_checked_closure(
+        let unit_compiled = acfilament_checked_closure(
             CompileUnit {
                 source: identity(),
                 package_name: "function-importer".to_owned(),
@@ -802,7 +803,7 @@ mod tests {
         )
         .expect("unit imports the supplied library");
         let mut unit_evidence = CheckedPackageEvidence::new();
-        unit_evidence.support_feature("quire.value.complete/v1");
+        unit_evidence.support_feature("filament.value.complete/v1");
         unit_evidence
             .insert_dependency_package("test/function-library", Arc::clone(&library))
             .expect("retain the admitted declaring package");
@@ -854,7 +855,7 @@ mod tests {
             &mut self,
             input: Resume,
             _meter: &mut Meter,
-        ) -> Result<Transition, quire_eval::BodyFailure> {
+        ) -> Result<Transition, filament_eval::BodyFailure> {
             match input {
                 Resume::Start(mut arguments) if arguments.len() == 1 => {
                     Ok(Transition::Done(Evaluation::completed(arguments.remove(0))))
@@ -888,7 +889,7 @@ mod tests {
             &mut self,
             input: Resume,
             _meter: &mut Meter,
-        ) -> Result<Transition, quire_eval::BodyFailure> {
+        ) -> Result<Transition, filament_eval::BodyFailure> {
             match input {
                 Resume::Start(arguments) => Ok(Transition::Call(ChildRequest {
                     callee: self.callee.clone(),
@@ -995,7 +996,7 @@ mod tests {
     #[test]
     fn nested_call_site_comes_from_the_selected_checked_body() {
         let (unit, library, imported_function, dependencies, source_bytes) = imported();
-        let acquired = acquire_checked_closure(
+        let acquired = acfilament_checked_closure(
             CompileUnit {
                 source: identity(),
                 package_name: "function-importer".to_owned(),
@@ -1054,7 +1055,7 @@ mod tests {
         assert_eq!(site.location(), issued.location());
         assert!(matches!(
             &site.location().origin,
-            quire_semantic_value::location::ExpressionOwner::Body { function, .. } if function == "caller"
+            filament_semantic_value::location::ExpressionOwner::Body { function, .. } if function == "caller"
         ));
 
         let wrong_ordinal = handle.handle().nested_call_site(
@@ -1110,7 +1111,7 @@ mod tests {
         );
         assert!(matches!(
             &imported_site.location().origin,
-            quire_semantic_value::location::ExpressionOwner::Body { function, .. } if function == "outer"
+            filament_semantic_value::location::ExpressionOwner::Body { function, .. } if function == "outer"
         ));
     }
 
@@ -1319,7 +1320,7 @@ mod tests {
             package_bytes(&unit).unwrap(),
             package_bytes(&unrelated).unwrap()
         );
-        let acquisition = acquire_checked_closure(
+        let acquisition = acfilament_checked_closure(
             CompileUnit {
                 source: identity(),
                 package_name: "function-owner".to_owned(),
@@ -1342,7 +1343,7 @@ mod tests {
     #[test]
     fn post_lookup_guard_refuses_a_genuine_second_selection() {
         let (package, f, g) = admitted();
-        let acquisition = acquire_checked_closure(
+        let acquisition = acfilament_checked_closure(
             CompileUnit {
                 source: identity(),
                 package_name: "function-owner".to_owned(),

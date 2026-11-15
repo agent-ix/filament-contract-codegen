@@ -11,7 +11,7 @@ use std::{
     sync::atomic::{AtomicU64, Ordering},
 };
 
-use quire_exact::Cancel;
+use filament_exact::Cancel;
 
 use crate::kani::run::process::{
     run_bounded_process, ProcessError, ProcessLimits, ProcessOutcome, ProcessRequest, ProcessRun,

@@ -24,8 +24,8 @@ use std::{
     time::{Duration, Instant},
 };
 
-use quire_contract_ir::kani::KaniCancellationSource;
-use quire_exact::Cancel;
+use filament_contract_ir::kani::KaniCancellationSource;
+use filament_exact::Cancel;
 use serde::Serialize;
 
 use crate::kani::{
@@ -1788,7 +1788,7 @@ mod tests {
         stale: Option<&str>,
         shared_target: Option<&Path>,
     ) -> Result<report_fixture::FixtureExecution, KaniExecutionRefusal> {
-        let cancel = quire_exact::Cancel::new();
+        let cancel = filament_exact::Cancel::new();
         let directory = discover_scratch(name);
         let crate_directory = directory.join("crate");
         let target_directory =
@@ -1893,7 +1893,7 @@ mod tests {
     #[trace("FR-017-AC-6", "TC-027")]
     #[test]
     fn tc_027_the_launch_exports_the_report_after_the_harness_options() {
-        let cancel = quire_exact::Cancel::new();
+        let cancel = filament_exact::Cancel::new();
         let harness = state_frame_harness(
             StateFrameProperty::Frame {
                 granted: Vec::new(),
@@ -2045,8 +2045,8 @@ mod two_phase_tests;
 
 #[cfg(test)]
 pub(crate) mod batch_tests {
+    use filament_contract_ir::kani::KaniOutcomeKind;
     use ix_trace_rs::trace;
-    use quire_contract_ir::kani::KaniOutcomeKind;
     use std::path::PathBuf;
 
     use super::*;
@@ -2466,7 +2466,9 @@ pub(crate) mod batch_tests {
                 assert!(Instant::now() < deadline, "the playback process started");
                 std::thread::yield_now();
             }
-            cancelled.cancel.cancel(quire_exact::CancelCause::Requested);
+            cancelled
+                .cancel
+                .cancel(filament_exact::CancelCause::Requested);
             worker.join().unwrap().unwrap()
         });
         assert!(matches!(
@@ -2877,13 +2879,13 @@ exit 0
         };
         let module = format!("collection_{}", quantifier.rsplit('.').next().unwrap());
         let harness = "check";
-        let id = |label: &str| -> quire_contract_model::CheckedNodeId {
+        let id = |label: &str| -> filament_contract_model::CheckedNodeId {
             serde_json::from_value(serde_json::json!({
                 "package": "runner-fixture", "path": [label], "ordinal": 0,
             }))
             .expect("a node id")
         };
-        let package: quire_contract_model::ContractSourceV1 =
+        let package: filament_contract_model::ContractSourceV1 =
             serde_json::from_value(serde_json::json!({
                 "name": "runner-fixture",
                 "lock": {
@@ -3008,7 +3010,7 @@ exit 0
     fn collection_totality_controls_single_readonly_and_batch_evidence() {
         use serde_json::json;
 
-        let harness = runner_precondition_fixture("quire.op.collection.forall");
+        let harness = runner_precondition_fixture("filament.op.collection.forall");
         let marker = harness.identity.collection_precondition.as_ref().unwrap();
         assert_eq!(
             harness
@@ -3287,7 +3289,7 @@ exit 0
             Err(KaniExecutionRefusal::HarnessProvenanceMismatch { .. })
         ));
 
-        let other = runner_precondition_fixture("quire.op.collection.exists");
+        let other = runner_precondition_fixture("filament.op.collection.exists");
         let other_path = format!(
             "{}::{}",
             other.identity.module_symbol, other.identity.harness_symbol
@@ -3338,7 +3340,7 @@ exit 0
     #[trace("FR-015-AC-9", "TC-025")]
     #[test]
     fn a_tampered_witness_vector_of_a_clause_harness_is_a_provenance_mismatch() {
-        let harness = runner_precondition_fixture("quire.op.collection.forall");
+        let harness = runner_precondition_fixture("filament.op.collection.forall");
         assert!(KaniExecutableHarness::from(&harness).has_valid_provenance());
         let mut tampered = harness.clone();
         tampered.identity.witness_options.push("--extra".to_owned());
@@ -3400,7 +3402,9 @@ exec sleep 45
                 assert!(Instant::now() < until, "backend wrote over-limit output");
                 std::thread::yield_now();
             }
-            stand_in.cancel.cancel(quire_exact::CancelCause::Requested);
+            stand_in
+                .cancel
+                .cancel(filament_exact::CancelCause::Requested);
             worker.join().unwrap()
         });
         assert!(
@@ -3423,11 +3427,11 @@ exec sleep 45
     fn cancellation_before_spawn_has_no_backend_or_report() {
         for (cause, source) in [
             (
-                quire_exact::CancelCause::Requested,
+                filament_exact::CancelCause::Requested,
                 KaniCancellationSource::Requested,
             ),
             (
-                quire_exact::CancelCause::Deadline,
+                filament_exact::CancelCause::Deadline,
                 KaniCancellationSource::Deadline,
             ),
         ] {
@@ -3446,7 +3450,7 @@ exec sleep 45
                 assert_eq!(ir.kind(), KaniOutcomeKind::Cancelled { source });
                 assert_eq!(
                     terminal,
-                    qsl_replay::TerminalValue::Incomplete(qsl_replay::IncompleteCause::Cancelled {
+                    fsl_replay::TerminalValue::Incomplete(fsl_replay::IncompleteCause::Cancelled {
                         source: cause
                     })
                 );
@@ -3465,7 +3469,7 @@ exec sleep 45
     fn cancel_running<R: Send + std::fmt::Debug>(
         stand_in: &StandIn,
         cancel: &Cancel,
-        causes: [quire_exact::CancelCause; 2],
+        causes: [filament_exact::CancelCause; 2],
         run: impl FnOnce() -> R + Send,
     ) -> R {
         std::thread::scope(|scope| {
@@ -3473,7 +3477,7 @@ exec sleep 45
             let until = Instant::now() + T;
             while !stand_in.directory.join("calls.ready").is_file() {
                 if Instant::now() >= until {
-                    cancel.cancel(quire_exact::CancelCause::Requested);
+                    cancel.cancel(filament_exact::CancelCause::Requested);
                     panic!("the stand-in backend never reported ready");
                 }
                 std::thread::sleep(Duration::from_millis(5));
@@ -3606,11 +3610,15 @@ exec sleep 45
                     scope.spawn(|| execute_kani_obligation(&stand_in.request(&harness, T)));
                 pipe.entered();
                 if cancel_before_unread {
-                    stand_in.cancel.cancel(quire_exact::CancelCause::Requested);
+                    stand_in
+                        .cancel
+                        .cancel(filament_exact::CancelCause::Requested);
                     pipe.release();
                 } else {
                     pipe.release();
-                    stand_in.cancel.cancel(quire_exact::CancelCause::Requested);
+                    stand_in
+                        .cancel
+                        .cancel(filament_exact::CancelCause::Requested);
                 }
                 let refusal = worker.join().unwrap().unwrap_err();
                 assert!(
@@ -3634,7 +3642,7 @@ exec sleep 45
     #[trace("FR-040-AC-1", "FR-040-AC-2", "FR-040-AC-6")]
     #[test]
     fn live_cancellation_preserves_first_event_through_ir_and_qsl() {
-        use quire_exact::CancelCause::{Deadline, Requested};
+        use filament_exact::CancelCause::{Deadline, Requested};
         for (causes, expected) in [
             ([Requested, Deadline], KaniCancellationSource::Requested),
             ([Deadline, Requested], KaniCancellationSource::Deadline),
@@ -3661,7 +3669,7 @@ exec sleep 45
             assert_eq!(ir.boolean_claim(), None);
             assert_eq!(
                 terminal,
-                qsl_replay::TerminalValue::Incomplete(qsl_replay::IncompleteCause::Cancelled {
+                fsl_replay::TerminalValue::Incomplete(fsl_replay::IncompleteCause::Cancelled {
                     source: causes[0]
                 })
             );
@@ -3677,7 +3685,7 @@ exec sleep 45
     #[trace("FR-040-AC-5")]
     #[test]
     fn cancelled_batch_retains_first_source_and_independent_group() {
-        use quire_exact::CancelCause::{Deadline, Requested};
+        use filament_exact::CancelCause::{Deadline, Requested};
         for (causes, expected) in [
             ([Requested, Deadline], KaniCancellationSource::Requested),
             ([Deadline, Requested], KaniCancellationSource::Deadline),
@@ -3764,7 +3772,9 @@ exec sleep 45
         let completed = StandIn::running("cancel-after-completion", VERIFY_EVERY_HARNESS);
         completed.containing(&[&harness]);
         let evidence = execute_kani_obligation(&completed.request(&harness, T)).unwrap();
-        completed.cancel.cancel(quire_exact::CancelCause::Deadline);
+        completed
+            .cancel
+            .cancel(filament_exact::CancelCause::Deadline);
         assert_eq!(evidence.outcome, KaniRunOutcome::Verified);
         assert_eq!(evidence.cancellation_terminal_value().unwrap(), None);
         let mut timed_harness = harness.clone();
@@ -3773,7 +3783,7 @@ exec sleep 45
         timed.containing(&[&timed_harness]);
         let evidence =
             execute_kani_obligation(&timed.request(&timed_harness, Duration::ZERO)).unwrap();
-        timed.cancel.cancel(quire_exact::CancelCause::Deadline);
+        timed.cancel.cancel(filament_exact::CancelCause::Deadline);
         assert_eq!(
             evidence.outcome,
             KaniRunOutcome::Inconclusive {
@@ -3993,7 +4003,7 @@ exec sleep 45
     #[trace("FR-017-AC-21", "FR-028-AC-12", "TC-039", "TC-043")]
     #[test]
     fn tc_043_the_member_timeout_is_whole_seconds_rounded_up_and_omitted_above_kani_maximum() {
-        let cancel = quire_exact::Cancel::new();
+        let cancel = filament_exact::Cancel::new();
         let installation = KaniInstallation::new(PathBuf::from("cargo-kani"));
         let harness = member("a", "check", 4);
         let timeout_argument = |timeout: Duration| -> Option<String> {
@@ -4039,7 +4049,7 @@ exec sleep 45
     #[trace("FR-017-AC-21", "TC-043")]
     #[test]
     fn tc_043_requests_naming_another_launcher_crate_or_target_directory_are_not_grouped() {
-        let cancel = quire_exact::Cancel::new();
+        let cancel = filament_exact::Cancel::new();
         let (a, b) = (member("a", "check", 4), member("b", "check", 4));
 
         // Another launcher: each launcher runs one harness.
@@ -6029,7 +6039,7 @@ printf '%s' "$!" > "$CALLS.child"
     fn sealed_scalar_launch_selects_the_library_without_changing_proof_options() {
         let (harness, _) =
             crate::kani::test_support::scalar_source_fixture(Duration::from_secs(600));
-        let cancel = quire_exact::Cancel::new();
+        let cancel = filament_exact::Cancel::new();
         let installation = KaniInstallation::new("cargo-kani");
         let request = KaniExecutionRequest {
             cancel: &cancel,

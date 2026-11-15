@@ -5,7 +5,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedNodeId, CheckedNodeTag, CheckedPackageV2, CheckedSourceMapEntry,
     CompleteLoweringProfileV2, ContractFeatureRecordV1, ContractOccurrenceKeyV1, ContractPackageV1,
     ContractReachedClosureV1, ContractRootViewError, ContractRootViewV1, ContractSourceKeyV1,
@@ -300,7 +300,7 @@ impl<'a> PackageItems<'a> {
                 ContractRequestPosition::ContextRoot { .. } => {}
             }
         }
-        let output_frame = qsl_replay::WireGraph::new(
+        let output_frame = fsl_replay::WireGraph::new(
             package
                 .wire()
                 .semantic_graph
@@ -309,7 +309,7 @@ impl<'a> PackageItems<'a> {
                 .map(|node| &node.node_id),
         )
         .ok();
-        let source_frame = qsl_replay::WireGraph::new(
+        let source_frame = fsl_replay::WireGraph::new(
             source
                 .resolved_graph()
                 .nodes

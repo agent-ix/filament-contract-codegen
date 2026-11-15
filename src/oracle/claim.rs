@@ -7,7 +7,7 @@
 //! be blocked on. A new generator returns these with its own type parameters
 //! and does not edit this module.
 
-use quire_contract_model::ContractSourceV1;
+use filament_contract_model::ContractSourceV1;
 use serde::Serialize;
 
 /// Upstream work an item, or a whole generation, is blocked on.
@@ -22,7 +22,7 @@ pub enum UpstreamBlocker {
     FilamentSpecLanguage121,
     /// Function application: Contract Runtime publishes no
     /// function-application operator surface to call.
-    #[serde(rename = "agent-ix/quire-contract-runtime#34")]
+    #[serde(rename = "agent-ix/filament-contract-runtime#34")]
     FilamentContractRuntime34,
     /// The generator classified the item from its body and the request's own
     /// descriptor and did not confirm the node's catalogued operation, so it
@@ -88,9 +88,9 @@ pub enum OracleGenerationError {
     /// The original checked package could not be canonically re-encoded for an exact comparison.
     CheckedPackageEncoding,
     /// Genuine enum lookup succeeded but semantic reconstruction did not.
-    EnumReconstruction(quire_semantic_value::semantic_node::InvalidSemanticGraph),
+    EnumReconstruction(filament_semantic_value::semantic_node::InvalidSemanticGraph),
     /// Bounded declaration admission failed before an equality plan could be checked.
-    EnvironmentAdmission(quire_semantic_value::declaration::EnvironmentFailure),
+    EnvironmentAdmission(filament_semantic_value::declaration::EnvironmentFailure),
     /// The caller's request sequence disagrees with admitted FR-330 accounting.
     PackageRequest(crate::core::contract_package::PackageRequestError),
     /// A plain V1 read cannot authenticate the kind of a requested temporal root.
@@ -98,7 +98,7 @@ pub enum OracleGenerationError {
         /// Original driver request index, independent of input slice order.
         request_index: usize,
         /// Requested call or declaration-body root, not the first unsupported descendant.
-        node_id: quire_contract_model::CheckedNodeId,
+        node_id: filament_contract_model::CheckedNodeId,
     },
     /// A lowered record has no admitted Contract IR package value.
     ContractPackageUnavailable,
@@ -147,11 +147,11 @@ pub enum OracleGenerationError {
         enum_name: &'static str,
     },
     /// The Kani-harness entry's strict read of the retained package bytes refused them.
-    KaniReaderRefused(Box<quire_contract_model::CheckedPackageRefusal>),
+    KaniReaderRefused(Box<filament_contract_model::CheckedPackageRefusal>),
     /// The Kani-harness entry's strict read of the retained package bytes hit a caller limit.
-    KaniReaderIncomplete(Box<quire_contract_model::CheckedPackageIncomplete>),
+    KaniReaderIncomplete(Box<filament_contract_model::CheckedPackageIncomplete>),
     /// The Kani-harness entry's strict reader could not read its operation catalog.
-    KaniReaderCatalogUnavailable(Box<quire_contract_model::CatalogReadError>),
+    KaniReaderCatalogUnavailable(Box<filament_contract_model::CatalogReadError>),
     /// Acquisition, selection, nominal-declaration reading or prepared-function
     /// construction refused on the Kani-harness entry's genuine owner path.
     KaniOwnerPathRefused {
@@ -168,7 +168,7 @@ pub enum OracleGenerationError {
     /// Kani obligation; no harness, data or differential is emitted for it.
     KaniNestedCallBody {
         /// The requested function node.
-        function: quire_contract_model::CheckedNodeId,
+        function: filament_contract_model::CheckedNodeId,
     },
 }
 

@@ -95,6 +95,9 @@ needs IR-1541.
      one final cover satisfied (AC-7).
    - Once IR-1541 lands, assert at least one `Verified` native-route shape per
      operation and profile, at minimum the 8-bit constant divisor (AC-7).
+   - Assert the native-route rows copied from the kernel's record (filament-exact
+     TC-957): per operation one `tractable` row at 8 bits and one `not_tractable`
+     row at 16 bits, each with `route` native, refusing only native clauses.
    - Tool versions in the record are optional and not asserted.
    - Record each shape that did not finish as a `not_tractable` row of the
      shipped scalar table.
