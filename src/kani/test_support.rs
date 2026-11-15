@@ -245,7 +245,7 @@ pub(crate) fn scalar_source_fixture(
             "ordinal": 0,
         }))
         .expect("generated host_scalar::oracle structural node id"),
-        operation_identity: "filament.op.integer.add".into(),
+        operation_identity: "quire.op.integer.add".into(),
         oracle_symbol: "oracle".into(),
         module_symbol: ModuleSymbol::try_from("host_scalar").unwrap(),
         harness_symbol: HarnessSymbol::try_from("check").unwrap(),

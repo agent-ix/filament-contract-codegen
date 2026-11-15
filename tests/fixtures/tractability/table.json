@@ -1,7 +1,7 @@
 [
   {
     "operation_ids": [
-      "filament.op.integer.mul"
+      "quire.op.integer.mul"
     ],
     "route": "general",
     "max_operand_bits": 15,
@@ -17,7 +17,7 @@
   },
   {
     "operation_ids": [
-      "filament.op.integer.add"
+      "quire.op.integer.add"
     ],
     "route": "general",
     "max_operand_bits": 15,

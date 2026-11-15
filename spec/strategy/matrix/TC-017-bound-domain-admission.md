@@ -26,7 +26,7 @@ IR-703's public accessor is implemented in Contract IR.
 2. Through public IR admission, construct an invariant with a direct typed `amount < 7` comparison,
    `amount` bounded 0..=1000, and its reversed-order counterpart. Inspect authored operand order,
    operator, provenance, observation and literal position. Assert FSL lowers ConfigVersion's `=`
-   to `filament.op.integer.eq` on the admitted package.
+   to `quire.op.integer.eq` on the admitted package.
 3. Put a valid requested claim beside a comparison-oracle-refused sibling in one package. Request
    each claim separately. Exercise a selected-claim oracle-construction failure, each of the six
    operators through the planned V2 comparison-oracle path, arithmetic and Boolean operands,

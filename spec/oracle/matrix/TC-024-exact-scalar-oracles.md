@@ -346,7 +346,7 @@ by filament-integration IR-842.
    one entry-token probe inside each consequent's region; dropping or duplicating a region leaves the
    declared count unchanged (FR-014-AC-36).
 3. From a FSL-emitted, strict-reader-admitted V2 state-clause package, select a clause whose
-   `filament.op.state.clause` body's third argument references a separate Boolean expression node.
+   `quire.op.state.clause` body's third argument references a separate Boolean expression node.
    Request the clause node id and assert that its descriptor and generated `ir_confirmed`
    `Outcome<bool>` oracle evaluate the referenced expression, while the claim and oracle retain
    the clause node id rather than the expression node id. Exercise current and `pre(...)` field
@@ -359,7 +359,7 @@ by filament-integration IR-842.
 
 1. Author FSL source with a bounded `amount` parameter and a clause comparison
    against literal `0` that the checker lowers as a literal reference wrapped by
-   `filament.op.numeric.narrow`. Use FSL's public emitter and Contract IR's strict
+   `quire.op.numeric.narrow`. Use FSL's public emitter and Contract IR's strict
    reader; inspect the admitted conversion's `type_argument`, sole literal
    reference and target integer range. Select the clause identity through public
    CG and require an `ir_confirmed` generated oracle. Against independent
@@ -498,7 +498,7 @@ agreement with the FSL value authority.
 
 1. Through the public FSL facade, emit a carried-source quantity conversion
    (TC-187 U01 by reference), `a = b` over IEEE operands, and all three
-   `filament::value::ieee::*` comparison intrinsics. Pass the emitted bytes unchanged
+   `quire::value::ieee::*` comparison intrinsics. Pass the emitted bytes unchanged
    to Contract IR's strict reader. Select actual admitted node identities and
    derive their descriptors; do not substitute hand-built packages for these
    source-emission controls. Record the existing carried-operand type mismatch
@@ -539,7 +539,7 @@ CG-to-owner agreement evidence only; the Kani row for these identities is
 FR-053 and TC-067, and agreement with the FSL value authority stays with
 filament-integration IR-842.
 
-1. Through the public FSL facade, emit `filament::value::ieee::sqrt` and `fma`
+1. Through the public FSL facade, emit `quire::value::ieee::sqrt` and `fma`
    calls at `Float32[r]` and `Float64[r]`, pass the bytes unchanged to Contract
    IR's strict reader, select the actual admitted node ids and derive their
    items. Assert each item is derived and `ir_confirmed`, and that each
@@ -620,5 +620,5 @@ grants no execution credit until its tests run.
    including a zero divisor and `i64::MIN rem -1`.
 4. Mutation controls: render `rem` as `modulo`, and with
    `DivisionMember::Quotient`; each must fail step 3. Assert that
-   `filament.op.integer.rem` is no longer in the refused-identity list and that
+   `quire.op.integer.rem` is no longer in the refused-identity list and that
    every other refused identity keeps its refusal.

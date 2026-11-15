@@ -189,19 +189,19 @@ impl OriginalScalarContext {
             })
             .collect::<Result<Vec<_>, ScalarBuildError>>()?;
         let operation = match (identity.operation_identity.as_str(), operands.as_slice()) {
-            ("filament.op.integer.add", [left, right]) => ScalarOperation::Add {
+            ("quire.op.integer.add", [left, right]) => ScalarOperation::Add {
                 left: left.clone(),
                 right: right.clone(),
             },
-            ("filament.op.integer.sub", [left, right]) => ScalarOperation::Subtract {
+            ("quire.op.integer.sub", [left, right]) => ScalarOperation::Subtract {
                 left: left.clone(),
                 right: right.clone(),
             },
-            ("filament.op.integer.mul", [left, right]) => ScalarOperation::Multiply {
+            ("quire.op.integer.mul", [left, right]) => ScalarOperation::Multiply {
                 left: left.clone(),
                 right: right.clone(),
             },
-            ("filament.op.integer.negate", [operand]) => ScalarOperation::Negate {
+            ("quire.op.integer.negate", [operand]) => ScalarOperation::Negate {
                 operand: operand.clone(),
             },
             _ => return Err(ScalarBuildError::Operation),

@@ -206,7 +206,7 @@ fn same_shaped_record_and_tuple_names_keep_distinct_repeatable_owner_identities(
 /// Retain source, complete package and capability together; no expressions are appended or rekeyed.
 pub(super) fn assert_authentic_recursive_item_generation() {
     let source = concat!(
-        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\n",
+        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\n",
         "record List { next: List?; }\nrecord Tree { kids: Sequence<Tree>[0, 3]; }\n",
         "function list_same using v(a: List,b: List): Boolean pure { a = b }\n",
         "function tree_same using v(a: Tree,b: Tree): Boolean pure { a = b }\n",
@@ -623,7 +623,7 @@ fn source_context_comparison_distinguishes_checked_term_sidecar_presence() {
     )
     .expect("encode a package without its checked-term sidecar");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("filament.value.complete/v1");
+    evidence.support_feature("quire.value.complete/v1");
     let without_data =
         match CheckedPackageV2::read(&bytes, CheckedPackageReadLimits::bounded(), &evidence) {
             CheckedPackageV2ReadResult::Admitted(package) => package,
@@ -639,7 +639,7 @@ fn source_context_comparison_distinguishes_checked_term_sidecar_presence() {
 #[trace("FR-018-AC-2", "FR-018-AC-8", "FR-018-AC-17", "TC-029")]
 #[test]
 fn genuine_union_reconstruction_compiles_and_prepares_typed_members() {
-    let source = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nunion Shape { Empty, Flag(Boolean) }\nfunction f using v(a: Shape,b: Shape): Boolean pure { a = b }\n";
+    let source = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nunion Shape { Empty, Flag(Boolean) }\nfunction f using v(a: Shape,b: Shape): Boolean pure { a = b }\n";
     let compiled = qsl_replay::compile_admitted(
         qsl_replay::CompileUnit {
             source: qsl_replay::SourceIdentity::new("test", "union.native"),

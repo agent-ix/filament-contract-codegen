@@ -1184,7 +1184,7 @@ mod native_publication_tests {
             let node = node_id(char::from(b'b' + u8::try_from(index).expect("two items")));
             let (_, selection) = super::super::native::select(
                 &node,
-                "filament.op.integer.add",
+                "quire.op.integer.add",
                 symbol,
                 IntegerOperator::Add,
                 &[(0, 9), (1, 1)],
@@ -1195,7 +1195,7 @@ mod native_publication_tests {
             items.push(ExactScalarClaim {
                 node_id: node.clone(),
                 operation: OperationClaim {
-                    identity: "filament.op.integer.add".to_owned(),
+                    identity: "quire.op.integer.add".to_owned(),
                     provenance: OperationProvenance::IrConfirmed,
                 },
                 result: ClaimDisposition::Generated(Box::new(GeneratedScalarClaim {

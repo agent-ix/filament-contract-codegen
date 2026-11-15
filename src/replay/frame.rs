@@ -60,7 +60,7 @@ pub struct FrameReplayInputs<'a> {
     pub selected_item: SelectedFrameItem<'a>,
     /// The driver's FSL target and its association to that item.
     pub selected_target: Option<SelectedFrameTarget>,
-    /// The `filament.state.invocation/v1` document.
+    /// The `quire.state.invocation/v1` document.
     pub invocation: DocumentRef,
     /// The change the counterexample claims.
     pub change: ClaimedChange,

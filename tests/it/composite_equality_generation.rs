@@ -475,7 +475,7 @@ fn tc_029_ac32_direct_control_case_refusal_preserves_healthy_equality_sibling() 
             &key(BOOLEAN),
             json!({
                 "term":"application", "operator":"binary",
-                "operation":{"identity":"filament.op.integer.eq","laws":[],"mode":null,"member":null,"leaves":[]},
+                "operation":{"identity":"quire.op.integer.eq","laws":[],"mode":null,"member":null,"leaves":[]},
                 "result_type":reference(BOOLEAN)["target"].clone(),
                 "arguments":integer_literals.iter().map(|id| json!({"term":"reference","target":id})).collect::<Vec<_>>(),
             }),
@@ -652,7 +652,7 @@ fn tc_029_ac24_recursive_list_and_tree_items_emit_one_oracle_each() {
         ("record SelfRecord { next: SelfRecord?; }\n", "SelfRecord"),
         ("record Tree { children: Sequence<Tree>[0, 2]; }\n", "Tree"),
     ] {
-        let source = format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\n{declarations}function f using v(a: {name},b: {name}): Boolean pure {{ a = b }}\n");
+        let source = format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\n{declarations}function f using v(a: {name},b: {name}): Boolean pure {{ a = b }}\n");
         let compiled = genuine_fixture::compile_source(&source);
         let package = super::admitted_enum_equality::checked(&compiled, &[]);
         let item = super::composite_equality_agreement::original_item(&package, false);
@@ -802,7 +802,7 @@ fn tc_029_authoritative_fspec_recursive_items_generate_through_reader() {
         String::from_utf8_lossy(&output.stderr)
     );
     let mut evidence = quire_contract_model::CheckedPackageEvidence::new();
-    evidence.support_feature("filament.value.complete/v1");
+    evidence.support_feature("quire.value.complete/v1");
     let wire: serde_json::Value =
         serde_json::from_slice(&output.stdout).expect("FSpec fixture JSON");
     let canonical = serde_json::to_vec(&wire).expect("canonical FSpec fixture");
@@ -1116,7 +1116,7 @@ fn tc_029_a_body_operand_disagreeing_with_the_descriptor_refuses_before_generati
 #[trace("FR-018-AC-6", "TC-029")]
 #[test]
 fn tc_029_ac6_ieee_at_any_depth_is_operator_ineligible() {
-    let source = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nrecord FloatRecord { f: Float64; }\nrecord IntegerRecord { f: Integer; }\n";
+    let source = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nrecord FloatRecord { f: Float64; }\nrecord IntegerRecord { f: Integer; }\n";
     let compiled =
         super::admitted_composite_fixture::compile(source, &qsl_replay::DependencyInput::default());
     let owner_key = |name: &str| {
@@ -1440,7 +1440,7 @@ fn tc_029_ac7_a_direct_reference_operand_is_refused_by_ir_today() {
 #[test]
 fn tc_029_ac8_a_duplicate_field_is_refused_with_its_declaration_cause() {
     let source = concat!(
-        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\n",
+        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\n",
         "record Point { x: Integer; x: Integer; }\n",
         "function f using v(a: Point,b: Point): Boolean pure { a = b }\n",
     );
@@ -1850,7 +1850,7 @@ fn tc_029_ac13_declaration_keys_are_the_reached_v2_node_ids() {
 /// Generate an unchanged genuine tuple source; extra declarations remain original context,
 /// never synthetic nodes or a context borrowed from an unrelated source.
 fn genuine_tuple_source(members: &str, extras: &str) -> (CompositeEqualityOracles, String) {
-    let source = format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\ntuple Pair({members});\n{extras}function f using v(a: Pair,b: Pair): Boolean pure {{ a = b }}\n");
+    let source = format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\ntuple Pair({members});\n{extras}function f using v(a: Pair,b: Pair): Boolean pure {{ a = b }}\n");
     let compiled = genuine_fixture::compile_source(&source);
     let package = super::admitted_enum_equality::checked(&compiled, &[]);
     let item = super::composite_equality_agreement::original_item(&package, false);
@@ -2352,7 +2352,7 @@ fn tc_029_nominal_owner_lookups_use_only_structural_wire_identities() {
             "generated nominal lookup contains {forbidden}"
         );
     }
-    assert!(contents(&oracles, "Cargo.toml").contains("filament-contract-model ="));
+    assert!(contents(&oracles, "Cargo.toml").contains("quire-contract-model ="));
 }
 
 /// Numeric reconstruction retains its exact errors; context preparation preserves lookup and

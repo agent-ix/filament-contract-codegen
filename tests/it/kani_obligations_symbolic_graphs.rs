@@ -114,7 +114,7 @@ fn try_authored_clause(
     let limits = quire_canonical::Limits::new(1 << 20);
     let bytes = quire_canonical::to_vec(document, limits).unwrap();
     let source = format!(
-        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.model.complete/v1\";\nmodel M = \"ir268.test/domain\";\n{bound}predicate inspect using v (input: M::Node): Boolean {{ true }}\n{}\n",
+        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.model.complete/v1\";\nmodel M = \"ir268.test/domain\";\n{bound}predicate inspect using v (input: M::Node): Boolean {{ true }}\n{}\n",
         declarations.join("\n")
     );
     let site = call_site(
@@ -128,7 +128,7 @@ fn try_authored_clause(
     )
     .map_err(|error| format!("{error:?}"))?;
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("filament.value.complete/v1");
+    evidence.support_feature("quire.value.complete/v1");
     evidence
         .insert_domain_package_document("ir268.test/domain", bytes)
         .unwrap();
@@ -342,7 +342,7 @@ fn field_application(package: &CheckedPackageV2) -> CheckedNodeId {
         .iter()
         .find(|node| {
             matches!(&node.body, CheckedTerm::Application { operation, .. }
-                if operation.identity() == Some("filament.op.model.reaches_field"))
+                if operation.identity() == Some("quire.op.model.reaches_field"))
         })
         .expect("the claim lowers to a field-edge application")
         .node_id

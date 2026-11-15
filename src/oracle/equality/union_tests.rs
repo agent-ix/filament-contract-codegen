@@ -10,7 +10,7 @@ use quire_contract_model::{
 fn compilation() -> (CheckedPackageV2, qsl_replay::AdmittedContext) {
     let compiled = fixture::compile(fixture::UNION_SOURCE, &Default::default());
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("filament.value.complete/v1");
+    evidence.support_feature("quire.value.complete/v1");
     let read = CheckedPackageV2::read(
         compiled.package().bytes(),
         CheckedPackageReadLimits::bounded(),
@@ -325,7 +325,7 @@ fn union_lookup_and_seal_faults_keep_typed_causes_before_equality() {
             package_name: "union-importer".to_owned(),
             path: "union-importer.native",
             bytes:
-                br#"language "ix:native" edition "1-draft"; profile v = "filament.value.complete/v1";
+                br#"language "ix:native" edition "1-draft"; profile v = "quire.value.complete/v1";
         import "admitted-composites" as u;
         function healthy using v(a: Boolean,b: Boolean): Boolean pure { a = b }"#,
         },

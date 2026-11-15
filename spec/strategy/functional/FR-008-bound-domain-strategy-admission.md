@@ -112,7 +112,7 @@ broader clause forms do not enlarge FR-008's admitted relation grammar.
   own checks. Each request reports its first refusal only.
 - A postcondition directly authored as `self.versionNumber = pre(self.versionNumber)` SHALL be
   eligible when FSL emits and IR admits the ConfigVersion V2 package and both reads have the same
-  0..=1000 range and FSL lowers `=` to `filament.op.integer.eq`; the left `Post` and right `Pre`
+  0..=1000 range and FSL lowers `=` to `quire.op.integer.eq`; the left `Post` and right `Pre`
   entries share the record.project id while their contextual observations remain distinct. A synthetic graph fixture SHALL NOT substitute for
   this FSL-produced positive control.
 
@@ -129,7 +129,7 @@ broader clause forms do not enlarge FR-008's admitted relation grammar.
 
 | ID | Criteria | Verification |
 |----|----------|--------------|
-| FR-008-AC-1 | PLANNED (IR-364). A fresh FSL-produced, IR-admitted ConfigVersion V2 postcondition with direct `self.versionNumber = pre(self.versionNumber)` yields two `State` census entries in authored order, `Post` then `Pre`, each 0..=1000, with the same project id, `filament.op.integer.eq`, and the selected clause and authentic claim retained. The let-bound alias form yields a typed operand refusal and no bundle. | Test |
+| FR-008-AC-1 | PLANNED (IR-364). A fresh FSL-produced, IR-admitted ConfigVersion V2 postcondition with direct `self.versionNumber = pre(self.versionNumber)` yields two `State` census entries in authored order, `Post` then `Pre`, each 0..=1000, with the same project id, `quire.op.integer.eq`, and the selected clause and authentic claim retained. The let-bound alias form yields a typed operand refusal and no bundle. | Test |
 | FR-008-AC-2 | PLANNED (IR-364). An IR-admitted V2 `amount < 7` invariant with a typed current read of range 0..=1000 yields operator `Less`, primary `amount`, literal 7 and that inclusive census domain. Reversing the two authored operands preserves the reversed positions and corresponding operator semantics. | Test |
 | FR-008-AC-3 | PLANNED (IR-364). A valid selected comparison generates despite a comparison-oracle-refused sibling claim in the same package; requesting the refused claim returns its typed selected-claim cause and locus with no bundle. An oracle-construction failure for the selected claim returns no bundle. Each of integer.eq/ne/lt/le/gt/ge has an executable selected-claim comparison oracle whose result agrees with the ordered relation and generated tags. Arithmetic, alias, Boolean and literal-only shapes refuse at their own structural loci. | Test |
 | FR-008-AC-4 | PLANNED (IR-364). Unknown clause, absent claim, unsupported clause kind and malformed comparison report distinct typed causes in the stated first-defect order. Diagnostics carry selected clause and claim, structural path and reached child id when available, without claiming a unique child source region. | Test |

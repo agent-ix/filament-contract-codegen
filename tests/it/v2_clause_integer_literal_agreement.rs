@@ -184,7 +184,7 @@ fn public_v2_integer_literals_preserve_owner_semantics_and_every_denial_prefix()
                     matches!(
                         &candidate.body,
                         quire_contract_model::CheckedTerm::Application { operation, .. }
-                            if operation.identity() == Some("filament.op.numeric.narrow")
+                            if operation.identity() == Some("quire.op.numeric.narrow")
                     )
                 }),
                 "the FSL-authored bounded equality must contain the checked narrow wrapper"
@@ -222,7 +222,7 @@ fn case_{index}() {{
 "#, reference = case.reference, label = case.source, expected = case.expected, skipped = case.skipped_arithmetic).unwrap();
     }
     let manifest = format!(
-        "[package]\nname = \"v2-literal-native-agreement\"\nversion = \"0.0.0\"\nedition = \"2021\"\n\n[dependencies]\nfilament-exact = {{ {EXACT_DEPENDENCY_SOURCE}, features = [\"test-support\"] }}\nfilament-semantic-value = {{ {SEMANTIC_VALUE_DEPENDENCY_SOURCE} }}\n{}\nix-trace-rs = {{ git = \"https://github.com/agent-ix/ix-trace-rs\", branch = \"main\" }}\n[workspace]\n",
+        "[package]\nname = \"v2-literal-native-agreement\"\nversion = \"0.0.0\"\nedition = \"2021\"\n\n[dependencies]\nquire-exact = {{ {EXACT_DEPENDENCY_SOURCE}, features = [\"test-support\"] }}\nquire-semantic-value = {{ {SEMANTIC_VALUE_DEPENDENCY_SOURCE} }}\n{}\nix-trace-rs = {{ git = \"https://github.com/agent-ix/ix-trace-rs\", branch = \"main\" }}\n[workspace]\n",
         scratch_crate::runtime_dependency(&["exact"]),
     );
     scratch_crate::write_manifest(&scratch.path, &manifest);

@@ -36,7 +36,7 @@ fn base_node_ids() -> BaseNodeIds {
 /// `OPEN` member, a `Distance` dimension and a `pace` unit of it. The reader retains their
 /// producer-assigned paths independent of body edits.
 fn base_package() -> serde_json::Value {
-    const GRAPH: &str = "filament.checked-semantic-graph/v2";
+    const GRAPH: &str = "quire.checked-semantic-graph/v2";
     let ids = base_node_ids();
     let node_ref = |digest: &str| base_node_ref(digest);
     // Definitions and source documents have their own closed identity types.
@@ -102,19 +102,19 @@ fn base_package() -> serde_json::Value {
         .collect::<Vec<_>>();
 
     serde_json::json!({
-        "contract_version": "filament.checked-package/v2",
+        "contract_version": "quire.checked-package/v2",
         "name": BASE_PACKAGE_NAME,
         "lock": {
             "sources": [source, source_ref("example-units")],
             "edition": edition,
             "profile_selections": [],
             "definition_selections": [model],
-            "required_features": ["filament.value.complete/v1"],
+            "required_features": ["quire.value.complete/v1"],
             "dependency_selections": [],
         },
         "semantic_graph": {"graph_version": GRAPH, "nodes": nodes},
         "source_map": source_map,
-        "capability_report": [{"feature": "filament.value.complete/v1", "disposition": "available"}],
+        "capability_report": [{"feature": "quire.value.complete/v1", "disposition": "available"}],
         "diagnostics": {
             "catalog": definition("catalog"),
             "entries": [],

@@ -37,7 +37,7 @@ fn public_canonical_i64_literals_choose_the_primitive_constructor() {
             .descriptor
             .operation_identities
             .iter()
-            .any(|id| id == "filament.op.integer.ge"));
+            .any(|id| id == "quire.op.integer.ge"));
         if !generated
             .source
             .contains(&format!("Ok(rt::Integer::from({spelling}_i64))"))
@@ -84,7 +84,7 @@ fn public_negated_positive_two_to_63_keeps_its_child_and_owner_call() {
         .descriptor
         .operation_identities
         .iter()
-        .any(|id| id == "filament.op.integer.negate"));
+        .any(|id| id == "quire.op.integer.negate"));
     assert!(generated.source.contains("IntegerArithmetic::Negate"));
 }
 
@@ -99,7 +99,7 @@ fn reader_variant(
     let twin = Twin::with_balance_condition(condition);
     let (package, clause) = twin.emitted_package("BalanceNeverDrops");
     let mut wire = json!({
-        "contract_version": "filament.checked-package/v2",
+        "contract_version": "quire.checked-package/v2",
         "name": package.name(),
         "lock": package.lock(),
         "semantic_graph": package.graph(),
@@ -125,7 +125,7 @@ fn reader_variant(
     evidence
         .insert_domain_package_document(selected_model, document.bytes.clone())
         .unwrap();
-    evidence.support_feature("filament.value.complete/v1");
+    evidence.support_feature("quire.value.complete/v1");
     let resolved = rekey::resolve_wire(&wire, &evidence, CheckedPackageReadLimits::bounded());
     let clause = resolved.ids.resolve(&clause);
     (resolved.outcome, clause)
@@ -271,7 +271,7 @@ fn bounded_addition_reader_attempt(coherent: bool) -> (CheckedPackageV2ReadResul
         let authored = nodes
             .iter()
             .enumerate()
-            .filter(|(_, node)| node["body"]["operation"]["identity"] == "filament.op.integer.add")
+            .filter(|(_, node)| node["body"]["operation"]["identity"] == "quire.op.integer.add")
             .map(|(position, node)| {
                 (
                     position,
@@ -328,7 +328,7 @@ fn original_parameter_precondition_regenerates_with_unchanged_proof_semantics() 
     assert_eq!(oracle.descriptor.node_id, clause);
     assert_eq!(
         oracle.descriptor.operation_identities,
-        ["filament.op.integer.lt"]
+        ["quire.op.integer.lt"]
     );
     let item = ObligationItem::V2Clause {
         package: &package,
@@ -523,7 +523,7 @@ fn controlled_{index}() {{
     )
     .unwrap();
     let manifest = format!(
-        "[package]\nname = \"controlled-literal-native\"\nversion = \"0.0.0\"\nedition = \"2021\"\n\n[dependencies]\nfilament-exact = {{ {EXACT_DEPENDENCY_SOURCE}, features = [\"test-support\"] }}\nfilament-semantic-value = {{ {SEMANTIC_VALUE_DEPENDENCY_SOURCE} }}\n{}\nix-trace-rs = {{ git = \"https://github.com/agent-ix/ix-trace-rs\", branch = \"main\" }}\n[workspace]\n",
+        "[package]\nname = \"controlled-literal-native\"\nversion = \"0.0.0\"\nedition = \"2021\"\n\n[dependencies]\nquire-exact = {{ {EXACT_DEPENDENCY_SOURCE}, features = [\"test-support\"] }}\nquire-semantic-value = {{ {SEMANTIC_VALUE_DEPENDENCY_SOURCE} }}\n{}\nix-trace-rs = {{ git = \"https://github.com/agent-ix/ix-trace-rs\", branch = \"main\" }}\n[workspace]\n",
         scratch_crate::runtime_dependency(&["exact"]),
     );
     scratch_crate::write_manifest(&scratch.path, &manifest);

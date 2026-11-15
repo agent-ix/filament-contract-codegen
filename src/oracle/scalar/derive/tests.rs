@@ -317,7 +317,7 @@ fn tc_024_derivation_checks_the_graph_and_the_lowering_before_the_identity() {
 #[trace("FR-014-AC-48", "TC-024")]
 #[test]
 fn quantity_conversion_confirmation_requires_identity_and_exact_mode() {
-    for identity in [QUANTITY_CONVERT_IDENTITY, "filament.op.quantity.add"] {
+    for identity in [QUANTITY_CONVERT_IDENTITY, "quire.op.quantity.add"] {
         for mode in ["exact", "nearest-even"] {
             let (_, node) =
                 application_node(fixture_application(CheckedApplicationOperationFixture {
@@ -419,11 +419,11 @@ fn tc_024_derivation_refuses_a_missing_identity_a_non_application_and_a_foreign_
     );
     assert_eq!(
         derive_hand_built(fixture_application(CheckedApplicationOperationFixture {
-            identity: Some("filament.op.rational.eq".into()),
+            identity: Some("quire.op.rational.eq".into()),
             ..Default::default()
         })),
         Err(no_claim(ClaimDerivationRefusal::OperationNotDerivable {
-            operation_identity: "filament.op.rational.eq".to_owned()
+            operation_identity: "quire.op.rational.eq".to_owned()
         }))
     );
 }
@@ -435,11 +435,11 @@ fn tc_024_derivation_refuses_a_missing_identity_a_non_application_and_a_foreign_
 fn tc_024_derivation_reads_the_division_profile_from_the_laws_and_nowhere_else() {
     let laws = |identities: &[&str]| {
         fixture_application(CheckedApplicationOperationFixture {
-            identity: Some("filament.op.integer.div".into()),
+            identity: Some("quire.op.integer.div".into()),
             law_definitions: identities
                 .iter()
                 .map(|identity| CheckedArtifactRef {
-                    authority: "filament".into(),
+                    authority: "quire".into(),
                     identity: (*identity).into(),
                 })
                 .collect(),
@@ -454,15 +454,15 @@ fn tc_024_derivation_reads_the_division_profile_from_the_laws_and_nowhere_else()
             graph: &graph,
             node: &node,
             bounds: BoundView::complete(&lowered),
-            identity: "filament.op.integer.div",
+            identity: "quire.op.integer.div",
         }
         .division_profile()
     };
     let law_refusal = Err(no_claim(ClaimDerivationRefusal::LawNotDerivable {
-        operation_identity: "filament.op.integer.div".to_owned(),
+        operation_identity: "quire.op.integer.div".to_owned(),
     }));
     assert_eq!(profile_of(laws(&[])), law_refusal);
-    assert_eq!(profile_of(laws(&["filament.value.other/v1"])), law_refusal);
+    assert_eq!(profile_of(laws(&["quire.value.other/v1"])), law_refusal);
     assert_eq!(
         profile_of(laws(&[
             DivisionProfile::Floor.definition_identity(),
@@ -486,7 +486,7 @@ fn tc_024_derivation_requires_the_mode_to_agree_with_the_bound_rounding() {
     let derivation_of = |mode: Option<(OperationModeKind, &str)>| {
         let (id, node) =
             application_node(fixture_application(CheckedApplicationOperationFixture {
-                identity: Some("filament.op.decimal.add".into()),
+                identity: Some("quire.op.decimal.add".into()),
                 mode: mode.map(|(kind, value)| (kind, value.into())),
                 ..Default::default()
             }));
@@ -496,12 +496,12 @@ fn tc_024_derivation_requires_the_mode_to_agree_with_the_bound_rounding() {
             graph: &graph,
             node: &node,
             bounds: BoundView::complete(&lowered),
-            identity: "filament.op.decimal.add",
+            identity: "quire.op.decimal.add",
         }
         .require_mode(RoundingMode::NearestEven)
     };
     let refusal = Err(no_claim(ClaimDerivationRefusal::ModeNotDerivable {
-        operation_identity: "filament.op.decimal.add".to_owned(),
+        operation_identity: "quire.op.decimal.add".to_owned(),
     }));
     assert_eq!(derivation_of(None), refusal);
     assert_eq!(
@@ -525,18 +525,18 @@ fn tc_024_derivation_requires_the_mode_to_agree_with_the_bound_rounding() {
 #[test]
 fn tc_024_the_refused_catalogue_identities_have_no_family() {
     for identity in [
-        "filament.op.rational.eq",
-        "filament.op.rational.ne",
-        "filament.op.decimal.eq",
-        "filament.op.decimal.ne",
-        "filament.op.integer.rem",
-        "filament.op.ieee.from_exact",
-        "filament.op.ieee.to_rational",
-        "filament.op.ieee.float32.negate",
-        "filament.op.ieee.float64.negate",
-        "filament.op.numeric.narrow",
-        "filament.op.rational.narrow",
-        "filament.op.text.size",
+        "quire.op.rational.eq",
+        "quire.op.rational.ne",
+        "quire.op.decimal.eq",
+        "quire.op.decimal.ne",
+        "quire.op.integer.rem",
+        "quire.op.ieee.from_exact",
+        "quire.op.ieee.to_rational",
+        "quire.op.ieee.float32.negate",
+        "quire.op.ieee.float64.negate",
+        "quire.op.numeric.narrow",
+        "quire.op.rational.narrow",
+        "quire.op.text.size",
     ] {
         assert_eq!(family_of_identity(identity), None, "{identity}");
     }
@@ -711,26 +711,26 @@ fn tc_024_sqrt_and_fma_refuse_mode_and_bound_defects_like_add() {
     let nearest = [rounding_bound('c', "nearest-even")];
     for (identity, add, operator, width) in [
         (
-            "filament.op.ieee.float32.sqrt",
-            "filament.op.ieee.float32.add",
+            "quire.op.ieee.float32.sqrt",
+            "quire.op.ieee.float32.add",
             IeeeArithmeticOperator::SquareRoot,
             IeeeWidth::Binary32,
         ),
         (
-            "filament.op.ieee.float64.sqrt",
-            "filament.op.ieee.float64.add",
+            "quire.op.ieee.float64.sqrt",
+            "quire.op.ieee.float64.add",
             IeeeArithmeticOperator::SquareRoot,
             IeeeWidth::Binary64,
         ),
         (
-            "filament.op.ieee.float32.fma",
-            "filament.op.ieee.float32.add",
+            "quire.op.ieee.float32.fma",
+            "quire.op.ieee.float32.add",
             IeeeArithmeticOperator::FusedMultiplyAdd,
             IeeeWidth::Binary32,
         ),
         (
-            "filament.op.ieee.float64.fma",
-            "filament.op.ieee.float64.add",
+            "quire.op.ieee.float64.fma",
+            "quire.op.ieee.float64.add",
             IeeeArithmeticOperator::FusedMultiplyAdd,
             IeeeWidth::Binary64,
         ),

@@ -42,8 +42,8 @@ fn model_with_fields(package: &str, operations: &[&str], field_count: usize) -> 
     let object = key(package, "Object");
     let population = key(package, "objects");
     let constructs: Vec<_> = [
-        ("object_type", "filament.meaning.model.object-type/v1"),
-        ("population", "filament.meaning.model.population/v1"),
+        ("object_type", "quire.meaning.model.object-type/v1"),
+        ("population", "quire.meaning.model.population/v1"),
     ]
     .into_iter()
     .map(|(name, meaning)| {
@@ -73,7 +73,7 @@ fn model_with_fields(package: &str, operations: &[&str], field_count: usize) -> 
             let name = format!("flag{index}");
             let identity = key(package, &format!("Object/{name}"));
             json!({"identity": identity, "name": name,
-                "typeRef": "ix://filament/native/Boolean", "presence": "required",
+                "typeRef": "ix://quire/native/Boolean", "presence": "required",
                 "nullable": false, "defaultKind": "none",
                 "multiplicity": {"lower": 1, "upper": 1, "ordered": false, "unique": true},
                 "origin": origin(&identity)})
@@ -111,7 +111,7 @@ fn initial_with_fields(
         .map(|index| (format!("flag{index}"), json!({"boolean": false})))
         .collect();
     let snapshot = json!({
-        "format": "filament.state.snapshot/v1",
+        "format": "quire.state.snapshot/v1",
         "identity": {"authority": "test", "identity": name,
             "revision_namespace": "fixture", "revision": "fixture:1"},
         "observation": "current",
@@ -149,7 +149,7 @@ fn authored_unit(row_count: usize, reverse: bool) -> String {
         .join(" ");
     format!(
         "language \"ix:native\" edition \"1-draft\";\n\
-         profile inf = \"filament.temporal.infinite-trace/v1\";\n\
+         profile inf = \"quire.temporal.infinite-trace/v1\";\n\
          model Abstract = \"{ABSTRACT}\";\n\
          model Concrete = \"{CONCRETE}\";\n\
          refinement SevenRows using inf abstract Abstract concrete Concrete {{\n\

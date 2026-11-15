@@ -32,7 +32,7 @@ use super::kani_obligations_state_frame::model;
 
 const SOURCE: &str = concat!(
     "language \"ix:native\" edition \"1-draft\";\n",
-    "profile v = \"filament.value.complete/v1\";\n",
+    "profile v = \"quire.value.complete/v1\";\n",
     "function add using v(x: Int[0, 9], y: Int[0, 9]): Integer pure { x + y }\n",
     "function eq using v(x: Int[0, 9], y: Int[0, 9]): Boolean pure { x = y }\n",
     "function nested using v(x: Int[0, 9], y: Int[0, 9]): Integer pure { add(x, y) }\n",
@@ -53,7 +53,7 @@ const SOURCE: &str = concat!(
 
 const LIBRARY_SOURCE: &str = concat!(
     "language \"ix:native\" edition \"1-draft\";\n",
-    "profile v = \"filament.value.complete/v1\";\n",
+    "profile v = \"quire.value.complete/v1\";\n",
     "function imported_base using v(x: Int[0, 9], y: Int[0, 9]): Integer pure { x + y }\n",
     "function imported using v(x: Int[0, 9], y: Int[0, 9]): Integer pure { imported_base(x, y) }\n",
     "function probe_imported using v(x: Int[0, 9], y: Int[0, 9]): Integer pure { imported(x, y) }\n",
@@ -61,7 +61,7 @@ const LIBRARY_SOURCE: &str = concat!(
 
 const IMPORTER_SOURCE: &str = concat!(
     "language \"ix:native\" edition \"1-draft\";\n",
-    "profile v = \"filament.value.complete/v1\";\n",
+    "profile v = \"quire.value.complete/v1\";\n",
     "import \"test/function-library\" as lib;\n",
     "function caller using v(x: Int[0, 9], y: Int[0, 9]): Integer pure { lib::imported(x, y) }\n",
 );
@@ -93,7 +93,7 @@ fn admitted_source_text(source: &str) -> CheckedPackageV2 {
     )
     .expect("FSL admits the genuine function source");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("filament.value.complete/v1");
+    evidence.support_feature("quire.value.complete/v1");
     let read = CheckedPackageV2::read(
         acquired.package().bytes(),
         CheckedPackageReadLimits::bounded(),
@@ -446,7 +446,7 @@ pub(super) fn genuine_case_and_healthy() -> (
 ) {
     const CASE_SOURCE: &str = concat!(
         "language \"ix:native\" edition \"1-draft\";\n",
-        "profile v = \"filament.value.complete/v1\";\n",
+        "profile v = \"quire.value.complete/v1\";\n",
         "union Shape { Empty, Circle(Integer), Rect(Integer, Integer) }\n",
         "function area using v(s: Shape): Integer pure { case s { Empty: 0; Circle(r): r; Rect(w, h): w * h; } }\n",
         "function probe_area using v(s: Shape): Integer pure { area(s) }\n",
@@ -571,7 +571,7 @@ pub(super) fn genuine_temporal_and_healthy(
     .expect("authored model package identity");
     let source = format!(
         "{language}\n{value_profile}\n\
-         profile t = \"filament.temporal.infinite-trace/v1\";\n\
+         profile t = \"quire.temporal.infinite-trace/v1\";\n\
          {model}\n\
          temporal ReachesTwo using t over (a: Bank::Account) clock \"model-steps\" on origin {{\n\
          fair weak each Bank::Account::deposit;\n\
@@ -694,7 +694,7 @@ fn imported_corpus() -> (
     )
     .expect("FSL admits the genuine library source");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("filament.value.complete/v1");
+    evidence.support_feature("quire.value.complete/v1");
     let read = CheckedPackageV2::read(
         compiled.package().bytes(),
         CheckedPackageReadLimits::bounded(),
@@ -1577,7 +1577,7 @@ fn operand_type_refusal_retains_the_original_v2_frame() {
 fn tc_057_generated_checked_invariant_guards_use_checked_owner_inputs() {
     const SOURCE: &str = concat!(
         "language \"ix:native\" edition \"1-draft\";\n",
-        "profile v = \"filament.value.complete/v1\";\n",
+        "profile v = \"quire.value.complete/v1\";\n",
         "tuple Pair(Boolean, Integer);\n",
         "union Choice { Empty, Some(Pair) }\n",
         "record Holder { pair: Pair; shape: Choice; flag: Boolean?; }\n",

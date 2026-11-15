@@ -38,7 +38,7 @@ coverage-probe source map.
 
 ### Q3: `CheckedPackageV2` is the one input model
 
-Every checked-expression or contract-claim generator reads an admitted `filament.checked-package/v2`
+Every checked-expression or contract-claim generator reads an admitted `quire.checked-package/v2`
 package through Contract IR's `CheckedPackageV2`. Such a generator has no second input path and no adapter between input models. The
 V1 `BoundPackage` input goes away once `CheckedPackageV2` covers what it serves.
 

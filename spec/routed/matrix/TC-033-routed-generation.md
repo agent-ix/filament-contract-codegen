@@ -26,11 +26,11 @@ the FR-015 generator returns for the same items.
   renderer, refused `OperationNotRendered`). The existing TC-024 and TC-025
   fixtures serve.
 - The package alone: no claim map is built or supplied.
-- A package with a `filament.op.integer.rem` node, and the bounded-increment
+- A package with a `quire.op.integer.rem` node, and the bounded-increment
   package (`x + 1` over a parameter `Int[0, 9]`). Amended by IR-854 (planned):
   once FR-014-AC-81 makes `rem` derivable, the underivable-sibling node of steps
   11 and 15 becomes another identity FR-014 still refuses, such as
-  `filament.op.numeric.narrow`, with the same expected results.
+  `quire.op.numeric.narrow`, with the same expected results.
 - A `KaniGenerationContext` with a valid subject path and unwind `1`.
 - The routed backend `Candidate { identity: "kani" }`.
 - FSL RR-16's checked package and its occurrence-keyed requirement records:
@@ -233,7 +233,7 @@ diagnostic-string parsing.
 9. The dispatch is an exhaustive `match` over `BackendKind` with no `_` arm.
    `GenerationContexts::has` is an exhaustive `match` too, and `GenerationContexts`
    has exactly one field per `BackendKind::ALL` member.
-10. The record is `Supported`; its harness names `filament.op.integer.add` with
+10. The record is `Supported`; its harness names `quire.op.integer.add` with
     arguments `[0, 9]` and `[1, 1]`.
 11. The `integer.rem` node's record is `Unsupported` with `no_derivable_claim`
     naming the node and `operation_not_derivable`, and carries no harness; the

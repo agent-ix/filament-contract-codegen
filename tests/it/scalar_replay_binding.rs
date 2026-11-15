@@ -188,13 +188,13 @@ pub(super) fn observe(
 #[test]
 fn original_scalar_driver_executes_independent_repeated_draws_and_binds_real_qsl() {
     let fixture = replay_fixture(
-        "filament.op.integer.add",
+        "quire.op.integer.add",
         "x: Int[0, 9]",
         "Int[0, 18]",
         "x + x",
     );
     let body = fixture.harness.scalar_replay_body().unwrap();
-    let admitted = fixture.checked.resolved_graph().nodes.iter().find(|node| matches!(&node.body, quire_contract_model::CheckedTerm::Application { operation, .. } if operation.identity() == Some("filament.op.integer.add"))).unwrap();
+    let admitted = fixture.checked.resolved_graph().nodes.iter().find(|node| matches!(&node.body, quire_contract_model::CheckedTerm::Application { operation, .. } if operation.identity() == Some("quire.op.integer.add"))).unwrap();
     assert_eq!(
         body.node, admitted.node_id,
         "CG retains the actual admitted application"
@@ -302,7 +302,7 @@ fn original_scalar_driver_executes_independent_repeated_draws_and_binds_real_qsl
 #[test]
 fn scalar_actual_sent_context_and_every_driver_tie_are_independently_checked() {
     let fixture = replay_fixture_with_extra(
-        "filament.op.integer.add",
+        "quire.op.integer.add",
         "x: Int[0, 9]",
         "Int[0, 18]",
         "x + x",
@@ -534,12 +534,12 @@ fn playback_code(error: &ScalarBuildError) -> &str {
 #[test]
 fn a_narrowed_guarded_harness_plans_witnesses_inside_its_narrowed_range() {
     let fixture = replay_fixture_guarded(
-        "filament.op.integer.add",
+        "quire.op.integer.add",
         "x: Int[0, 9]",
         "Int[0, 200]",
         "if x > 5 then x + 100 else 0",
         "",
-        Some(("filament.op.integer.gt", true)),
+        Some(("quire.op.integer.gt", true)),
     );
     let arguments = fixture
         .harness
@@ -563,12 +563,12 @@ fn a_narrowed_guarded_harness_plans_witnesses_inside_its_narrowed_range() {
 #[test]
 fn a_guard_input_playback_plans_through_the_builder() {
     let fixture = replay_fixture_guarded(
-        "filament.op.integer.add",
+        "quire.op.integer.add",
         "x: Int[0, 9], y: Int[0, 9]",
         "Int[0, 200]",
         "if x < y then x + 100 else 0",
         "",
-        Some(("filament.op.integer.lt", true)),
+        Some(("quire.op.integer.lt", true)),
     );
     assert_eq!(fixture.harness.identity.guard_inputs.len(), 1);
     let planned = plan(&fixture, &[3, 100, 9]);

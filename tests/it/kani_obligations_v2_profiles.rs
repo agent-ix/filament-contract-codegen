@@ -616,7 +616,7 @@ fn falsified_and_replayed(label: &str, twin: &Twin, expected: i64) {
         .documents
         .iter()
         .filter_map(|bytes| serde_json::from_slice::<serde_json::Value>(bytes).ok())
-        .find(|document| document["format"] == "filament.state.snapshot/v1")
+        .find(|document| document["format"] == "quire.state.snapshot/v1")
         .expect("a state snapshot");
     assert_eq!(
         snapshot["populations"][0]["objects"][0]["fields"]["balance"]["integer"],

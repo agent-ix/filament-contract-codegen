@@ -213,7 +213,7 @@ pub(super) fn run_mutant_evidence(
     };
     assert!(
         counterexample.contains("Check for `assertion`")
-            && counterexample.contains("the oracle must complete with exactly the native filament.op.integer.add result when it lies in the checked domain, and refuse otherwise"),
+            && counterexample.contains("the oracle must complete with exactly the native quire.op.integer.add result when it lies in the checked domain, and refuse otherwise"),
         "the generated sound assertion must fail: {counterexample}"
     );
     evidence

@@ -1,6 +1,6 @@
 //! The IEEE float scalar harness (FR-053): a bounded Kani proof that filament-exact's
 //! `compare_native_float` over two symbolic bit patterns agrees with an independent expression of
-//! the same comparison, for the three comparisons `filament.op.ieee.numeric_equal`, `.total_order`
+//! the same comparison, for the three comparisons `quire.op.ieee.numeric_equal`, `.total_order`
 //! and `.bit_identical` at both widths.
 //!
 //! The supported set is the combinations whose filament-exact harnesses carry an executed Verified
@@ -35,7 +35,7 @@ use crate::{
 pub struct FloatScalarRequest<'a> {
     /// The original checked package the operation node belongs to.
     pub source: &'a CheckedPackageV2,
-    /// The `filament.op.ieee.*` application node.
+    /// The `quire.op.ieee.*` application node.
     pub node_id: &'a CheckedNodeId,
     /// Resource ceilings the backend must run under.
     pub ceilings: ProofCeilings,
@@ -179,59 +179,59 @@ impl FloatScalarRefusal {
 
 /// The comparisons of the row and the `IeeeComparison` variant each is proved as.
 const COMPARISONS: [(&str, &str); 3] = [
-    ("filament.op.ieee.numeric_equal", "NumericEqual"),
-    ("filament.op.ieee.total_order", "TotalOrder"),
-    ("filament.op.ieee.bit_identical", "BitIdentical"),
+    ("quire.op.ieee.numeric_equal", "NumericEqual"),
+    ("quire.op.ieee.total_order", "TotalOrder"),
+    ("quire.op.ieee.bit_identical", "BitIdentical"),
 ];
 
 /// The arithmetic identities and the capability each is refused with.
 const ARITHMETIC: [(&str, FloatCapability); 12] = [
     (
-        "filament.op.ieee.float32.add",
+        "quire.op.ieee.float32.add",
         FloatCapability::AddNotTractable,
     ),
     (
-        "filament.op.ieee.float64.add",
+        "quire.op.ieee.float64.add",
         FloatCapability::AddNotTractable,
     ),
     (
-        "filament.op.ieee.float32.sub",
+        "quire.op.ieee.float32.sub",
         FloatCapability::SubNotTractable,
     ),
     (
-        "filament.op.ieee.float64.sub",
+        "quire.op.ieee.float64.sub",
         FloatCapability::SubNotTractable,
     ),
     (
-        "filament.op.ieee.float32.mul",
+        "quire.op.ieee.float32.mul",
         FloatCapability::MulNotTractable,
     ),
     (
-        "filament.op.ieee.float64.mul",
+        "quire.op.ieee.float64.mul",
         FloatCapability::MulNotTractable,
     ),
     (
-        "filament.op.ieee.float32.div",
+        "quire.op.ieee.float32.div",
         FloatCapability::DivNotTractable,
     ),
     (
-        "filament.op.ieee.float64.div",
+        "quire.op.ieee.float64.div",
         FloatCapability::DivNotTractable,
     ),
     (
-        "filament.op.ieee.float32.sqrt",
+        "quire.op.ieee.float32.sqrt",
         FloatCapability::SqrtNotTractable,
     ),
     (
-        "filament.op.ieee.float64.sqrt",
+        "quire.op.ieee.float64.sqrt",
         FloatCapability::SqrtNotTractable,
     ),
     (
-        "filament.op.ieee.float32.fma",
+        "quire.op.ieee.float32.fma",
         FloatCapability::FmaNotTractable,
     ),
     (
-        "filament.op.ieee.float64.fma",
+        "quire.op.ieee.float64.fma",
         FloatCapability::FmaNotTractable,
     ),
 ];
@@ -268,7 +268,7 @@ fn arithmetic_detail(capability: FloatCapability, rounding: Option<&str>) -> Str
         _ => "no harness of any spelling reached a verdict within 600 s",
     };
     format!(
-        "an arithmetic operation is a supported row only when all three of its filament-exact \
+        "an arithmetic operation is a supported row only when all three of its quire-exact \
          harnesses are Verified (FR-405 Behavior 15); {measured}; {spelling}"
     )
 }

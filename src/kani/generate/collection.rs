@@ -394,8 +394,8 @@ fn prepare_collection(
         }
     }
     let quantifier = match field.quantifier_operation.as_str() {
-        "filament.op.collection.forall" => CollectionQuantifier::ForAll,
-        "filament.op.collection.exists" => CollectionQuantifier::Exists,
+        "quire.op.collection.forall" => CollectionQuantifier::ForAll,
+        "quire.op.collection.exists" => CollectionQuantifier::Exists,
         _ => {
             return Err(UnsupportedObligation::CollectionClaimNotRendered {
                 node_id: field.quantifier.clone(),
@@ -804,7 +804,7 @@ fn state_clause_parts<'a>(
     else {
         return None;
     };
-    if operation.identity() != Some("filament.op.state.clause") {
+    if operation.identity() != Some("quire.op.state.clause") {
         return None;
     }
     let kind = operation.state_clause_kind().ok()??;
@@ -905,7 +905,7 @@ fn resolve_collection_field(
         .filter(|identity| {
             matches!(
                 *identity,
-                "filament.op.collection.forall" | "filament.op.collection.exists"
+                "quire.op.collection.forall" | "quire.op.collection.exists"
             )
         })
         .ok_or(CollectionDomainRefusal::UnsupportedShape)?
@@ -921,7 +921,7 @@ fn resolve_collection_field(
         .ok_or(CollectionDomainRefusal::UnsupportedShape)?;
     if CheckedNodeTag::from_wire(&collection.node_tag) != Some(CheckedNodeTag::Expression)
         || collection.semantic_form.as_ref() != "query"
-        || operation_identity(graph, collection) != Some("filament.op.record.project")
+        || operation_identity(graph, collection) != Some("quire.op.record.project")
     {
         return Err(CollectionDomainRefusal::UnsupportedShape);
     }
@@ -1062,15 +1062,15 @@ fn resolve_predicate(
         .next()
         .ok_or(CollectionDomainRefusal::UnsupportedShape)?;
     match (element, operation, selected_index) {
-        (CollectionElementDomain::Integer { .. }, "filament.op.integer.ge", 0) => {
+        (CollectionElementDomain::Integer { .. }, "quire.op.integer.ge", 0) => {
             let threshold = integer_literal(graph, literal, element_type)?;
             Ok(CollectionPredicateIdentity::IntegerGreaterOrEqual { threshold })
         }
-        (CollectionElementDomain::Integer { .. }, "filament.op.integer.eq", _) => {
+        (CollectionElementDomain::Integer { .. }, "quire.op.integer.eq", _) => {
             let value = integer_literal(graph, literal, element_type)?;
             Ok(CollectionPredicateIdentity::IntegerEqual { value })
         }
-        (CollectionElementDomain::Boolean, "filament.op.boolean.ne", _) => {
+        (CollectionElementDomain::Boolean, "quire.op.boolean.ne", _) => {
             let value = boolean_literal(graph, literal)?;
             Ok(CollectionPredicateIdentity::BooleanNotEqual { value })
         }
@@ -1129,7 +1129,7 @@ fn verify_claim_receiver(
         .and_then(|arguments| arguments.first())
         .and_then(term_target)
         .and_then(|id| graph.node(&id))
-        .filter(|node| operation_identity(graph, node) == Some("filament.op.model.deref"))
+        .filter(|node| operation_identity(graph, node) == Some("quire.op.model.deref"))
         .ok_or(CollectionDomainRefusal::UnsupportedShape)?;
     let parameter_id = graph
         .term(receiver)
@@ -1184,7 +1184,7 @@ fn integer_literal(
         .ok_or(CollectionDomainRefusal::UnsupportedShape)?;
     let literal = if node.semantic_form.as_ref() == "literal" {
         node
-    } else if operation_identity(graph, node) == Some("filament.op.numeric.narrow")
+    } else if operation_identity(graph, node) == Some("quire.op.numeric.narrow")
         && node.semantic_form.as_ref() == "conversion"
         && &node.semantic_type == element_type
     {
@@ -1232,7 +1232,7 @@ fn is_top_level_conjunct(
     let Some(node) = graph.node(root) else {
         return false;
     };
-    if operation_identity(graph, node) != Some("filament.op.boolean.and") {
+    if operation_identity(graph, node) != Some("quire.op.boolean.and") {
         return false;
     }
     graph
@@ -1513,7 +1513,7 @@ pub(crate) mod tests {
         let checked_node = |digit: &str| -> CheckedSemanticNodeV2 {
             CheckedSemanticNodeV2 {
                 node_id: node(digit),
-                schema_version: "filament.checked-semantic-graph/v2".into(),
+                schema_version: "quire.checked-semantic-graph/v2".into(),
                 node_tag: "expression".into(),
                 semantic_form: "literal".into(),
                 semantic_type: node("3"),
@@ -1654,7 +1654,7 @@ pub(crate) mod tests {
                     maximum: 9,
                 },
                 element_type: node("element-type"),
-                quantifier_operation: "filament.op.collection.forall".to_owned(),
+                quantifier_operation: "quire.op.collection.forall".to_owned(),
                 predicate: CollectionPredicateIdentity::IntegerGreaterOrEqual { threshold: 0 },
                 predicate_id: node("predicate"),
             },
@@ -1736,7 +1736,7 @@ pub(crate) mod tests {
                 c.field.element_type = node("other-element")
             }),
             ("quantifier operation", |c| {
-                c.field.quantifier_operation = "filament.op.collection.exists".into()
+                c.field.quantifier_operation = "quire.op.collection.exists".into()
             }),
             ("predicate", |c| {
                 c.field.predicate =
@@ -1887,7 +1887,7 @@ pub(crate) mod tests {
         };
         let expression = |form: &str, body: CheckedTerm| CheckedSemanticNodeV2 {
             node_id: node("1"),
-            schema_version: "filament.checked-semantic-graph/v2".into(),
+            schema_version: "quire.checked-semantic-graph/v2".into(),
             node_tag: "expression".into(),
             semantic_form: form.into(),
             semantic_type: node("2"),
@@ -1899,8 +1899,8 @@ pub(crate) mod tests {
             owner_model: None,
             body,
         };
-        let conversion = term(ApplicationOperator::Convert, "filament.op.quantity.convert");
-        let binary = term(ApplicationOperator::Binary, "filament.op.integer.ge");
+        let conversion = term(ApplicationOperator::Convert, "quire.op.quantity.convert");
+        let binary = term(ApplicationOperator::Binary, "quire.op.integer.ge");
         assert_eq!(
             binary_predicate_operation(
                 &expression("conversion", conversion.clone()),
@@ -1910,7 +1910,7 @@ pub(crate) mod tests {
         );
         assert_eq!(
             binary_predicate_operation(&expression("binary", binary.clone()), Some(&binary),),
-            Ok("filament.op.integer.ge")
+            Ok("quire.op.integer.ge")
         );
     }
 

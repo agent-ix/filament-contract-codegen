@@ -22,7 +22,7 @@ use quire_contract_model::{
 fn compiled(parameters: &str, result: &str, expression: &str) -> CheckedPackageV2 {
     let source = format!(
         "language \"ix:native\" edition \"1-draft\";\n\
-         profile v = \"filament.value.complete/v1\";\n\
+         profile v = \"quire.value.complete/v1\";\n\
          function subject using v({parameters}): {result} pure {{ {expression} }}\n"
     );
     let compiled = compile_package(
@@ -39,7 +39,7 @@ fn compiled(parameters: &str, result: &str, expression: &str) -> CheckedPackageV
     )
     .expect("FSL compiles the authored scalar source");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("filament.value.complete/v1");
+    evidence.support_feature("quire.value.complete/v1");
     match CheckedPackageV2::read(
         compiled.bytes(),
         CheckedPackageReadLimits::bounded(),
@@ -98,7 +98,7 @@ fn assert_generated(
         }
     };
     let conversion = package.resolved_graph().nodes.iter().find(|candidate| {
-        operation_identity(candidate) == Some("filament.op.numeric.narrow")
+        operation_identity(candidate) == Some("quire.op.numeric.narrow")
             && matches!(
                 application_arguments(candidate).first(),
                 Some(CheckedTerm::Reference { target }) if target == &node.node_id
@@ -235,7 +235,7 @@ fn assert_inline(
         .expect("literal type belongs to the checked graph");
     assert_eq!(integer.node_tag.as_ref(), "scalar_type");
     assert_eq!(integer.semantic_form.as_ref(), "integer");
-    if operation_identity(node) != Some("filament.op.integer.eq") {
+    if operation_identity(node) != Some("quire.op.integer.eq") {
         let [occurrence] = node.occurrences.as_slice() else {
             panic!("one authentic application occurrence");
         };
@@ -266,7 +266,7 @@ fn assert_inline(
 #[test]
 fn add_keeps_the_plain_literal_inline_through_scalar_generation() {
     let package = compiled("x: Int[0, 9]", "Int[0, 10]", "x + 1");
-    let add = application(&package, "filament.op.integer.add");
+    let add = application(&package, "quire.op.integer.add");
     assert_inline(&package, add, 1, 1);
     assert_generated(&package, add, Some(&[(0, 9), (1, 1)]));
 }
@@ -275,7 +275,7 @@ fn add_keeps_the_plain_literal_inline_through_scalar_generation() {
 #[test]
 fn equality_with_a_plain_integer_peer_keeps_the_literal_inline() {
     let package = compiled("x: Integer", "Boolean", "x = 1");
-    let eq = application(&package, "filament.op.integer.eq");
+    let eq = application(&package, "quire.op.integer.eq");
     assert_inline(&package, eq, 1, 1);
     assert_generated(&package, eq, None);
 }
@@ -284,7 +284,7 @@ fn equality_with_a_plain_integer_peer_keeps_the_literal_inline() {
 #[test]
 fn negate_keeps_the_plain_literal_inline_through_scalar_generation() {
     let package = compiled("", "Int[-9, 0]", "-1");
-    let negate = application(&package, "filament.op.integer.negate");
+    let negate = application(&package, "quire.op.integer.negate");
     assert_inline(&package, negate, 0, 1);
     assert_generated(&package, negate, Some(&[(1, 1)]));
 }
@@ -293,11 +293,11 @@ fn negate_keeps_the_plain_literal_inline_through_scalar_generation() {
 #[test]
 fn equality_with_a_bounded_peer_keeps_the_narrowed_literal_as_a_graph_child() {
     let package = compiled("x: Int[0, 9]", "Boolean", "x = 1");
-    let eq = application(&package, "filament.op.integer.eq");
+    let eq = application(&package, "quire.op.integer.eq");
     let Some(CheckedTerm::Reference { target: child }) = application_arguments(eq).get(1) else {
         panic!("bounded equality operand is a graph reference");
     };
-    let narrow = application(&package, "filament.op.numeric.narrow");
+    let narrow = application(&package, "quire.op.numeric.narrow");
     assert_eq!(
         child, &narrow.node_id,
         "the operand is the composite narrowing application"

@@ -14,7 +14,7 @@ use quire_exact::Integer;
 fn each_integer_operator_and_literal_keep_the_public_reader_body_and_real_route() {
     let cases = [
         (
-            "filament.op.integer.add",
+            "quire.op.integer.add",
             "x: Int[0, 9], y: Int[0, 9]",
             "Int[0, 18]",
             "x + y",
@@ -22,7 +22,7 @@ fn each_integer_operator_and_literal_keep_the_public_reader_body_and_real_route(
             9_i64,
         ),
         (
-            "filament.op.integer.sub",
+            "quire.op.integer.sub",
             "x: Int[0, 9], y: Int[0, 9]",
             "Int[-9, 9]",
             "x - y",
@@ -30,7 +30,7 @@ fn each_integer_operator_and_literal_keep_the_public_reader_body_and_real_route(
             5,
         ),
         (
-            "filament.op.integer.mul",
+            "quire.op.integer.mul",
             "x: Int[0, 9], y: Int[0, 9]",
             "Int[0, 81]",
             "x * y",
@@ -38,7 +38,7 @@ fn each_integer_operator_and_literal_keep_the_public_reader_body_and_real_route(
             14,
         ),
         (
-            "filament.op.integer.negate",
+            "quire.op.integer.negate",
             "x: Int[0, 9]",
             "Int[-9, 0]",
             "-x",
@@ -46,7 +46,7 @@ fn each_integer_operator_and_literal_keep_the_public_reader_body_and_real_route(
             -3,
         ),
         (
-            "filament.op.integer.add",
+            "quire.op.integer.add",
             "x: Int[0, 9]",
             "Int[3, 12]",
             "x + 3",
@@ -115,13 +115,13 @@ fn each_integer_operator_and_literal_keep_the_public_reader_body_and_real_route(
 #[test]
 fn source_span_changes_preserve_identity_but_native_results_remain_independently_bound() {
     let first = replay_fixture(
-        "filament.op.integer.add",
+        "quire.op.integer.add",
         "x: Int[0, 9]",
         "Int[0, 18]",
         "x + x",
     );
     let shifted = replay_fixture(
-        "filament.op.integer.add",
+        "quire.op.integer.add",
         "x: Int[0, 9]",
         "Int[0, 18]",
         "\n   x + x",
@@ -181,7 +181,7 @@ fn source_span_changes_preserve_identity_but_native_results_remain_independently
 #[test]
 fn missing_retained_operands_and_changed_occurrences_refuse_before_replay() {
     let fixture = replay_fixture(
-        "filament.op.integer.add",
+        "quire.op.integer.add",
         "x: Int[0, 9]",
         "Int[0, 18]",
         "x + x",

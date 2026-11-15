@@ -41,19 +41,19 @@ pub(crate) fn document() -> Value {
         "source":{"identity":"ix://ir1091.operation/spec","version":"1.0.0","dialect":"spec-bundle"},
         "package":{"identity":MODEL,"version":"1.0.0","mappingVersions":[],"profileVersions":[]},
         "constructs":[
-            {"kind":{"module":MODEL,"name":"entity"},"moduleVersion":"1.0.0","construct":{"identity":"none","shape":"record","members":{},"meaning":"filament.meaning.model.object-type/v1"}},
-            {"kind":{"module":MODEL,"name":"value_type"},"moduleVersion":"1.0.0","construct":{"identity":"none","shape":"record","members":{},"meaning":"filament.meaning.model.value-type/v1"}}
+            {"kind":{"module":MODEL,"name":"entity"},"moduleVersion":"1.0.0","construct":{"identity":"none","shape":"record","members":{},"meaning":"quire.meaning.model.object-type/v1"}},
+            {"kind":{"module":MODEL,"name":"value_type"},"moduleVersion":"1.0.0","construct":{"identity":"none","shape":"record","members":{},"meaning":"quire.meaning.model.value-type/v1"}}
         ],
         "occurrences":[],"extensions":[],
         "types":[
             {"identity":SMALL,"displayName":"Small","kind":{"module":MODEL,"name":"value_type"},"roles":[],"origin":origin(SMALL),
                 "extensions":[],"unknownPolicy":"reject","scalar":"integer","constraints":[
-                    {"identity":format!("{SMALL}/min"),"keyword":"min","operands":{"value":"0"},"appliesTo":"ix://filament/native/Integer","diagnosticCode":"operation.minimum","origin":origin(SMALL)},
-                    {"identity":format!("{SMALL}/max"),"keyword":"max","operands":{"value":"3"},"appliesTo":"ix://filament/native/Integer","diagnosticCode":"operation.maximum","origin":origin(SMALL)}]},
+                    {"identity":format!("{SMALL}/min"),"keyword":"min","operands":{"value":"0"},"appliesTo":"ix://quire/native/Integer","diagnosticCode":"operation.minimum","origin":origin(SMALL)},
+                    {"identity":format!("{SMALL}/max"),"keyword":"max","operands":{"value":"3"},"appliesTo":"ix://quire/native/Integer","diagnosticCode":"operation.maximum","origin":origin(SMALL)}]},
             {"identity":OBJECT,"displayName":"Node","kind":{"module":MODEL,"name":"entity"},"roles":[],"origin":origin(OBJECT),
                 "constraints":[],"extensions":[],"unknownPolicy":"reject","supertypes":[],
-                "fields":[field("z_items",SMALL,0,3,true,true),field("a_unread","ix://filament/native/Boolean",1,1,false,true),field("m_count",SMALL,1,1,false,true)],
-                "operations":[{"identity":format!("{OBJECT}/step"),"name":"step","params":[parameter("limit",SMALL),parameter("enabled","ix://filament/native/Boolean")],
+                "fields":[field("z_items",SMALL,0,3,true,true),field("a_unread","ix://quire/native/Boolean",1,1,false,true),field("m_count",SMALL,1,1,false,true)],
+                "operations":[{"identity":format!("{OBJECT}/step"),"name":"step","params":[parameter("limit",SMALL),parameter("enabled","ix://quire/native/Boolean")],
                     "pre":[],"post":[],"origin":origin(OBJECT),"frame":{"modifies":[format!("{OBJECT}/z_items"),format!("{OBJECT}/m_count"),format!("{OBJECT}/a_unread")],"creates":[],"deletes":[]}}]}
         ],"populations":[]
     })
@@ -69,7 +69,7 @@ pub(crate) fn fixture(doc: &Value, preconditions: &str) -> CheckedPackageV2 {
 
 fn fixture_with_body(doc: &Value, preconditions: &str, body: &str) -> CheckedPackageV2 {
     let bytes = quire_canonical::to_vec(doc, quire_canonical::Limits::new(1 << 20)).unwrap();
-    let source = format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.model.complete/v1\";\nmodel M = \"{MODEL}\";\n{preconditions}\npost CollectionReady using v on M::Node::step {{ {body} }}\n");
+    let source = format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.model.complete/v1\";\nmodel M = \"{MODEL}\";\n{preconditions}\npost CollectionReady using v on M::Node::step {{ {body} }}\n");
     let site = call_site(
         SourceIdentity::new("agent-ix", "ir1091-operation.native"),
         "ir1091-operation".to_owned(),
@@ -81,7 +81,7 @@ fn fixture_with_body(doc: &Value, preconditions: &str, body: &str) -> CheckedPac
     )
     .expect("FSL emits the authored operation clauses");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("filament.value.complete/v1");
+    evidence.support_feature("quire.value.complete/v1");
     evidence
         .insert_domain_package_document(MODEL, bytes)
         .unwrap();
@@ -557,11 +557,11 @@ fn unsupported_whole_object_axes_have_typed_refusals_and_no_harness() {
             }
             "parameter" => {
                 doc["types"][1]["operations"][0]["params"][0]["typeRef"] =
-                    json!("ix://filament/native/Integer");
+                    json!("ix://quire/native/Integer");
                 ""
             }
             "result" => {
-                doc["types"][1]["operations"][0]["returns"] = json!({"typeRef":"ix://filament/native/String","nullable":false,"multiplicity":{"lower":1,"upper":1,"ordered":false,"unique":true}});
+                doc["types"][1]["operations"][0]["returns"] = json!({"typeRef":"ix://quire/native/String","nullable":false,"multiplicity":{"lower":1,"upper":1,"ordered":false,"unique":true}});
                 ""
             }
             _ => unreachable!(),
@@ -814,7 +814,7 @@ fn whole_object_identity_regenerates_and_changes_with_unread_domains() {
 #[trace("TC-025", "FR-015-AC-96")]
 fn boolean_ordered_set_operation_draws_both_values_and_enforces_distinct_slots() {
     let mut doc = document();
-    doc["types"][1]["fields"][0]["typeRef"] = json!("ix://filament/native/Boolean");
+    doc["types"][1]["fields"][0]["typeRef"] = json!("ix://quire/native/Boolean");
     doc["types"][1]["fields"][0]["multiplicity"]["upper"] = json!(2);
     let package = fixture_with_body(&doc, "", "exists(flag in self.z_items: flag != false)");
     let harness = postcondition(negotiate(&package, &clauses(&package)));
@@ -888,7 +888,7 @@ fn inherited_fields_retain_the_actual_declaring_node_in_whole_object_identity() 
 #[trace("TC-025", "FR-015-AC-96", "FR-015-AC-99")]
 fn postcondition_nonvacuity_accepts_intermediate_lengths_selected_by_sibling_preconditions() {
     let mut doc = document();
-    doc["types"][1]["fields"][0]["typeRef"] = json!("ix://filament/native/Boolean");
+    doc["types"][1]["fields"][0]["typeRef"] = json!("ix://quire/native/Boolean");
     doc["types"][1]["fields"][0]["multiplicity"]["upper"] = json!(2);
     let package = fixture_with_body(&doc,
         "pre OnlyTrue using v on M::Node::step { forall(flag in self.z_items: flag != false) }\npre NonEmpty using v on M::Node::step { exists(flag in self.z_items: flag != false) }",
@@ -1367,7 +1367,7 @@ fn sequence_field_read_domain_is_cardinality_range_plus_element_domain() {
 #[trace("TC-025", "FR-015-AC-133")]
 fn boolean_element_domain_is_the_pair_zero_and_one() {
     let mut doc = document();
-    doc["types"][1]["fields"][0]["typeRef"] = json!("ix://filament/native/Boolean");
+    doc["types"][1]["fields"][0]["typeRef"] = json!("ix://quire/native/Boolean");
     doc["types"][1]["fields"][0]["multiplicity"]["upper"] = json!(2);
     let package = fixture_with_body(&doc, "", "exists(flag in self.z_items: flag != false)");
     let [clause] = clauses(&package).try_into().expect("one postcondition");

@@ -720,7 +720,7 @@ pub enum GraphUnsupportedReason {
 pub enum GraphAccessorRefusal {
     /// The application node is absent from the graph.
     UnknownNode,
-    /// The node is not a `filament.op.model.reaches` or `filament.op.model.reaches_field`
+    /// The node is not a `quire.op.model.reaches` or `quire.op.model.reaches_field`
     /// application.
     NotReachesApplication,
     /// The application's population no longer resolves.

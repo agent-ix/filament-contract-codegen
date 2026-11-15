@@ -60,19 +60,19 @@ enum SelectedBody {
 
 fn scalar_operator(identity: &str) -> Option<BinaryIntegerOperator> {
     match identity {
-        "filament.op.integer.add" => Some(BinaryIntegerOperator::Add),
-        "filament.op.integer.sub" => Some(BinaryIntegerOperator::Subtract),
-        "filament.op.integer.mul" => Some(BinaryIntegerOperator::Multiply),
+        "quire.op.integer.add" => Some(BinaryIntegerOperator::Add),
+        "quire.op.integer.sub" => Some(BinaryIntegerOperator::Subtract),
+        "quire.op.integer.mul" => Some(BinaryIntegerOperator::Multiply),
         _ => None,
     }
 }
 
 fn equality_operator(identity: &str) -> Option<EqualityOperatorKind> {
     match identity {
-        "filament.op.integer.eq" | "filament.op.boolean.eq" | "filament.op.structural.eq" => {
+        "quire.op.integer.eq" | "quire.op.boolean.eq" | "quire.op.structural.eq" => {
             Some(EqualityOperatorKind::Equal)
         }
-        "filament.op.integer.ne" | "filament.op.boolean.ne" | "filament.op.structural.ne" => {
+        "quire.op.integer.ne" | "quire.op.boolean.ne" | "quire.op.structural.ne" => {
             Some(EqualityOperatorKind::NotEqual)
         }
         _ => None,

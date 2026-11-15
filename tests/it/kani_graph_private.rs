@@ -89,8 +89,8 @@ fn domain_document() -> Vec<u8> {
         "source": {"identity": SOURCE, "version": "1.0.0", "dialect": "spec-bundle"},
         "package": {"identity": DOMAIN, "version": "1.0.0", "mappingVersions": [], "profileVersions": []},
         "constructs": [
-            construct("entity", "filament.meaning.model.object-type/v1"),
-            construct("population", "filament.meaning.model.population/v1")
+            construct("entity", "quire.meaning.model.object-type/v1"),
+            construct("population", "quire.meaning.model.population/v1")
         ],
         "occurrences": [], "extensions": [],
         "types": [{
@@ -153,7 +153,7 @@ pub(crate) fn authored_over(
         .map(|name| format!("invariant {name} using v on M::Node at current {{ {condition} }}\n"))
         .collect();
     let source = format!(
-        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.model.complete/v1\";\nmodel M = \"{DOMAIN}\";\nbound Nodes on M::CollectionNodes [{maximum}]\npredicate inspect using v (input: M::Node): Boolean {{ true }}\n{invariants}"
+        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.model.complete/v1\";\nmodel M = \"{DOMAIN}\";\nbound Nodes on M::CollectionNodes [{maximum}]\npredicate inspect using v (input: M::Node): Boolean {{ true }}\n{invariants}"
     );
     let site = call_site(
         SourceIdentity::new(AUTHORITY, UNIT),
@@ -166,7 +166,7 @@ pub(crate) fn authored_over(
     )
     .unwrap_or_else(|error| panic!("FSL emits the authored clause: {error:?}"));
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("filament.value.complete/v1");
+    evidence.support_feature("quire.value.complete/v1");
     evidence
         .insert_domain_package_document(DOMAIN, domain.clone())
         .unwrap();
@@ -277,7 +277,7 @@ pub(crate) fn run_outcome(harness: &KaniGraphObligationHarness, label: &str) -> 
     fs::write(
         scratch.0.join("Cargo.toml"),
         format!(
-            "[package]\nname = \"generated-kani-graph\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\nfilament-contract-runtime = {{ {}, features = [\"exact\"] }}\n\n[workspace]\n",
+            "[package]\nname = \"generated-kani-graph\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\nquire-contract-runtime = {{ {}, features = [\"exact\"] }}\n\n[workspace]\n",
             crate::RUNTIME_DEPENDENCY_SOURCE
         ),
     )
@@ -733,7 +733,7 @@ fn snapshot_instances(replay: &StateClauseReplay) -> Value {
         .documents
         .iter()
         .filter_map(|bytes| serde_json::from_slice::<Value>(bytes).ok())
-        .find(|document| document["format"] == "filament.state.snapshot/v1")
+        .find(|document| document["format"] == "quire.state.snapshot/v1")
         .expect("the snapshot")["relationships"][0]["instances"]
         .clone()
 }

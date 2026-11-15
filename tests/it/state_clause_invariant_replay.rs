@@ -212,7 +212,7 @@ fn snapshot_document(replay: &StateClauseReplay) -> Value {
         .documents
         .iter()
         .filter_map(|bytes| serde_json::from_slice::<Value>(bytes).ok())
-        .filter(|document| document["format"] == "filament.state.snapshot/v1")
+        .filter(|document| document["format"] == "quire.state.snapshot/v1")
         .collect::<Vec<_>>();
     assert_eq!(snapshots.len(), 1, "exactly one state document");
     snapshots.into_iter().next().expect("one snapshot")
@@ -267,7 +267,7 @@ fn tc_035_invariant_playback_builds_the_current_envelope() {
         .filter_map(|bytes| serde_json::from_slice::<Value>(bytes).ok())
         .filter_map(|document| document["format"].as_str().map(str::to_owned))
         .collect::<Vec<_>>();
-    assert_eq!(formats, ["filament.state.snapshot/v1"]);
+    assert_eq!(formats, ["quire.state.snapshot/v1"]);
     let document = snapshot_document(&replay);
     assert_eq!(document["observation"], "current");
     assert_eq!(
@@ -447,7 +447,7 @@ fn through(replay: StateClauseReplay) -> (Value, String, StateClauseReplayResult
                 .documents
                 .iter()
                 .filter_map(|bytes| serde_json::from_slice::<Value>(bytes).ok())
-                .filter(|document| document["format"] == "filament.state.snapshot/v1")
+                .filter(|document| document["format"] == "quire.state.snapshot/v1")
                 .collect::<Vec<_>>();
             assert_eq!(snapshots.len(), 1, "exactly one state document");
             let qsl_replay::ReplaySource::Witness(witness) = &wire.source else {
@@ -1064,7 +1064,7 @@ fn tc_035_the_refusal_set_is_closed_and_typed() {
                 let Ok(mut document) = serde_json::from_slice::<Value>(bytes) else {
                     continue;
                 };
-                if document["format"] == "filament.state.snapshot/v1" {
+                if document["format"] == "quire.state.snapshot/v1" {
                     document["anchor"] = json!({"kind": "handler", "name": "withdraw"});
                     *bytes = document.to_string().into_bytes();
                 }

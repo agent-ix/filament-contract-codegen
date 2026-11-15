@@ -508,7 +508,7 @@ fn tc_042_ac2_a_claim_map_this_generator_did_not_produce_is_operation_not_render
         .items
         .iter()
         .find(|claim| {
-            claim.operation.identity == "filament.op.integer.add"
+            claim.operation.identity == "quire.op.integer.add"
                 && matches!(claim.result, ClaimDisposition::Generated(_))
         })
         .map(|claim| claim.node_id.clone())

@@ -54,7 +54,7 @@ fn admitted_source(source: &str) -> CheckedPackageV2 {
     )
     .expect("FSL compiles genuine scalar source");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("filament.value.complete/v1");
+    evidence.support_feature("quire.value.complete/v1");
     match CheckedPackageV2::read(
         compiled.bytes(),
         CheckedPackageReadLimits::bounded(),
@@ -104,7 +104,7 @@ fn admitted_case(
 ) {
     let mut source = String::from(
         "language \"ix:native\" edition \"1-draft\";\n\
-             profile v = \"filament.value.complete/v1\";\n",
+             profile v = \"quire.value.complete/v1\";\n",
     );
     for index in 0..requests {
         source.push_str(&format!(
@@ -123,7 +123,7 @@ fn admitted_case(
         .resolved_graph()
         .nodes
         .iter()
-        .filter(|node| application_identity(node) == Some("filament.op.integer.add"))
+        .filter(|node| application_identity(node) == Some("quire.op.integer.add"))
         .collect::<Vec<_>>();
     assert_eq!(applications.len(), requests);
     let mut positions = Vec::new();
@@ -133,7 +133,7 @@ fn admitted_case(
             .nodes
             .iter()
             .filter(|node| {
-                application_identity(node) == Some("filament.op.numeric.narrow")
+                application_identity(node) == Some("quire.op.numeric.narrow")
                     && first_reference(node) == Some(&application.node_id)
             })
             .collect::<Vec<_>>();

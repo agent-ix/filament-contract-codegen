@@ -52,7 +52,7 @@ fn inference_node(
             node_id: id,
             owner: None,
             owner_model: None,
-            schema_version: "filament.checked-semantic-graph/v2".into(),
+            schema_version: "quire.checked-semantic-graph/v2".into(),
             node_tag: tag.into(),
             semantic_form: form.into(),
             semantic_type,
@@ -118,7 +118,7 @@ fn tc_024_nested_inference_reports_missing_cycle_unsupported_and_bad_literals() 
     let root = inference_application_node(
         root_id.clone(),
         &integer,
-        "filament.op.integer.negate",
+        "quire.op.integer.negate",
         vec![reference(&missing)],
     );
     let nodes = [scalar.clone(), root];
@@ -151,7 +151,7 @@ fn tc_024_nested_inference_reports_missing_cycle_unsupported_and_bad_literals() 
     let cycle = inference_application_node(
         root_id.clone(),
         &integer,
-        "filament.op.integer.negate",
+        "quire.op.integer.negate",
         vec![reference(&root_id)],
     );
     let nodes = [scalar.clone(), cycle];
@@ -166,7 +166,7 @@ fn tc_024_nested_inference_reports_missing_cycle_unsupported_and_bad_literals() 
     let unsupported = inference_application_node(
         root_id.clone(),
         &integer,
-        "filament.op.integer.divide",
+        "quire.op.integer.divide",
         Vec::new(),
     );
     let nodes = [scalar.clone(), unsupported];
@@ -175,7 +175,7 @@ fn tc_024_nested_inference_reports_missing_cycle_unsupported_and_bad_literals() 
         infer_integer_range(&graph, &root_id, 1),
         Err(ExactScalarRefusal::OperandUnsupported {
             position: 1,
-            term: "filament.op.integer.divide".to_owned()
+            term: "quire.op.integer.divide".to_owned()
         })
     );
 
@@ -203,7 +203,7 @@ fn tc_024_nested_inference_reports_missing_cycle_unsupported_and_bad_literals() 
         let unary = inference_application_node(
             root_id.clone(),
             &integer,
-            "filament.op.integer.negate",
+            "quire.op.integer.negate",
             vec![reference(&literal_id)],
         );
         let nodes = [scalar.clone(), literal, unary];
@@ -269,7 +269,7 @@ fn tc_024_nested_inference_accepts_inline_canonical_integer_literals() {
     let application = inference_application_node(
         root.clone(),
         &integer,
-        "filament.op.integer.add",
+        "quire.op.integer.add",
         vec![
             reference(&parameter),
             CheckedTerm::Literal {
@@ -342,7 +342,7 @@ fn tc_024_nested_inference_enforces_depth_before_reusing_memoized_nodes() {
     let shared_expression = inference_application_node(
         shared.clone(),
         &integer,
-        "filament.op.integer.add",
+        "quire.op.integer.add",
         vec![
             reference(&parameter),
             CheckedTerm::Literal {
@@ -361,14 +361,14 @@ fn tc_024_nested_inference_enforces_depth_before_reusing_memoized_nodes() {
         nodes.push(inference_application_node(
             node_id.clone(),
             &integer,
-            "filament.op.integer.add",
+            "quire.op.integer.add",
             vec![reference(&parameter), reference(next)],
         ));
     }
     nodes.push(inference_application_node(
         root.clone(),
         &integer,
-        "filament.op.integer.add",
+        "quire.op.integer.add",
         vec![reference(&shared), reference(&chain[0])],
     ));
     let graph = inference_graph(&nodes);
@@ -647,7 +647,7 @@ fn tc_024_a_conversion_narrows_only_its_one_referenced_argument() {
         &target
     ));
     assert!(!narrows_fixture(
-        &conversion('c', "filament.op.numeric.convert", vec![reference_to('2')]),
+        &conversion('c', "quire.op.numeric.convert", vec![reference_to('2')]),
         &target
     ));
     assert!(!narrows_fixture(
@@ -872,7 +872,7 @@ fn wrong_form_and_wrong_base_bounds_keep_typed_defensive_refusals() {
         let body = CheckedTerm::Application {
             operator: ApplicationOperator::Binary,
             operation: serde_json::from_value(
-                serde_json::json!({"identity":"filament.op.integer.add"}),
+                serde_json::json!({"identity":"quire.op.integer.add"}),
             )
             .expect("typed operation"),
             result_type: node_id(result),
@@ -888,7 +888,7 @@ fn wrong_form_and_wrong_base_bounds_keep_typed_defensive_refusals() {
                 CheckedTerm::Application {
                     operator: ApplicationOperator::Convert,
                     operation: serde_json::from_value(
-                        serde_json::json!({"identity":"filament.op.numeric.narrow"}),
+                        serde_json::json!({"identity":"quire.op.numeric.narrow"}),
                     )
                     .expect("typed narrow"),
                     result_type: node_id('7'),
@@ -947,10 +947,8 @@ fn quantity_multiply_with_integer_result_refuses_before_emission() {
     );
     let body = CheckedTerm::Application {
         operator: ApplicationOperator::Binary,
-        operation: serde_json::from_value(
-            serde_json::json!({"identity":"filament.op.quantity.mul"}),
-        )
-        .expect("typed operation"),
+        operation: serde_json::from_value(serde_json::json!({"identity":"quire.op.quantity.mul"}))
+            .expect("typed operation"),
         result_type: node_id('1'),
         arguments: vec![reference_to('2'), reference_to('3')],
     };
@@ -989,13 +987,13 @@ fn quantity_multiply_with_integer_result_refuses_before_emission() {
 fn sqrt_and_fma_refuse_a_call_form_node_with_another_body_operator() {
     for (identity, operator, width, arguments) in [
         (
-            "filament.op.ieee.float32.sqrt",
+            "quire.op.ieee.float32.sqrt",
             IeeeArithmeticOperator::SquareRoot,
             IeeeWidth::Binary32,
             1,
         ),
         (
-            "filament.op.ieee.float64.fma",
+            "quire.op.ieee.float64.fma",
             IeeeArithmeticOperator::FusedMultiplyAdd,
             IeeeWidth::Binary64,
             3,

@@ -29,13 +29,13 @@ use quire_contract_model::{
 
 const SAME: &str = concat!(
     "language \"ix:native\" edition \"1-draft\";\n",
-    "profile v = \"filament.value.complete/v1\";\n",
+    "profile v = \"quire.value.complete/v1\";\n",
     "function same using v(left: Int[0, 0], right: Int[0, 0]): Boolean pure { left = right }\n",
 );
 
 const COMPOSITE: &str = concat!(
     "language \"ix:native\" edition \"1-draft\";\n",
-    "profile v = \"filament.value.complete/v1\";\n",
+    "profile v = \"quire.value.complete/v1\";\n",
     "tuple Pair(Boolean, Integer);\n",
     "union Choice { Empty, Some(Pair) }\n",
     "record Holder { pair: Pair; shape: Choice; flag: Boolean?; }\n",
@@ -55,7 +55,7 @@ mod kani {
 
 const SECOND: &str = concat!(
     "language \"ix:native\" edition \"1-draft\";\n",
-    "profile v = \"filament.value.complete/v1\";\n",
+    "profile v = \"quire.value.complete/v1\";\n",
     "function alpha using v(left: Int[0, 0], right: Int[0, 0]): Boolean pure { left = right }\n",
     "function beta using v(left: Int[0, 0], right: Int[0, 0]): Boolean pure { left = right }\n",
 );
@@ -86,7 +86,7 @@ fn host_prepared(
     .expect("genuine checked source");
     let bytes = compiled.package().bytes().to_vec();
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("filament.value.complete/v1");
+    evidence.support_feature("quire.value.complete/v1");
     let CheckedPackageV2ReadResult::Admitted(package) =
         CheckedPackageV2::read(&bytes, CheckedPackageReadLimits::bounded(), &evidence)
     else {

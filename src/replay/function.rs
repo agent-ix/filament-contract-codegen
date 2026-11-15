@@ -1802,7 +1802,7 @@ mod tests {
     use quire_exact::PathSegment;
 
     const UNIT: &str = "language \"ix:native\" edition \"1-draft\";\n\
-        profile v = \"filament.value.complete/v1\";\n\
+        profile v = \"quire.value.complete/v1\";\n\
         function f using v(a: Int[0, 9], b: Int[0, 9]): Boolean pure { a <= b }\n";
 
     fn fixture_node(name: &str) -> NodeKey {
@@ -1900,7 +1900,7 @@ mod tests {
     #[allow(clippy::result_large_err)]
     fn an_enum_witness_value_is_rendered_into_the_transcript_text() {
         let package = package_from_source(
-            "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\n\
+            "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\n\
              ordered enum Level { LOW, MID }\n\
              function lt using v(a: Level, b: Level): Boolean pure { a < b }\n",
             "lt",
@@ -2106,7 +2106,7 @@ mod tests {
     }
 
     const VALUE_UNIT: &str = "language \"ix:native\" edition \"1-draft\";\n\
-        profile v = \"filament.value.complete/v1\";\n\
+        profile v = \"quire.value.complete/v1\";\n\
         function f using v(x: Int[0, 9]): Integer pure { x + 1 }\n\
         function g using v(x: Int[0, 9]): Integer pure { x + 2 }\n";
 

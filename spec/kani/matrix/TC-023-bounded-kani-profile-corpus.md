@@ -179,8 +179,8 @@ are deleted. Shared canonical-preimage, dependency, refusal, collision,
 emission-order and ceiling checks use retained graph requests. Graph
 source-backed replay, cover controls, schema, census validation and the
 retained graph corpus generator remain. The admitted
-`filament.op.integer.div` test requires `Unsupported(OperationNotRendered)` with no
-harness; the separate `filament.op.integer.rem` test requires an `Underived`, refused
+`quire.op.integer.div` test requires `Unsupported(OperationNotRendered)` with no
+harness; the separate `quire.op.integer.rem` test requires an `Underived`, refused
 claim with no generated scalar family or harness. Amended by IR-854 (planned):
 once FR-014-AC-81 and FR-057 land, both tests are superseded. `div` and `rem`
 then settle as FR-057 states, and the underived control moves to an identity

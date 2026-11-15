@@ -1456,7 +1456,7 @@ fn run_crate(label: &str, modules: &[(String, String)], checks: &str) {
     write_manifest(
         &directory.path,
         &format!(
-            "[package]\nname = \"arithmetic-{label}\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nfilament-exact = {{ {EXACT_DEPENDENCY_SOURCE}, features = [\"test-support\"] }}\n\n[workspace]\n",
+            "[package]\nname = \"arithmetic-{label}\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nquire-exact = {{ {EXACT_DEPENDENCY_SOURCE}, features = [\"test-support\"] }}\n\n[workspace]\n",
             runtime_dependency(&["exact"])
         ),
     );

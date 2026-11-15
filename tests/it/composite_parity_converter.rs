@@ -78,7 +78,7 @@ fn public_composite_fixture() -> PublicCompositeFixture {
         CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
         CheckedPackageV2ReadResult,
     };
-    let source = b"language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nfunction f using v(a: Sequence<Int[0, 9]>[0, 3], b: Sequence<Int[0, 9]>[0, 3]): Boolean pure { a = b }\n";
+    let source = b"language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nfunction f using v(a: Sequence<Int[0, 9]>[0, 3], b: Sequence<Int[0, 9]>[0, 3]): Boolean pure { a = b }\n";
     let compiled = compile_package(
         qsl_replay::CompileUnit {
             source: SourceIdentity::new("test", "ir666"),
@@ -93,7 +93,7 @@ fn public_composite_fixture() -> PublicCompositeFixture {
     )
     .expect("compile package");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("filament.value.complete/v1");
+    evidence.support_feature("quire.value.complete/v1");
     let CheckedPackageV2ReadResult::Admitted(package) = CheckedPackageV2::read(
         compiled.bytes(),
         CheckedPackageReadLimits::bounded(),
@@ -141,7 +141,7 @@ fn public_composite_fixture() -> PublicCompositeFixture {
         .find(|node| {
             node.node_tag.as_ref() == "expression"
                 && matches!(&node.body, quire_contract_model::CheckedTerm::Application { operation, .. }
-                    if operation.identity() == Some("filament.op.structural.eq"))
+                    if operation.identity() == Some("quire.op.structural.eq"))
         })
         .expect("compiled structural equality");
     let node = graph

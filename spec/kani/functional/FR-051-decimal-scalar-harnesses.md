@@ -35,8 +35,8 @@ relationships:
 ## Description
 
 When an admitted request selects a reader-admitted `decimal` scalar operation
-(`filament.op.decimal.add`, `.sub`, `.mul`, `.div`, `.negate`,
-`filament.op.numeric.convert_rounding` into a decimal, or an ordering comparison
+(`quire.op.decimal.add`, `.sub`, `.mul`, `.div`, `.negate`,
+`quire.op.numeric.convert_rounding` into a decimal, or an ordering comparison
 `lt`, `le`, `gt`, `ge` over decimals) and the planned prerequisite below is
 available, CG SHALL generate a bounded Kani harness that proves the generated
 decimal oracle of
@@ -58,7 +58,7 @@ refuses an unbounded plain-reference operand as `RequiresBound` (FR-014-AC-25, w
 profile that does not require bounds is outside this row, and CG reports the
 missing bound defensively (AC-5).
 
-Decimal equality and inequality (`filament.op.decimal.eq`, `.ne`) are outside this
+Decimal equality and inequality (`quire.op.decimal.eq`, `.ne`) are outside this
 requirement: FR-014 refuses them as `OperationNotDerivable`, so no oracle exists
 to prove. Quantity carried-Decimal conversions are a quantity operation: FR-014-AC-62
 through AC-65 own their oracle, and FR-014-AC-51 and TC-030's Quantity scalar row
@@ -174,7 +174,7 @@ All supported-harness criteria are conditional on P1 (IR-1444).
 
 | ID | Criteria | Verification |
 | --- | --- | --- |
-| FR-051-AC-1 | Each admitted decimal `add`, `sub`, `mul`, `div`, `negate`, `convert_rounding` and each of `lt`, `le`, `gt`, `ge` node selects a harness naming the operation identity and operand forms from the admitted node, and for the six arithmetic operations the `decimal_range` result bound (orderings have none); the oracle is FR-014's and the expected side is an independent native expression, not a second call of the oracle. `filament.op.decimal.eq` and `.ne` select no harness and keep FR-014's `OperationNotDerivable`. | Test |
+| FR-051-AC-1 | Each admitted decimal `add`, `sub`, `mul`, `div`, `negate`, `convert_rounding` and each of `lt`, `le`, `gt`, `ge` node selects a harness naming the operation identity and operand forms from the admitted node, and for the six arithmetic operations the `decimal_range` result bound (orderings have none); the oracle is FR-014's and the expected side is an independent native expression, not a second call of the oracle. `quire.op.decimal.eq` and `.ne` select no harness and keep FR-014's `OperationNotDerivable`. | Test |
 | FR-051-AC-2 | Each operand is drawn as a (coefficient, scale) pair at scales `0..=scale_max` that satisfies the owner `DecimalType::contains`, within the carrier's stated coefficient envelope. Every such member is reachable exactly once, including numerically equal pairs with different scales and the owner's own result form (`(5000, 2)` for 50 in `Decimal[0,100;0,2]`), and an independent host enumeration of the `contains`-admitted set matches the encoding; clipping an endpoint, rejecting a raw coefficient outside `[coefficient_min, coefficient_max]` that `contains` admits, admitting a pair `contains` rejects, collapsing equal-valued pairs or drawing only the target scale fails the correspondence check (FSpec FR-196-AC-5). | Test |
 | FR-051-AC-3 | For `add`, `sub`, `mul`, `div`, `negate` and `convert_rounding` the oracle and native expression agree on the typed outcome, the completed value's retained representation (not only its normalized value), the loss record, ordered charges, the denied next charge and consumed counters, at zero, exact and short budgets at each charge point in the Behavior list. For the four ordering operators they agree on `Outcome<bool>`, charges and counters, with ordering by value. The reference neither runs the generated oracle twice nor bridges through Runtime. | Test |
 | FR-051-AC-4 | Each reachable noncompletion is asserted as the agreed typed outcome and never assumed away: `Undefined(DivisionByZero)` for a zero divisor (and `Incomplete` at `decimal.operands` instead at a zero budget, since the zero check follows that charge), `Refused(InexactDecimal)` under `exact` rounding for an inexact `div` quotient, a `mul` whose operand scales sum above the result scale, and `add`, `sub`, `negate` and `convert_rounding` over an operand whose scale exceeds the result scale, `Refused(DecimalOutOfDomain)` for an `add`, `sub`, `mul`, `div`, `negate` or `convert_rounding` result outside the result domain (including after rounding), and `Incomplete` at each charge point named in the Behavior list. No cause is relabelled and a stopped outcome is never proved completed. The generated harness contains no assumption that depends on the outcome (inspected, as FR-046-AC-4). | Test |

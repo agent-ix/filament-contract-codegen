@@ -23,7 +23,7 @@ use crate::{
 };
 
 /// Contract IR's admitted identity for Boolean implication.
-pub(crate) const BOOLEAN_IMPLIES_IDENTITY: &str = "filament.op.boolean.implies";
+pub(crate) const BOOLEAN_IMPLIES_IDENTITY: &str = "quire.op.boolean.implies";
 
 /// Resource ceilings bound into a proof identity (FR-028).
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -1210,7 +1210,7 @@ pub struct StateFrameHarness {
     pub record: Artifact,
 }
 
-/// An integer comparison operator of the closed `filament.op.integer` ordering family.
+/// An integer comparison operator of the closed `quire.op.integer` ordering family.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum StateComparison {

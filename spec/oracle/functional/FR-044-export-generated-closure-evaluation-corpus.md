@@ -44,7 +44,7 @@ the std/no_std comparison and its CI placement.
 The explicit `make evaluator-corpus` producer SHALL write `cases.jsonl` in
 UTF-8 JSON Lines under `EVALUATOR_CORPUS_DIR` (default
 `target/evaluator-corpus`). It SHALL use `filament-eval-corpus::CaseRecord::line`
-for each `filament.evaluator-case/v1` line, in strictly ascending UTF-8 `case_id`
+for each `quire.evaluator-case/v1` line, in strictly ascending UTF-8 `case_id`
 order, with one final newline per line and no other bytes. The target is a
 complete generated bundle, never a checked-in copy. The producer SHALL use
 `filament-eval-corpus::load` to check the finished bundle; CG does not implement
@@ -94,7 +94,7 @@ is enabled and the log is not truncated, otherwise `charges` is `null`.
 
 | ID | Criteria | Verification |
 | --- | --- | --- |
-| FR-044-AC-1 | Given an admitted scalar, an equality and a nested generated-to-generated-to-interpreted source application, `make evaluator-corpus` writes one stable unique case id per application in `cases.jsonl` at `EVALUATOR_CORPUS_DIR`. Every line is a `filament-eval-corpus` `filament.evaluator-case/v1` record with FR-402's exact members: two source-identity labels (authority and identity), display path and text, sorted dependency units, FSL-compiled `package_id`, callable function name, FR-071 arguments, decimal-string limits, `object_environment: null`, `generated_bodies: []` and `expected: null` while `filament-eval` has no registered-body implementation. FR-402's loader and FSL admission admit all three as the same source applications; a changed authority, identity or valid source text with the old `package_id` refuses `package_mismatch`. | Test |
+| FR-044-AC-1 | Given an admitted scalar, an equality and a nested generated-to-generated-to-interpreted source application, `make evaluator-corpus` writes one stable unique case id per application in `cases.jsonl` at `EVALUATOR_CORPUS_DIR`. Every line is a `filament-eval-corpus` `quire.evaluator-case/v1` record with FR-402's exact members: two source-identity labels (authority and identity), display path and text, sorted dependency units, FSL-compiled `package_id`, callable function name, FR-071 arguments, decimal-string limits, `object_environment: null`, `generated_bodies: []` and `expected: null` while `filament-eval` has no registered-body implementation. FR-402's loader and FSL admission admit all three as the same source applications; a changed authority, identity or valid source text with the old `package_id` refuses `package_mismatch`. | Test |
 | FR-044-AC-2 | Repeating export of the same cases is byte-identical. Loaded case ids equal an independent enumeration of the live FSL-admitted source applications; deleting a record fails that census. Perturbing a callable, argument, dependency or limit changes the loaded case or causes FR-402's stated load/admission refusal. A producer-side compile, case-construction, case-encoding or load failure leaves the previous complete bundle byte-identical, or the target absent when none existed. | Test |
 | FR-044-AC-3 | Inspection finds CG uses `filament-eval-corpus` for case writing and loading, obtains `package_id` via `fsl_replay::compile_package` inside CG's replay module, defines no local case/compared-record codec or loader refusal, and computes no expectation from emitted source or Contract Runtime `exact`. CG uses no `fsl-eval` dependency or direct FSL evaluator call outside the existing replay facade. | Inspection |
 | FR-044-AC-4 | Once `filament-eval` implements registered generated-body execution, each selected case records a non-null `ComparedRecord` from one run with its sorted unique generated-body function names and fresh meter; FR-402's expected/std check passes. Perturbing a generated-body name changes the loaded case or causes FR-402's stated refusal. Boolean and Integer completed values encode; a completed value of another kind refuses `unencodable_value`. The compared record includes the exact result arm, refusal, location, losses and all ten consumed counters, with `charges` present only under FR-402's non-truncated `charge-log` test support and `null` otherwise. | Test |
@@ -114,7 +114,7 @@ is enabled and the log is not truncated, otherwise `charges` is `null`.
 ## Status
 
 PLANNED (IR-1316; IR-591, IR-976). CG's current corpus is held in test builders; no
-`filament.evaluator-case/v1` export or non-null expected result is claimed.
+`quire.evaluator-case/v1` export or non-null expected result is claimed.
 
 ## Scoped evidence status (IR-1316)
 

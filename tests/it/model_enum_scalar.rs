@@ -67,7 +67,7 @@ fn original_model_enum_eq_ne_generate_and_execute_all_four_truth_arms() {
         let contents = if artifact.path == "Cargo.toml" {
             artifact.contents.replacen("[dependencies]\n", concat!(
                 "[dependencies]\n",
-                "filament-contract-model = { git = \"https://github.com/agent-ix/filament-contract-ir\", branch = \"main\" }\n"
+                "quire-contract-model = { git = \"https://github.com/agent-ix/quire-contract-ir\", branch = \"main\" }\n"
             ), 1)
         } else { artifact.contents.clone() };
         (artifact.path.clone(), contents)

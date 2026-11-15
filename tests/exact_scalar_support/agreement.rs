@@ -464,7 +464,7 @@ pub mod rt_side {
                 .iter()
                 .filter(|d| d.owner == owner)
                 .collect::<Vec<_>>();
-            let mut source = String::from("language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\n");
+            let mut source = String::from("language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\n");
             for d in &dimensions {
                 if d.terms.is_empty() {
                     writeln!(source, "dimension {};", d.declaration).unwrap();
@@ -627,7 +627,7 @@ pub mod rt_side {
         use std::sync::{Mutex, OnceLock};
         static ENUMS: OnceLock<Mutex<BTreeMap<String, qsl_replay::AdmittedEnum>>> = OnceLock::new();
         let source = format!(
-            "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\n{}enum {declaration} {{ {} }}\n",
+            "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\n{}enum {declaration} {{ {} }}\n",
             if ordered { "ordered " } else { "" },
             members.join(", ")
         );

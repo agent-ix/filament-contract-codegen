@@ -47,7 +47,7 @@ fn meter() -> Meter {
 
 fn admitted(bytes: &[u8], library: Option<&CheckedPackageV2>) -> CheckedPackageV2 {
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("filament.value.complete/v1");
+    evidence.support_feature("quire.value.complete/v1");
     if let Some(library) = library {
         evidence
             .insert_dependency_package("test/function-library", Arc::new(library.clone()))

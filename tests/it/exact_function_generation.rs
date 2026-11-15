@@ -100,7 +100,7 @@ fn tc_031_ac34_public_strict_reader_chain_generates_compilable_flat_schedule() {
         json!({
             "term": "application",
             "operator": "call",
-            "operation": op("filament.op.function.call"),
+            "operation": op("quire.op.function.call"),
             "result_type": code_id(T_INTEGER),
             "arguments": [
                 {"term": "reference", "target": callee},
@@ -116,7 +116,7 @@ fn tc_031_ac34_public_strict_reader_chain_generates_compilable_flat_schedule() {
         json!({
             "term": "application",
             "operator": "binary",
-            "operation": op("filament.op.integer.add"),
+            "operation": op("quire.op.integer.add"),
             "result_type": code_id(T_INTEGER),
             "arguments": [
                 {"term": "reference", "target": params.0},
@@ -179,7 +179,7 @@ fn tc_031_ac34_public_strict_reader_chain_generates_compilable_flat_schedule() {
         json!({
             "term": "application",
             "operator": "call",
-            "operation": op("filament.op.function.call"),
+            "operation": op("quire.op.function.call"),
             "result_type": code_id(T_INTEGER),
             "arguments": [
                 {"term": "reference", "target": callee},
@@ -712,7 +712,7 @@ fn tc_031_ac7_admitted_hundred_thousand_call_nodes_generate_on_a_512_kib_stack()
     assert!((1..=CALLS).contains(&calls));
 
     let operation = json!({
-        "identity": "filament.op.function.call",
+        "identity": "quire.op.function.call",
         "laws": [],
         "mode": null,
         "member": null,
@@ -1041,7 +1041,7 @@ fn tc_031_source_assigned_parent_key_survives_child_body_change() {
             "term": "application",
             "operator": "binary",
             "operation": {
-                "identity": "filament.op.integer.add",
+                "identity": "quire.op.integer.add",
                 "laws": [], "mode": null, "member": null, "leaves": [],
             },
             "result_type": code_id(T_INTEGER),
@@ -2784,7 +2784,7 @@ fn generated_manifest_exposes_semantic_value_owner_source() {
     let oracles = main_oracles();
     let manifest = contents(&oracles, "Cargo.toml");
     let dependency = format!(
-        "filament-semantic-value = {{ {} }}",
+        "quire-semantic-value = {{ {} }}",
         filament_contract_codegen::SEMANTIC_VALUE_DEPENDENCY_SOURCE
     );
     assert!(manifest.lines().any(|line| line == dependency));
@@ -2801,17 +2801,17 @@ fn tc_031_ac14_manifest_and_source_shape() {
     let manifest = contents(&oracles, "Cargo.toml");
     assert!(manifest.contains("publish = false"));
     for dependency in [
-        "fsl-replay",
-        "filament-eval",
-        "filament-exact",
-        "filament-semantic-value",
+        "qsl-replay",
+        "quire-eval",
+        "quire-exact",
+        "quire-semantic-value",
     ] {
         assert!(
             manifest.contains(&format!("{dependency} =")),
             "{dependency}"
         );
     }
-    assert!(!manifest.contains("filament-contract-runtime"));
+    assert!(!manifest.contains("quire-contract-runtime"));
     assert!(!manifest.contains("rev ="));
     assert!(manifest.contains("unsafe_code = \"forbid\""));
 

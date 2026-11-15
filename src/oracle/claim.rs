@@ -22,7 +22,7 @@ pub enum UpstreamBlocker {
     FilamentSpecLanguage121,
     /// Function application: Contract Runtime publishes no
     /// function-application operator surface to call.
-    #[serde(rename = "agent-ix/filament-contract-runtime#34")]
+    #[serde(rename = "agent-ix/quire-contract-runtime#34")]
     FilamentContractRuntime34,
     /// The generator classified the item from its body and the request's own
     /// descriptor and did not confirm the node's catalogued operation, so it

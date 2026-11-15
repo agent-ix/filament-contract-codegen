@@ -35,7 +35,7 @@ use quire_contract_model::{
 };
 use std::{collections::BTreeMap, path::PathBuf, sync::Arc, time::Duration};
 
-const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nfunction subject using v(x: Int[0, 9]): Int[0, 10] pure { x + 1 }\n";
+const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nfunction subject using v(x: Int[0, 9]): Int[0, 10] pure { x + 1 }\n";
 
 fn application(body: &CheckedTerm, operation: &str) -> bool {
     matches!(body, CheckedTerm::Application { operation: found, .. } if found.identity() == Some(operation))
@@ -64,7 +64,7 @@ fn native_fixture() -> Fixture {
     )
     .expect("FSL compiles the authored scalar source");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("filament.value.complete/v1");
+    evidence.support_feature("quire.value.complete/v1");
     let CheckedPackageV2ReadResult::Admitted(checked) = CheckedPackageV2::read(
         compiled.bytes(),
         CheckedPackageReadLimits::bounded(),
@@ -75,14 +75,14 @@ fn native_fixture() -> Fixture {
     let nodes = &checked.resolved_graph().nodes;
     let node_id = nodes
         .iter()
-        .find(|node| application(&node.body, "filament.op.integer.add"))
+        .find(|node| application(&node.body, "quire.op.integer.add"))
         .expect("one authored addition")
         .node_id
         .clone();
     let conversion = nodes
         .iter()
         .find(|node| {
-            application(&node.body, "filament.op.numeric.narrow")
+            application(&node.body, "quire.op.numeric.narrow")
                 && matches!(&node.body, CheckedTerm::Application { arguments, .. }
                     if matches!(arguments.first(), Some(CheckedTerm::Reference { target }) if target == &node_id))
         })

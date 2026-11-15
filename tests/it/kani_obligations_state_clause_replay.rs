@@ -805,8 +805,8 @@ fn documents(wire: &ReplayRequestWire) -> Documents {
             continue;
         };
         match document.get("format").and_then(Value::as_str) {
-            Some("filament.state.invocation/v1") => found.0 = Some(document),
-            Some("filament.state.snapshot/v1") => match document.get("observation") {
+            Some("quire.state.invocation/v1") => found.0 = Some(document),
+            Some("quire.state.snapshot/v1") => match document.get("observation") {
                 Some(Value::String(role)) if role == "pre" => found.1 = Some(document),
                 Some(Value::String(role)) if role == "post" => found.2 = Some(document),
                 other => panic!("an unknown snapshot role: {other:?}"),

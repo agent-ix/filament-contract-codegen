@@ -63,7 +63,7 @@ fn completed_sum(fixture: &ReplayFixture) -> (CompletedScalarReplay, ScalarSentR
 
 fn sum_fixture() -> ReplayFixture {
     replay_fixture(
-        "filament.op.integer.add",
+        "quire.op.integer.add",
         "x: Int[0, 9]",
         "Int[0, 18]",
         "x + x",
@@ -980,7 +980,7 @@ fn step_14_the_flow_uses_only_the_scalar_identity_and_the_scan_finds_nothing() {
 #[test]
 fn increment_fixture_has_no_out_of_result_range_value_and_agrees_natively() {
     let fixture = replay_fixture(
-        "filament.op.integer.add",
+        "quire.op.integer.add",
         "x: Int[0, 9]",
         "Int[0, 10]",
         "x + 1",

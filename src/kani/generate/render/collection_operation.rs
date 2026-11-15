@@ -157,8 +157,8 @@ fn quantifier(
     state: &str,
 ) -> Option<String> {
     let method = match operation {
-        "filament.op.collection.forall" => "all",
-        "filament.op.collection.exists" => "any",
+        "quire.op.collection.forall" => "all",
+        "quire.op.collection.exists" => "any",
         _ => return None,
     };
     Some(format!(

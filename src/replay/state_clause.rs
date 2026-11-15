@@ -694,7 +694,7 @@ impl StateClauseReplay {
         let post_snapshot = snapshot(&model, &object, &post_label, "post", &post)
             .map_err(StateClauseReplayError::Document)?;
         let invocation_document = InvocationDocument {
-            format: "filament.state.invocation/v1",
+            format: "quire.state.invocation/v1",
             identity: (&invocation_label).into(),
             model: model.clone(),
             context: object.object_type.clone(),
@@ -997,7 +997,7 @@ fn snapshot(
     values: &[(String, i64)],
 ) -> Result<Snapshot, DocumentError> {
     let document = SnapshotDocument {
-        format: "filament.state.snapshot/v1",
+        format: "quire.state.snapshot/v1",
         identity: label.into(),
         observation,
         model: model.clone(),

@@ -186,7 +186,7 @@ fn scalar_package_with_occurrences(
             &key(T_INTEGER),
             application(
                 "binary",
-                op("filament.op.integer.add"),
+                op("quire.op.integer.add"),
                 &key(T_INTEGER),
                 // A `reference(V_INTEGER)` pair here would be byte-identical
                 // to corpus code 1001's own `integer.add` body (same
@@ -389,7 +389,7 @@ pub(super) fn boolean_implies_scalar() -> (
         &key(T_BOOLEAN),
         application(
             "binary",
-            op("filament.op.boolean.implies"),
+            op("quire.op.boolean.implies"),
             &key(T_BOOLEAN),
             vec![reference(&key(V_BOOLEAN)), reference(&key(V_BOOLEAN))],
         ),
@@ -573,7 +573,7 @@ pub(crate) fn boolean_operation_package() -> (CheckedPackageV2, CheckedNodeId) {
         &key(T_BOOLEAN),
         application(
             "binary",
-            op("filament.op.boolean.and"),
+            op("quire.op.boolean.and"),
             &key(T_BOOLEAN),
             vec![reference(&key(V_BOOLEAN)), reference(&key(V_BOOLEAN))],
         ),
@@ -623,7 +623,7 @@ fn scalar_records(
 #[test]
 fn tc_025_symbolic_bounds_equal_ir_domains_and_every_option_is_identity() {
     // A V2 claim's domain is read from its IR bound, inclusive at both ends. Node 1001 is
-    // `filament.op.integer.add`, IR-confirmed and renderable, so it reaches a real Kani harness --
+    // `quire.op.integer.add`, IR-confirmed and renderable, so it reaches a real Kani harness --
     // not a typed refusal. Both operands reference computed call wrappers with the admitted `[-1000, 1000]`
     // domain. Their referenced literal children do not turn those calls into constants; the
     // per-operand bounded ranges are TC-033's.
@@ -648,7 +648,7 @@ fn tc_025_symbolic_bounds_equal_ir_domains_and_every_option_is_identity() {
     ));
     assert_eq!(scalar_harnesses.len(), 1);
     let identity = &scalar_harnesses[0].identity;
-    assert_eq!(identity.operation_identity, "filament.op.integer.add");
+    assert_eq!(identity.operation_identity, "quire.op.integer.add");
     assert_eq!(identity.solver, KaniSolver::Cadical);
     assert_eq!(identity.unwind, 4);
     assert_eq!(
@@ -805,7 +805,7 @@ fn tc_025_scalar_harness_asserts_the_native_arithmetic_relation() {
         &scalar_harnesses[0].rust.path,
         source,
         &[&format!(
-            "// Obligation: exact-scalar {} `filament.op.integer.add`",
+            "// Obligation: exact-scalar {} `quire.op.integer.add`",
             message_safe_label(&node_key.to_string())
         )],
     );
@@ -884,19 +884,19 @@ fn tc_025_scalar_harness_asserts_the_native_arithmetic_relation() {
 fn tc_025_every_rendered_operation_states_its_own_native_relation() {
     const EXACT: [(&str, &str); 4] = [
         (
-            "filament.op.integer.add",
+            "quire.op.integer.add",
             "let exact: i128 = i128::from(left_native) + i128::from(right_native);",
         ),
         (
-            "filament.op.integer.sub",
+            "quire.op.integer.sub",
             "let exact: i128 = i128::from(left_native) - i128::from(right_native);",
         ),
         (
-            "filament.op.integer.mul",
+            "quire.op.integer.mul",
             "let exact: i128 = i128::from(left_native) * i128::from(right_native);",
         ),
         (
-            "filament.op.integer.negate",
+            "quire.op.integer.negate",
             "let exact: i128 = -i128::from(operand_native);",
         ),
     ];
@@ -1167,7 +1167,7 @@ fn tc_025_a_quantity_conversion_claim_is_unrendered_with_no_harness() {
         assert!(
             matches!(unsupported(record), UnsupportedObligation::OperationNotRendered {
             operation_identity, ..
-        } if operation_identity == "filament.op.quantity.convert")
+        } if operation_identity == "quire.op.quantity.convert")
         );
     }
 }
@@ -1176,10 +1176,10 @@ fn tc_025_a_quantity_conversion_claim_is_unrendered_with_no_harness() {
 /// `UnknownNodeKind` tests below to hand-assemble a claim map entry `generate_exact_scalar_oracles`
 /// would never itself produce.
 const RENDERED_OPERATIONS: [&str; 4] = [
-    "filament.op.integer.add",
-    "filament.op.integer.sub",
-    "filament.op.integer.mul",
-    "filament.op.integer.negate",
+    "quire.op.integer.add",
+    "quire.op.integer.sub",
+    "quire.op.integer.mul",
+    "quire.op.integer.negate",
 ];
 
 /// IR-81: a V2 scalar-claim item's graph node that is present, but is neither the one recognized
@@ -1379,7 +1379,7 @@ fn tc_025_a_claim_naming_a_node_absent_from_the_graph_is_refused_not_silently_su
 }
 
 /// Every V2 scalar claim FR-014 generates has an IR-confirmed operation. The four
-/// `IntegerArithmetic` identities this generator knows how to render (`filament.op.integer.{add,sub,
+/// `IntegerArithmetic` identities this generator knows how to render (`quire.op.integer.{add,sub,
 /// mul,negate}`) each reach a real Kani harness; every other confirmed family is refused as
 /// `OperationNotRendered` -- known, honestly-named debt, never the old `CallerDeclaredOperation`
 /// lie (that provenance is unreachable here: every one of these claims' nodes was successfully
@@ -1388,10 +1388,10 @@ fn tc_025_a_claim_naming_a_node_absent_from_the_graph_is_refused_not_silently_su
 #[test]
 fn tc_025_every_confirmed_operation_is_rendered_or_honestly_refused() {
     const RENDERED: [&str; 4] = [
-        "filament.op.integer.add",
-        "filament.op.integer.sub",
-        "filament.op.integer.mul",
-        "filament.op.integer.negate",
+        "quire.op.integer.add",
+        "quire.op.integer.sub",
+        "quire.op.integer.mul",
+        "quire.op.integer.negate",
     ];
     let mut generated_count = 0;
     let mut rendered_count = 0;
@@ -1485,7 +1485,7 @@ fn admitted_integer_division_is_unrendered_and_emits_no_harness() {
         .items
         .iter()
         .find(|claim| {
-            claim.operation.identity == "filament.op.integer.div"
+            claim.operation.identity == "quire.op.integer.div"
                 && matches!(claim.result, ClaimDisposition::Generated(_))
         })
         .expect("the admitted corpus generates an integer division oracle");
@@ -1509,7 +1509,7 @@ fn admitted_integer_division_is_unrendered_and_emits_no_harness() {
     assert_eq!(records.len(), 1);
     assert!(matches!(unsupported(&records[0]),
         UnsupportedObligation::OperationNotRendered { operation_identity, .. }
-            if operation_identity == "filament.op.integer.div"
+            if operation_identity == "quire.op.integer.div"
     ));
     assert!(harnesses.is_empty(), "unrendered division emits no harness");
 }
@@ -1518,7 +1518,7 @@ fn admitted_integer_division_is_unrendered_and_emits_no_harness() {
 /// no harness") stayed true in code once IR-217 widened `IrConfirmed`, but the test above that is
 /// still traced to it was repurposed to check the render-or-honestly-refuse split over an
 /// all-confirmed corpus, so no test anywhere produced `UnsupportedObligation::CallerDeclaredOperation`
-/// any more. This restores a real case: node 1004 is `filament.op.integer.mul`; naming `Add` against
+/// any more. This restores a real case: node 1004 is `quire.op.integer.mul`; naming `Add` against
 /// it, with the identical `[-1000,1000]` domain, passes every `check_item` shape and bound check
 /// (see `exact_scalar_generation.rs`'s own
 /// `tc_024_operator_confusion_within_one_shape_is_not_silently_confirmed`) but is not confirmed,
@@ -2253,7 +2253,7 @@ fn native_scalar_increment_keeps_original_profile_and_checked_capacity() {
         panic!("one checked Add plan");
     };
     assert_eq!(operation.node_id, native.identity.node_id);
-    assert_eq!(operation.operation_identity, "filament.op.integer.add");
+    assert_eq!(operation.operation_identity, "quire.op.integer.add");
     let endpoints = |interval: &filament_contract_codegen::NativeIntegerIntervalDecision| {
         (
             interval.lower.parse::<i128>().unwrap(),
@@ -3009,7 +3009,7 @@ fn tc_025_scalar_harness_falsifies_a_mutated_oracle_arithmetic() {
     };
     assert!(counterexample.contains(mutated.identity.harness_symbol.as_str()));
     assert_ne!(evidence.exit_code, Some(0));
-    let message = "the oracle must complete with exactly the native filament.op.integer.add result";
+    let message = "the oracle must complete with exactly the native quire.op.integer.add result";
     assert!(
         counterexample.contains("Check for `assertion`") && counterexample.contains(message),
         "the failing check must be the generated `sound` assertion, got {counterexample}"
@@ -3039,7 +3039,7 @@ fn run_ac35_native(
 #[test]
 #[ignore = "kani lane: run serially through `make kani`"]
 fn tc_033_native_guarded_harness_reports_cover_unsatisfied_and_verified() {
-    let infeasible = run_ac35_native("ac35-lt", "<", "filament.op.integer.lt", None);
+    let infeasible = run_ac35_native("ac35-lt", "<", "quire.op.integer.lt", None);
     assert_eq!(
         infeasible.outcome,
         KaniRunOutcome::CoverUnsatisfied {
@@ -3048,7 +3048,7 @@ fn tc_033_native_guarded_harness_reports_cover_unsatisfied_and_verified() {
         },
         "{infeasible:?}"
     );
-    let feasible = run_ac35_native("ac35-gt", ">", "filament.op.integer.gt", None);
+    let feasible = run_ac35_native("ac35-gt", ">", "quire.op.integer.gt", None);
     assert_eq!(feasible.outcome, KaniRunOutcome::Verified, "{feasible:?}");
 }
 
@@ -3062,7 +3062,7 @@ fn tc_033_native_guarded_harness_mutants_are_detected() {
     let a = run_ac35_native(
         "ac35-mut-a",
         ">",
-        "filament.op.integer.gt",
+        "quire.op.integer.gt",
         Some((plan, "nx::NativeIntegerOperation::Multiply {")),
     );
     assert!(
@@ -3073,7 +3073,7 @@ fn tc_033_native_guarded_harness_mutants_are_detected() {
     let b = run_ac35_native(
         "ac35-mut-b",
         ">",
-        "filament.op.integer.gt",
+        "quire.op.integer.gt",
         Some((
             exact,
             "i128::from(left_native) + i128::from(right_native) + 1;",
@@ -3087,7 +3087,7 @@ fn tc_033_native_guarded_harness_mutants_are_detected() {
     let c = run_ac35_native(
         "ac35-mut-c",
         "<",
-        "filament.op.integer.lt",
+        "quire.op.integer.lt",
         Some((assumption, "")),
     );
     assert_eq!(c.outcome, KaniRunOutcome::Verified, "{c:?}");

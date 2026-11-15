@@ -6,7 +6,7 @@ use qsl_replay::{
 };
 
 pub const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\n\
-profile v = \"filament.value.complete/v1\";\n\
+profile v = \"quire.value.complete/v1\";\n\
 ordered enum Ordered { READY, DONE, UNUSED }\n\
 enum Unordered { READY, DONE, UNUSED }\n\
 ordered enum Other { READY, DONE, UNUSED }\n\
@@ -33,7 +33,7 @@ pub fn compile(source: &str) -> AdmittedCompilation {
 
 pub fn imported(transitive: bool) -> (AdmittedCompilation, Vec<(String, AdmittedCompilation)>) {
     const HEADER: &str =
-        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\n";
+        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\n";
     let library = |identity: &str, name: &str, body: &str| qsl_replay::SuppliedLibrary {
         identity: identity.to_owned(),
         source: SourceIdentity::new("test", name),

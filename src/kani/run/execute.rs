@@ -3006,7 +3006,7 @@ exit 0
     fn collection_totality_controls_single_readonly_and_batch_evidence() {
         use serde_json::json;
 
-        let harness = runner_precondition_fixture("filament.op.collection.forall");
+        let harness = runner_precondition_fixture("quire.op.collection.forall");
         let marker = harness.identity.collection_precondition.as_ref().unwrap();
         assert_eq!(
             harness
@@ -3285,7 +3285,7 @@ exit 0
             Err(KaniExecutionRefusal::HarnessProvenanceMismatch { .. })
         ));
 
-        let other = runner_precondition_fixture("filament.op.collection.exists");
+        let other = runner_precondition_fixture("quire.op.collection.exists");
         let other_path = format!(
             "{}::{}",
             other.identity.module_symbol, other.identity.harness_symbol
@@ -3336,7 +3336,7 @@ exit 0
     #[trace("FR-015-AC-9", "TC-025")]
     #[test]
     fn a_tampered_witness_vector_of_a_clause_harness_is_a_provenance_mismatch() {
-        let harness = runner_precondition_fixture("filament.op.collection.forall");
+        let harness = runner_precondition_fixture("quire.op.collection.forall");
         assert!(KaniExecutableHarness::from(&harness).has_valid_provenance());
         let mut tampered = harness.clone();
         tampered.identity.witness_options.push("--extra".to_owned());

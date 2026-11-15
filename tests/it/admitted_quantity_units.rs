@@ -14,7 +14,7 @@ use std::collections::BTreeSet;
 
 const SOURCE: &str = r#"
 language "ix:native" edition "1-draft";
-profile v = "filament.value.complete/v1";
+profile v = "quire.value.complete/v1";
 dimension Length;
 unit m : Length = rational(1, 1);
 unit km : Length = rational(1000, 1) * m;

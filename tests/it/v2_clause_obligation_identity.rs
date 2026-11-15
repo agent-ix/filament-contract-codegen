@@ -483,7 +483,7 @@ fn clause_key(
         text("expression"),
         text("deref"),
         node(this),
-        text("filament.op.model.deref"),
+        text("quire.op.model.deref"),
         text("deref"),
         node(account.clone()),
     ]);
@@ -500,7 +500,7 @@ fn clause_key(
         text("expression"),
         text("query"),
         node(deref),
-        text("filament.op.record.project"),
+        text("quire.op.record.project"),
         text("false"),
         text("query"),
         node(domain),
@@ -516,7 +516,7 @@ fn clause_key(
         text("binary"),
         node(query),
         node(literal),
-        text("filament.op.integer.ge"),
+        text("quire.op.integer.ge"),
         text("binary"),
         node(twin_key(vec![text("scalar_type"), text("boolean")])),
     ]);

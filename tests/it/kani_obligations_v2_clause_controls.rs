@@ -179,19 +179,19 @@ pub(crate) struct OwnerMutation {
 }
 
 const PLUS_ONE: OwnerMutation = OwnerMutation {
-    package: "filament-exact",
+    package: "quire-exact",
     file: "src/native_integer.rs",
     original: EXACT_SITE,
     mutated: "left.0.checked_add(right.0)?.checked_add(1)",
 };
 const LEFT_ONLY: OwnerMutation = OwnerMutation {
-    package: "filament-exact",
+    package: "quire-exact",
     file: "src/native_integer.rs",
     original: EXACT_SITE,
     mutated: "Some(left.0)",
 };
 const HELPER_FALSE: OwnerMutation = OwnerMutation {
-    package: "filament-contract-runtime",
+    package: "quire-contract-runtime",
     file: "src/operators.rs",
     original: HELPER_SITE,
     mutated: "    let _ = (antecedent, consequent);\n    R::from(false)",
@@ -266,7 +266,7 @@ impl ScratchCrate {
             );
         }
         let manifest = format!(
-            "[package]\nname = \"ir1509-clause-controls\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nfilament-exact = {{ git = \"https://github.com/agent-ix/filament-exact\", branch = \"main\" }}\nfilament-semantic-value = {{ git = \"https://github.com/agent-ix/filament-semantic-value\", branch = \"main\" }}\n{patch}\n[workspace]\n",
+            "[package]\nname = \"ir1509-clause-controls\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nquire-exact = {{ git = \"https://github.com/agent-ix/quire-exact\", branch = \"main\" }}\nquire-semantic-value = {{ git = \"https://github.com/agent-ix/quire-semantic-value\", branch = \"main\" }}\n{patch}\n[workspace]\n",
             runtime_dependency(&["exact"])
         );
         write_manifest(&directory.path, &manifest);
@@ -1443,7 +1443,7 @@ fn tc_070_real_kani_runs_the_clause_the_table_lets_through_and_refuses_the_measu
     fs::write(
         &table,
         serde_json::to_vec(&[serde_json::json!({
-            "operation_ids": ["filament.op.integer.mul"],
+            "operation_ids": ["quire.op.integer.mul"],
             "route": "general",
             "max_operand_bits": 21,
             "collection_bound": null,

@@ -81,7 +81,7 @@ fn clause_test_node(number: u8, label: &str) -> CheckedSemanticNodeV2 {
     CheckedSemanticNodeV2 {
         node_id: clause_test_id(number),
         owner_model: None,
-        schema_version: "filament.checked-semantic-graph/v2".into(),
+        schema_version: "quire.checked-semantic-graph/v2".into(),
         node_tag: "expression".into(),
         semantic_form: "literal".into(),
         semantic_type: clause_test_id(0),

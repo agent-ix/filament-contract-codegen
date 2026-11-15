@@ -913,7 +913,7 @@ fn project_function_node<Body>(
         .ok_or_else(|| schedule::ScheduleRefusal::MalformedTerm(source.node_id.clone()))?;
 
     if *operator == ApplicationOperator::Call {
-        if operation_identity != "filament.op.function.call" {
+        if operation_identity != "quire.op.function.call" {
             return Err(schedule::ScheduleRefusal::UnsupportedOperation(
                 source.node_id.clone(),
             ));
@@ -1041,7 +1041,7 @@ fn validate_schedule_item(
             item.call_node_id.clone(),
         ));
     };
-    if body.and_then(application_identity) != Some("filament.op.function.call") {
+    if body.and_then(application_identity) != Some("quire.op.function.call") {
         return Err(schedule::ScheduleRefusal::MalformedTerm(
             item.call_node_id.clone(),
         ));
@@ -1666,7 +1666,7 @@ fn source_call_matches<'a>(
     else {
         return false;
     };
-    if application_identity(body) != Some("filament.op.function.call") {
+    if application_identity(body) != Some("quire.op.function.call") {
         return false;
     }
     if arguments.len() != argument_node_ids.len() + 1 {
@@ -1738,7 +1738,7 @@ fn source_nested_body_matches<Body: GraphBody>(
     else {
         return false;
     };
-    application_identity(body) == Some("filament.op.function.call")
+    application_identity(body) == Some("quire.op.function.call")
         && arguments
             .first()
             .and_then(|term| reference_in_graph(term, &index.graph))
@@ -1828,7 +1828,7 @@ mod ir988_source_function_tests {
             node_id: id(value),
             owner: None,
             owner_model: None,
-            schema_version: "filament.checked-semantic-graph/v2".into(),
+            schema_version: "quire.checked-semantic-graph/v2".into(),
             node_tag: if name.is_some() {
                 "function"
             } else {
@@ -1970,7 +1970,7 @@ mod ir988_admitted_generation_tests {
                 &key(T_INTEGER),
                 json!({
                     "term":"application","operator":"call",
-                    "operation":{"identity":"filament.op.function.call","laws":[],"mode":null,
+                    "operation":{"identity":"quire.op.function.call","laws":[],"mode":null,
                         "member":null,"leaves":[]},
                     "result_type":code_id(T_INTEGER),
                     "arguments":[source_reference(SOURCE_FUNCTION),
@@ -2257,9 +2257,9 @@ pub(crate) fn checked_integer_function_application_is_supported_with_graph(
         return Ok(false);
     };
     let operator = match operation_identity {
-        "filament.op.integer.add" => IntegerOperator::Add,
-        "filament.op.integer.sub" => IntegerOperator::Subtract,
-        "filament.op.integer.mul" => IntegerOperator::Multiply,
+        "quire.op.integer.add" => IntegerOperator::Add,
+        "quire.op.integer.sub" => IntegerOperator::Subtract,
+        "quire.op.integer.mul" => IntegerOperator::Multiply,
         _ => return Ok(false),
     };
     let Some(_call_node) = graph.get(call_node_id) else {
@@ -2734,9 +2734,9 @@ fn classify_body_shape<'r>(
                 .ok_or(ExactFunctionRefusal::BodyMismatch)?;
             let operation_identity = body.and_then(application_identity);
             let expected_identity = match operator {
-                BinaryIntegerOperator::Add => "filament.op.integer.add",
-                BinaryIntegerOperator::Subtract => "filament.op.integer.sub",
-                BinaryIntegerOperator::Multiply => "filament.op.integer.mul",
+                BinaryIntegerOperator::Add => "quire.op.integer.add",
+                BinaryIntegerOperator::Subtract => "quire.op.integer.sub",
+                BinaryIntegerOperator::Multiply => "quire.op.integer.mul",
             };
             if operation_identity != Some(expected_identity) {
                 return Err(ExactFunctionRefusal::BodyMismatch);
@@ -2751,22 +2751,22 @@ fn classify_body_shape<'r>(
                 .ok_or(ExactFunctionRefusal::BodyMismatch)?;
             let expected_identity = match (parameter_kinds, operator) {
                 ([OperandKind::Integer, OperandKind::Integer], EqualityOperatorKind::Equal) => {
-                    "filament.op.integer.eq"
+                    "quire.op.integer.eq"
                 }
                 ([OperandKind::Integer, OperandKind::Integer], EqualityOperatorKind::NotEqual) => {
-                    "filament.op.integer.ne"
+                    "quire.op.integer.ne"
                 }
                 ([OperandKind::Boolean, OperandKind::Boolean], EqualityOperatorKind::Equal) => {
-                    "filament.op.boolean.eq"
+                    "quire.op.boolean.eq"
                 }
                 ([OperandKind::Boolean, OperandKind::Boolean], EqualityOperatorKind::NotEqual) => {
-                    "filament.op.boolean.ne"
+                    "quire.op.boolean.ne"
                 }
                 ([OperandKind::Nominal, OperandKind::Nominal], EqualityOperatorKind::Equal) => {
-                    "filament.op.structural.eq"
+                    "quire.op.structural.eq"
                 }
                 ([OperandKind::Nominal, OperandKind::Nominal], EqualityOperatorKind::NotEqual) => {
-                    "filament.op.structural.ne"
+                    "quire.op.structural.ne"
                 }
                 _ => return Err(ExactFunctionRefusal::BodyMismatch),
             };
@@ -3788,7 +3788,7 @@ mod tests {
         };
 
         let library_source = "language \"ix:native\" edition \"1-draft\";\n\
-            profile v = \"filament.value.complete/v1\";\n\
+            profile v = \"quire.value.complete/v1\";\n\
             function f using v(a: Int[0, 9]): Boolean pure { a < 5 }\n";
         let library_compiled = compile_package(
             CompileUnit {
@@ -3804,7 +3804,7 @@ mod tests {
         )
         .expect("source-backed library compiles");
         let mut evidence = CheckedPackageEvidence::new();
-        evidence.support_feature("filament.value.complete/v1");
+        evidence.support_feature("quire.value.complete/v1");
         let library = match CheckedPackageV2::read(
             library_compiled.bytes(),
             CheckedPackageReadLimits::bounded(),
@@ -3814,7 +3814,7 @@ mod tests {
             other => return Err(format!("library admits: {other:?}")),
         };
         let source = "language \"ix:native\" edition \"1-draft\";\n\
-            profile v = \"filament.value.complete/v1\";\n\
+            profile v = \"quire.value.complete/v1\";\n\
             import \"test/selected-library\" as g;\n\
             function p using v(a: Int[0, 9]): Boolean pure { g::f(a) }\n";
         let dependencies = DependencyInput::new([SuppliedLibrary {
@@ -3924,7 +3924,7 @@ mod tests {
             CheckedSemanticNodeV2 {
                 node_id: id.clone(),
                 owner_model: None,
-                schema_version: "filament.checked-semantic-graph/v2".into(),
+                schema_version: "quire.checked-semantic-graph/v2".into(),
                 node_tag: "expression".into(),
                 semantic_form: "binary".into(),
                 semantic_type: id,
@@ -3956,7 +3956,7 @@ mod tests {
         let call = CheckedTerm::Application {
             operator: ApplicationOperator::Call,
             operation: serde_json::from_value(
-                serde_json::json!({"identity": "filament.op.function.call"}),
+                serde_json::json!({"identity": "quire.op.function.call"}),
             )
             .expect("fixture operation"),
             result_type: nodes[0].semantic_type.clone(),
@@ -4052,7 +4052,7 @@ mod tests {
             CheckedSemanticNodeV2 {
                 node_id: id.clone(),
                 owner_model: None,
-                schema_version: "filament.checked-semantic-graph/v2".into(),
+                schema_version: "quire.checked-semantic-graph/v2".into(),
                 node_tag: tag.into(),
                 semantic_form: form.into(),
                 semantic_type: id,
@@ -4295,7 +4295,7 @@ mod tests {
             Some(CheckedTerm::Application {
                 operator: ApplicationOperator::Binary,
                 operation: serde_json::from_value(
-                    serde_json::json!({"identity": "filament.op.integer.eq"}),
+                    serde_json::json!({"identity": "quire.op.integer.eq"}),
                 )
                 .expect("fixture operation"),
                 arguments: vec![],

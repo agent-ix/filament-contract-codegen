@@ -115,7 +115,7 @@ impl ClaimDerivationRefusal {
 }
 
 /// The operation identity of a quantity conversion.
-pub(crate) const QUANTITY_CONVERT_IDENTITY: &str = "filament.op.quantity.convert";
+pub(crate) const QUANTITY_CONVERT_IDENTITY: &str = "quire.op.quantity.convert";
 
 /// Work budget for lowering one requested scalar node and its closure.
 pub const SCALAR_LOWERING_WORK_LIMIT: u64 = 65_536;
@@ -204,9 +204,9 @@ pub enum IeeeArithmeticOperator {
     Multiply,
     /// `a / b`.
     Divide,
-    /// `filament::value::ieee::sqrt(a)`, one rounding.
+    /// `quire::value::ieee::sqrt(a)`, one rounding.
     SquareRoot,
-    /// `filament::value::ieee::fma(a, b, c)`: `a * b + c` with a single rounding.
+    /// `quire::value::ieee::fma(a, b, c)`: `a * b + c` with a single rounding.
     FusedMultiplyAdd,
 }
 
@@ -500,7 +500,7 @@ pub enum OperationProvenance {
     /// against the descriptor's shape, then read the node's own catalogued
     /// operation identity from `body.operation.identity` -- confirmed by
     /// Contract IR's `validate_operations` against the closed
-    /// `filament.checked-operation-catalog/v1` at package admission, before
+    /// `quire.checked-operation-catalog/v1` at package admission, before
     /// this generator ever saw the package. A consumer may treat the
     /// operation identity as checked.
     IrConfirmed,

@@ -13,7 +13,7 @@ use filament_contract_codegen::{
 };
 use ix_trace_rs::trace;
 
-const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nfunction implication using v(left: Boolean, right: Boolean): Boolean pure { left implies right }\n";
+const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nfunction implication using v(left: Boolean, right: Boolean): Boolean pure { left implies right }\n";
 
 fn checked_source(source: &str) -> quire_contract_model::CheckedPackageV2 {
     let compiled = qsl_replay::compile_admitted(

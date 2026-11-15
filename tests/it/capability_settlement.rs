@@ -139,7 +139,7 @@ fn refusal_adapter_preserves_selected_document_pointer() {
     let wire = source_bound_call_package().wire();
     let (_, resolved, _) = PackageBuilder::from_wire(wire).read_resolved();
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("filament.value.complete/v1");
+    evidence.support_feature("quire.value.complete/v1");
     // The selected document is the fixture's complete model (the reader resolves its imports
     // from it) with one integer past 2^53.
     let mut selected = exact_function_fixture::reference_model_document();
@@ -421,7 +421,7 @@ fn genuine_function_backend_refusals_stay_item_level() {
                     backend,
                     ..
                 }
-            } if operation_identity == "filament.op.function.call" && backend == "kani"
+            } if operation_identity == "quire.op.function.call" && backend == "kani"
         ),
         "structural should retain item-level OperationNotRendered: {settled:?}"
     );
@@ -488,7 +488,7 @@ fn item(kind: RequestedKind, candidates: Candidates) -> RequestItem {
         extent: bounded(),
         named_backend: None,
         candidates,
-        kani_form: integer_scalar("filament.op.integer.add"),
+        kani_form: integer_scalar("quire.op.integer.add"),
     }
 }
 
@@ -502,7 +502,7 @@ fn selected_scalar_form(package: CheckedPackageV2, node_id: CheckedNodeId) -> Ka
         .nodes
         .iter()
         .find(|node| {
-            checked_operation_identity(&node.body) == Some("filament.op.numeric.narrow")
+            checked_operation_identity(&node.body) == Some("quire.op.numeric.narrow")
                 && matches!(&node.body, CheckedTerm::Application { arguments, .. }
                     if matches!(arguments.first(), Some(CheckedTerm::Reference { target }) if target == &node_id))
         })
@@ -566,9 +566,9 @@ fn selected_scalar_form(package: CheckedPackageV2, node_id: CheckedNodeId) -> Ka
 }
 
 fn integer_scalar(operation_identity: &str) -> KaniForm {
-    if operation_identity == "filament.op.integer.add" {
+    if operation_identity == "quire.op.integer.add" {
         let source = "language \"ix:native\" edition \"1-draft\";\n\
-             profile v = \"filament.value.complete/v1\";\n\
+             profile v = \"quire.value.complete/v1\";\n\
              function f using v(a: Int[0, 9]): Int[0, 18] pure { a + a }\n";
         let compiled = compile_package(
             qsl_replay::CompileUnit {
@@ -584,7 +584,7 @@ fn integer_scalar(operation_identity: &str) -> KaniForm {
         )
         .expect("FSL emits bounded integer add");
         let mut evidence = CheckedPackageEvidence::new();
-        evidence.support_feature("filament.value.complete/v1");
+        evidence.support_feature("quire.value.complete/v1");
         let package = match CheckedPackageV2::read(
             compiled.bytes(),
             CheckedPackageReadLimits::bounded(),
@@ -685,7 +685,7 @@ fn kani_supported_bounded_request_keeps_exact_proof_bound_input() {
         .resolved_graph()
         .nodes
         .iter()
-        .find(|node| checked_operation_identity(&node.body) == Some("filament.op.integer.add"))
+        .find(|node| checked_operation_identity(&node.body) == Some("quire.op.integer.add"))
         .expect("checked source carries integer addition")
         .node_id
         .clone();
@@ -740,7 +740,7 @@ fn kani_supported_bounded_request_keeps_exact_proof_bound_input() {
         }],
         bounds: vec![source_bound.clone()],
     });
-    request.kani_form = integer_scalar("filament.op.integer.add");
+    request.kani_form = integer_scalar("quire.op.integer.add");
     let envelope = envelope(
         vec![kani(vec![(CapabilityKind::ValueValidity, Mode::Bounded)])],
         vec![request],
@@ -796,7 +796,7 @@ fn kani_bounded_settlements_correlate_each_request_bound_by_index() {
                 RequestedKind::Known(CapabilityKind::ValueValidity),
                 Candidates::Set(vec![candidate(BackendKind::Kani.identity())]),
             );
-            request.kani_form = integer_scalar("filament.op.integer.add");
+            request.kani_form = integer_scalar("quire.op.integer.add");
             request.extent.as_mut().unwrap().bounds = vec![bound.clone()];
             request
         })
@@ -1822,7 +1822,7 @@ fn kani_form_preflight_gates_support_and_preserves_extent_rules() {
         RequestedKind::Known(CapabilityKind::ValueValidity),
         candidates,
     );
-    request.kani_form = integer_scalar("filament.op.integer.add");
+    request.kani_form = integer_scalar("quire.op.integer.add");
     assert_eq!(
         settle_one(
             vec![kani(vec![(CapabilityKind::ValueValidity, Mode::Bounded)])],
@@ -1848,7 +1848,7 @@ fn kani_form_preflight_gates_support_and_preserves_extent_rules() {
         "an admitted unbounded form follows the finite-bound path"
     );
 
-    request.kani_form = integer_scalar("filament.op.integer.div");
+    request.kani_form = integer_scalar("quire.op.integer.div");
     let refused = settle_one(
         vec![kani(vec![(CapabilityKind::ValueValidity, Mode::Unbounded)])],
         request,
@@ -1897,7 +1897,7 @@ fn a_selected_quantity_conversion_settles_as_operation_not_rendered() {
                     backend: refusing,
                     ..
                 }
-            } if operation_identity == "filament.op.quantity.convert" && *refusing == backend
+            } if operation_identity == "quire.op.quantity.convert" && *refusing == backend
         ),
         "{:?}",
         settled.disposition
@@ -1909,7 +1909,7 @@ fn a_selected_quantity_conversion_settles_as_operation_not_rendered() {
 #[trace("FR-019-AC-44", "TC-030")]
 #[test]
 fn selected_scalar_context_refusal_keeps_validation_precedence() {
-    let mut form = integer_scalar("filament.op.integer.add");
+    let mut form = integer_scalar("quire.op.integer.add");
     let KaniForm::V2ScalarClaim { positions, .. } = &mut form else {
         unreachable!("bounded add is a selected scalar")
     };
@@ -2068,7 +2068,7 @@ fn source_derived_division_refusal() -> UnsupportedObligation {
         .resolved_graph()
         .nodes
         .iter()
-        .find(|node| checked_operation_identity(&node.body) == Some("filament.op.integer.div"))
+        .find(|node| checked_operation_identity(&node.body) == Some("quire.op.integer.div"))
         .expect("checked scalar fixture carries integer division")
         .node_id
         .clone();
@@ -2189,7 +2189,7 @@ fn kani_selected_division_preserves_exact_renderer_refusal() {
         package::application(
             "binary",
             package::op_full(
-                "filament.op.integer.div",
+                "quire.op.integer.div",
                 vec![package::law("integer_division", division_law)],
                 None,
                 None,
@@ -2275,7 +2275,7 @@ fn kani_selected_division_preserves_exact_renderer_refusal() {
             UnsupportedObligation::OperationNotRendered {
                 operation_identity,
                 derived_domains,
-            } if operation_identity == "filament.op.integer.div"
+            } if operation_identity == "quire.op.integer.div"
                 && derived_domains.iter().any(|domain| matches!(
                     domain,
                     filament_contract_codegen::DerivedDomain::IntegerRange {
@@ -2665,17 +2665,17 @@ fn kani_scalar_family_selectors_require_selected_result() {
 
     let (package, claim_map, _) = crate::kani_obligations::scalar_package();
     let selectors = [
-        ("filament.op.integer.div", KaniFormFamily::Integer, false),
-        ("filament.op.rational.add", KaniFormFamily::Rational, false),
-        ("filament.op.decimal.add", KaniFormFamily::Decimal, false),
+        ("quire.op.integer.div", KaniFormFamily::Integer, false),
+        ("quire.op.rational.add", KaniFormFamily::Rational, false),
+        ("quire.op.decimal.add", KaniFormFamily::Decimal, false),
         (
-            "filament.op.ieee.float32.add",
+            "quire.op.ieee.float32.add",
             KaniFormFamily::IeeeFloat,
             false,
         ),
-        ("filament.op.text.eq", KaniFormFamily::Text, false),
-        ("filament.op.enum.eq", KaniFormFamily::Enum, false),
-        ("filament.op.quantity.add", KaniFormFamily::Quantity, false),
+        ("quire.op.text.eq", KaniFormFamily::Text, false),
+        ("quire.op.enum.eq", KaniFormFamily::Enum, false),
+        ("quire.op.quantity.add", KaniFormFamily::Quantity, false),
     ];
     for (operation, expected_family, _) in selectors {
         let source_claim = claim_map
@@ -2830,7 +2830,7 @@ fn kani_form_refusal_keeps_candidate_and_mode_precedence() {
         }
     ));
 
-    let in_set = integer_scalar("filament.op.integer.add");
+    let in_set = integer_scalar("quire.op.integer.add");
     let KaniForm::V2ScalarClaim {
         package, node_id, ..
     } = in_set
@@ -2905,8 +2905,8 @@ fn kani_form_refusal_keeps_candidate_and_mode_precedence() {
 #[test]
 fn kani_form_identity_does_not_depend_on_display_or_debug_text() {
     for form in [
-        integer_scalar("filament.op.integer.add"),
-        integer_scalar("filament.op.rational.add"),
+        integer_scalar("quire.op.integer.add"),
+        integer_scalar("quire.op.rational.add"),
     ] {
         let renderings = [
             ("display label A", "debug label A"),

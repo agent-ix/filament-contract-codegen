@@ -56,7 +56,7 @@ fn package() -> CheckedPackageV2 {
     )
     .expect("FSL admits the exact source used by the generator");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("filament.value.complete/v1");
+    evidence.support_feature("quire.value.complete/v1");
     let read = CheckedPackageV2::read(
         acquired.package().bytes(),
         CheckedPackageReadLimits::bounded(),
@@ -71,7 +71,7 @@ fn package() -> CheckedPackageV2 {
 fn unrelated_package() -> CheckedPackageV2 {
     const OTHER: &str = concat!(
         "language \"ix:native\" edition \"1-draft\";\n",
-        "profile v = \"filament.value.complete/v1\";\n",
+        "profile v = \"quire.value.complete/v1\";\n",
         "function unrelated using v(x: Int[0, 9], y: Int[0, 9]): Integer pure { x - y }\n",
     );
     let acquired = acquire_checked_closure(
@@ -88,7 +88,7 @@ fn unrelated_package() -> CheckedPackageV2 {
     )
     .expect("FSL admits the unrelated source");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("filament.value.complete/v1");
+    evidence.support_feature("quire.value.complete/v1");
     let read = CheckedPackageV2::read(
         acquired.package().bytes(),
         CheckedPackageReadLimits::bounded(),

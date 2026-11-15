@@ -106,7 +106,7 @@ mod tests {
 
     fn model_evidence(root: &Path, _wire: &Value) -> CheckedPackageEvidence {
         let mut evidence = CheckedPackageEvidence::new();
-        evidence.support_feature("filament.value.complete/v1");
+        evidence.support_feature("quire.value.complete/v1");
         let directory = root.join("proposals/checked-package-v2");
         let selections: Value = serde_json::from_slice(
             &fs::read(directory.join("selected-documents.json"))

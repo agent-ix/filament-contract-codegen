@@ -642,18 +642,18 @@ mod tests {
 
     const SOURCE: &str = concat!(
         "language \"ix:native\" edition \"1-draft\";\n",
-        "profile v = \"filament.value.complete/v1\";\n",
+        "profile v = \"quire.value.complete/v1\";\n",
         "function f using v(x: Integer): Integer pure { x }\n",
         "function g using v(x: Integer): Integer pure { x }\n",
     );
     const OTHER_SOURCE: &str = concat!(
         "language \"ix:native\" edition \"1-draft\";\n",
-        "profile v = \"filament.value.complete/v1\";\n",
+        "profile v = \"quire.value.complete/v1\";\n",
         "function f using v(x: Integer): Integer pure { x }\n",
     );
     const LIBRARY_SOURCE: &str = concat!(
         "language \"ix:native\" edition \"1-draft\";\n",
-        "profile v = \"filament.value.complete/v1\";\n",
+        "profile v = \"quire.value.complete/v1\";\n",
         "function imported using v(x: Integer): Integer pure { x }\n",
         "function outer using v(x: Integer): Integer pure { imported(x) }\n",
     );
@@ -677,7 +677,7 @@ mod tests {
         )
         .expect("genuine checked source");
         let mut evidence = CheckedPackageEvidence::new();
-        evidence.support_feature("filament.value.complete/v1");
+        evidence.support_feature("quire.value.complete/v1");
         let read = CheckedPackageV2::read(
             compiled.package().bytes(),
             CheckedPackageReadLimits::bounded(),
@@ -720,7 +720,7 @@ mod tests {
         )
         .expect("second genuine checked source");
         let mut evidence = CheckedPackageEvidence::new();
-        evidence.support_feature("filament.value.complete/v1");
+        evidence.support_feature("quire.value.complete/v1");
         let CheckedPackageV2ReadResult::Admitted(package) = CheckedPackageV2::read(
             compiled.package().bytes(),
             CheckedPackageReadLimits::bounded(),
@@ -753,7 +753,7 @@ mod tests {
         )
         .expect("genuine library source");
         let mut library_evidence = CheckedPackageEvidence::new();
-        library_evidence.support_feature("filament.value.complete/v1");
+        library_evidence.support_feature("quire.value.complete/v1");
         let library_read = CheckedPackageV2::read(
             library_compiled.package().bytes(),
             CheckedPackageReadLimits::bounded(),
@@ -777,7 +777,7 @@ mod tests {
             .clone();
         let unit_source = concat!(
             "language \"ix:native\" edition \"1-draft\";\n",
-            "profile v = \"filament.value.complete/v1\";\n",
+            "profile v = \"quire.value.complete/v1\";\n",
             "import \"test/function-library\" as lib;\n",
             "function caller using v(x: Integer): Integer pure { lib::imported(x) }\n",
         );
@@ -802,7 +802,7 @@ mod tests {
         )
         .expect("unit imports the supplied library");
         let mut unit_evidence = CheckedPackageEvidence::new();
-        unit_evidence.support_feature("filament.value.complete/v1");
+        unit_evidence.support_feature("quire.value.complete/v1");
         unit_evidence
             .insert_dependency_package("test/function-library", Arc::clone(&library))
             .expect("retain the admitted declaring package");

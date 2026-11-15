@@ -30,7 +30,7 @@ use quire_contract_model::{
 use quire_semantic_value::catalog::{Category, InternalFault};
 use serde_json::json;
 
-const PROFILE: &str = "profile v = \"filament.value.complete/v1\";\n";
+const PROFILE: &str = "profile v = \"quire.value.complete/v1\";\n";
 const AUTHORITY: &str = "agent-ix";
 const IDENTITY: &str = "test:skeleton-spine";
 const FUNCTION: &str = "balance_never_grows";

@@ -667,7 +667,7 @@ fn render_artifacts(
         artifact_json(&proof_graph_value).map_err(|error| error.to_string())?;
     let fsl_source = String::from(
         "language \"ix:native\" edition \"1-draft\";\n\
-         profile v = \"filament.value.complete/v1\";\n\
+         profile v = \"quire.value.complete/v1\";\n\
          import \"ir-453/corpus-dependency\" as d;\n\
          function corpus_case using v(): Boolean pure { d::corpus_case(true) }\n",
     );
@@ -680,7 +680,7 @@ fn render_artifacts(
     };
     let fsl_dependency = format!(
         "language \"ix:native\" edition \"1-draft\";\n\
-         profile v = \"filament.value.complete/v1\";\n\
+         profile v = \"quire.value.complete/v1\";\n\
          {fsl_functions}\n"
     );
     Ok(BoundedCorpusArtifacts {

@@ -91,7 +91,7 @@ fn domain_document(granted: &[&str]) -> Vec<u8> {
             "identity": format!("{range}/constraints/{keyword}"),
             "keyword": keyword,
             "operands": {"value": value.to_string()},
-            "appliesTo": "ix://filament/native/Integer",
+            "appliesTo": "ix://quire/native/Integer",
             "diagnosticCode": format!("bound.{keyword}"),
             "origin": generated(&range),
         })
@@ -162,9 +162,9 @@ fn domain_document(granted: &[&str]) -> Vec<u8> {
         "occurrences": [],
         "extensions": [],
         "constructs": [
-            construct("object_type", "filament.meaning.model.object-type/v1"),
-            construct("population", "filament.meaning.model.population/v1"),
-            construct("value_type", "filament.meaning.model.value-type/v1"),
+            construct("object_type", "quire.meaning.model.object-type/v1"),
+            construct("population", "quire.meaning.model.population/v1"),
+            construct("value_type", "quire.meaning.model.value-type/v1"),
         ],
         "types": types,
         "populations": [{
@@ -188,7 +188,7 @@ pub const CLAUSES: [(&str, &str, &str); 2] = [
 fn unit_source(clauses: &[(&str, &str, &str)], blank_lines: usize) -> String {
     let header = format!(
         "language \"ix:native\" edition \"1-draft\";\n\
-         profile v = \"filament.value.complete/v1\";\n\
+         profile v = \"quire.value.complete/v1\";\n\
          model Bank = {PACKAGE:?};\n"
     );
     let clauses = clauses
@@ -297,7 +297,7 @@ impl Twin {
             deposit["params"] = json!([{
                 "identity": identity,
                 "name": "other",
-                "typeRef": "ix://filament/native/Boolean",
+                "typeRef": "ix://quire/native/Boolean",
                 "presence": "required",
                 "nullable": false,
                 "defaultKind": "none",
@@ -307,7 +307,7 @@ impl Twin {
         }
         if result {
             deposit["returns"] = json!({
-                "typeRef": "ix://filament/native/Boolean",
+                "typeRef": "ix://quire/native/Boolean",
                 "multiplicity": {"lower": 1, "upper": 1, "ordered": false, "unique": true},
                 "nullable": false,
             });
@@ -403,7 +403,7 @@ impl Twin {
         evidence
             .insert_domain_package_document(PACKAGE, self.domain.clone())
             .expect("retain authored domain document");
-        evidence.support_feature("filament.value.complete/v1");
+        evidence.support_feature("quire.value.complete/v1");
         let package = match CheckedPackageV2::read(
             &located.package,
             CheckedPackageReadLimits::bounded(),

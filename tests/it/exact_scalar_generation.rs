@@ -153,7 +153,7 @@ fn resolved_items(items: &[ExactScalarItem], ids: &FixtureIds) -> Vec<ExactScala
 
 /// UNBACKED today: the six text admissions (FR-014-AC-2's text
 /// admission case) are refused by Contract IR at admission, so no oracle is generated for them
-/// and no agreement or generation test can run over them. `filament.op.numeric.convert` takes
+/// and no agreement or generation test can run over them. `quire.op.numeric.convert` takes
 /// `exact_numeric`, no catalogued `convert` identity takes `text`, and FSL lowers no text
 /// admission; it is unblocked by a catalogued text-admission operation. This test pins the exact
 /// refusal of each node (code, cause, pointer, locus), so the behaviour is recorded and a change
@@ -1182,7 +1182,7 @@ fn tc_024_claim_map_carries_identity_source_bounds_and_operation_per_item() {
         // codes 1011 and 1014 are both `division(_, Truncating, ...)`, differing only in bound
         // (`[-1000,1000]` vs `[-5,5]`) -- codegen's own descriptor-derived string used to embed the
         // bound and so differed between them; the catalog does not, and both now report the same
-        // `filament.op.integer.div`.
+        // `quire.op.integer.div`.
         for code in [1011, 1014] {
             if let Some(claim) = map
                 .items
@@ -1194,8 +1194,8 @@ fn tc_024_claim_map_carries_identity_source_bounds_and_operation_per_item() {
         }
     }
     assert_eq!(operation_identities.len(), 2);
-    assert_eq!(operation_identities[&1011], "filament.op.integer.div");
-    assert_eq!(operation_identities[&1014], "filament.op.integer.div");
+    assert_eq!(operation_identities[&1011], "quire.op.integer.div");
+    assert_eq!(operation_identities[&1014], "quire.op.integer.div");
 }
 
 /// Operations whose parameters the IR carries no bound for.
@@ -1252,7 +1252,7 @@ fn tc_024_claim_map_entries_ascend_by_structural_node_key() {
 }
 
 /// Node 1011 is a truncating division whose own `operation.laws` does not name the floor
-/// definition. A floor descriptor implies the same catalogued identity (`filament.op.integer.div`),
+/// definition. A floor descriptor implies the same catalogued identity (`quire.op.integer.div`),
 /// so this is not AC-12's different-operation case, and the item's disposition is `Generated`, so
 /// it is neither half of AC-14's never-inspected-or-refused case. It is the third state: the item
 /// generates the oracle its descriptor
@@ -1315,13 +1315,13 @@ fn tc_024_a_mislabelled_descriptor_is_refused_where_bounds_disagree_and_marked_o
 /// `Shape::of` gives `Add`, `Subtract`, `Multiply`, `IntegerDivision` and `IntegerModulo` the
 /// identical binary `&rt::Integer` shape, so `check_item`'s shape checks alone cannot distinguish
 /// an `Add` descriptor from a `Multiply` one over the same bounds. Node 1004 is
-/// `filament.op.integer.mul` over `[-1000,1000]`; naming `Add` against it, with the identical
+/// `quire.op.integer.mul` over `[-1000,1000]`; naming `Add` against it, with the identical
 /// `[-1000,1000]` domain, passes every shape and bound check `check_item` makes. Confirming it
 /// anyway -- the defect this ticket exists to close -- would render an oracle that adds where the
 /// catalog says multiply and a harness whose `operation_identity` says `mul`.
 ///
 ///
-/// Backs AC-12: an `Add` descriptor against node 1004's catalogued `filament.op.integer.mul`, over
+/// Backs AC-12: an `Add` descriptor against node 1004's catalogued `quire.op.integer.mul`, over
 /// the identical `[-1000,1000]` bound and the identical binary `&rt::Integer` shape, is not
 /// confirmed. The mismatched case is asserted first; the agreeing case second, which is AC-11
 /// for that one node. AC-11 over the whole corpus is discharged by
@@ -1368,7 +1368,7 @@ fn tc_024_operator_confusion_within_one_shape_is_not_silently_confirmed() {
         }],
     );
     let matched_claim = &matched.claim_map.items[0];
-    assert_eq!(matched_claim.operation.identity, "filament.op.integer.mul");
+    assert_eq!(matched_claim.operation.identity, "quire.op.integer.mul");
     assert_eq!(
         matched_claim.operation.provenance,
         OperationProvenance::IrConfirmed
@@ -1487,7 +1487,7 @@ fn work_exhausted_builder(references: usize) -> PackageBuilder {
         &key(T_INTEGER),
         application(
             "binary",
-            op("filament.op.integer.add"),
+            op("quire.op.integer.add"),
             &key(T_INTEGER),
             vec![reference(&key(3003)), reference(&key(V_INTEGER))],
         ),
@@ -1521,7 +1521,7 @@ fn tc_052_aggregate_integer_operand_is_refused_by_reader() {
         &key(T_INTEGER),
         application(
             "binary",
-            op("filament.op.integer.add"),
+            op("quire.op.integer.add"),
             &key(T_INTEGER),
             vec![
                 reference(&key(V_INTEGER)),
@@ -1997,7 +1997,7 @@ fn tc_024_anonymous_integer_range_generates_one_addition() {
         &integer,
         application(
             "binary",
-            op("filament.op.integer.add"),
+            op("quire.op.integer.add"),
             &integer,
             vec![reference(&key(OPERAND)), typed_literal("2")],
         ),
@@ -2129,7 +2129,7 @@ fn tc_024_generated_source_over_the_ceiling_is_refused_whole() {
             &key(T_INTEGER),
             application(
                 "binary",
-                op("filament.op.integer.add"),
+                op("quire.op.integer.add"),
                 &key(T_INTEGER),
                 vec![
                     reference(&key(V_INTEGER)),
@@ -2200,7 +2200,7 @@ fn tc_024_literal_operands_are_classified_by_value_kind_and_constants_stop_typed
         &key(T_INTEGER),
         application(
             "binary",
-            op("filament.op.integer.add"),
+            op("quire.op.integer.add"),
             &key(T_INTEGER),
             vec![
                 reference(&key(V_INTEGER)),
@@ -2471,7 +2471,7 @@ fn fspec_package(fixture: &str) -> CheckedPackageV2 {
     let wire: Value = serde_json::from_slice(&bytes).expect("FSpec fixture JSON");
     let canonical = serde_json::to_vec(&wire).expect("canonical FSpec fixture bytes");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("filament.value.complete/v1");
+    evidence.support_feature("quire.value.complete/v1");
     crate::checked_package_evidence::retain_selected_extensions(&root, &wire, &mut evidence);
     // The domain document FSpec publishes for this fixture, if any, resolves its selected model owner.
     crate::checked_package_evidence::retain_selected_document(&root, fixture, &mut evidence);
@@ -3230,7 +3230,7 @@ fn tc_024_each_overloaded_identity_derives_by_its_own_selector() {
     assert_eq!(
         operation(DERIVE_MIXED_DIV),
         Err(no_claim(ClaimDerivationRefusal::OperandFormsNotDerivable {
-            operation_identity: "filament.op.rational.div".to_owned()
+            operation_identity: "quire.op.rational.div".to_owned()
         }))
     );
     // numeric.convert_rounding to a decimal is a rounding conversion.
@@ -3247,7 +3247,7 @@ fn tc_024_each_overloaded_identity_derives_by_its_own_selector() {
     assert_eq!(
         operation(DERIVE_CONVERT_TO_INTEGER),
         Err(no_claim(ClaimDerivationRefusal::OperandFormsNotDerivable {
-            operation_identity: "filament.op.numeric.convert".to_owned()
+            operation_identity: "quire.op.numeric.convert".to_owned()
         }))
     );
     // integer.div takes its profile from the laws: the three corpus nodes differ only by it.
@@ -3274,7 +3274,7 @@ fn tc_024_derivation_refuses_what_it_cannot_derive_with_a_typed_reason() {
     assert_eq!(
         derive_one(&package, DERIVE_REM),
         Err(no_claim(ClaimDerivationRefusal::OperationNotDerivable {
-            operation_identity: "filament.op.integer.rem".to_owned()
+            operation_identity: "quire.op.integer.rem".to_owned()
         }))
     );
     assert!(

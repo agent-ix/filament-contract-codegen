@@ -25,7 +25,7 @@ proof evidence.
 generated scalar expression oracle to an admitted `CheckedPackageV2` node and
 its catalogued operation identity. The current source also has a
 `TextAdmission` descriptor and an emitted call to `rt::admit_text`, but its
-derivation maps a text-result `filament.op.numeric.convert` node to that
+derivation maps a text-result `quire.op.numeric.convert` node to that
 descriptor. The catalogued conversion requires an `exact_numeric` operand;
 Contract IR rejects each of the six attempted text-operand nodes before
 generation. There is no FSL Text-admission expression to supply such a node.

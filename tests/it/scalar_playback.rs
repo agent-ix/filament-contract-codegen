@@ -88,7 +88,7 @@ pub(super) fn replay_fixture_guarded(
     guard: Option<(&str, bool)>,
 ) -> ReplayFixture {
     let source = format!(
-        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nfunction subject using v({parameters}): {result} pure {{ {expression} }}\n{extra}"
+        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nfunction subject using v({parameters}): {result} pure {{ {expression} }}\n{extra}"
     );
     let compiled = compile_package(
         qsl_replay::CompileUnit {
@@ -104,7 +104,7 @@ pub(super) fn replay_fixture_guarded(
     )
     .expect("FSL compiles the authored scalar source");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("filament.value.complete/v1");
+    evidence.support_feature("quire.value.complete/v1");
     let checked = match CheckedPackageV2::read(
         compiled.bytes(),
         CheckedPackageReadLimits::bounded(),
@@ -131,7 +131,7 @@ pub(super) fn replay_fixture_guarded(
         .nodes
         .iter()
         .find(|node| {
-            operation_identity(&node.body) == Some("filament.op.numeric.narrow")
+            operation_identity(&node.body) == Some("quire.op.numeric.narrow")
                 && matches!(&node.body, CheckedTerm::Application { arguments, .. }
                     if matches!(arguments.first(), Some(CheckedTerm::Reference { target }) if target == &node_id))
         })
@@ -262,7 +262,7 @@ pub(super) fn replay_fixture_guarded(
 /// A routed Boolean `Implies` scalar harness: routed generation binds its artifact package like
 /// any scalar harness, but the family has no operator-parity route.
 pub(super) fn routed_implies_fixture() -> ReplayFixture {
-    let source = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nfunction subject using v(p: Boolean, q: Boolean): Boolean pure { p implies q }\n".to_owned();
+    let source = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nfunction subject using v(p: Boolean, q: Boolean): Boolean pure { p implies q }\n".to_owned();
     let compiled = compile_package(
         qsl_replay::CompileUnit {
             source: SourceIdentity::new("test", "scalar-playback.native"),
@@ -277,7 +277,7 @@ pub(super) fn routed_implies_fixture() -> ReplayFixture {
     )
     .expect("FSL compiles the authored source");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("filament.value.complete/v1");
+    evidence.support_feature("quire.value.complete/v1");
     let checked = match CheckedPackageV2::read(
         compiled.bytes(),
         CheckedPackageReadLimits::bounded(),
@@ -290,7 +290,7 @@ pub(super) fn routed_implies_fixture() -> ReplayFixture {
         .resolved_graph()
         .nodes
         .iter()
-        .find(|node| operation_identity(&node.body) == Some("filament.op.boolean.implies"))
+        .find(|node| operation_identity(&node.body) == Some("quire.op.boolean.implies"))
         .expect("one authored implication");
     let node_id = application.node_id.clone();
     let entries = checked
@@ -395,7 +395,7 @@ fn identity(
 
 fn sum() -> ScalarObligationIdentity {
     identity(
-        "filament.op.integer.add",
+        "quire.op.integer.add",
         "x: Int[0, 9], y: Int[10, 20]",
         "Int[0, 29]",
         "x + y",
@@ -423,7 +423,7 @@ fn refusal(identity: &ScalarObligationIdentity, text: &str, code: &str) -> Decod
 #[test]
 fn routed_draw_order_is_preserved_with_distinct_domains() {
     let identity = sum();
-    assert_eq!(identity.operation_identity, "filament.op.integer.add");
+    assert_eq!(identity.operation_identity, "quire.op.integer.add");
     assert_eq!(
         identity
             .arguments
@@ -451,7 +451,7 @@ fn routed_draw_order_is_preserved_with_distinct_domains() {
 
 fn identity_for_product() -> ScalarObligationIdentity {
     identity(
-        "filament.op.integer.mul",
+        "quire.op.integer.mul",
         "x: Int[1, 9], y: Int[100, 200]",
         "Int[100, 1800]",
         "x * y",
@@ -462,7 +462,7 @@ fn identity_for_product() -> ScalarObligationIdentity {
 #[test]
 fn negate_and_literal_singleton_keep_every_draw() {
     let negate = identity(
-        "filament.op.integer.negate",
+        "quire.op.integer.negate",
         "x: Int[1, 9]",
         "Int[-9, -1]",
         "-x",
@@ -472,7 +472,7 @@ fn negate_and_literal_singleton_keep_every_draw() {
         Ok(vec![7])
     );
     let literal = identity(
-        "filament.op.integer.add",
+        "quire.op.integer.add",
         "x: Int[0, 9]",
         "Int[0, 10]",
         "x + 1",
@@ -504,7 +504,7 @@ fn negate_and_literal_singleton_keep_every_draw() {
 #[test]
 fn subtraction_decodes_signed_extreme_operands_without_evaluating_them() {
     let identity = identity(
-        "filament.op.integer.sub",
+        "quire.op.integer.sub",
         "x: Int[-9223372036854775808, 9223372036854775807], y: Int[0, 0]",
         "Int[-9223372036854775808, 9223372036854775807]",
         "x - y",
@@ -687,10 +687,10 @@ fn unsupported_operator_and_invalid_persisted_schema_refuse_typed_playback() {
     let identity = sum();
     let valid = transcript(&identity, &[3, 17]);
     for operation in [
-        "filament.op.boolean.implies",
-        "filament.op.integer.div",
-        "filament.op.integer.lt",
-        "filament.op.integer.eq",
+        "quire.op.boolean.implies",
+        "quire.op.integer.div",
+        "quire.op.integer.lt",
+        "quire.op.integer.eq",
         "unknown",
     ] {
         let mut unsupported = identity.clone();
@@ -721,7 +721,7 @@ fn unsupported_operator_and_invalid_persisted_schema_refuse_typed_playback() {
 #[test]
 fn original_renderer_limits_are_retained_with_genuine_routed_source() {
     let harness = harness(
-        "filament.op.integer.add",
+        "quire.op.integer.add",
         "x: Int[0, 9]",
         "Int[0, 10]",
         "x + 1",
@@ -764,7 +764,7 @@ fn original_renderer_limits_are_retained_with_genuine_routed_source() {
 #[test]
 fn original_limits_refuse_changed_retained_identity_source_or_record() {
     let harness = harness(
-        "filament.op.integer.sub",
+        "quire.op.integer.sub",
         "x: Int[0, 9], y: Int[0, 9]",
         "Int[-9, 9]",
         "x - y",

@@ -24,8 +24,8 @@ use super::kani_obligations_state_frame::native_twin::Twin;
 use super::kani_probes::{native_probe_clause, NativeOp, IR1526_NATIVE_WIDTHS};
 use crate::scratch_crate::TemporaryDirectory;
 
-const MUL: &str = "filament.op.integer.mul";
-const ADD: &str = "filament.op.integer.add";
+const MUL: &str = "quire.op.integer.mul";
+const ADD: &str = "quire.op.integer.add";
 
 fn op_width(operation_id: &str, bits: u32) -> OperationWidth {
     OperationWidth {
@@ -194,7 +194,7 @@ fn tc_070_the_exposed_width_is_the_propagated_width() {
         let (package, clause) = package(upper, upper, "other * offset + 3 <= 100");
         let widths = derive_v2_clause_operation_widths(&package, &clause).expect("widths");
         let ids: Vec<&str> = widths.iter().map(|(id, _)| id.as_str()).collect();
-        assert_eq!(ids, [MUL, ADD, "filament.op.integer.le"], "k = {k}");
+        assert_eq!(ids, [MUL, ADD, "quire.op.integer.le"], "k = {k}");
         // The independent route: the intervals the rendering selected for each operation.
         let oracle = generate_v2_clause_native_oracle(&package, &clause).expect("native oracle");
         let selection = oracle.native_integer_selection.expect("a selection");
@@ -235,7 +235,7 @@ fn tc_070_the_exposed_width_is_the_propagated_width() {
 #[trace("FR-056-AC-2", "TC-070")]
 #[test]
 fn tc_070_widths_exist_past_the_native_kernel_capacity() {
-    let le = "filament.op.integer.le";
+    let le = "quire.op.integer.le";
     let widths = |upper: i64| {
         let (package, clause) = package(upper, upper, "other * offset + 3 <= 100");
         derive_v2_clause_operation_widths(&package, &clause).expect("widths")
@@ -347,7 +347,7 @@ fn tc_070_the_table_loads_from_data_and_a_bad_row_fails_the_load() {
     ));
 
     // A row for a fresh operation id changes the decision with no source change.
-    let fresh = "filament.op.fresh.operation";
+    let fresh = "quire.op.fresh.operation";
     let clause = features(vec![op_width(fresh, 10)]);
     assert_eq!(table.decide(&clause), Decision::Run);
     let with_fresh = table_of(&[row_json(&[fresh], 10, "not_tractable")]);
@@ -574,7 +574,7 @@ fn tc_070_an_unqualified_clause_is_generated_unchanged() {
     let nonmatching = write_table(
         &directory,
         "nonmatching.json",
-        &[row_json(&["filament.op.integer.sub"], 1, "not_tractable")],
+        &[row_json(&["quire.op.integer.sub"], 1, "not_tractable")],
     );
     let tractable = write_table(
         &directory,
@@ -645,7 +645,7 @@ fn tc_070_the_reported_row_is_deterministic() {
     // A row qualifies when the operation's width reaches its bound: MUL is 20 bits, ADD 30.
     let wide = row_json(&[MUL], 12, "not_tractable");
     let narrow = row_json(&[ADD], 5, "not_tractable");
-    let unrelated = row_json(&["filament.op.integer.sub"], 1, "not_tractable");
+    let unrelated = row_json(&["quire.op.integer.sub"], 1, "not_tractable");
     let beyond = row_json(&[MUL], 25, "not_tractable");
     let expected = (ADD.to_owned(), 5);
     assert_eq!(reported(&[wide.clone(), narrow.clone()]), expected);
@@ -1229,7 +1229,7 @@ fn tc_070_native_route_and_v2_clause_features_are_not_refused_by_the_general_row
         Decision::Run
     ));
     // Subtraction is measured at 4 bits only: 3 bits runs.
-    let sub = |bits| features(vec![op_width("filament.op.integer.sub", bits)]);
+    let sub = |bits| features(vec![op_width("quire.op.integer.sub", bits)]);
     assert!(matches!(table.decide(&sub(3)), Decision::Run));
     assert!(matches!(table.decide(&sub(4)), Decision::Refuse { .. }));
 }

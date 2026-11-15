@@ -2798,7 +2798,7 @@ mod tests {
         )
         .expect("FSL compiles recursive records");
         let mut evidence = CheckedPackageEvidence::new();
-        evidence.support_feature("filament.value.complete/v1");
+        evidence.support_feature("quire.value.complete/v1");
         let read = CheckedPackageV2::read(
             compiled.package().bytes(),
             CheckedPackageReadLimits::bounded(),
@@ -2836,7 +2836,7 @@ mod tests {
             CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2ReadResult,
         };
         let source = concat!(
-            "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\n",
+            "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\n",
             "enum Marker { UNUSED, ALSO_UNUSED }\nrecord Point { x: Boolean; }\n",
             "tuple Pair(Int[-100,100],Text[0,16;nfc],Decimal[-100,100;0,0;nearest-even],Rational[-10,10;1,1]);\n",
             "function f using v(a: Pair,b: Pair): Boolean pure { a = b }\n",
@@ -2855,7 +2855,7 @@ mod tests {
         )
         .expect("the unchanged original numeric member source compiles");
         let mut evidence = CheckedPackageEvidence::new();
-        evidence.support_feature("filament.value.complete/v1");
+        evidence.support_feature("quire.value.complete/v1");
         let CheckedPackageV2ReadResult::Admitted(package) = CheckedPackageV2::read(
             compiled.package().bytes(),
             CheckedPackageReadLimits::bounded(),
@@ -3207,7 +3207,7 @@ mod tests {
             CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2ReadResult,
         };
         let mut source = String::from(
-            "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\n",
+            "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\n",
         );
         for index in 0..records {
             let payload = if index + 1 == records {
@@ -3284,7 +3284,7 @@ mod tests {
                 .expect("finite read-work bound"),
         };
         let mut evidence = CheckedPackageEvidence::new();
-        evidence.support_feature("filament.value.complete/v1");
+        evidence.support_feature("quire.value.complete/v1");
         let package = match CheckedPackageV2::read(bytes, read_limits, &evidence) {
             CheckedPackageV2ReadResult::Admitted(package) => *package,
             other => panic!("large original source must pass the real IR reader: {other:?}"),
@@ -3415,7 +3415,7 @@ mod tests {
             let parameter = |id: &CheckedNodeId, source_type: &CheckedNodeId| {
                 serde_json::from_value::<CheckedSemanticNodeV2>(json!({
                     "node_id": id,
-                    "schema_version": "filament.checked-semantic-graph/v2",
+                    "schema_version": "quire.checked-semantic-graph/v2",
                     "node_tag": "value",
                     "semantic_form": "parameter",
                     "semantic_type": source_type,
@@ -3454,7 +3454,7 @@ mod tests {
                     node_id: expression_id.clone(),
                     owner: None,
                     owner_model: None,
-                    schema_version: "filament.checked-semantic-graph/v2".into(),
+                    schema_version: "quire.checked-semantic-graph/v2".into(),
                     node_tag: "expression".into(),
                     semantic_form: "binary".into(),
                     semantic_type: left.source_type.clone(),
@@ -3752,7 +3752,7 @@ mod tests {
                     node_id: ids[index].clone(),
                     owner: None,
                     owner_model: None,
-                    schema_version: "filament.checked-semantic-graph/v2".into(),
+                    schema_version: "quire.checked-semantic-graph/v2".into(),
                     node_tag: tag.into(),
                     semantic_form: form.into(),
                     semantic_type: ids[index].clone(),
@@ -4830,7 +4830,7 @@ fn deep_matches_shallow() {
                 source: qsl_replay::SourceIdentity::new("test", "render-boundary.native"),
                 package_name: "render-boundary".to_owned(),
                 path: "render-boundary.native",
-                bytes: b"language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\ndimension Length;\nunit m : Length = rational(1, 1);\nfunction same using v(a: Quantity<m>, b: Quantity<m>): Boolean pure { a = b }\n",
+                bytes: b"language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\ndimension Length;\nunit m : Length = rational(1, 1);\nfunction same using v(a: Quantity<m>, b: Quantity<m>): Boolean pure { a = b }\n",
             },
             [], &qsl_replay::DependencyInput::default(), qsl_replay::StageLimits::default(),
             qsl_replay::ReplayLimits::default(),

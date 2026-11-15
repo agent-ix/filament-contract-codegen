@@ -506,7 +506,7 @@ impl StateClauseReplay {
                 let values =
                     field_values(package, &declaration, &name, &witness, &address.population)?;
                 let document = serde_json::json!({
-                    "format": "filament.state.snapshot/v1",
+                    "format": "quire.state.snapshot/v1",
                     "identity": preimage_value(&IdentityMember::from(&snapshot_label)).map_err(document_encode)?,
                     "observation": "current",
                     "anchor": {"kind": anchor_member.kind, "name": anchor_member.name},
@@ -527,7 +527,7 @@ impl StateClauseReplay {
                 encode_document(&document)
             }
             None => encode_document(&GraphSnapshotDocument {
-                format: "filament.state.snapshot/v1",
+                format: "quire.state.snapshot/v1",
                 identity: (&snapshot_label).into(),
                 observation: "current",
                 anchor: anchor_member,

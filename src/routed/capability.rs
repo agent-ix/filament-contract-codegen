@@ -663,23 +663,23 @@ fn checked_node_family<'a>(
         .and_then(|_| checked_operation_identity(package, node_id));
     match identity {
         Some(
-            "filament.op.boolean.and"
-            | "filament.op.boolean.or"
-            | "filament.op.boolean.not"
-            | "filament.op.boolean.implies"
-            | "filament.op.boolean.eq"
-            | "filament.op.boolean.ne",
+            "quire.op.boolean.and"
+            | "quire.op.boolean.or"
+            | "quire.op.boolean.not"
+            | "quire.op.boolean.implies"
+            | "quire.op.boolean.eq"
+            | "quire.op.boolean.ne",
         ) => KaniFormFamily::Boolean,
-        Some("filament.op.equality.equal" | "filament.op.equality.not_equal") => {
+        Some("quire.op.equality.equal" | "quire.op.equality.not_equal") => {
             KaniFormFamily::CompositeEquality
         }
-        Some("filament.op.function.apply" | "filament.op.function.call") => {
+        Some("quire.op.function.apply" | "quire.op.function.call") => {
             KaniFormFamily::FunctionApplication
         }
-        Some(
-            "filament.op.collection.for_all_non_negative" | "filament.op.collection.exists_equal",
-        ) => KaniFormFamily::BoundedCollection,
-        Some("filament.op.graph.reachability") => KaniFormFamily::BoundedGraph,
+        Some("quire.op.collection.for_all_non_negative" | "quire.op.collection.exists_equal") => {
+            KaniFormFamily::BoundedCollection
+        }
+        Some("quire.op.graph.reachability") => KaniFormFamily::BoundedGraph,
         _ => KaniFormFamily::OutsideSet,
     }
 }
@@ -743,7 +743,7 @@ fn checked_function_call_matches(
     else {
         return false;
     };
-    if operation.identity() != Some("filament.op.function.call") {
+    if operation.identity() != Some("quire.op.function.call") {
         return false;
     }
     if arguments.len() != argument_node_ids.len() + 1 || parameters.len() != argument_node_ids.len()
@@ -1009,7 +1009,7 @@ impl KaniForm {
                     Err(Box::new(Cause::KaniFormRefused {
                         form: identity,
                         refusal: crate::kani::generate::outcome::UnsupportedObligation::OperationNotRendered {
-                            operation_identity: "filament.op.function.call".to_owned(),
+                            operation_identity: "quire.op.function.call".to_owned(),
                             derived_domains: Vec::new(),
                         },
                         backend: backend.identity.clone(),

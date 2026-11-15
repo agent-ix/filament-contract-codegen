@@ -35,7 +35,7 @@ fn compiled_with_profile(
     profile: Option<DivisionProfile>,
 ) -> CheckedPackageV2 {
     let source = format!(
-        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nfunction subject using v({parameters}): {result} pure {{ {expression} }}\n"
+        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nfunction subject using v({parameters}): {result} pure {{ {expression} }}\n"
     );
     let unit = CompileUnit {
         source: SourceIdentity::new("test", "integer-division-bounds"),
@@ -70,7 +70,7 @@ fn compiled_with_profile(
     }
     .expect("FSL compiles genuine integer source under the supplied owner selection");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("filament.value.complete/v1");
+    evidence.support_feature("quire.value.complete/v1");
     match CheckedPackageV2::read(
         compiled.bytes(),
         CheckedPackageReadLimits::bounded(),
@@ -344,7 +344,7 @@ fn case_{index}() {{
 
 fn run_generated_native(native: &str, count: usize, label: &str) {
     let scratch = scratch_crate::TemporaryDirectory::new(label);
-    let manifest = format!("[package]\nname=\"integer-division-derived-native\"\nversion=\"0.0.0\"\nedition=\"2021\"\n[dependencies]\nfilament-exact = {{ {EXACT_DEPENDENCY_SOURCE} }}\n[workspace]\n");
+    let manifest = format!("[package]\nname=\"integer-division-derived-native\"\nversion=\"0.0.0\"\nedition=\"2021\"\n[dependencies]\nquire-exact = {{ {EXACT_DEPENDENCY_SOURCE} }}\n[workspace]\n");
     scratch_crate::write_manifest(&scratch.path, &manifest);
     fs::write(scratch.path.join("src/lib.rs"), native).unwrap();
     scratch_crate::resolve_seeded_lock(&scratch.path);
@@ -497,11 +497,11 @@ fn reader_integer_operation(
         let definition = fixture::integer_division_definition(profile);
         builder.select_definition(definition.clone());
         (
-            "filament.op.integer.div",
+            "quire.op.integer.div",
             vec![fixture::law("integer_division", definition)],
         )
     } else {
-        ("filament.op.integer.mod", Vec::new())
+        ("quire.op.integer.mod", Vec::new())
     };
     builder.application_bounded(
         code + 2,

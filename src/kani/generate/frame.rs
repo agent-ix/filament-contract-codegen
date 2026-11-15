@@ -1,7 +1,7 @@
 //! Operation-contract and frame-effect Kani obligations for one admitted `state_clause`
 //! postcondition (IR-412, FR-015).
 //!
-//! A `postcondition` `state`/`state_clause` node of an admitted `filament.checked-package/v2`
+//! A `postcondition` `state`/`state_clause` node of an admitted `quire.checked-package/v2`
 //! package names an operation through its `operation_anchor`, and that anchor names the
 //! operation's `frame`. One request yields two separate obligations over the same operation:
 //!
@@ -715,7 +715,7 @@ impl ClauseShape {
         let [parameters, anchor, condition] = application(
             body,
             ApplicationOperator::StateClause,
-            "filament.op.state.clause",
+            "quire.op.state.clause",
         )
         .and_then(|arguments| <&[CheckedTerm; 3]>::try_from(arguments).ok())
         .ok_or_else(malformed)?;
@@ -836,12 +836,9 @@ impl ClauseShape {
         // An operand the graph cannot follow is a malformed clause, not an unsupported shape.
         let dangling = |at: &CheckedNodeId| StateFrameRefusal::MalformedClause { at: at.clone() };
         let operand = graph.follow(term, clause).ok_or_else(|| dangling(clause))?;
-        if let Some([inner]) = application(
-            operand.body,
-            ApplicationOperator::Pre,
-            "filament.op.state.pre",
-        )
-        .and_then(|arguments| <&[CheckedTerm; 1]>::try_from(arguments).ok())
+        if let Some([inner]) =
+            application(operand.body, ApplicationOperator::Pre, "quire.op.state.pre")
+                .and_then(|arguments| <&[CheckedTerm; 1]>::try_from(arguments).ok())
         {
             let read = graph
                 .follow(inner, operand.id)
@@ -870,7 +867,7 @@ impl ClauseShape {
         let [dereference] = application(
             read.body,
             ApplicationOperator::Query,
-            "filament.op.record.project",
+            "quire.op.record.project",
         )
         .and_then(|arguments| <&[CheckedTerm; 1]>::try_from(arguments).ok())
         .ok_or_else(unsupported)?;
@@ -892,7 +889,7 @@ impl ClauseShape {
         let [subject] = application(
             dereference.body,
             ApplicationOperator::Deref,
-            "filament.op.model.deref",
+            "quire.op.model.deref",
         )
         .and_then(|arguments| <&[CheckedTerm; 1]>::try_from(arguments).ok())
         .ok_or_else(unsupported)?;
@@ -1202,7 +1199,7 @@ mod tests {
     #[test]
     fn a_quantity_conversion_is_not_a_state_comparison() {
         assert_eq!(
-            StateComparison::from_operation("filament.op.quantity.convert"),
+            StateComparison::from_operation("quire.op.quantity.convert"),
             None
         );
     }
@@ -1212,24 +1209,24 @@ mod tests {
     #[test]
     fn state_projection_uses_catalogued_comparison_symbols() {
         let cases = [
-            ("filament.op.integer.lt", StateComparison::Lt, "<"),
-            ("filament.op.integer.le", StateComparison::Le, "<="),
-            ("filament.op.integer.gt", StateComparison::Gt, ">"),
-            ("filament.op.integer.ge", StateComparison::Ge, ">="),
-            ("filament.op.integer.eq", StateComparison::Eq, "=="),
-            ("filament.op.integer.ne", StateComparison::Ne, "!="),
+            ("quire.op.integer.lt", StateComparison::Lt, "<"),
+            ("quire.op.integer.le", StateComparison::Le, "<="),
+            ("quire.op.integer.gt", StateComparison::Gt, ">"),
+            ("quire.op.integer.ge", StateComparison::Ge, ">="),
+            ("quire.op.integer.eq", StateComparison::Eq, "=="),
+            ("quire.op.integer.ne", StateComparison::Ne, "!="),
         ];
         for (identity, expected, symbol) in cases {
             assert_eq!(StateComparison::from_operation(identity), Some(expected));
             assert_eq!(expected.rust(), symbol);
         }
         assert_eq!(
-            StateComparison::from_operation("filament.op.integer.add"),
+            StateComparison::from_operation("quire.op.integer.add"),
             None
         );
 
         assert_eq!(
-            StateComparison::from_operation("filament.op.integer.unknown"),
+            StateComparison::from_operation("quire.op.integer.unknown"),
             None
         );
 

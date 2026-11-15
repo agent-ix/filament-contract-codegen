@@ -24,7 +24,7 @@ required dependency or target path.
 
 ## Test Procedure
 
-1. Build an admitted `filament.checked-package/v2` package under FSpec FR-322.
+1. Build an admitted `quire.checked-package/v2` package under FSpec FR-322.
    Bind each requested function to its admitted V2 `function` declaration
    node (whose body is the root), ordered `value`/`parameter` node ids and
    declared types. Build scalar, equality and nested-call expression bodies
@@ -167,8 +167,8 @@ required dependency or target path.
      makes an application charge; keep any unreachable refusal open until a
      valid triggering fixture exists. For own and admitted dependency
      functions, derive the FSL lookup owner from the declaring V2 package's
-     `filament.package.semantic/v2` domain and exact digest and the `WireNodeId`
-     from the admitted `filament.checked-semantic-node/v1` function node digest.
+     `quire.package.semantic/v2` domain and exact digest and the `WireNodeId`
+     from the admitted `quire.checked-semantic-node/v1` function node digest.
      Verify the caller supplied all seven FR-485 acquisition inputs alongside
      the independently admitted Contract IR package, that each generated or
      direct run acquired its closure once, and that CG neither rechecked nor

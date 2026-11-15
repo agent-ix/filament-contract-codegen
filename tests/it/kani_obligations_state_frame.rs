@@ -4,7 +4,7 @@
 //!
 //! The package is hand-built in the shape FSL lowers `post Deposit ... { self.balance >=
 //! pre(self.balance) }` to: a `postcondition` `state_clause` whose condition is one
-//! `filament.op.integer.ge` over `record.project(deref(self), balance)` and `pre` of the same read,
+//! `quire.op.integer.ge` over `record.project(deref(self), balance)` and `pre` of the same read,
 //! anchored on the `deposit` operation whose frame modifies `balance` only. The framed object
 //! declares its own fields, so IR admits the field reads without a domain package.
 //!
@@ -129,7 +129,7 @@ fn fsl_emitted_state_clause_derives_a_confirmed_field_backed_oracle() {
     super::scratch_crate::write_manifest(
         &scratch.path,
         &format!(
-            "[package]\nname = \"generated-v2-clause\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nfilament-exact = {{ {} }}\n\n[workspace]\n",
+            "[package]\nname = \"generated-v2-clause\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nquire-exact = {{ {} }}\n\n[workspace]\n",
             super::scratch_crate::runtime_dependency(&["exact"]),
             filament_contract_codegen::EXACT_DEPENDENCY_SOURCE
         ),
@@ -184,7 +184,7 @@ fn clause_claim_map_carries_the_derived_descriptor_and_typed_disposition() {
     assert_eq!(generated.descriptor.condition_node_id, Some(condition_node));
     assert_eq!(
         generated.descriptor.operation_identities,
-        ["filament.op.integer.ge"]
+        ["quire.op.integer.ge"]
     );
     assert_eq!(
         derive_v2_clause_descriptor(&package, &clause),
@@ -286,7 +286,7 @@ fn admitted_inline_clause_keeps_the_clause_identity() {
     super::scratch_crate::write_manifest(
         &scratch.path,
         &format!(
-            "[package]\nname = \"generated-v2-inline-clause\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nfilament-exact = {{ {} }}\n\n[workspace]\n",
+            "[package]\nname = \"generated-v2-inline-clause\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nquire-exact = {{ {} }}\n\n[workspace]\n",
             super::scratch_crate::runtime_dependency(&["exact"]),
             filament_contract_codegen::EXACT_DEPENDENCY_SOURCE
         ),
@@ -377,7 +377,7 @@ fn fsl_bounded_operation_parameter_becomes_a_clause_input() {
     super::scratch_crate::write_manifest(
         &scratch.path,
         &format!(
-            "[package]\nname = \"generated-v2-param-clause\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nfilament-exact = {{ {} }}\n\n[workspace]\n",
+            "[package]\nname = \"generated-v2-param-clause\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nquire-exact = {{ {} }}\n\n[workspace]\n",
             super::scratch_crate::runtime_dependency(&["exact"]),
             filament_contract_codegen::EXACT_DEPENDENCY_SOURCE
         ),
@@ -650,7 +650,7 @@ fn fsl_result_boolean_uses_the_same_subject_value_for_both_bits() {
     super::scratch_crate::write_manifest(
         &directory.path,
         &format!(
-            "[package]\nname = \"generated-v2-boolean-result\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nfilament-exact = {{ {} }}\n\n[workspace]\n",
+            "[package]\nname = \"generated-v2-boolean-result\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nquire-exact = {{ {} }}\n\n[workspace]\n",
             super::scratch_crate::runtime_dependency(&["exact"]),
             filament_contract_codegen::EXACT_DEPENDENCY_SOURCE,
         ),
@@ -1002,21 +1002,21 @@ fn fsl_two_parameter_precondition_refuses_unrenderable_domains() {
 #[test]
 fn fsl_v2_precondition_embeds_exact_referenced_clause_oracle() {
     for (condition, operation_identity) in [
-        ("other < 1000 and other >= 0", "filament.op.boolean.and"),
-        ("other < 1000 or other >= 0", "filament.op.boolean.or"),
-        ("not (other < 1000)", "filament.op.boolean.not"),
+        ("other < 1000 and other >= 0", "quire.op.boolean.and"),
+        ("other < 1000 or other >= 0", "quire.op.boolean.or"),
+        ("not (other < 1000)", "quire.op.boolean.not"),
         (
             "other < 1000 implies other >= 0",
-            "filament.op.boolean.implies",
+            "quire.op.boolean.implies",
         ),
-        ("(other < 1000) = (other >= 0)", "filament.op.boolean.eq"),
-        ("(other < 1000) != (other >= 0)", "filament.op.boolean.ne"),
-        ("other = other", "filament.op.integer.eq"),
-        ("other != other", "filament.op.integer.ne"),
-        ("other < 1000", "filament.op.integer.lt"),
-        ("other <= 1000", "filament.op.integer.le"),
-        ("other > 0", "filament.op.integer.gt"),
-        ("other >= 0", "filament.op.integer.ge"),
+        ("(other < 1000) = (other >= 0)", "quire.op.boolean.eq"),
+        ("(other < 1000) != (other >= 0)", "quire.op.boolean.ne"),
+        ("other = other", "quire.op.integer.eq"),
+        ("other != other", "quire.op.integer.ne"),
+        ("other < 1000", "quire.op.integer.lt"),
+        ("other <= 1000", "quire.op.integer.le"),
+        ("other > 0", "quire.op.integer.gt"),
+        ("other >= 0", "quire.op.integer.ge"),
     ] {
         let (package, clause) = Twin::with_bounded_other_precondition_condition(condition)
             .emitted_package("OtherBelowLimit");
@@ -1933,7 +1933,7 @@ fn native_v2_chained_probe_uses_selected_intermediate_interval() {
     let multiply = selected
         .operations
         .iter()
-        .find(|decision| decision.operation_identity == "filament.op.integer.mul")
+        .find(|decision| decision.operation_identity == "quire.op.integer.mul")
         .expect("checked Multiply after bounded Add");
     assert_eq!(multiply.operands[0].lower, "1");
     assert_eq!(multiply.operands[0].upper, "1001");
@@ -2069,7 +2069,7 @@ fn write_v2_precondition_fixture(
     super::scratch_crate::write_manifest(
         directory,
         &format!(
-            "[package]\nname = \"generated-v2-precondition\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nfilament-exact = {{ {} }}\nfilament-semantic-value = {{ {} }}\n\n[workspace]\n",
+            "[package]\nname = \"generated-v2-precondition\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nquire-exact = {{ {} }}\nquire-semantic-value = {{ {} }}\n\n[workspace]\n",
             super::scratch_crate::runtime_dependency(&["exact"]),
             filament_contract_codegen::EXACT_DEPENDENCY_SOURCE,
             filament_contract_codegen::SEMANTIC_VALUE_DEPENDENCY_SOURCE
@@ -2191,7 +2191,7 @@ fn fsl_emitted_clause_composes_boolean_and_integer_operations() {
     super::scratch_crate::write_manifest(
         &scratch.path,
         &format!(
-            "[package]\nname = \"generated-v2-clause-corpus\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nfilament-exact = {{ {} }}\nfilament-semantic-value = {{ {} }}\n\n[workspace]\n",
+            "[package]\nname = \"generated-v2-clause-corpus\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nquire-exact = {{ {} }}\nquire-semantic-value = {{ {} }}\n\n[workspace]\n",
             super::scratch_crate::runtime_dependency(&["exact"]),
             filament_contract_codegen::EXACT_DEPENDENCY_SOURCE,
             filament_contract_codegen::SEMANTIC_VALUE_DEPENDENCY_SOURCE
@@ -2239,7 +2239,7 @@ fn skipped_v2_clause_consequent_has_a_measured_zero_native_probe() {
     super::scratch_crate::write_manifest(
         &scratch.path,
         &format!(
-            "[package]\nname = \"generated-v2-clause-native-probe\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nfilament-exact = {{ {} }}\n\n[workspace]\n",
+            "[package]\nname = \"generated-v2-clause-native-probe\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nquire-exact = {{ {} }}\n\n[workspace]\n",
             super::scratch_crate::runtime_dependency(&["exact"]),
             filament_contract_codegen::EXACT_DEPENDENCY_SOURCE
         ),
@@ -2437,7 +2437,7 @@ fn field_read_through(
         bound,
         application(
             "query",
-            op_full("filament.op.record.project", vec![], None, Some(member)),
+            op_full("quire.op.record.project", vec![], None, Some(member)),
             bound,
             vec![reference(deref)],
         ),
@@ -2454,7 +2454,7 @@ fn pre_read(builder: &mut PackageBuilder, code: u32, read: &str, bound: &str) ->
         bound,
         application(
             "pre",
-            op("filament.op.state.pre"),
+            op("quire.op.state.pre"),
             bound,
             vec![reference(read)],
         ),
@@ -2501,7 +2501,7 @@ fn state_frame_base_package() -> PackageBuilder {
         &boolean,
         application(
             "unary",
-            op("filament.op.boolean.not"),
+            op("quire.op.boolean.not"),
             &boolean,
             vec![boolean_literal(true)],
         ),
@@ -2670,7 +2670,7 @@ fn add_shape(builder: &mut PackageBuilder, shape: &Shape) {
         &object,
         application(
             "deref",
-            op("filament.op.model.deref"),
+            op("quire.op.model.deref"),
             &object,
             vec![reference(&key(shape.scoped(SELF)))],
         ),
@@ -2684,7 +2684,7 @@ fn add_shape(builder: &mut PackageBuilder, shape: &Shape) {
         &object,
         application(
             "deref",
-            op("filament.op.model.deref"),
+            op("quire.op.model.deref"),
             &object,
             vec![reference(&key(shape.scoped(OTHER)))],
         ),
@@ -2737,14 +2737,14 @@ fn add_shape(builder: &mut PackageBuilder, shape: &Shape) {
                     builder.select_definition(definition.clone());
                     (
                         "binary",
-                        "filament.op.integer.div",
+                        "quire.op.integer.div",
                         vec![literal("integer", "4"), literal("integer", "2")],
                         vec![law("integer_division", definition)],
                     )
                 }
                 Condition::Modulo => (
                     "binary",
-                    "filament.op.integer.mod",
+                    "quire.op.integer.mod",
                     vec![literal("integer", "4"), literal("integer", "2")],
                     Vec::new(),
                 ),
@@ -2774,7 +2774,7 @@ fn add_shape(builder: &mut PackageBuilder, shape: &Shape) {
         &key(T_BOOLEAN),
         application(
             "binary",
-            op("filament.op.integer.ge"),
+            op("quire.op.integer.ge"),
             &key(T_BOOLEAN),
             vec![left, right],
         ),
@@ -2789,7 +2789,7 @@ fn add_shape(builder: &mut PackageBuilder, shape: &Shape) {
             &key(T_BOOLEAN),
             application(
                 "unary",
-                op("filament.op.boolean.not"),
+                op("quire.op.boolean.not"),
                 &key(T_BOOLEAN),
                 vec![reference(&condition)],
             ),
@@ -2805,7 +2805,7 @@ fn add_shape(builder: &mut PackageBuilder, shape: &Shape) {
             &key(T_BOOLEAN),
             application(
                 "binary",
-                op("filament.op.boolean.and"),
+                op("quire.op.boolean.and"),
                 &key(T_BOOLEAN),
                 vec![reference(&condition), reference(&condition)],
             ),
@@ -2824,7 +2824,7 @@ fn add_shape(builder: &mut PackageBuilder, shape: &Shape) {
             application(
                 "binary",
                 op_full(
-                    "filament.op.text.eq",
+                    "quire.op.text.eq",
                     vec![law("text_profile", definition)],
                     Some(mode_kv("text_profile", "nfc")),
                     None,
@@ -2852,7 +2852,7 @@ fn add_shape(builder: &mut PackageBuilder, shape: &Shape) {
         application(
             "state_clause",
             op_full(
-                "filament.op.state.clause",
+                "quire.op.state.clause",
                 vec![],
                 None,
                 Some(json!({"kind": "state_clause", "clause": shape.clause})),
@@ -7353,17 +7353,9 @@ fn v2_unsupported_clause_operator_names_exact_identity_without_suppressing_sibli
         panic!("every selected clause has a record");
     };
     for (record, node_id, operation_identity) in [
-        (
-            division_record,
-            &refused_clauses[0],
-            "filament.op.integer.div",
-        ),
-        (
-            modulo_record,
-            &refused_clauses[1],
-            "filament.op.integer.mod",
-        ),
-        (text_record, &refused_clauses[2], "filament.op.text.eq"),
+        (division_record, &refused_clauses[0], "quire.op.integer.div"),
+        (modulo_record, &refused_clauses[1], "quire.op.integer.mod"),
+        (text_record, &refused_clauses[2], "quire.op.text.eq"),
     ] {
         assert_eq!(
             record.disposition,
@@ -7491,7 +7483,7 @@ pub fn check() {{
     super::scratch_crate::write_manifest(
         &directory.path,
         &format!(
-            "[package]\nname = \"generated-v2-invariant-oracles\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nfilament-exact = {{ {} }}\nfilament-semantic-value = {{ {} }}\n\n[workspace]\n",
+            "[package]\nname = \"generated-v2-invariant-oracles\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nquire-exact = {{ {} }}\nquire-semantic-value = {{ {} }}\n\n[workspace]\n",
             super::scratch_crate::runtime_dependency(&["exact"]),
             filament_contract_codegen::EXACT_DEPENDENCY_SOURCE,
             filament_contract_codegen::SEMANTIC_VALUE_DEPENDENCY_SOURCE,
@@ -7601,12 +7593,12 @@ fn generated_native_boolean_equality_matches_the_typed_route() {
     for (index, (condition, operation, operator)) in [
         (
             "result = (amount < 1000 implies amount + 1 <= 1000)",
-            "filament.op.boolean.eq",
+            "quire.op.boolean.eq",
             "Equal",
         ),
         (
             "result != (amount < 1000 implies amount + 1 <= 1000)",
-            "filament.op.boolean.ne",
+            "quire.op.boolean.ne",
             "NotEqual",
         ),
     ]
@@ -7724,7 +7716,7 @@ fn main() {
     super::scratch_crate::write_manifest(
         &directory.path,
         &format!(
-            "[package]\nname = \"generated-native-boolean-equality\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nfilament-exact = {{ {} }}\nfilament-semantic-value = {{ {} }}\n\n[workspace]\n",
+            "[package]\nname = \"generated-native-boolean-equality\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nquire-exact = {{ {} }}\nquire-semantic-value = {{ {} }}\n\n[workspace]\n",
             super::scratch_crate::runtime_dependency(&["exact"]),
             filament_contract_codegen::EXACT_DEPENDENCY_SOURCE,
             filament_contract_codegen::SEMANTIC_VALUE_DEPENDENCY_SOURCE,

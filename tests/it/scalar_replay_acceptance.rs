@@ -22,7 +22,7 @@ use quire_exact::{Integer, IntegerInterval};
 
 fn sum_fixture() -> ReplayFixture {
     replay_fixture(
-        "filament.op.integer.add",
+        "quire.op.integer.add",
         "x: Int[0, 9]",
         "Int[0, 18]",
         "x + x",
@@ -492,7 +492,7 @@ fn a_body_or_record_missing_a_retained_member_refuses_setup() {
 #[test]
 fn draw_order_is_kept_and_unrelated_enclosing_parameters_are_excluded() {
     let fixture = replay_fixture(
-        "filament.op.integer.sub",
+        "quire.op.integer.sub",
         "x: Int[10, 20], y: Int[0, 9], z: Int[50, 60]",
         "Int[-20, -1]",
         "y - x",
@@ -554,7 +554,7 @@ fn draw_order_is_kept_and_unrelated_enclosing_parameters_are_excluded() {
 #[test]
 fn invented_membership_is_refused_before_identity_comparison() {
     let fixture = replay_fixture(
-        "filament.op.integer.add",
+        "quire.op.integer.add",
         "x: Int[0, 9]",
         "Int[3, 12]",
         "x + 3",

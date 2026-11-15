@@ -36,16 +36,14 @@ pub(crate) fn lock_agreement_build() -> MutexGuard<'static, ()> {
 /// The `filament-contract-runtime` dependency line of a scratch manifest, with `features`.
 pub(crate) fn runtime_dependency(features: &[&str]) -> String {
     if features.is_empty() {
-        return format!("filament-contract-runtime = {{ {RUNTIME_DEPENDENCY_SOURCE} }}");
+        return format!("quire-contract-runtime = {{ {RUNTIME_DEPENDENCY_SOURCE} }}");
     }
     let features = features
         .iter()
         .map(|feature| format!("\"{feature}\""))
         .collect::<Vec<_>>()
         .join(", ");
-    format!(
-        "filament-contract-runtime = {{ {RUNTIME_DEPENDENCY_SOURCE}, features = [{features}] }}"
-    )
+    format!("quire-contract-runtime = {{ {RUNTIME_DEPENDENCY_SOURCE}, features = [{features}] }}")
 }
 
 /// Copies this repository's `Cargo.lock` beside the manifest in `directory`.
@@ -276,7 +274,7 @@ mod tests {
     fn locked_runtime_source(lock: &str) -> String {
         let block = lock
             .split("[[package]]")
-            .find(|block| block.contains("name = \"filament-contract-runtime\""))
+            .find(|block| block.contains("name = \"quire-contract-runtime\""))
             .expect("CG's lock names the runtime");
         block
             .lines()
@@ -315,7 +313,7 @@ mod tests {
             .as_array()
             .unwrap()
             .iter()
-            .find(|package| package["name"] == "filament-contract-runtime")
+            .find(|package| package["name"] == "quire-contract-runtime")
             .expect("the scratch crate depends on the runtime")["source"]
             .as_str()
             .unwrap()

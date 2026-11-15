@@ -130,7 +130,7 @@ fn domain_document(granted: &[&str]) -> Vec<u8> {
             "identity": format!("{range}/constraints/{keyword}"),
             "keyword": keyword,
             "operands": {"value": value.to_string()},
-            "appliesTo": "ix://filament/native/Integer",
+            "appliesTo": "ix://quire/native/Integer",
             "diagnosticCode": format!("bound.{keyword}"),
             "origin": generated(&range),
         })
@@ -201,9 +201,9 @@ fn domain_document(granted: &[&str]) -> Vec<u8> {
         "occurrences": [],
         "extensions": [],
         "constructs": [
-            construct("object_type", "filament.meaning.model.object-type/v1"),
-            construct("population", "filament.meaning.model.population/v1"),
-            construct("value_type", "filament.meaning.model.value-type/v1"),
+            construct("object_type", "quire.meaning.model.object-type/v1"),
+            construct("population", "quire.meaning.model.population/v1"),
+            construct("value_type", "quire.meaning.model.value-type/v1"),
         ],
         "types": types,
         "populations": [{
@@ -229,7 +229,7 @@ pub const CLAUSES: [(&str, &str, &str); 2] = [
 fn unit_source(clauses: &[(&str, &str, &str)], blank_lines: usize) -> String {
     let header = format!(
         "language \"ix:native\" edition \"1-draft\";\n\
-         profile v = \"filament.value.complete/v1\";\n\
+         profile v = \"quire.value.complete/v1\";\n\
          model Bank = {PACKAGE:?};\n"
     );
     let clauses = clauses
@@ -691,7 +691,7 @@ impl Twin {
     /// integer (no `i64` accessor range).
     pub fn with_unbounded_audit_invariant() -> Self {
         Self::invariant_from(
-            Self::with_field_native_type("audit", "ix://filament/native/Integer"),
+            Self::with_field_native_type("audit", "ix://quire/native/Integer"),
             "self.balance >= 0",
         )
     }
@@ -916,7 +916,7 @@ impl Twin {
             .iter_mut()
             .find(|operation| operation["name"] == "deposit")
             .expect("deposit operation");
-        deposit["params"][1]["typeRef"] = json!("ix://filament/native/Integer");
+        deposit["params"][1]["typeRef"] = json!("ix://quire/native/Integer");
         twin.domain = domain.to_string().into_bytes();
         twin
     }
@@ -991,7 +991,7 @@ impl Twin {
             .find(|operation| operation["name"] == "deposit")
             .expect("deposit operation");
         deposit["returns"] = json!({
-            "typeRef": "ix://filament/native/Boolean",
+            "typeRef": "ix://quire/native/Boolean",
             "multiplicity": {"lower": 1, "upper": 1, "ordered": false, "unique": true},
             "nullable": false,
         });
@@ -1083,7 +1083,7 @@ impl Twin {
             .iter_mut()
             .find(|operation| operation["name"] == "deposit")
             .expect("deposit operation");
-        deposit["returns"]["typeRef"] = json!("ix://filament/native/Integer");
+        deposit["returns"]["typeRef"] = json!("ix://quire/native/Integer");
         twin.domain = domain.to_string().into_bytes();
         let source = String::from_utf8(twin.unit).expect("native unit");
         let changed = source.replace(
@@ -1188,7 +1188,7 @@ impl Twin {
             deposit["params"] = json!([{
                 "identity": identity,
                 "name": "other",
-                "typeRef": "ix://filament/native/Boolean",
+                "typeRef": "ix://quire/native/Boolean",
                 "presence": "required",
                 "nullable": false,
                 "defaultKind": "none",
@@ -1198,7 +1198,7 @@ impl Twin {
         }
         if result {
             deposit["returns"] = json!({
-                "typeRef": "ix://filament/native/Boolean",
+                "typeRef": "ix://quire/native/Boolean",
                 "multiplicity": {"lower": 1, "upper": 1, "ordered": false, "unique": true},
                 "nullable": false,
             });
@@ -1231,17 +1231,17 @@ impl Twin {
 
     /// A twin whose present, unread `audit` field is Boolean, with no `i64` range.
     pub fn without_audit_range() -> Self {
-        Self::with_field_native_type("audit", "ix://filament/native/Boolean")
+        Self::with_field_native_type("audit", "ix://quire/native/Boolean")
     }
 
     /// A selected model whose `balance` field is an unbounded integer.
     pub fn without_balance_range() -> Self {
-        Self::with_field_native_type("balance", "ix://filament/native/Integer")
+        Self::with_field_native_type("balance", "ix://quire/native/Integer")
     }
 
     /// Both clauses over a selected model whose `audit` field is an unbounded integer.
     pub fn with_unbounded_audit_clause() -> Self {
-        let mut twin = Self::with_field_native_type("audit", "ix://filament/native/Integer");
+        let mut twin = Self::with_field_native_type("audit", "ix://quire/native/Integer");
         twin.unit = unit_source(
             &[
                 CLAUSES[0],
@@ -1540,7 +1540,7 @@ impl Twin {
         evidence
             .insert_domain_package_document(PACKAGE, self.domain.clone())
             .expect("retain emitted model document");
-        evidence.support_feature("filament.value.complete/v1");
+        evidence.support_feature("quire.value.complete/v1");
         let package = match CheckedPackageV2::read(
             compiled.bytes(),
             CheckedPackageReadLimits::bounded(),
@@ -1640,7 +1640,7 @@ impl Twin {
         clause: &str,
     ) -> (CheckedPackageV2, CheckedNodeId) {
         let mut document: Value = serde_json::from_slice(&self.domain).expect("domain document");
-        let mut variant = construct("variant_type", "filament.meaning.model.variant-type/v1");
+        let mut variant = construct("variant_type", "quire.meaning.model.variant-type/v1");
         variant["construct"]["shape"] = json!("enumeration");
         variant["construct"]["members"] = json!({"variants": "required"});
         document["constructs"]
@@ -1711,7 +1711,7 @@ impl Twin {
         evidence
             .insert_domain_package_document(PACKAGE, selected_document)
             .expect("retain emitted model document");
-        evidence.support_feature("filament.value.complete/v1");
+        evidence.support_feature("quire.value.complete/v1");
         let package = match CheckedPackageV2::read(
             &located.package,
             CheckedPackageReadLimits::bounded(),
@@ -1741,7 +1741,7 @@ impl Twin {
         let snapshot = |name: &str, observation: &str, (balance, audit): (i64, i64)| {
             let label = label(name);
             let bytes = json!({
-                "format": "filament.state.snapshot/v1",
+                "format": "quire.state.snapshot/v1",
                 "identity": identity_json(&label),
                 "observation": observation,
                 "model": model_header,
@@ -1764,7 +1764,7 @@ impl Twin {
         let (post_ref, post_bytes) = snapshot("twin-post", "post", post);
         let invocation_label = label("twin-invocation");
         let invocation_bytes = json!({
-            "format": "filament.state.invocation/v1",
+            "format": "quire.state.invocation/v1",
             "identity": identity_json(&invocation_label),
             "model": model_header,
             "context": account_type(),

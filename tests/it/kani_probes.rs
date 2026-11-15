@@ -65,8 +65,8 @@ impl ProbeOp {
 
     fn operation_id(self) -> &'static str {
         match self {
-            Self::Mul => "filament.op.integer.mul",
-            Self::Add => "filament.op.integer.add",
+            Self::Mul => "quire.op.integer.mul",
+            Self::Add => "quire.op.integer.add",
         }
     }
 
@@ -363,8 +363,8 @@ fn ir1526_probe_native_route_under_installed_kani() {
 /// The catalog operation ids of the clause, as the corpus rows name them.
 fn harness_operation(op: NativeOp) -> &'static str {
     match op {
-        NativeOp::Add => "filament.op.integer.add",
-        NativeOp::Mul => "filament.op.integer.mul",
-        NativeOp::Chain => "filament.op.integer.mul+filament.op.integer.add",
+        NativeOp::Add => "quire.op.integer.add",
+        NativeOp::Mul => "quire.op.integer.mul",
+        NativeOp::Chain => "quire.op.integer.mul+quire.op.integer.add",
     }
 }

@@ -40,13 +40,10 @@ use crate::{
 static NEXT_SNAPSHOT: AtomicU64 = AtomicU64::new(0);
 const LOCKED_DEPENDENCIES: [(&str, &str); 2] = [
     (
-        "filament-contract-runtime",
-        "https://github.com/agent-ix/filament-contract-runtime",
+        "quire-contract-runtime",
+        "https://github.com/agent-ix/quire-contract-runtime",
     ),
-    (
-        "filament-exact",
-        "https://github.com/agent-ix/filament-exact",
-    ),
+    ("quire-exact", "https://github.com/agent-ix/quire-exact"),
 ];
 
 /// Input retained by a caller that already admitted the routed scalar occurrence.
@@ -1619,7 +1616,7 @@ mod tests {
         .expect("checked source key");
         let (oracle, _) = crate::oracle::scalar::native::select(
             &node_id,
-            "filament.op.integer.add",
+            "quire.op.integer.add",
             "checked_oracle",
             crate::oracle::operator_catalog::IntegerOperator::Add,
             &[(0, 9), (1, 1)],
@@ -1727,13 +1724,10 @@ mod tests {
             run(&directory, &["generate-lockfile", "--offline"]);
             for (package, repository) in [
                 (
-                    "filament-contract-runtime",
-                    "https://github.com/agent-ix/filament-contract-runtime",
+                    "quire-contract-runtime",
+                    "https://github.com/agent-ix/quire-contract-runtime",
                 ),
-                (
-                    "filament-exact",
-                    "https://github.com/agent-ix/filament-exact",
-                ),
+                ("quire-exact", "https://github.com/agent-ix/quire-exact"),
             ] {
                 let staged_lock = fs::read_to_string(directory.join("Cargo.lock")).unwrap();
                 let version = lock_owning_version(&staged_lock, package, repository)
@@ -1771,13 +1765,10 @@ mod tests {
                 .unwrap();
             for (name, repository) in [
                 (
-                    "filament-contract-runtime",
-                    "https://github.com/agent-ix/filament-contract-runtime",
+                    "quire-contract-runtime",
+                    "https://github.com/agent-ix/quire-contract-runtime",
                 ),
-                (
-                    "filament-exact",
-                    "https://github.com/agent-ix/filament-exact",
-                ),
+                ("quire-exact", "https://github.com/agent-ix/quire-exact"),
             ] {
                 let mut matches = metadata["packages"]
                     .as_array()
@@ -1817,7 +1808,7 @@ mod tests {
                 .as_array()
                 .unwrap()
                 .iter()
-                .find(|package| package["name"] == "filament-exact")
+                .find(|package| package["name"] == "quire-exact")
                 .unwrap();
             let node = metadata["resolve"]["nodes"]
                 .as_array()
@@ -2113,8 +2104,8 @@ mod tests {
         let snapshot = PrivateSnapshot::create().unwrap();
         let root = snapshot.path();
         fs::create_dir(root.join("observer")).unwrap();
-        let runtime = "[[package]]\nname = \"filament-contract-runtime\"\nversion = \"0.1.0\"\nsource = \"git+https://github.com/agent-ix/filament-contract-runtime?branch=main#";
-        let exact = "[[package]]\nname = \"filament-exact\"\nversion = \"0.2.0\"\nsource = \"git+https://github.com/agent-ix/filament-exact?branch=main#";
+        let runtime = "[[package]]\nname = \"quire-contract-runtime\"\nversion = \"0.1.0\"\nsource = \"git+https://github.com/agent-ix/quire-contract-runtime?branch=main#";
+        let exact = "[[package]]\nname = \"quire-exact\"\nversion = \"0.2.0\"\nsource = \"git+https://github.com/agent-ix/quire-exact?branch=main#";
         let complete = format!("{runtime}one\"\n{exact}two\"\n");
         fs::write(root.join("Cargo.lock"), &complete).unwrap();
         fs::write(root.join("observer/Cargo.lock"), &complete).unwrap();
@@ -2127,13 +2118,13 @@ mod tests {
         assert!(verify_staged_locks(root).is_ok());
 
         for invalid in [
-            complete.replace("name = \"filament-exact\"", "name = \"missing-exact\""),
+            complete.replace("name = \"quire-exact\"", "name = \"missing-exact\""),
             complete.replace(
-                "https://github.com/agent-ix/filament-exact",
-                "https://example.org/filament-exact",
+                "https://github.com/agent-ix/quire-exact",
+                "https://example.org/quire-exact",
             ),
             complete.replace(
-                "source = \"git+https://github.com/agent-ix/filament-exact?branch=main#two\"\n",
+                "source = \"git+https://github.com/agent-ix/quire-exact?branch=main#two\"\n",
                 "",
             ),
             format!("{complete}{exact}two\"\n"),

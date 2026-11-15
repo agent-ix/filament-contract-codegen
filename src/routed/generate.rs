@@ -463,7 +463,7 @@ fn generate_routed_with_integer_policy(
                             continue;
                         };
                         let needs_view = match operation.identity() {
-                            Some("filament.op.state.clause" | "filament.op.record.project") => true,
+                            Some("quire.op.state.clause" | "quire.op.record.project") => true,
                             Some(identity) => {
                                 crate::oracle::scalar::derive::needs_authenticated_operation_view(
                                     identity,
@@ -963,7 +963,7 @@ fn settle_enum_items(
         else {
             continue;
         };
-        if !operation_identity.starts_with("filament.op.enum.") {
+        if !operation_identity.starts_with("quire.op.enum.") {
             continue;
         }
         let outcome = generate_enum_scalar_harness(&EnumScalarRequest {
@@ -1283,7 +1283,7 @@ mod tests {
                 native_integer_selection: None,
                 ceilings: crate::kani::test_support::proof_ceilings::proof_ceilings(),
                 node_id,
-                operation_identity: "filament.op.integer.add".to_owned(),
+                operation_identity: "quire.op.integer.add".to_owned(),
                 oracle_symbol: "oracle".to_owned(),
                 module_symbol: ModuleSymbol::try_from(module).expect("a module symbol"),
                 harness_symbol: HarnessSymbol::try_from(symbol).expect("a harness symbol"),

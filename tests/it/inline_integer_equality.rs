@@ -10,7 +10,7 @@ use ix_trace_rs::trace;
 use quire_contract_model::{CheckedNodeTag, CheckedTerm, LiteralKind};
 
 const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\n\
-    profile v = \"filament.value.complete/v1\";\n\
+    profile v = \"quire.value.complete/v1\";\n\
     function literal_equal using v(): Boolean pure { 2 = 2 }\n";
 
 #[trace("FR-018-AC-47", "TC-029")]

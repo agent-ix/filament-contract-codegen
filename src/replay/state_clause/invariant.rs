@@ -389,7 +389,7 @@ impl StateClauseReplay {
         let model = model_header(&packages, &object.object_type)
             .map_err(|cause| StateClauseReplayError::Document(DocumentError::Model(cause)))?;
         let document = CurrentSnapshotDocument {
-            format: "filament.state.snapshot/v1",
+            format: "quire.state.snapshot/v1",
             identity: (&snapshot_label).into(),
             observation: "current",
             anchor: AnchorMember {
@@ -473,7 +473,7 @@ mod tests {
             identity: "twin-current".to_owned(),
         };
         let document = CurrentSnapshotDocument {
-            format: "filament.state.snapshot/v1",
+            format: "quire.state.snapshot/v1",
             identity: (&label).into(),
             observation: "current",
             anchor: AnchorMember {

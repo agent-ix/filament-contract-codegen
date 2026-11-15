@@ -86,7 +86,7 @@ fn acquired() -> qsl_replay::CheckedClosureCompilation {
 fn package() -> CheckedPackageV2 {
     let acquired = acquired();
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("filament.value.complete/v1");
+    evidence.support_feature("quire.value.complete/v1");
     match CheckedPackageV2::read(
         acquired.package().bytes(),
         CheckedPackageReadLimits::bounded(),

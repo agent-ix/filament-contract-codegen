@@ -14,7 +14,7 @@ use super::admitted_enum_fixture::compile;
 use super::routed_generation::{admitted_routing_input_with_context_roots, kani_parts, route};
 
 const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\n\
-profile v = \"filament.value.complete/v1\";\n\
+profile v = \"quire.value.complete/v1\";\n\
 ordered enum Level { LOW, MID, HIGH }\n\
 enum Color { RED, GREEN, BLUE }\n\
 function lt using v(a: Level, b: Level): Boolean pure { a < b }\n\
@@ -262,12 +262,12 @@ impl Corpus {
 }
 
 const OPERATORS: [(&str, &str, &str); 6] = [
-    ("lt", "filament.op.enum.lt", "<"),
-    ("le", "filament.op.enum.le", "<="),
-    ("gt", "filament.op.enum.gt", ">"),
-    ("ge", "filament.op.enum.ge", ">="),
-    ("eq", "filament.op.enum.eq", "=="),
-    ("ne", "filament.op.enum.ne", "!="),
+    ("lt", "quire.op.enum.lt", "<"),
+    ("le", "quire.op.enum.le", "<="),
+    ("gt", "quire.op.enum.gt", ">"),
+    ("ge", "quire.op.enum.ge", ">="),
+    ("eq", "quire.op.enum.eq", "=="),
+    ("ne", "quire.op.enum.ne", "!="),
 ];
 
 fn proof_body(harness: &EnumScalarHarness) -> &str {
@@ -284,8 +284,8 @@ fn every_operator_generates_one_native_carrier_harness_from_its_node() {
     let corpus = corpus();
     let cases = OPERATORS.map(|(function, identity, native)| (function, identity, native, true));
     let colors = [
-        ("color_eq", "filament.op.enum.eq", "=="),
-        ("color_ne", "filament.op.enum.ne", "!="),
+        ("color_eq", "quire.op.enum.eq", "=="),
+        ("color_ne", "quire.op.enum.ne", "!="),
     ]
     .map(|(function, identity, native)| (function, identity, native, false));
     for (function, identity, native, ordered) in cases.into_iter().chain(colors) {
@@ -460,7 +460,7 @@ fn the_record_retains_declaration_operator_encoding_unwind_and_options() {
         serde_json::json!(["LOW", "MID", "HIGH"])
     );
     assert_eq!(identity["enumScalar"]["ordered"], true);
-    assert_eq!(identity["enumScalar"]["operator"], "filament.op.enum.ge");
+    assert_eq!(identity["enumScalar"]["operator"], "quire.op.enum.ge");
     assert_eq!(
         identity["enumScalar"]["declaration"]["path"],
         serde_json::json!(["Level"])
@@ -522,7 +522,7 @@ fn a_valid_binding_pair_decodes_to_the_declared_members() {
         (witness.left_member.as_str(), witness.right_member.as_str()),
         ("HIGH", "LOW")
     );
-    assert_eq!(witness.operator, "filament.op.enum.lt");
+    assert_eq!(witness.operator, "quire.op.enum.lt");
 }
 
 /// An out-of-range, missing, duplicated or foreign binding is refused with a typed cause and
@@ -1043,7 +1043,7 @@ fn a_refused_enum_sibling_in_one_request_leaves_the_supported_enum_nodes_unchang
             .expect("lt generates")
             .identity
             .operation_identity,
-        "filament.op.enum.lt"
+        "quire.op.enum.lt"
     );
 }
 

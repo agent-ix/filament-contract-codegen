@@ -216,7 +216,7 @@ fn side(lookup: &ContractLookup<'_>, term: &CheckedTerm) -> Result<Side, Fault> 
     // FSL proves the literal lies in the conversion's target range before it admits the package
     // (an out-of-range literal is an `Unproved(Range)` check refusal and no such package exists),
     // so the conversion keeps the literal's value and needs no second range check here.
-    if identity(graph.term(&node.node_id)) == Some("filament.op.numeric.narrow") {
+    if identity(graph.term(&node.node_id)) == Some("quire.op.numeric.narrow") {
         if let Some([argument]) = graph.arguments(&node.node_id) {
             return through_conversion(side(lookup, argument));
         }

@@ -106,7 +106,7 @@ fn assert_rows_agreed(rows: &[(&str, usize)]) {
 // Deliberately untraced: this exists as `render_scalar`'s (`src/kani/generate/scalar.rs`) F1
 // mutation-testing vehicle, not to satisfy a numbered acceptance criterion. It runs the real
 // generated oracle directly -- no Kani/CBMC involved -- to prove, by actual execution, that
-// `filament.op.integer.add` over `[-1000,1000]` refuses an out-of-domain result rather than
+// `quire.op.integer.add` over `[-1000,1000]` refuses an out-of-domain result rather than
 // completing it: exactly the fact `render_scalar`'s rendered `sound` assertion now checks. The
 // accompanying generator mutation (`integer_arithmetic_bound` in `src/oracle/scalar/render.rs`, forcing
 // its `Bounded` arm to also emit `None`) is not committed; it is a one-time proof, captured in

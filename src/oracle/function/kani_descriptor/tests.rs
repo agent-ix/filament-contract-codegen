@@ -179,7 +179,7 @@ fn rebuilt_debug(name: &str, expressions: &[String]) -> String {
     std::fs::write(
         directory.join("Cargo.toml"),
         format!(
-            "[package]\nname = \"kani-descriptor-roundtrip-{}\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\nfilament-exact = {{ {} }}\n\n[workspace]\n",
+            "[package]\nname = \"kani-descriptor-roundtrip-{}\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\nquire-exact = {{ {} }}\n\n[workspace]\n",
             name,
             crate::core::profile::EXACT_DEPENDENCY_SOURCE
         ),
