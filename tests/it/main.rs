@@ -94,6 +94,7 @@ mod kani_obligations_symbolic_domains;
 mod kani_obligations_symbolic_graphs;
 mod kani_obligations_v2_clause_controls;
 mod kani_obligations_v2_control;
+mod kani_obligations_v2_option;
 mod kani_obligations_v2_profiles;
 mod kani_probes;
 mod kani_run_scan;

@@ -27,9 +27,9 @@ use crate::{
     core::ir::{
         checked_term::{application, bound_members, literal, reference},
         clause::{
-            read_clause, union_members, ClauseCondition, ClauseGraphView, ClauseInput,
-            ClauseInputSide, ClauseTerm, CONTROL_CASE, CONTROL_IF, CONTROL_LET,
-            MAX_CONDITION_TERMS,
+            option_shape, read_clause, union_members, ClauseCondition, OptionLeaf, ClauseGraphView, ClauseInput,
+            ClauseInputSide, ClauseLeaf, ClauseTerm, OptionShape, CONTROL_CASE, CONTROL_IF,
+            CONTROL_LET, MAX_CONDITION_TERMS, OPTION_PRESENT, OPTION_VALUE,
         },
     },
     kani::{
@@ -37,7 +37,8 @@ use crate::{
         census::{dependency_readiness, ProofDependencyEdge, ProofExecutionState},
         generate::{
             outcome::{
-                node_label, KaniObligationRequest, UnsupportedObligation, V2ClauseControlReason,
+                node_label, KaniObligationRequest, OptionNotLoweredReason, UnsupportedObligation,
+                V2ClauseControlReason,
             },
             record::{harness_path, record},
             render,
@@ -80,6 +81,8 @@ pub(in crate::kani::generate) struct LoweredV2Clause {
 enum MachineScalar {
     Boolean,
     Integer { minimum: i64, maximum: i64 },
+    /// An option parameter (FR-054): a presence draw and the payload leaves in ascending path order.
+    Option { leaves: Vec<OptionLeaf> },
 }
 
 struct ResultParameter {
@@ -90,6 +93,117 @@ struct ResultParameter {
 struct ResultPostcondition {
     result: Option<MachineScalar>,
     parameters: Vec<ResultParameter>,
+}
+
+/// Draw one option parameter: a presence `bool` then each payload leaf as a native `Copy` value,
+/// with every leaf canonical (`0`, `false`) when absent and inside its bound when present
+/// (FR-054). Each draw is a harness argument in that order.
+fn draw_option(
+    native: bool,
+    name: &str,
+    leaves: &[OptionLeaf],
+    body: &mut Vec<Statement>,
+    arguments: &mut Vec<ScalarObligationArgument>,
+    oracle_bindings: &mut BTreeSet<String>,
+) -> Result<(), UnsupportedObligation> {
+    let refusal = || UnsupportedObligation::RenderFailed;
+    let draws = option_symbolics(name, leaves);
+    let (_, presence) = draws.first().ok_or_else(refusal)?;
+    let mut canonical = Vec::new();
+    let mut bounded = Vec::new();
+    let mut statements = Vec::new();
+    let mut identities = Vec::new();
+    let mut oracle_names = Vec::new();
+    for ((leaf, symbolic), draw) in draws.iter().skip(1).zip(leaves) {
+        let oracle_name = symbolic
+            .strip_suffix("_current")
+            .ok_or_else(refusal)?
+            .to_owned();
+        if syn::parse_str::<syn::Ident>(symbolic).is_err() || draw.path != payload_path(leaf) {
+            return Err(refusal());
+        }
+        let (ty, domain, init) = if draw.boolean {
+            canonical.push(format!("!{symbolic}"));
+            bounded.push("true".to_owned());
+            (KaniPrimitiveType::Boolean, (0, 1), symbolic.clone())
+        } else {
+            let minimum = i64::try_from(draw.lower).map_err(|_| refusal())?;
+            let maximum = i64::try_from(draw.upper).map_err(|_| refusal())?;
+            canonical.push(format!("{symbolic} == 0"));
+            bounded.push(format!(
+                "{symbolic} >= {} && {symbolic} <= {}",
+                crate::kani::abi::i64_literal(minimum),
+                crate::kani::abi::i64_literal(maximum)
+            ));
+            (
+                KaniPrimitiveType::I64,
+                // The draw's declared domain also holds the canonical absent payload.
+                (i128::from(minimum.min(0)), i128::from(maximum.max(0))),
+                if native {
+                    format!("nx::NativeInteger::new(i128::from({symbolic}))")
+                } else {
+                    format!("rt::Integer::from({symbolic})")
+                },
+            )
+        };
+        statements.push(Statement::Input {
+            name: symbolic.clone(),
+            ty,
+            domain,
+            then: vec![LetBinding {
+                name: oracle_name.clone(),
+                ty: None,
+                mutable: false,
+                init: Init::Expression(expression(init)?),
+            }],
+        });
+        identities.push(ScalarObligationArgument {
+            identifier: symbolic.clone(),
+            minimum: i64::try_from(domain.0).map_err(|_| refusal())?,
+            maximum: i64::try_from(domain.1).map_err(|_| refusal())?,
+        });
+        oracle_names.push(oracle_name);
+    }
+    let oracle_presence = presence
+        .strip_suffix("_current")
+        .ok_or_else(refusal)?
+        .to_owned();
+    body.push(Statement::Input {
+        name: presence.clone(),
+        ty: KaniPrimitiveType::Boolean,
+        domain: (0, 1),
+        then: vec![LetBinding {
+            name: oracle_presence.clone(),
+            ty: None,
+            mutable: false,
+            init: Init::Expression(expression(presence)?),
+        }],
+    });
+    arguments.push(ScalarObligationArgument {
+        identifier: presence.clone(),
+        minimum: 0,
+        maximum: 1,
+    });
+    body.extend(statements);
+    arguments.extend(identities);
+    oracle_bindings.insert(oracle_presence);
+    oracle_bindings.extend(oracle_names);
+    if !canonical.is_empty() {
+        body.push(Statement::Assume {
+            condition: expression(format!("{presence} || ({})", canonical.join(" && ")))?,
+        });
+        body.push(Statement::Assume {
+            condition: expression(format!("!{presence} || ({})", bounded.join(" && ")))?,
+        });
+    }
+    Ok(())
+}
+
+fn payload_path(leaf: &ClauseLeaf) -> &str {
+    match leaf {
+        ClauseLeaf::Payload(path) => path,
+        _ => "",
+    }
 }
 
 /// A postcondition that reads state: the state fields the subject receives by `&mut`, the operation
@@ -201,6 +315,18 @@ fn lower_with_census<'a>(
                 reason,
             });
         }
+        Some(ClauseRefusal::Option {
+            reason,
+            detail,
+            node,
+        }) => {
+            return Err(UnsupportedObligation::OptionNotLowered {
+                node_id: clause.clone(),
+                option_node_id: node.unwrap_or_else(|| clause.clone()),
+                reason,
+                detail,
+            });
+        }
         None => {}
     }
     let condition = read_clause(clause, view).ok_or_else(refusal)?;
@@ -216,6 +342,19 @@ fn lower_with_census<'a>(
         None
     };
     let oracle = generate_v2_clause_oracle_with_view(clause, view).map_err(|_| refusal())?;
+    // An option operand is drawn as a presence and its payload leaves only for a Boolean-result
+    // postcondition (FR-054); a precondition, invariant or state postcondition reading one is
+    // not rendered.
+    if condition
+        .inputs
+        .iter()
+        .any(|input| input.leaf != ClauseLeaf::Whole)
+        && !result_postcondition.as_ref().is_some_and(|signature| {
+            matches!(signature.result, Some(MachineScalar::Boolean))
+        })
+    {
+        return Err(refusal());
+    }
     let (state_postcondition, state_expectation, state_arithmetic) = match &result_postcondition {
         Some(signature)
             if kind == ObligationKind::Postcondition
@@ -337,6 +476,19 @@ fn lower_with_census<'a>(
             let symbolic_name = format!("parameter_{}_current", parameter.name);
             let mut arithmetic = Vec::new();
             let expectation = match (&parameter.scalar, result_expectation_term(&condition.term)) {
+                (MachineScalar::Option { leaves }, Some(term)) => {
+                    let names = option_symbolics(&parameter.name, leaves);
+                    let bindings = names
+                        .iter()
+                        .map(|(leaf, symbolic)| NativeBinding {
+                            side: ClauseInputSide::Parameter,
+                            name: &parameter.name,
+                            leaf: leaf.clone(),
+                            symbolic,
+                        })
+                        .collect::<Vec<_>>();
+                    native_term(term, &bindings, &[], &mut arithmetic).and_then(NativeTerm::boolean)
+                }
                 (MachineScalar::Integer { .. }, Some(term)) => native_term(
                     term,
                     &[NativeBinding::parameter(&parameter.name, &symbolic_name)],
@@ -572,11 +724,13 @@ fn read_state_postcondition(
         bindings.push(NativeBinding {
             side: ClauseInputSide::Pre,
             name: &read.field_name,
+            leaf: ClauseLeaf::Whole,
             symbolic: &read.pre,
         });
         bindings.push(NativeBinding {
             side: ClauseInputSide::Current,
             name: &read.field_name,
+            leaf: ClauseLeaf::Whole,
             symbolic: &read.post,
         });
     }
@@ -705,6 +859,10 @@ fn binder_matches_scalar(
         return false;
     };
     match scalar {
+        MachineScalar::Option { leaves } => matches!(
+            option_shape(view, &node.semantic_type),
+            Some(OptionShape::Leaves(actual)) if actual == *leaves
+        ),
         MachineScalar::Boolean => {
             view.kind(&node.semantic_type)
                 == Some(CheckedNodeKind::ScalarType(ScalarTypeForm::Boolean))
@@ -868,8 +1026,16 @@ fn validate_signature_binders(
         {
             return Err(mismatch());
         }
-        let scalar =
-            machine_scalar(parameter.member_type().ok_or_else(mismatch)?).ok_or_else(mismatch)?;
+        let member = parameter.member_type().ok_or_else(mismatch)?;
+        let scalar = if matches!(member, CheckedMemberType::Option(_)) {
+            let node = view.node(id).ok_or_else(mismatch)?;
+            let Some(OptionShape::Leaves(leaves)) = option_shape(view, &node.semantic_type) else {
+                return Err(mismatch());
+            };
+            MachineScalar::Option { leaves }
+        } else {
+            machine_scalar(member).ok_or_else(mismatch)?
+        };
         if package
             .parameter_declaration(id)
             .map_err(|_| mismatch())?
@@ -894,6 +1060,11 @@ enum ClauseRefusal {
     Control {
         reason: V2ClauseControlReason,
         operation_identity: String,
+        node: Option<CheckedNodeId>,
+    },
+    Option {
+        reason: OptionNotLoweredReason,
+        detail: String,
         node: Option<CheckedNodeId>,
     },
 }
@@ -1044,11 +1215,34 @@ fn unsupported_checked_clause_operator(
                 ..
             } => {
                 let identity = operation.identity()?;
-                if matches!(
-                    identity,
-                    "quire.op.state.pre" | "quire.op.record.project" | "quire.op.model.deref"
-                ) {
+                if identity == "quire.op.record.project" {
+                    // A projection of an option payload (FR-054-AC-8) walks its option read.
+                    if let [argument] = arguments.as_slice() {
+                        let read = match argument {
+                            CheckedTerm::Reference { target } => view.package().term(target),
+                            other => Some(other),
+                        };
+                        if matches!(
+                            read,
+                            Some(CheckedTerm::Application { operation, .. })
+                                if operation.identity() == Some(OPTION_VALUE)
+                        ) {
+                            terms.push((argument, None));
+                        }
+                    }
                     continue;
+                }
+                if matches!(identity, "quire.op.state.pre" | "quire.op.model.deref") {
+                    continue;
+                }
+                if identity.starts_with("quire.op.option.") {
+                    if let Some((reason, detail)) = option_refusal(view, identity, arguments) {
+                        return Some(ClauseRefusal::Option {
+                            reason,
+                            detail,
+                            node: node.cloned(),
+                        });
+                    }
                 }
                 if matches!(identity, CONTROL_LET | CONTROL_IF | CONTROL_CASE) {
                     match control_operands(view, identity, arguments, &parameters) {
@@ -1074,6 +1268,66 @@ fn unsupported_checked_clause_operator(
         }
     }
     None
+}
+
+/// The harness variable of each physical draw of an option parameter: the presence draw, then the
+/// payload leaves in ascending path order.
+fn option_symbolics(name: &str, leaves: &[OptionLeaf]) -> Vec<(ClauseLeaf, String)> {
+    let mut draws = vec![(
+        ClauseLeaf::Presence,
+        format!("parameter_{name}_present_current"),
+    )];
+    draws.extend(leaves.iter().map(|leaf| {
+        let suffix = if leaf.path.is_empty() {
+            "_value".to_owned()
+        } else {
+            format!("_value_{}", leaf.path)
+        };
+        (
+            ClauseLeaf::Payload(leaf.path.clone()),
+            format!("parameter_{name}{suffix}_current"),
+        )
+    }));
+    draws
+}
+
+/// The refusal of one `quire.op.option.*` application, from its operation and the shape of the
+/// option it reads (FR-054-AC-10 to FR-054-AC-13). `None` when it is lowered, or when its refusal
+/// belongs to another route (an unbounded integer payload keeps its bound refusal).
+fn option_refusal(
+    view: &ClauseGraphView<'_>,
+    identity: &str,
+    arguments: &[CheckedTerm],
+) -> Option<(OptionNotLoweredReason, String)> {
+    if !matches!(identity, OPTION_PRESENT | OPTION_VALUE) {
+        return Some((
+            OptionNotLoweredReason::OptionOperationNotLowered,
+            identity.to_owned(),
+        ));
+    }
+    let [operand] = arguments else {
+        return None;
+    };
+    // A record field read through a projection admits the `null` state besides present and absent.
+    let read = match operand {
+        CheckedTerm::Reference { target } => view.package().term(target)?,
+        other => other,
+    };
+    if let CheckedTerm::Application { operation, .. } = read {
+        if operation.identity()? == "quire.op.record.project" {
+            return Some((
+                OptionNotLoweredReason::NullablePresence,
+                "quire.op.record.project".to_owned(),
+            ));
+        }
+    }
+    let target = reference(operand)?;
+    let node = view.node(target)?;
+    match option_shape(view, &node.semantic_type)? {
+        OptionShape::Leaves(_) | OptionShape::Unbounded => None,
+        OptionShape::NotScalar(family) => Some((OptionNotLoweredReason::PayloadNotScalar, family)),
+        OptionShape::Nested => Some((OptionNotLoweredReason::NestedOption, "option".to_owned())),
+    }
 }
 
 fn unsupported_clause_operator(term: &ClauseTerm) -> Option<&str> {
@@ -1122,6 +1376,8 @@ fn supported_clause_operator(identity: &str) -> bool {
             | "quire.op.integer.sub"
             | "quire.op.integer.mul"
             | "quire.op.integer.negate"
+            | "quire.op.option.present"
+            | "quire.op.option.value"
     )
 }
 
@@ -1185,7 +1441,7 @@ impl LoweredV2Clause {
             if signature.result.is_some() {
                 for parameter in &signature.parameters {
                     let (minimum, maximum) = match parameter.scalar {
-                        MachineScalar::Boolean => (0, 1),
+                        MachineScalar::Boolean | MachineScalar::Option { .. } => (0, 1),
                         MachineScalar::Integer { minimum, maximum } => (minimum, maximum),
                     };
                     selection.parameters.push(V2ClauseParameter {
@@ -1530,7 +1786,19 @@ fn render_result_postcondition(
         if syn::parse_str::<syn::Ident>(&symbolic).is_err() {
             return Err(refusal());
         }
-        let (ty, domain, then) = match parameter.scalar {
+        if let MachineScalar::Option { leaves } = &parameter.scalar {
+            draw_option(
+                lowered.native_integer,
+                &parameter.name,
+                leaves,
+                &mut body,
+                &mut arguments,
+                &mut oracle_bindings,
+            )?;
+            continue;
+        }
+        let (ty, domain, then) = match &parameter.scalar {
+            MachineScalar::Option { .. } => return Err(refusal()),
             MachineScalar::Boolean => (
                 KaniPrimitiveType::Boolean,
                 (0, 1),
@@ -1543,7 +1811,7 @@ fn render_result_postcondition(
             ),
             MachineScalar::Integer { minimum, maximum } => (
                 KaniPrimitiveType::I64,
-                (i128::from(minimum), i128::from(maximum)),
+                (i128::from(*minimum), i128::from(*maximum)),
                 vec![LetBinding {
                     name: oracle_name.clone(),
                     ty: None,
@@ -1572,14 +1840,20 @@ fn render_result_postcondition(
     let subject_arguments = signature
         .parameters
         .iter()
-        .map(|parameter| format!("parameter_{}_current", parameter.name))
+        .flat_map(|parameter| match &parameter.scalar {
+            MachineScalar::Option { leaves } => option_symbolics(&parameter.name, leaves)
+                .into_iter()
+                .map(|(_, symbolic)| symbolic)
+                .collect::<Vec<_>>(),
+            _ => vec![format!("parameter_{}_current", parameter.name)],
+        })
         .collect::<Vec<_>>();
     let (result_type, result_domain) = match signature.result {
         Some(MachineScalar::Boolean) => (LetType::Boolean, None),
         Some(MachineScalar::Integer { minimum, maximum }) => {
             (LetType::I64, Some((minimum, maximum)))
         }
-        None => return Err(refusal()),
+        Some(MachineScalar::Option { .. }) | None => return Err(refusal()),
     };
     if let (true, Some(expectation)) = (lowered.native_integer, &lowered.native_expectation) {
         body.push(binding(
@@ -1615,7 +1889,7 @@ fn render_result_postcondition(
                 Some(MachineScalar::Integer { .. }) => {
                     "rt::Integer::from(subject_result)".to_owned()
                 }
-                None => return Err(refusal()),
+                Some(MachineScalar::Option { .. }) | None => return Err(refusal()),
             })?),
             false,
         ));
@@ -2019,6 +2293,13 @@ fn append_arithmetic_probes(
 ) -> Result<String, UnsupportedObligation> {
     let mut completed_prefix = "true".to_owned();
     for (index, probe) in arithmetic.iter().enumerate() {
+        if probe.operation == DEFINED_PROBE {
+            completed_prefix = format!(
+                "({completed_prefix}) && (!({}) || ({}))",
+                probe.guard, probe.expected
+            );
+            continue;
+        }
         let guard = format!("({}) && ({completed_prefix})", probe.guard);
         let mut probe_body = Vec::new();
         let expected = native_expected_expression(&probe.expected)?;
@@ -2290,6 +2571,10 @@ enum NativeTerm {
     Boolean(String),
 }
 
+/// The `operation` of a probe that is not arithmetic: its `expected` text is the condition under
+/// which an option read is defined (the presence draw), and it runs no kernel operation.
+const DEFINED_PROBE: &str = "Defined";
+
 struct ArithmeticProbe {
     operation_identity: String,
     operation: &'static str,
@@ -2309,10 +2594,14 @@ fn bind_native_arithmetic_probes(
         .iter()
         .filter(|decision| decision.capacity.is_some())
         .collect::<Vec<_>>();
-    if decisions.len() != probes.len() {
+    let mut arithmetic = probes
+        .iter_mut()
+        .filter(|probe| probe.operation != DEFINED_PROBE)
+        .collect::<Vec<_>>();
+    if decisions.len() != arithmetic.len() {
         return Err(UnsupportedObligation::RenderFailed);
     }
-    for (probe, decision) in probes.iter_mut().zip(decisions) {
+    for (probe, decision) in arithmetic.iter_mut().zip(decisions) {
         if probe.operation_identity != decision.operation_identity {
             return Err(UnsupportedObligation::RenderFailed);
         }
@@ -2424,6 +2713,7 @@ impl NativeTerm {
 struct NativeBinding<'a> {
     side: ClauseInputSide,
     name: &'a str,
+    leaf: ClauseLeaf,
     symbolic: &'a str,
 }
 
@@ -2432,6 +2722,7 @@ impl<'a> NativeBinding<'a> {
         Self {
             side: ClauseInputSide::Parameter,
             name,
+            leaf: ClauseLeaf::Whole,
             symbolic,
         }
     }
@@ -2519,9 +2810,14 @@ fn native_term(
             })
         }
         ClauseTerm::Input(input) => {
-            let binding = bindings
-                .iter()
-                .find(|binding| binding.side == input.side && binding.name == input.name)?;
+            let binding = bindings.iter().find(|binding| {
+                binding.side == input.side
+                    && binding.name == input.name
+                    && binding.leaf == input.leaf
+            })?;
+            if input.boolean && input.leaf != ClauseLeaf::Whole {
+                return Some(NativeTerm::Boolean(binding.symbolic.to_owned()));
+            }
             if input.boolean
                 || input.lower > input.upper
                 || i64::try_from(input.lower).is_err()
@@ -2535,6 +2831,41 @@ fn native_term(
                 upper: input.upper,
                 small_expression: Some(binding.symbolic.to_owned()),
             })
+        }
+        ClauseTerm::OptionValue { presence, payload } => {
+            let symbolic = |input: &ClauseInput| {
+                bindings
+                    .iter()
+                    .find(|binding| {
+                        binding.side == input.side
+                            && binding.name == input.name
+                            && binding.leaf == input.leaf
+                    })
+                    .map(|binding| binding.symbolic)
+            };
+            let presence = symbolic(presence)?;
+            let payload_symbol = symbolic(payload)?;
+            // The read is defined only where the presence draw is true: a probe whose guard the
+            // enclosing short-circuit connectives narrow, as for an arithmetic probe.
+            arithmetic.push(ArithmeticProbe {
+                operation_identity: OPTION_VALUE.to_owned(),
+                operation: DEFINED_PROBE,
+                operands: Vec::new(),
+                expected: presence.to_owned(),
+                operand_bounds: Vec::new(),
+                semantic_domain: None,
+                guard: "true".to_owned(),
+            });
+            if payload.boolean {
+                Some(NativeTerm::Boolean(payload_symbol.to_owned()))
+            } else {
+                Some(NativeTerm::Integer {
+                    expression: format!("i128::from({payload_symbol})"),
+                    lower: payload.lower,
+                    upper: payload.upper,
+                    small_expression: Some(payload_symbol.to_owned()),
+                })
+            }
         }
         ClauseTerm::Operation {
             identity,
@@ -3101,6 +3432,7 @@ mod state_postcondition_shape_tests {
         bounds: (i128, i128),
     ) -> ClauseInput {
         ClauseInput {
+            leaf: ClauseLeaf::Whole,
             name: "balance".to_owned(),
             side,
             declaring_node_id: declaring,
@@ -3176,6 +3508,7 @@ mod control_expectation_tests {
 
     fn input(name: &str, upper: i128) -> ClauseInput {
         ClauseInput {
+            leaf: ClauseLeaf::Whole,
             name: name.to_owned(),
             side: ClauseInputSide::Parameter,
             declaring_node_id: None,

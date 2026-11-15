@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::core::artifact::MAX_GENERATED_SOURCE_BYTES;
 use crate::core::ir::clause::{
-    read_clause, ClauseGraphView, ClauseInput, ClauseInputSide, ClauseTerm,
+    read_clause, ClauseGraphView, ClauseInput, ClauseInputSide, ClauseLeaf, ClauseTerm,
 };
 use crate::core::source_map::SourceProbe;
 
@@ -221,6 +221,8 @@ pub(crate) fn clause_operation_widths(
             StepTerm::Integer(value) => value.parse::<i128>().ok().map(|value| (value, value)),
             StepTerm::Input(input) if input.boolean => None,
             StepTerm::Input(input) => Some((input.lower, input.upper)),
+            StepTerm::OptionValue { payload, .. } if payload.boolean => None,
+            StepTerm::OptionValue { payload, .. } => Some((payload.lower, payload.upper)),
             StepTerm::Binder { source, .. } => ranges.get(*source).copied().flatten(),
             StepTerm::Let { body, .. } => ranges.get(*body).copied().flatten(),
             StepTerm::If { then, other, .. } => hull(&[
@@ -362,6 +364,7 @@ fn plan_clause(
         return Err(V2ClauseRefusal::NotClause);
     }
     let condition = read_clause(node_id, nodes).ok_or(V2ClauseRefusal::UnsupportedCondition)?;
+    let mut taken = std::collections::BTreeSet::new();
     let names = condition
         .inputs
         .iter()
@@ -373,12 +376,21 @@ fn plan_clause(
                 ClauseInputSide::Parameter => "parameter",
                 ClauseInputSide::Result => "result",
             };
-            let candidate = format!("{side}_{}", input.name);
-            let name = if syn::parse_str::<syn::Ident>(&candidate).is_ok() {
+            let leaf = match &input.leaf {
+                ClauseLeaf::Whole => String::new(),
+                ClauseLeaf::Presence => "_present".to_owned(),
+                ClauseLeaf::Payload(path) if path.is_empty() => "_value".to_owned(),
+                ClauseLeaf::Payload(path) => format!("_value_{path}"),
+            };
+            let candidate = format!("{side}_{}{leaf}", input.name);
+            let name = if syn::parse_str::<syn::Ident>(&candidate).is_ok()
+                && !taken.contains(&candidate)
+            {
                 candidate
             } else {
                 format!("input_{index}")
             };
+            taken.insert(name.clone());
             (input.clone(), name)
         })
         .collect::<BTreeMap<_, _>>();
@@ -709,6 +721,12 @@ enum StepTerm {
         operation: ExactScalarOperation,
         arguments: Vec<usize>,
     },
+    /// `quire.op.option.value`: the payload leaf where the presence input is true, else the
+    /// undefined stop.
+    OptionValue {
+        presence: ClauseInput,
+        payload: ClauseInput,
+    },
     /// A read of an enclosing `let` binder; `source` is the step that computed its value.
     Binder {
         binder: usize,
@@ -882,6 +900,23 @@ fn lower_in(
                 scope: scope.to_vec(),
             }
         }
+        ClauseTerm::OptionValue { presence, payload }
+            if names.contains_key(presence) && names.contains_key(payload) =>
+        {
+            Step {
+                kind: if payload.boolean {
+                    ValueKind::Boolean
+                } else {
+                    ValueKind::Integer
+                },
+                term: StepTerm::OptionValue {
+                    presence: presence.clone(),
+                    payload: payload.clone(),
+                },
+                scope: scope.to_vec(),
+            }
+        }
+        ClauseTerm::OptionValue { .. } => return Err(V2ClauseRefusal::UnsupportedCondition),
         ClauseTerm::Input(input) if names.contains_key(input) => Step {
             kind: if input.boolean {
                 ValueKind::Boolean
@@ -1125,6 +1160,18 @@ fn render_step(
             "    Ok({}.clone())\n",
             names.get(input).ok_or(V2ClauseRefusal::Render)?
         )),
+        StepTerm::OptionValue { presence, payload } => {
+            let presence = names.get(presence).ok_or(V2ClauseRefusal::Render)?;
+            let payload = names.get(payload).ok_or(V2ClauseRefusal::Render)?;
+            let stop = if policy.is_native() {
+                "ClauseStop::Undefined"
+            } else {
+                "ClauseStop::Runtime(rt::Outcome::Undefined(rt::Undefined::NoneValue))"
+            };
+            source.push_str(&format!(
+                "    if !{presence} {{\n        return Err({stop});\n    }}\n    Ok({payload}.clone())\n"
+            ));
+        }
         StepTerm::Binder { binder, .. } => {
             source.push_str(&format!("    Ok(bound_{binder}.clone())\n"));
         }
@@ -1312,6 +1359,7 @@ mod tests {
             ClauseTerm::Operation {
                 identity: "quire.op.numeric.narrow".to_owned(),
                 arguments: vec![ClauseTerm::Input(ClauseInput {
+                    leaf: ClauseLeaf::Whole,
                     name: "amount".to_owned(),
                     side: ClauseInputSide::Parameter,
                     declaring_node_id: None,
@@ -1344,6 +1392,7 @@ mod tests {
 
     fn kind_input() -> ClauseInput {
         ClauseInput {
+            leaf: ClauseLeaf::Whole,
             name: "kind".to_owned(),
             side: ClauseInputSide::Parameter,
             declaring_node_id: None,

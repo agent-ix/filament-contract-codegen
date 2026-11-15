@@ -91,6 +91,11 @@ pub(super) fn helpers(
                 NativeIntegerInterval::new(input.lower, input.upper)
                     .map_err(|_| V2ClauseRefusal::Render)?,
             ),
+            StepTerm::OptionValue { payload, .. } if payload.boolean => None,
+            StepTerm::OptionValue { payload, .. } => Some(
+                NativeIntegerInterval::new(payload.lower, payload.upper)
+                    .map_err(|_| V2ClauseRefusal::Render)?,
+            ),
             StepTerm::Binder { source, .. } => ranges.get(*source).copied().flatten(),
             StepTerm::Let { body, .. } => ranges.get(*body).copied().flatten(),
             StepTerm::If { then, other, .. } => hull(&[

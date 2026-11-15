@@ -145,13 +145,13 @@ pub(crate) fn subject_module(body: &str) -> String {
 }
 
 /// `sealed` with `appended` inside the generated module, immediately before its closing brace.
-fn append_inside_module(sealed: &str, appended: &str) -> String {
+pub(crate) fn append_inside_module(sealed: &str, appended: &str) -> String {
     let close = sealed.rfind('}').expect("the generated module closes");
     format!("{}{appended}{}", &sealed[..close], &sealed[close..])
 }
 
 /// `with_appended` less exactly the appended bytes.
-fn remove_appended(with_appended: &str, appended: &str) -> String {
+pub(crate) fn remove_appended(with_appended: &str, appended: &str) -> String {
     assert_eq!(
         with_appended.matches(appended).count(),
         1,
@@ -162,7 +162,7 @@ fn remove_appended(with_appended: &str, appended: &str) -> String {
 
 /// The sealed text as a host crate source: only the two attribute lines are replaced; the draw,
 /// the assumption, the cover and every assertion are the generated ones.
-fn host_source(sealed: &str) -> String {
+pub(crate) fn host_source(sealed: &str) -> String {
     assert_eq!(sealed.matches("#[cfg(kani)]\n").count(), 1);
     assert_eq!(sealed.matches("#[kani::proof]\n").count(), 1);
     sealed
@@ -773,6 +773,24 @@ pub(crate) fn assert_two_phase_falsified(
     harness: &KaniV2ClauseObligationHarness,
     check: &str,
 ) -> Vec<i64> {
+    let counterexample = assert_two_phase_structure(run, harness, check);
+    let values = playback_values(counterexample);
+    assert!(!values.is_empty(), "a concrete playback: {counterexample}");
+    assert!(
+        values.iter().all(|value| (0..=1000).contains(value)),
+        "in-domain playback: {values:?}"
+    );
+    println!("IR1509 playback values={values:?} failing check `{check}`");
+    values
+}
+
+/// The structure of a falsified two-phase run, without reading its playback values: the
+/// counterexample text of the witness phase, which names the failing `check`.
+pub(crate) fn assert_two_phase_structure<'a>(
+    run: &'a InstalledRun,
+    harness: &KaniV2ClauseObligationHarness,
+    check: &str,
+) -> &'a str {
     let evidence = &run.evidence;
     let KaniRunOutcome::Falsified { counterexample } = &evidence.outcome else {
         panic!("expected Falsified, got {:?}", evidence.outcome);
@@ -817,14 +835,7 @@ pub(crate) fn assert_two_phase_falsified(
         counterexample.contains(check),
         "the failing check names `{check}`:\n{counterexample}"
     );
-    let values = playback_values(counterexample);
-    assert!(!values.is_empty(), "a concrete playback: {counterexample}");
-    assert!(
-        values.iter().all(|value| (0..=1000).contains(value)),
-        "in-domain playback: {values:?}"
-    );
-    println!("IR1509 playback values={values:?} failing check `{check}`");
-    values
+    counterexample
 }
 
 pub(crate) const RESULT_CHECK: &str =
