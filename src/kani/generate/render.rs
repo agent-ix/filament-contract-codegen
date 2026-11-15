@@ -2,6 +2,7 @@
 
 mod collection_operation;
 pub(super) mod constrained;
+pub(super) mod shadow;
 
 use super::{
     outcome::UnsupportedObligation,

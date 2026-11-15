@@ -189,8 +189,8 @@ pub use kani::census::{
     ProofExecutionState, ProofReadiness,
 };
 pub use kani::classify::{
-    classify_kani_run, parse_state_clause_falsification, ClassifiedRun, KaniInconclusiveReason,
-    KaniRunOutcome, StateClausePlaybackError,
+    classify_kani_run, parse_state_clause_falsification, proof_strength, ClassifiedRun,
+    KaniInconclusiveReason, KaniRunOutcome, ProofStrength, StateClausePlaybackError,
 };
 pub use kani::generate::census_validation::{KaniDiagnostic, KaniErrorCode};
 pub use kani::generate::enum_scalar::{
@@ -201,6 +201,22 @@ pub use kani::generate::float_scalar::{
     generate_float_scalar_harness, FloatCapability, FloatScalarHarness, FloatScalarOutcome,
     FloatScalarRefusal, FloatScalarRequest,
 };
+pub use kani::generate::shadow::source_check::{
+    check_shadow_source, contains_loop, DrawnBound, ShadowSourceViolation,
+};
+pub use kani::generate::shadow::{
+    generate_shadow, generate_shadows, independent_helper_check, AbstractionClaim,
+    ShadowDisposition, ShadowItem, ShadowLeaf, ShadowRefusal, ShadowShape, SHADOW_PAIR_NODE_BUDGET,
+};
+pub use kani::identity::refinement::{
+    plan_refinement, CaseCount, DomainBound, ProofSubject, RefinementBudget, RefinementClass,
+    RefinementDisagreement, RefinementOutcome, RefinementPlan, RefinementPlanError,
+    RefinementSummary, RefinementVersions, MAX_PLANNED_CASES,
+};
+pub use kani::identity::shadow::{
+    AbstractionEvidence, AbstractionRecord, HelperMark, KaniShadowHarness, LeafRecord,
+    ProductionRead, RefinementObligation, ShadowIdentity, SharedHelperClaim,
+};
 pub use kani::identity::{DivisionScalarIdentity, EnumScalarIdentity, FloatScalarIdentity};
 pub use kani::output::diagnostics::{
     KaniFailurePhase, KaniNoVerdictDiagnostics, KaniStreamExcerpt,
@@ -208,6 +224,9 @@ pub use kani::output::diagnostics::{
 pub use kani::output::report::{
     KaniCheckClass, KaniCheckLocation, KaniCheckResult, KaniCheckStatus, KaniFailureCause,
     KaniReportRefusal, OtherCheckClass,
+};
+pub use kani::run::execute::refinement::{
+    execute_kani_refinement, KaniRefinementRefusal, KaniRefinementRequest, RefinementEvidence,
 };
 pub use kani::run::execute::{
     execute_kani_concrete_playback, execute_kani_obligation, execute_kani_obligations,

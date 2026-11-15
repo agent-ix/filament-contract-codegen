@@ -138,3 +138,5 @@ mod constrained_method;
 mod native_driver_artifacts;
 
 mod scalar_source_forms;
+mod shadow_kani;
+mod shadow_refinement;
