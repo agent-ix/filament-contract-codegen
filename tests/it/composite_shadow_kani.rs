@@ -207,6 +207,7 @@ fn tc_025_installed_kani_verifies_each_supported_corpus_shadow_with_its_cover_sa
 
 /// FR-015-AC-75 and FR-028-AC-22: each shadow mutant is falsified, and by the check it claims.
 #[trace("TC-025", "FR-015-AC-75")]
+#[trace("TC-039", "FR-028-AC-22")]
 #[test]
 #[ignore = "kani lane: run serially through make kani-gate"]
 fn tc_025_installed_kani_falsifies_each_shadow_mutant_by_the_check_it_claims() {

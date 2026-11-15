@@ -428,6 +428,8 @@ fn mutant_absent_is_null(left: &exact::Value, right: &exact::Value) -> bool {
 /// FR-015-AC-74 and FR-028-AC-14 to FR-028-AC-16: the unmutated corpus agrees on every case
 /// of an exhaustive domain, and the same case under a smaller cap is sampled and agrees.
 #[trace("TC-025", "FR-015-AC-74")]
+#[trace("TC-039", "FR-028-AC-15")]
+#[trace("TC-029", "FR-018-AC-22")]
 #[test]
 fn tc_025_each_corpus_refinement_agrees_exhaustively_and_a_smaller_cap_samples() {
     let corpus = corpus();
@@ -478,6 +480,7 @@ fn tc_025_each_corpus_refinement_agrees_exhaustively_and_a_smaller_cap_samples()
 /// FR-015-AC-75: each production mutant settles `refinement_failed` naming its first
 /// disagreeing case, and the disagreement states why.
 #[trace("TC-025", "FR-015-AC-75")]
+#[trace("TC-039", "FR-028-AC-14", "FR-028-AC-15", "FR-028-AC-22")]
 #[test]
 fn tc_025_each_production_mutant_disagrees_with_the_shadow_for_the_reason_it_claims() {
     let corpus = corpus();
@@ -536,7 +539,7 @@ fn tc_025_each_production_mutant_disagrees_with_the_shadow_for_the_reason_it_cla
 
 /// FR-028-AC-16: the Boolean, presence and slot-state leaves are encoded as the small integer
 /// ranges 0..=1 and 0..=2, so a sampled plan still draws every state of each of them.
-#[trace("TC-025", "FR-028-AC-16")]
+#[trace("TC-039", "FR-028-AC-16")]
 #[test]
 fn tc_025_a_sampled_plan_draws_every_boolean_presence_and_slot_state() {
     let corpus = corpus();

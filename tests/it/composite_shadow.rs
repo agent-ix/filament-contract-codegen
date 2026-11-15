@@ -531,6 +531,7 @@ fn tc_025_the_shadow_is_straight_line_and_the_budget_refuses_one_node_over() {
 }
 
 #[trace("TC-025", "FR-015-AC-73")]
+#[trace("TC-039", "FR-028-AC-20")]
 #[test]
 fn tc_025_each_unsupported_shape_settles_with_its_reason_and_no_harness() {
     let corpus = corpus();
