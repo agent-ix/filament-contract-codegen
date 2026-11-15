@@ -1,16 +1,16 @@
 ---
 id: TC-055
-title: "Verify live Kani cancellation provenance through execution, IR and QSL"
+title: "Verify live Kani cancellation provenance through execution, IR and FSL"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-040
+  - target: ix://agent-ix/filament-contract-codegen/FR-040
     type: verifies
-  - target: ix://agent-ix/quire-contract-codegen/FR-030
+  - target: ix://agent-ix/filament-contract-codegen/FR-030
     type: verifies
-  - target: ix://agent-ix/quire-contract-codegen/FR-029
+  - target: ix://agent-ix/filament-contract-codegen/FR-029
     type: verifies
 ---
-# TC-055: Verify live Kani cancellation provenance through execution, IR and QSL
+# TC-055: Verify live Kani cancellation provenance through execution, IR and FSL
 
 ## Description
 
@@ -21,11 +21,11 @@ map. The existing [TC-041](./TC-041-ir-outcome-terminal-map.md) continues to own
 
 ## Test Procedure
 
-1. Create a fresh `quire_exact::Cancel` for each public `KaniExecutionRequest`. Cancel one before
+1. Create a fresh `filament_exact::Cancel` for each public `KaniExecutionRequest`. Cancel one before
    execution, and for another launch a backend with a positive running barrier, then call
    `cancel(Requested)` and `cancel(Deadline)` on caller-held clones. Repeat the live launch with
    the two calls reversed. Observe the actual bounded launcher stop and its owned teardown; inspect
-   execution evidence, the IR outcome constructed by CG from that evidence and the QSL terminal
+   execution evidence, the IR outcome constructed by CG from that evidence and the FSL terminal
    reached through the production call path. Drive a no-event ceiling control and a cancellation
    sent only after completion. Tag the running controls to FR-040-AC-1 through AC-3 and AC-6.
 2. Use positive barriers to stage completion, memory overage, memory observation failure, output
@@ -40,10 +40,10 @@ map. The existing [TC-041](./TC-041-ir-outcome-terminal-map.md) continues to own
    returned `KaniGroupRun` entries, their actual process grouping and cleanup. Also submit
    otherwise groupable requests with distinct handles and verify separate launcher processes.
    Tag to FR-040-AC-5.
-4. Compile the direct `quire-exact::CancelCause` use with
-   `qsl-replay::IncompleteCause::Cancelled`, and inspect the typed IR-to-exact exhaustive match and
-   QSL imports. As map-unit controls, supply both source-bearing IR kinds and both typed
-   `KaniRunOutcome::Cancelled` sources directly and assert the exact QSL cause; pair the latter
+4. Compile the direct `filament-exact::CancelCause` use with
+   `fsl-replay::IncompleteCause::Cancelled`, and inspect the typed IR-to-exact exhaustive match and
+   FSL imports. As map-unit controls, supply both source-bearing IR kinds and both typed
+   `KaniRunOutcome::Cancelled` sources directly and assert the exact FSL cause; pair the latter
    with a replay settlement and assert `UnexpectedSettlement`. Keep these unit controls separate
    from step 1's producer evidence. Tag to FR-029-AC-15, FR-029-AC-29,
    FR-040-AC-6 and AC-7.
@@ -52,7 +52,7 @@ map. The existing [TC-041](./TC-041-ir-outcome-terminal-map.md) continues to own
 
 The pre-spawn request starts no backend. Each running request stops its owned backend and retains
 the first recorded cause in the launch conclusion, public `KaniRunOutcome`, CG-constructed IR
-`Cancelled { source }` and QSL `IncompleteCause::Cancelled { source }`. The reversed order reverses
+`Cancelled { source }` and FSL `IncompleteCause::Cancelled { source }`. The reversed order reverses
 the retained source. The no-event ceiling remains timed out; a late cancellation never relabels
 completion or another established stop. Cleanup and evidence refusals retain their established
 priority. A cancelled multi-member group returns one typed `BatchCancelled` refusal with its

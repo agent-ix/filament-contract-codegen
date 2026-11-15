@@ -3,7 +3,7 @@ id: TC-053
 title: "Verify production decisions from one admitted ContractPackage"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-039
+  - target: ix://agent-ix/filament-contract-codegen/FR-039
     type: verifies
 ---
 # TC-053: Verify production decisions from one admitted ContractPackage
@@ -11,13 +11,13 @@ relationships:
 ## Description
 
 Verify [FR-039](../functional/FR-039-contract-package-consumption.md) through
-the production negotiation and generation entries using genuine QSL-admitted,
+the production negotiation and generation entries using genuine FSL-admitted,
 IR-lowered FR-330 packages. The controls distinguish package decisions from
 decisions the original checked graph or detached lowering records would make.
 
 ## Test Procedure
 
-1. Admit a native QSL package with two independent clauses and a pure
+1. Admit a native FSL package with two independent clauses and a pure
    function, lower the requested items together through Contract IR, and pass
    its one admitted FR-330 value to the production CG entry. Record each
    request index, original V2 node ID, resolved source key, V1 accounting ID,
@@ -36,7 +36,7 @@ decisions the original checked graph or detached lowering records would make.
    decision with a local node of the same target key and an extra unselected
    dependency present. Then omit the selected package, supply the wrong
    library identity, and supply a selected identity with a stale package ID.
-4. Admit two genuine QSL source graphs differing in a clause or pure-function
+4. Admit two genuine FSL source graphs differing in a clause or pure-function
    operation that the selected backend renders. Lower each source independently
    through IR, including its own source identity, exact request node ID and
    `lowered` accounting record; pass each resulting admitted FR-330 package to

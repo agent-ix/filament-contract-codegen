@@ -85,7 +85,7 @@ pub enum ObligationItem<'a> {
         package: &'a CheckedPackageV2,
         /// The selected state clause.
         clause: &'a CheckedNodeId,
-        /// QSL's producer-issued identity and the separately selected obligation record
+        /// FSL's producer-issued identity and the separately selected obligation record
         /// (FR-015-AC-48).
         claim: &'a V2ClauseObligationClaim,
         /// Optional caller-declared proof-dependency census for this clause.
@@ -102,7 +102,7 @@ pub enum ObligationItem<'a> {
         clause: &'a CheckedNodeId,
         /// The harness asked for.
         role: StateFrameRole,
-        /// QSL's producer-issued identity of this item's own role, carried unchanged into the
+        /// FSL's producer-issued identity of this item's own role, carried unchanged into the
         /// harness (FR-015-AC-141). Negotiation compares no identity across items and
         /// classification does not read it.
         obligation: &'a ObligationIdentity,
@@ -129,7 +129,7 @@ pub enum ObligationItem<'a> {
         result_selection: &'a ContractDriverResultSelection,
         /// The occurrence's path condition, outermost guard first; empty for a direct claim.
         path_condition: &'a [RequirementGuard],
-        /// The routed item's QSL occurrence key; `None` for a direct claim.
+        /// The routed item's FSL occurrence key; `None` for a direct claim.
         requirement_occurrence: Option<&'a RequirementOccurrence>,
     },
     /// One reachability application of an admitted `state_clause`, located by its argument path.
@@ -200,7 +200,7 @@ pub enum ObligationSubject {
     CheckedNode {
         /// The node.
         node_id: CheckedNodeId,
-        /// Its QSL source correspondence.
+        /// Its FSL source correspondence.
         source_map: Vec<CheckedSourceMapEntry>,
     },
 }
@@ -227,6 +227,22 @@ pub enum DerivedDomain {
     },
 }
 
+/// Why a `let`, `if` or `case` of a V2 clause has no harness.
+#[non_exhaustive]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+pub enum V2ClauseControlReason {
+    /// A `let` binds a value of a family other than native Integer or Boolean.
+    LetValueNotNativeScalar,
+    /// An `if` selects between branches of a family other than native Integer or Boolean.
+    IfBranchNotNativeScalar,
+    /// A `case` over a union with a payload-carrying member.
+    CaseUnionPayloadNotSupported,
+    /// A `case` over an arity-0 union whose arms are of a family other than native Integer or Boolean.
+    CaseArmNotNativeScalar,
+    /// A `case` whose scrutinee is not an operation parameter of an arity-0 union.
+    CaseScrutineeNotParameter,
+}
+
 /// Why a well-formed item has no harness.
 #[non_exhaustive]
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
@@ -250,6 +266,15 @@ pub enum UnsupportedObligation {
         operation_identity: String,
         /// Complete original operand intervals.
         operands: Vec<crate::core::native_integer::NativeIntegerIntervalDecision>,
+    },
+    /// No kernel-checked native division or modulo plan exists, so a `div`, `rem` or `mod`
+    /// claim has no native harness (FR-057-AC-6). It is not a capacity refusal: no interval was
+    /// refused by the kernel.
+    NativeDivisionPlanUnavailable {
+        /// Authentic source operation.
+        node_id: CheckedNodeId,
+        /// Confirmed operation identity.
+        operation_identity: String,
     },
     /// The independently selected claim's record disagrees with the selected clause; refused
     /// before any harness is generated, whatever the structural identity (FR-015-AC-48).
@@ -320,6 +345,18 @@ pub enum UnsupportedObligation {
         node_id: CheckedNodeId,
         /// Exact checked operator identity found in the clause body.
         operation_identity: String,
+    },
+    /// An admitted V2 clause holds a `let`, `if` or `case` whose shape the clause harness does not
+    /// lower (FR-015-AC-160 to FR-015-AC-163 and FR-015-AC-171).
+    V2ClauseControlNotSupported {
+        /// Selected clause node.
+        node_id: CheckedNodeId,
+        /// The control node when the walk reached it through a reference, else the clause node.
+        control_node_id: CheckedNodeId,
+        /// The control operation identity.
+        operation_identity: String,
+        /// The closed reason the control is refused.
+        reason: V2ClauseControlReason,
     },
     /// An admitted V2 clause holds an operation that a current measured row records as not
     /// finishing under Kani at or above the operation's width (FR-056-AC-4).
@@ -1002,7 +1039,7 @@ pub enum StateFrameRefusal {
         /// The clause kind the node names.
         clause: String,
     },
-    /// A node does not have the shape QSpec FR-341 and FR-342 fix, a field name read from the
+    /// A node does not have the shape FSpec FR-341 and FR-342 fix, a field name read from the
     /// graph is not a Rust identifier, or an operand names a node the graph does not hold.
     MalformedClause {
         /// The node that failed to decode.

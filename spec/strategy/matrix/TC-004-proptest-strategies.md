@@ -3,7 +3,7 @@ id: TC-004
 title: "Verify shaped proptest strategies"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-002
+  - target: ix://agent-ix/filament-contract-codegen/FR-002
     type: verifies
 ---
 # TC-004: Verify shaped proptest strategies
@@ -33,7 +33,7 @@ postcondition false, and neither, and cases whose precondition or postcondition 
 undefined (an integer operation that is undefined), with an instrumented snapshot, precondition
 oracle, subject and postcondition oracle that record call order and whether the subject was invoked. Select an unknown clause identity, a clause of the wrong kind, the same clause for
 both selections, and a body outside the FR-014-AC-38 shape. Generate twice and compare bytes.
-Generate with each selected clause's point from its accepted QSL binding; include distinct
+Generate with each selected clause's point from its accepted FSL binding; include distinct
 precondition and postcondition anchors. Instrument verdict construction to observe the precondition
 point on a rejected case and the postcondition point on failed and passed cases. Drive a
 non-completed precondition case and a non-completed postcondition case and observe the point retained
@@ -73,17 +73,17 @@ id and wrong occurrence, and a wrong-kind clause id and wrong occurrence, to che
 diagnostic precedence. Apply a renderer mutant
 that changes only the generated harness or verdict point after binding selection. Inspect every
 refusal and artifact output and require the diagnostic to name the affected selection.
-For each authentic QSL driver-bound FR-331 selection, inspect the generated header, runtime
+For each authentic FSL driver-bound FR-331 selection, inspect the generated header, runtime
 identities, source map, and symbols against the FR-011 `qocc2_`/`qpkg2_` grammar. Change only the occurrence structural node package, nested path or ordinal, then role or occurrence ordinal, and separately the package name or one lock field using admitted matching FR-331 request/package pairs; require the corresponding rendered identity to change. A body-only change with the same structural identity still fails the admitted-body comparison. For a linked
-provider, use the one S4 package exported by QSL, emitted at E4 and admitted at E5; attempt an
+provider, use the one S4 package exported by FSL, emitted at E4 and admitted at E5; attempt an
 E4/E5 mismatch and confirm driver refusal, then supply a foreign claim absent from the held
 admitted package and confirm `HarnessErrorCode::MissingClaimOccurrence`. Form an out-of-driver
 request with a missing or non-claim occurrence and one whose selected claim
 references a model element absent from the admitted V2 relation. Pair a process FR-331
-request owner with a different admitted package. Check CG's typed refusals and absence of artifacts; verify that QSL
+request owner with a different admitted package. Check CG's typed refusals and absence of artifacts; verify that FSL
 keeps `UnknownItem`, `Unbound`, and `Fault` export refusals outside CG.
 At each V2 harness identity text comparison boundary, make a malformed nested path or lock encoding, truncate a field, uppercase hex, or add a leading-zero count; require `InvalidIdentityRendering` and no artifact or report mutation. Separately supply a different but canonical occurrence node, role or ordinal and require `MissingClaimOccurrence`, then a different but canonical package name or lock and require `OwnerIdentityMismatch`, each before publication. Compare every accepted canonical text with its exact typed identity pair.
-Inspect the generator source for any `BoundPackage`, `ClauseRef`, `quire_contract_model::TypedExpression`
+Inspect the generator source for any `BoundPackage`, `ClauseRef`, `filament_contract_model::TypedExpression`
 or `oracle::boolean_v1` use and for any body opened outside `core/ir/`.
 
 ## Expected Results
@@ -112,7 +112,7 @@ These controls are planned.
 An at-limit prior runtime snapshot yields a non-completed V2 terminal result with
 `attempted == None` and `non_completed == 1`, retaining the stop and unchanged report without a
 runtime verdict (FR-002-AC-24). This control is planned.
-The V2 point controls require accepted QSL binding-point preservation for both selections, including
+The V2 point controls require accepted FSL binding-point preservation for both selections, including
 rejected, failed, passed and non-completed cases (FR-002-AC-19). An absent selected binding point
 returns `HarnessErrorCode::MissingExecutionPoint`; a renderer mutant returns
 `HarnessErrorCode::ExecutionPointMismatch` before publication. Each names the affected selection,
@@ -128,5 +128,5 @@ The identity controls require full canonical rendering and a changed rendered id
 typed field changes (FR-002-AC-25). An out-of-driver missing or non-claim occurrence returns
 `HarnessErrorCode::MissingClaimOccurrence`, an absent referenced model element returns
 `HarnessErrorCode::UnboundModelElement`, and a cross-package process request returns `HarnessErrorCode::OwnerIdentityMismatch`; each produces no
-artifact and QSL export refusals stay with the driver (FR-002-AC-22). These controls are planned.
+artifact and FSL export refusals stay with the driver (FR-002-AC-22). These controls are planned.
 Malformed/noncanonical text returns `HarnessErrorCode::InvalidIdentityRendering`; a different canonical occurrence returns `MissingClaimOccurrence`, and a different canonical package returns `OwnerIdentityMismatch`, each before publication and without report mutation. Accepted canonical text agrees with typed identity (FR-002-AC-26). These controls are planned.

@@ -4,15 +4,15 @@
 //! FR-032 scalar playback through the public decoder and genuine routed identities.
 
 use crate::common::proof_ceilings::proof_ceilings;
-use ix_trace_rs::trace;
-use qsl_replay::{compile_package, DependencyInput, ReplayLimits, SourceIdentity, StageLimits};
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     decode_scalar_falsification, generate_routed, parse_assertion_playback,
     routed_contract_lowering_profile, BackendDescriptor, Candidate, ContractDriverResultSelection,
     ContractRequestPosition, DecodeFailure, GenerationContexts, KaniGenerationContext,
     KaniScalarObligationHarness, KindOutput, ProviderOrigin, RoutedGenerationItem, ScalarLimits,
     ScalarObligationIdentity, ScalarOriginalLimitsError, SCALAR_PLAYBACK_BYTES,
 };
+use ix_trace_rs::trace;
+use qsl_replay::{compile_package, DependencyInput, ReplayLimits, SourceIdentity, StageLimits};
 use quire_contract_model::{
     CheckedOccurrenceRole, CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
     CheckedPackageV2ReadResult, CheckedTerm, ContractDependencies, ContractOccurrenceKeyV1,
@@ -46,7 +46,7 @@ pub(super) struct ReplayFixture {
     pub checked: CheckedPackageV2,
     pub raw_package: qsl_replay::ReplayPackage,
     pub source: String,
-    pub artifacts: Vec<quire_contract_codegen::Artifact>,
+    pub artifacts: Vec<filament_contract_codegen::Artifact>,
 }
 
 fn harness(
@@ -102,7 +102,7 @@ pub(super) fn replay_fixture_guarded(
         StageLimits::default(),
         ReplayLimits::default(),
     )
-    .expect("QSL compiles the authored scalar source");
+    .expect("FSL compiles the authored scalar source");
     let mut evidence = CheckedPackageEvidence::new();
     evidence.support_feature("quire.value.complete/v1");
     let checked = match CheckedPackageV2::read(
@@ -197,7 +197,7 @@ pub(super) fn replay_fixture_guarded(
     let mut requirement = crate::common::requirements::requirement_for(&checked, &selection)
         .expect("an own-result requirement");
     if let Some((guard_id, holds)) = &guard_node {
-        requirement.path_condition = vec![quire_contract_codegen::RequirementGuard {
+        requirement.path_condition = vec![filament_contract_codegen::RequirementGuard {
             occurrence: crate::common::requirements::occurrence(&occurrence(guard_id)),
             holds: *holds,
         }];
@@ -275,7 +275,7 @@ pub(super) fn routed_implies_fixture() -> ReplayFixture {
         StageLimits::default(),
         ReplayLimits::default(),
     )
-    .expect("QSL compiles the authored source");
+    .expect("FSL compiles the authored source");
     let mut evidence = CheckedPackageEvidence::new();
     evidence.support_feature("quire.value.complete/v1");
     let checked = match CheckedPackageV2::read(
@@ -681,6 +681,34 @@ fn scalar_decoder_rejects_playback_above_its_limit_after_a_loose_parse() {
     );
 }
 
+/// The decoder accepts the two-operand division identities of the catalog's scalar projection
+/// (it only checks arity and ranges); a one-operand schema for them is an arity mismatch.
+#[trace("FR-032-AC-3")]
+#[test]
+fn decoder_accepts_division_identities_with_their_operand_arity() {
+    let valid = transcript(&sum(), &[3, 17]);
+    for operation in [
+        "quire.op.integer.div",
+        "quire.op.integer.rem",
+        "quire.op.integer.mod",
+    ] {
+        let mut division = sum();
+        division.operation_identity = operation.to_owned();
+        assert_eq!(
+            decode_from_transcript(&division, &valid).expect("division decodes"),
+            vec![3, 17],
+            "{operation}"
+        );
+        let mut wrong_arity = division.clone();
+        wrong_arity.arguments.pop();
+        refusal(
+            &wrong_arity,
+            &valid,
+            "cg_scalar_witness_schema_arity_mismatch",
+        );
+    }
+}
+
 #[trace("FR-032-AC-3")]
 #[test]
 fn unsupported_operator_and_invalid_persisted_schema_refuse_typed_playback() {
@@ -688,7 +716,6 @@ fn unsupported_operator_and_invalid_persisted_schema_refuse_typed_playback() {
     let valid = transcript(&identity, &[3, 17]);
     for operation in [
         "quire.op.boolean.implies",
-        "quire.op.integer.div",
         "quire.op.integer.lt",
         "quire.op.integer.eq",
         "unknown",
@@ -810,7 +837,7 @@ fn guard_transcript(identity: &ScalarObligationIdentity, entries: &[(&str, &[u8]
 #[trace("FR-032-AC-19")]
 #[test]
 fn a_malformed_guard_input_schema_is_refused() {
-    use quire_contract_codegen::{ScalarGuardDomain, ScalarGuardInput};
+    use filament_contract_codegen::{ScalarGuardDomain, ScalarGuardInput};
     let base = sum();
     let guard = |identifier: &str, domain| ScalarGuardInput {
         identifier: identifier.to_owned(),
@@ -865,7 +892,7 @@ fn a_malformed_guard_input_schema_is_refused() {
 #[trace("FR-032-AC-19")]
 #[test]
 fn guard_entries_follow_the_operands_and_never_reach_the_operand_vector() {
-    use quire_contract_codegen::{ScalarGuardDomain, ScalarGuardInput};
+    use filament_contract_codegen::{ScalarGuardDomain, ScalarGuardInput};
     let base = sum();
     let node = base.node_id.clone();
     let guard = |identifier: &str, domain| ScalarGuardInput {

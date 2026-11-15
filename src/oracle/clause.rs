@@ -221,6 +221,18 @@ pub(crate) fn clause_operation_widths(
             StepTerm::Integer(value) => value.parse::<i128>().ok().map(|value| (value, value)),
             StepTerm::Input(input) if input.boolean => None,
             StepTerm::Input(input) => Some((input.lower, input.upper)),
+            StepTerm::Binder { source, .. } => ranges.get(*source).copied().flatten(),
+            StepTerm::Let { body, .. } => ranges.get(*body).copied().flatten(),
+            StepTerm::If { then, other, .. } => hull(&[
+                ranges.get(*then).copied().flatten(),
+                ranges.get(*other).copied().flatten(),
+            ]),
+            StepTerm::Case { arms, .. } => hull(
+                &arms
+                    .iter()
+                    .map(|arm| ranges.get(*arm).copied().flatten())
+                    .collect::<Vec<_>>(),
+            ),
             StepTerm::Operation {
                 identity,
                 operation,
@@ -255,6 +267,19 @@ pub(crate) fn clause_operation_widths(
         ranges.push(range);
     }
     Ok(widths)
+}
+
+/// The smallest interval holding every branch interval, or `None` when a branch has none.
+fn hull(branches: &[Option<Interval>]) -> Option<Interval> {
+    let mut hull: Option<Interval> = None;
+    for branch in branches {
+        let (lower, upper) = (*branch)?;
+        hull = Some(match hull {
+            Some((low, high)) => (low.min(lower), high.max(upper)),
+            None => (lower, upper),
+        });
+    }
+    hull
 }
 
 /// The exact image of an integer operation over operand intervals, or `None` past `i128`.
@@ -533,6 +558,7 @@ fn generate_clause_oracle_with_view(
         for (index, step) in plan.iter().enumerate() {
             render_step(
                 &mut source,
+                &plan,
                 index,
                 step,
                 &names,
@@ -683,6 +709,34 @@ enum StepTerm {
         operation: ExactScalarOperation,
         arguments: Vec<usize>,
     },
+    /// A read of an enclosing `let` binder; `source` is the step that computed its value.
+    Binder {
+        binder: usize,
+        source: usize,
+    },
+    Let {
+        binder: usize,
+        value: usize,
+        body: usize,
+    },
+    If {
+        condition: usize,
+        then: usize,
+        other: usize,
+    },
+    /// The arms are in declaration order of the union's members; `scrutinee` reads the member index.
+    Case {
+        scrutinee: ClauseInput,
+        arms: Vec<usize>,
+    },
+}
+
+/// One `let` binder in force at a step: its number, its value kind and the step that computed it.
+#[derive(Clone, Copy)]
+struct ScopedBinder {
+    binder: usize,
+    kind: ValueKind,
+    source: usize,
 }
 
 /// A checked literal narrowing keeps its integer value when the target admits it.
@@ -709,6 +763,8 @@ pub(crate) fn admitted_literal_narrow(term: &ClauseTerm) -> Option<&ClauseTerm> 
 struct Step {
     kind: ValueKind,
     term: StepTerm,
+    /// The binders in force where this step evaluates, outermost first.
+    scope: Vec<ScopedBinder>,
 }
 
 fn lower(
@@ -716,18 +772,116 @@ fn lower(
     names: &BTreeMap<ClauseInput, String>,
     plan: &mut Vec<Step>,
 ) -> Result<usize, V2ClauseRefusal> {
+    lower_in(term, names, plan, &[])
+}
+
+fn lower_in(
+    term: &ClauseTerm,
+    names: &BTreeMap<ClauseInput, String>,
+    plan: &mut Vec<Step>,
+    scope: &[ScopedBinder],
+) -> Result<usize, V2ClauseRefusal> {
     if plan.len() >= 4096 {
         return Err(V2ClauseRefusal::UnsupportedCondition);
     }
+    let kind_of = |plan: &[Step], index: usize| {
+        plan.get(index)
+            .map(|step| step.kind)
+            .ok_or(V2ClauseRefusal::Render)
+    };
     let step = match term {
         ClauseTerm::Boolean(value) => Step {
             kind: ValueKind::Boolean,
             term: StepTerm::Boolean(*value),
+            scope: scope.to_vec(),
         },
         ClauseTerm::Integer(value) => Step {
             kind: ValueKind::Integer,
             term: StepTerm::Integer(value.clone()),
+            scope: scope.to_vec(),
         },
+        ClauseTerm::Binder { binder } => {
+            let bound = scope
+                .iter()
+                .find(|bound| bound.binder == *binder)
+                .ok_or(V2ClauseRefusal::UnsupportedCondition)?;
+            Step {
+                kind: bound.kind,
+                term: StepTerm::Binder {
+                    binder: *binder,
+                    source: bound.source,
+                },
+                scope: scope.to_vec(),
+            }
+        }
+        ClauseTerm::Let {
+            binder,
+            value,
+            body,
+        } => {
+            let value = lower_in(value, names, plan, scope)?;
+            let mut inner = scope.to_vec();
+            inner.push(ScopedBinder {
+                binder: *binder,
+                kind: kind_of(plan, value)?,
+                source: value,
+            });
+            let body = lower_in(body, names, plan, &inner)?;
+            Step {
+                kind: kind_of(plan, body)?,
+                term: StepTerm::Let {
+                    binder: *binder,
+                    value,
+                    body,
+                },
+                scope: scope.to_vec(),
+            }
+        }
+        ClauseTerm::If {
+            condition,
+            then,
+            other,
+        } => {
+            let condition = lower_in(condition, names, plan, scope)?;
+            let then = lower_in(then, names, plan, scope)?;
+            let other = lower_in(other, names, plan, scope)?;
+            let kind = kind_of(plan, then)?;
+            if kind_of(plan, condition)? != ValueKind::Boolean || kind_of(plan, other)? != kind {
+                return Err(V2ClauseRefusal::UnsupportedCondition);
+            }
+            Step {
+                kind,
+                term: StepTerm::If {
+                    condition,
+                    then,
+                    other,
+                },
+                scope: scope.to_vec(),
+            }
+        }
+        ClauseTerm::Case { scrutinee, arms } => {
+            if !names.contains_key(scrutinee) || arms.is_empty() {
+                return Err(V2ClauseRefusal::UnsupportedCondition);
+            }
+            let arms = arms
+                .iter()
+                .map(|arm| lower_in(arm, names, plan, scope))
+                .collect::<Result<Vec<_>, _>>()?;
+            let kind = kind_of(plan, arms[0])?;
+            for arm in &arms {
+                if kind_of(plan, *arm)? != kind {
+                    return Err(V2ClauseRefusal::UnsupportedCondition);
+                }
+            }
+            Step {
+                kind,
+                term: StepTerm::Case {
+                    scrutinee: scrutinee.clone(),
+                    arms,
+                },
+                scope: scope.to_vec(),
+            }
+        }
         ClauseTerm::Input(input) if names.contains_key(input) => Step {
             kind: if input.boolean {
                 ValueKind::Boolean
@@ -735,6 +889,7 @@ fn lower(
                 ValueKind::Integer
             },
             term: StepTerm::Input(input.clone()),
+            scope: scope.to_vec(),
         },
         ClauseTerm::Input(_) => return Err(V2ClauseRefusal::UnsupportedCondition),
         ClauseTerm::Operation {
@@ -745,13 +900,13 @@ fn lower(
             if identity == "quire.op.numeric.narrow" {
                 let literal =
                     admitted_literal_narrow(term).ok_or(V2ClauseRefusal::UnsupportedCondition)?;
-                return lower(literal, names, plan);
+                return lower_in(literal, names, plan, scope);
             }
             let operation = clause_scalar_operation(identity, *result_bound)
                 .ok_or(V2ClauseRefusal::UnsupportedCondition)?;
             let children = arguments
                 .iter()
-                .map(|child| lower(child, names, plan))
+                .map(|child| lower_in(child, names, plan, scope))
                 .collect::<Result<Vec<_>, _>>()?;
             let actual = children
                 .iter()
@@ -801,6 +956,7 @@ fn lower(
                     operation,
                     arguments: children,
                 },
+                scope: scope.to_vec(),
             }
         }
     };
@@ -877,8 +1033,32 @@ fn measured<T>(outcome: rt::Outcome<T>) -> Result<T, ClauseStop> {
 }
 "#;
 
+/// The call of step `child` from a step that evaluates in the child's own scope, or, for the body of
+/// a `let`, in that scope less the binder the `let` just bound (`local`, held as an owned value).
+fn child_call(
+    plan: &[Step],
+    child: usize,
+    arguments: &str,
+    local: Option<usize>,
+) -> Result<String, V2ClauseRefusal> {
+    let step = plan.get(child).ok_or(V2ClauseRefusal::Render)?;
+    let binders = step
+        .scope
+        .iter()
+        .map(|bound| {
+            if Some(bound.binder) == local && bound.kind == ValueKind::Integer {
+                format!("&bound_{}, ", bound.binder)
+            } else {
+                format!("bound_{}, ", bound.binder)
+            }
+        })
+        .collect::<String>();
+    Ok(format!("value_{child}({arguments}{binders}meter)"))
+}
+
 fn render_step(
     source: &mut String,
+    plan: &[Step],
     index: usize,
     step: &Step,
     names: &BTreeMap<ClauseInput, String>,
@@ -891,11 +1071,27 @@ fn render_step(
         ValueKind::Integer if policy.is_native() => "nx::NativeInteger",
         ValueKind::Integer => "rt::Integer",
     };
-    source.push_str(&format!("\nfn value_{index}({parameters}meter: &mut rt::Meter) -> Result<{result}, ClauseStop> {{\n"));
+    let integer_type = if policy.is_native() {
+        "nx::NativeInteger"
+    } else {
+        "rt::Integer"
+    };
+    let binder_parameters = step
+        .scope
+        .iter()
+        .map(|bound| match bound.kind {
+            ValueKind::Boolean => format!("bound_{}: bool, ", bound.binder),
+            ValueKind::Integer => format!("bound_{}: &{integer_type}, ", bound.binder),
+        })
+        .collect::<String>();
+    source.push_str(&format!("\nfn value_{index}({parameters}{binder_parameters}meter: &mut rt::Meter) -> Result<{result}, ClauseStop> {{\n"));
     source.push_str("    let _ = (&meter, ");
     for name in names.values() {
         source.push_str(name);
         source.push_str(", ");
+    }
+    for bound in &step.scope {
+        source.push_str(&format!("bound_{}, ", bound.binder));
     }
     source.push_str(");\n");
     match &step.term {
@@ -929,6 +1125,62 @@ fn render_step(
             "    Ok({}.clone())\n",
             names.get(input).ok_or(V2ClauseRefusal::Render)?
         )),
+        StepTerm::Binder { binder, .. } => {
+            source.push_str(&format!("    Ok(bound_{binder}.clone())\n"));
+        }
+        StepTerm::Let {
+            binder,
+            value,
+            body,
+        } => {
+            source.push_str(&format!(
+                "    let bound_{binder} = {}?;\n    {}\n",
+                child_call(plan, *value, arguments, None)?,
+                child_call(plan, *body, arguments, Some(*binder))?
+            ));
+        }
+        StepTerm::If {
+            condition,
+            then,
+            other,
+        } => {
+            source.push_str(&format!(
+                "    if {}? {{\n        {}\n    }} else {{\n        {}\n    }}\n",
+                child_call(plan, *condition, arguments, None)?,
+                child_call(plan, *then, arguments, None)?,
+                child_call(plan, *other, arguments, None)?
+            ));
+        }
+        StepTerm::Case { scrutinee, arms } => {
+            let selector = names.get(scrutinee).ok_or(V2ClauseRefusal::Render)?;
+            let (last, leading) = arms.split_last().ok_or(V2ClauseRefusal::Render)?;
+            if policy.is_native() {
+                source.push_str(&format!("    match {selector}.value() {{\n"));
+                for (member, arm) in leading.iter().enumerate() {
+                    source.push_str(&format!(
+                        "        {member} => {},\n",
+                        child_call(plan, *arm, arguments, None)?
+                    ));
+                }
+                // The index is an `i128` value: the last member's arm is the exhaustive pattern, and
+                // no arm exists for a value outside the declared members.
+                source.push_str(&format!(
+                    "        _ => {},\n    }}\n",
+                    child_call(plan, *last, arguments, None)?
+                ));
+            } else {
+                for (member, arm) in leading.iter().enumerate() {
+                    source.push_str(&format!(
+                        "    if *{selector} == rt::Integer::from({member}_i64) {{\n        return {};\n    }}\n",
+                        child_call(plan, *arm, arguments, None)?
+                    ));
+                }
+                source.push_str(&format!(
+                    "    {}\n",
+                    child_call(plan, *last, arguments, None)?
+                ));
+            }
+        }
         StepTerm::Operation {
             operation,
             arguments: children,
@@ -941,7 +1193,7 @@ fn render_step(
             };
             let arg = |position| -> Result<String, V2ClauseRefusal> {
                 let child = children.get(position).ok_or(V2ClauseRefusal::Render)?;
-                Ok(format!("value_{child}({arguments}meter)?"))
+                Ok(format!("{}?", child_call(plan, *child, arguments, None)?))
             };
             let call = match operation {
                 ExactScalarOperation::Boolean {
@@ -1090,14 +1342,114 @@ mod tests {
         }
     }
 
+    fn kind_input() -> ClauseInput {
+        ClauseInput {
+            name: "kind".to_owned(),
+            side: ClauseInputSide::Parameter,
+            declaring_node_id: None,
+            boolean: false,
+            lower: 0,
+            upper: 2,
+        }
+    }
+
+    /// FR-015-AC-154: a `case` over an arity-0 union index renders one arm per member in declaration
+    /// order, the last arm holding the exhaustive pattern, and calls only the selected arm.
+    #[trace("FR-015-AC-154", "TC-025")]
+    #[test]
+    fn a_case_over_a_union_index_renders_a_match_with_one_arm_per_member() {
+        let input = kind_input();
+        let names = BTreeMap::from([(input.clone(), "parameter_kind".to_owned())]);
+        let term = ClauseTerm::Case {
+            scrutinee: input,
+            arms: vec![
+                ClauseTerm::Integer("1".to_owned()),
+                ClauseTerm::Integer("2".to_owned()),
+                ClauseTerm::Integer("0".to_owned()),
+            ],
+        };
+        let mut plan = Vec::new();
+        let root = lower(&term, &names, &mut plan).expect("the case lowers");
+        assert_eq!(plan.len(), 4, "three arm values and the case");
+        let mut source = String::new();
+        render_step(
+            &mut source,
+            &plan,
+            root,
+            &plan[root],
+            &names,
+            "parameter_kind: &nx::NativeInteger, ",
+            "parameter_kind, ",
+            IntegerRenderPolicy::Native,
+        )
+        .expect("render the case step");
+        syn::parse_file(&source).expect("valid Rust");
+        assert!(
+            source.contains("match parameter_kind.value() {"),
+            "{source}"
+        );
+        assert!(source.contains("0 => value_0(") && source.contains("1 => value_1("));
+        assert!(
+            source.contains("_ => value_2("),
+            "the last member is the exhaustive arm"
+        );
+        assert_eq!(source.matches(" => ").count(), 3, "one arm per member");
+    }
+
+    /// FR-015-AC-168 and FR-015-AC-172: the `if` calls only the selected branch; the `let` calls
+    /// its initializer once, before its body, and the body receives the binder.
+    #[trace("FR-015-AC-168", "FR-015-AC-172", "TC-025")]
+    #[test]
+    fn an_if_calls_one_branch_and_a_let_calls_its_value_once_before_its_body() {
+        let term = ClauseTerm::Let {
+            binder: 0,
+            value: Box::new(ClauseTerm::Integer("7".to_owned())),
+            body: Box::new(ClauseTerm::If {
+                condition: Box::new(ClauseTerm::Boolean(true)),
+                then: Box::new(ClauseTerm::Binder { binder: 0 }),
+                other: Box::new(ClauseTerm::Integer("9".to_owned())),
+            }),
+        };
+        let mut plan = Vec::new();
+        let root = lower(&term, &BTreeMap::new(), &mut plan).expect("the let lowers");
+        let render = |index: usize| {
+            let mut source = String::new();
+            render_step(
+                &mut source,
+                &plan,
+                index,
+                &plan[index],
+                &BTreeMap::new(),
+                "",
+                "",
+                IntegerRenderPolicy::Native,
+            )
+            .expect("render");
+            syn::parse_file(&source).expect("valid Rust");
+            source
+        };
+        let rendered_let = render(root);
+        assert_eq!(rendered_let.matches("let bound_0 = value_").count(), 1);
+        assert!(rendered_let.contains("&bound_0, meter)"), "{rendered_let}");
+        let rendered_if = render(root - 1);
+        assert_eq!(
+            rendered_if.matches("value_").count(),
+            4,
+            "one condition and two branch calls"
+        );
+        assert!(rendered_if.contains("if value_") && rendered_if.contains("} else {"));
+    }
+
     fn integer_leaf(spelling: &str) -> String {
         let step = Step {
             kind: ValueKind::Integer,
             term: StepTerm::Integer(spelling.to_owned()),
+            scope: Vec::new(),
         };
         let mut source = String::new();
         render_step(
             &mut source,
+            &[],
             0,
             &step,
             &BTreeMap::new(),

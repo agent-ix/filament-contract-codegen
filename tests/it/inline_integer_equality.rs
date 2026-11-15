@@ -2,11 +2,11 @@
 //! Authentic inline Integer operands for the composite equality generator.
 
 use super::admitted_enum_equality::{checked, generate_items};
-use ix_trace_rs::trace;
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     ClaimDisposition, CompositeEqualityItem, CompositeEqualityRefusal, EqualityOperandDescriptor,
     EqualityOperatorKind,
 };
+use ix_trace_rs::trace;
 use quire_contract_model::{CheckedNodeTag, CheckedTerm, LiteralKind};
 
 const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\n\
@@ -28,7 +28,7 @@ fn genuine_inline_integer_literals_generate_and_wrong_descriptor_refuses() {
         qsl_replay::StageLimits::default(),
         qsl_replay::ReplayLimits::default(),
     )
-    .expect("genuine QSL source compiles");
+    .expect("genuine FSL source compiles");
     let package = checked(&compiled, &[]);
     let expression = package
         .resolved_graph()
@@ -130,7 +130,7 @@ fn genuine_inline_integer_literals_generate_and_wrong_descriptor_refuses() {
             }
         } if expected == &boolean && found == left
     ));
-    fn emitted(artifacts: &[quire_contract_codegen::Artifact]) -> &str {
+    fn emitted(artifacts: &[filament_contract_codegen::Artifact]) -> &str {
         artifacts
             .iter()
             .find(|artifact| artifact.path == "src/lib.rs")

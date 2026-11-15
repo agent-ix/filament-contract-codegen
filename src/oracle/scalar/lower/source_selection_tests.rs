@@ -52,7 +52,7 @@ fn admitted_source(source: &str) -> CheckedPackageV2 {
         StageLimits::default(),
         ReplayLimits::default(),
     )
-    .expect("QSL compiles genuine scalar source");
+    .expect("FSL compiles genuine scalar source");
     let mut evidence = CheckedPackageEvidence::new();
     evidence.support_feature("quire.value.complete/v1");
     match CheckedPackageV2::read(
@@ -61,7 +61,7 @@ fn admitted_source(source: &str) -> CheckedPackageV2 {
         &evidence,
     ) {
         CheckedPackageV2ReadResult::Admitted(package) => *package,
-        other => panic!("IR must admit QSL output: {other:?}"),
+        other => panic!("IR must admit FSL output: {other:?}"),
     }
 }
 
@@ -160,7 +160,7 @@ fn admitted_case(
                             && declaration.qualified_name[0].as_ref() == format!("extra{index}")
                     })
                 })
-                .expect("unrelated QSL function")
+                .expect("unrelated FSL function")
                 .node_id
                 .clone(),
         });
@@ -196,7 +196,7 @@ fn ir_1299_selected_scalar_key_uses_the_admitted_occurrence_frame() {
                     && declaration.qualified_name[0].as_ref() == "f1"
             })
         })
-        .expect("QSL middle function")
+        .expect("FSL middle function")
         .node_id
         .clone();
     let positions = vec![
@@ -238,12 +238,12 @@ fn ir_1299_selected_scalar_key_uses_the_admitted_occurrence_frame() {
         );
         assert!(
             selected_scalar_key(&admitted, &items, request_index, node_id, selection).is_some(),
-            "QSL-selected application remains valid after independent sibling omission: {node_id:?}"
+            "FSL-selected application remains valid after independent sibling omission: {node_id:?}"
         );
     }
     let (generated, indexes) =
         generate_contract_scalar_oracles(&checked, &admitted, &positions, &[0, 2])
-            .expect("two selected QSL scalar siblings generate");
+            .expect("two selected FSL scalar siblings generate");
     assert_eq!(indexes.len(), 2);
     for index in indexes {
         assert!(matches!(

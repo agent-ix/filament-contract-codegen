@@ -3,9 +3,9 @@ id: TC-050
 title: "Verify caller TextPayload admission and bounded Kani agreement"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-035
+  - target: ix://agent-ix/filament-contract-codegen/FR-035
     type: verifies
-  - target: ix://agent-ix/quire-contract-codegen/FR-017
+  - target: ix://agent-ix/filament-contract-codegen/FR-017
     type: verifies
 ---
 # TC-050: Verify caller TextPayload admission and bounded Kani agreement
@@ -128,12 +128,12 @@ one concrete payload, not the 21-way selection:
 - A single admission of the literal `e` under `unicode-scalars` `Text[0,8]`,
   with no agreement comparison, exhausts 1 GiB. The IR-796 review reproduced
   this for both the Contract Runtime admission path and the
-  `quire_exact::admit_text` kernel path measured in IR-796, and at a 4 GiB
+  `filament_exact::admit_text` kernel path measured in IR-796, and at a 4 GiB
   diagnostic ceiling the single admission still ended `MemoryExhausted`, after 481 seconds on
   the runtime path and 65 seconds on the kernel path.
 - On the kernel path, symbolic execution is dominated by `BigUint::from(u128)`
   unwinding inside the exact `Meter::charge`, the same integer-encoding cost
-  class as the planned, unrun quire-exact criterion FR-359-AC-9.
+  class as the planned, unrun filament-exact criterion FR-359-AC-9.
 - Separately, the generated harness's `assert_eq!` on two `Meter` values
   compares the ten-counter array through CBMC's `memcmp` model, whose loop
   fails its unwinding assertion at `--unwind 8` even with no admission call.
@@ -150,11 +150,11 @@ published bound rather than meet it. None of these is accepted as discharge.
 FR-035-AC-4 and FR-035-AC-5 remain planned and unrun, and they have no proof
 credit.
 
-The next owners are tracked tickets. quire-exact owns the remaining integer
-cost of exact `Meter::charge` under IR-705, against quire-exact FR-359-AC-9,
+The next owners are tracked tickets. filament-exact owns the remaining integer
+cost of exact `Meter::charge` under IR-705, against filament-exact FR-359-AC-9,
 which covers the same encoding class, so a reduction there is a precondition
 for this proof. CG owns IR-837,
-which moves the TC-050 harness onto the quire-exact admission path and
+which moves the TC-050 harness onto the filament-exact admission path and
 compares meters through public accessors instead of `Meter` equality. The
 twelve harnesses and the mutation control are rerun under this test's
 unchanged criteria once both have landed.

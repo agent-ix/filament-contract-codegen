@@ -3,7 +3,7 @@ id: TC-067
 title: "Verify bounded IEEE float scalar operation harnesses"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-053
+  - target: ix://agent-ix/filament-contract-codegen/FR-053
     type: verifies
 ---
 # TC-067: Verify bounded IEEE float scalar operation harnesses
@@ -11,7 +11,7 @@ relationships:
 ## Description
 
 Verify [FR-053](../functional/FR-053-float-scalar-harnesses.md) through admitted float
-packages (over the quire-exact float carrier, IR-1446, for the comparisons whose quire-exact harnesses
+packages (over the filament-exact float carrier, IR-1446, for the comparisons whose filament-exact harnesses
 are Verified; the arithmetic identities are refused as not tractable, and the Contract IR float
 `requires_bound` ruling makes the unpinned-operand refusal upstream),
 public CG generation, installed proof execution and owner replay. FR-014 oracle agreement does not establish Kani acceptance. Execute generated proofs only

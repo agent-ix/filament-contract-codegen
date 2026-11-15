@@ -1,22 +1,22 @@
-//! Symbolic reference-graph reachability obligations over QSL-emitted, IR-admitted packages
+//! Symbolic reference-graph reachability obligations over FSL-emitted, IR-admitted packages
 //! (FR-015-AC-98, -100, -105, -106 healthy half, -107, -108; TC-025).
 //!
-//! QSL emits every package through its public `call_site` facade from native source and a
+//! FSL emits every package through its public `call_site` facade from native source and a
 //! test-authored domain document; no Contract IR package wire is constructed here. Slice A covers
 //! the relationship-end form; slice D adds the `reaches_field` form over `Reference`, `Option`
-//! and bounded `Collection` fields. A field-edge claim generates a harness only when QSL linked
+//! and bounded `Collection` fields. A field-edge claim generates a harness only when FSL linked
 //! its application to the population of the edge type (QSL-1904); a package without the link
-//! refuses typed, and the field-edge tests below assert whichever side the QSL under test is on.
+//! refuses typed, and the field-edge tests below assert whichever side the FSL under test is on.
 
 use crate::scratch_crate::{runtime_dependency, write_manifest, TemporaryDirectory};
-use ix_trace_rs::trace;
-use qsl_replay::{call_site, ClauseName, DependencyInput, Identifier, SourceIdentity};
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     execute_kani_obligation, negotiate_kani_obligations, GraphAccessorRefusal,
     GraphUnsupportedReason, KaniExecutableHarness, KaniExecutionEvidence, KaniExecutionRequest,
     KaniGraphObligationHarness, KaniInstallation, KaniObligationOutcome, KaniObligationRequest,
     KaniRunOutcome, ObligationDisposition, ObligationItem, ProofCeilings, UnsupportedObligation,
 };
+use ix_trace_rs::trace;
+use qsl_replay::{call_site, ClauseName, DependencyInput, Identifier, SourceIdentity};
 use quire_contract_model::{
     CheckedNodeId, CheckedOccurrence, CheckedOccurrenceRole, CheckedPackageEvidence,
     CheckedPackageReadLimits, CheckedPackageV2, CheckedPackageV2ReadResult, CheckedTerm,
@@ -24,7 +24,7 @@ use quire_contract_model::{
 use serde_json::{json, Value};
 use std::{fs, path::PathBuf, time::Duration};
 
-/// One QSL-emitted and IR-admitted graph package.
+/// One FSL-emitted and IR-admitted graph package.
 struct Authored {
     package: CheckedPackageV2,
 }
@@ -34,12 +34,12 @@ fn relation(name: &str, lower: u64, upper: Option<u64>, unique: bool) -> Value {
     if let Some(upper) = upper {
         multiplicity["upper"] = json!(upper);
     }
-    // An end with no upper bound is refused by QSL's checker before IR admission, so a real
+    // An end with no upper bound is refused by FSL's checker before IR admission, so a real
     // package never reaches this generator with one.
     json!({
         "identity": format!("ix://ir268.test/domain/relationship/Node-{name}"),
         "category": "structural", "composite": false, "direction": "source-to-target",
-        "origin": {"source": {"sourceIdentity": "ix://ir268.test/spec", "path": "spec.qspec", "startLine": 1, "startColumn": 1}},
+        "origin": {"source": {"sourceIdentity": "ix://ir268.test/spec", "path": "spec.fspec", "startLine": 1, "startColumn": 1}},
         "sourceEnd": {"type": "ix://ir268.test/domain/Node", "role": name,
                       "multiplicity": {"lower": 0, "upper": 9, "ordered": false, "unique": unique}},
         "targetEnd": {"type": "ix://ir268.test/domain/Node", "multiplicity": multiplicity}
@@ -76,7 +76,7 @@ fn document_with(kids_upper: Option<u64>) -> Value {
     document["types"][1]["operations"] = json!([{
         "identity": "ix://ir268.test/domain/Node/visit", "name": "visit",
         "params": [target], "pre": [], "post": [],
-        "origin": {"source": {"sourceIdentity": "ix://ir268.test/spec", "path": "spec.qspec", "startLine": 1, "startColumn": 1}},
+        "origin": {"source": {"sourceIdentity": "ix://ir268.test/spec", "path": "spec.fspec", "startLine": 1, "startColumn": 1}},
         "frame": {"modifies": [], "creates": [], "deletes": []}
     }]);
     document
@@ -95,7 +95,7 @@ fn declaration(form: &str, name: &str, condition: &str) -> String {
     }
 }
 
-/// Emit through QSL and admit through Contract IR, or return the refusal text of either stage.
+/// Emit through FSL and admit through Contract IR, or return the refusal text of either stage.
 fn try_authored_with(
     document: &Value,
     declarations: &[String],
@@ -104,7 +104,7 @@ fn try_authored_with(
     try_authored_clause(document, declarations, bound, "Graph")
 }
 
-/// As `try_authored_with`, selecting which declared clause the QSL call site emits.
+/// As `try_authored_with`, selecting which declared clause the FSL call site emits.
 fn try_authored_clause(
     document: &Value,
     declarations: &[String],
@@ -150,7 +150,7 @@ fn bound_line(maximum: Option<u64>) -> String {
 
 fn authored_declarations(declarations: &[String], maximum: Option<u64>) -> Authored {
     try_authored_with(&document(), declarations, &bound_line(maximum))
-        .unwrap_or_else(|error| panic!("QSL emits and IR admits the authored clause: {error}"))
+        .unwrap_or_else(|error| panic!("FSL emits and IR admits the authored clause: {error}"))
 }
 
 fn authored(form: &str, condition: &str, maximum: Option<u64>) -> Authored {
@@ -349,7 +349,7 @@ fn field_application(package: &CheckedPackageV2) -> CheckedNodeId {
         .clone()
 }
 
-/// Whether QSL linked the field-edge application to its population (QSL-1904).
+/// Whether FSL linked the field-edge application to its population (QSL-1904).
 fn links_population(package: &CheckedPackageV2) -> bool {
     matches!(
         package.reaches_population(&field_application(package)),
@@ -437,9 +437,9 @@ fn the_followed_field_changes_the_harness_identity_and_equal_inputs_regenerate_i
     let Some(next) = harness("next") else {
         return;
     };
-    let maybe = harness("maybe").expect("the same QSL links every field");
-    let many = harness("many").expect("the same QSL links every field");
-    let again = harness("next").expect("the same QSL links every field");
+    let maybe = harness("maybe").expect("the same FSL links every field");
+    let many = harness("many").expect("the same FSL links every field");
+    let again = harness("next").expect("the same FSL links every field");
     assert_eq!(next.rust, again.rust);
     assert_eq!(next.identity, again.identity);
     for other in [&maybe, &many] {
@@ -476,13 +476,13 @@ fn a_field_edge_claim_is_located_first_and_one_field_per_claim() {
     }
 }
 
-/// A population-typed field QSL checks as a reachability edge is `Reference`, `Option` or a
-/// collection of references; QSL refuses any other field before a package exists, so the
-/// generator's `FieldEdgeNotReference` refusal is reachable only through a package QSL does not
+/// A population-typed field FSL checks as a reachability edge is `Reference`, `Option` or a
+/// collection of references; FSL refuses any other field before a package exists, so the
+/// generator's `FieldEdgeNotReference` refusal is reachable only through a package FSL does not
 /// emit.
 #[trace("TC-025", "FR-015-AC-108")]
 #[test]
-fn qsl_refuses_a_scalar_collection_field_edge_before_a_package_exists() {
+fn fsl_refuses_a_scalar_collection_field_edge_before_a_package_exists() {
     let error = match try_authored_with(
         &document(),
         &[declaration(
@@ -653,7 +653,12 @@ fn operation_clause_graph_claims_settle_unsupported_with_no_harness() {
 /// changes the package cannot hide a component that failed to change.
 fn components(
     harness: &KaniGraphObligationHarness,
-) -> (u64, &quire_contract_codegen::GraphEdgeIdentity, &str, u32) {
+) -> (
+    u64,
+    &filament_contract_codegen::GraphEdgeIdentity,
+    &str,
+    u32,
+) {
     let identity = &harness.identity;
     (
         identity.maximum_population,
@@ -768,7 +773,7 @@ fn graph_run_evidence_preserves_every_ordered_identity_option() {
 
     let fixture = fixture("not reaches(self, self, kids)");
     let harness = emitted(&fixture.package, &[0]);
-    let scratch = TemporaryDirectory::new("quire-kani-symbolic-graph-options");
+    let scratch = TemporaryDirectory::new("filament-kani-symbolic-graph-options");
     fs::write(scratch.path.join("src/lib.rs"), &harness.rust.contents).unwrap();
     write_manifest(
         &scratch.path,
@@ -984,12 +989,12 @@ fn a_claim_the_encoding_cannot_express_settles_unsupported_claim_shape() {
     }
 }
 
-/// A population maximum beyond `u64` is refused by QSL before a package exists, so the
+/// A population maximum beyond `u64` is refused by FSL before a package exists, so the
 /// generator's `DomainNotRepresentable` for the authored maximum is reachable only through a
-/// package QSL does not emit.
+/// package FSL does not emit.
 #[trace("TC-025", "FR-015-AC-108")]
 #[test]
-fn qsl_refuses_a_population_maximum_beyond_u64_before_a_package_exists() {
+fn fsl_refuses_a_population_maximum_beyond_u64_before_a_package_exists() {
     let error = match try_authored_with(
         &document(),
         &[declaration(
@@ -1009,7 +1014,7 @@ fn qsl_refuses_a_population_maximum_beyond_u64_before_a_package_exists() {
 /// edge cannot be reached through a real package.
 #[trace("TC-025", "FR-015-AC-108")]
 #[test]
-fn qsl_or_ir_refuses_an_unbounded_end_before_a_package_exists() {
+fn fsl_or_ir_refuses_an_unbounded_end_before_a_package_exists() {
     let error = match try_authored_with(
         &document_with(None),
         &[declaration(
@@ -1034,7 +1039,7 @@ fn run_graph_kani(
     harness: &KaniGraphObligationHarness,
     label: &str,
 ) -> KaniExecutionEvidence {
-    let scratch = TemporaryDirectory::new("quire-kani-symbolic-graph");
+    let scratch = TemporaryDirectory::new("filament-kani-symbolic-graph");
     fs::write(scratch.path.join("src/lib.rs"), &harness.rust.contents)
         .expect("write the generated artifact byte for byte");
     write_manifest(

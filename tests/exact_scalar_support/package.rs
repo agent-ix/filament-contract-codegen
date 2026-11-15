@@ -10,7 +10,7 @@
 //! references (see `Bound::key`/`Bound::foreign`). Applications reach them
 //! through dedicated value-shaped expression operands. Literal nodes have
 //! empty dependencies, as strict Contract IR admission requires. Bound bodies
-//! use the encoding `quire_contract_codegen::exact_scalar` documents.
+//! use the encoding `filament_contract_codegen::exact_scalar` documents.
 
 #![allow(dead_code)] // Each test binary uses a different subset.
 
@@ -25,7 +25,7 @@ use super::scalar_fixture_types::{
     BooleanOperator, DecimalOperator, EqualityOperandKind, ExactScalarItem, ExactScalarOperation,
     IeeeArithmeticOperator, OrderingOperandKind, QuantityOperator, RationalOperator,
 };
-use quire_contract_codegen::oracle::operator_catalog::IntegerOperator;
+use filament_contract_codegen::oracle::operator_catalog::IntegerOperator;
 use quire_contract_model::{
     CheckedNodeId, CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
     CheckedPackageV2ReadResult,
@@ -223,7 +223,7 @@ pub fn reference(digest: &str) -> Value {
 /// Contract IR (FR-208 `DeclarationTagRules`/`DeclarationOccurrenceRule`)
 /// forbids `declaration` on `expression`/`relation`/`state`/`temporal`/
 /// `correspondence` nodes and on `value`/`enum_value` nodes (and, measured
-/// against the reader, on `value`/`parameter` nodes, which QSL emits with no
+/// against the reader, on `value`/`parameter` nodes, which FSL emits with no
 /// declaration), and otherwise
 /// requires it exactly when the node carries a `declaration`-role occurrence
 /// — which every node built by this module does except `value`/`parameter`
@@ -247,7 +247,7 @@ fn declaration_for(tag: &str, form: &str, label: &str) -> Option<Value> {
 /// Contract IR (FR-038-AC-17) requires `application.operation`
 /// and `application.result_type` as members; Contract IR's `validate_operations`
 /// checks `operation` against the checked-operation catalog
-/// `quire-verification-contracts` publishes, so `operation` must name a real catalogued identity with a conformant
+/// `filament-verification-contracts` publishes, so `operation` must name a real catalogued identity with a conformant
 /// `operator`/`laws`/`mode`/`member`, not an opaque placeholder. This crate's
 /// own generators still classify a body by `term`/`operator`/`arguments`
 /// (never by `operation`), but for an exact-scalar claim the *confirmation*
@@ -394,7 +394,7 @@ pub fn artifact_ref(identity: &str) -> Value {
 }
 
 /// The catalogued `role` law definition named `identity`, read from the operation catalog's home
-/// (`quire-verification-contracts`), which `validate_operations` requires
+/// (`filament-verification-contracts`), which `validate_operations` requires
 /// `operation.laws[].definition` to equal exactly.
 pub fn catalog_definition(role: &str, identity: &str) -> Value {
     let catalog: Value = serde_json::from_str(
@@ -538,7 +538,7 @@ impl PackageBuilder {
         self
     }
 
-    /// Give source-authored scalar expressions the QSL occurrence role used by
+    /// Give source-authored scalar expressions the FSL occurrence role used by
     /// FR-049 result selection. Both graph and source-map occurrences remain
     /// aligned before the public checked reader admits this fixture.
     pub fn expression_occurrences(&mut self) -> &mut Self {
@@ -1588,7 +1588,7 @@ pub const V_FLOAT64: u32 = 106;
 pub const V_TEXT: u32 = 107;
 pub const V_QUANTITY: u32 = 108;
 /// A value/literal node whose semantic type is an `integer_range` `bounded_domain` over the
-/// integer scalar type: what a QSL parameter typed `Int[0, 9]` references. It is an Integer
+/// integer scalar type: what a FSL parameter typed `Int[0, 9]` references. It is an Integer
 /// operand (IR-297).
 pub const V_BOUNDED_PARAM: u32 = 109;
 /// A value whose semantic type is another value node, so neither a scalar type nor a
@@ -1711,7 +1711,7 @@ pub struct Expression {
 /// The six `TextAdmission` codes ([`TEXT_ADMISSIONS`]): Contract IR refuses each
 /// `IllTyped`/`OperatorIneligible` at admission today, so they are outside [`corpus`] (one such
 /// node refuses the whole package). `quire.op.numeric.convert` over a text operand: no
-/// catalogued `convert` identity takes `text`, and QSL lowers no text admission. Unblocked by a
+/// catalogued `convert` identity takes `text`, and FSL lowers no text admission. Unblocked by a
 /// catalogued text-admission operation (a spec change) or by dropping the operation.
 /// `tc_024_text_admission_corpus_is_refused_by_ir_today` pins the exact refusal of each;
 /// FR-014-AC-2's text-admission case has no generated-crate evidence until then.
@@ -2312,6 +2312,18 @@ fn corpus_operation(expr: &Expression) -> (&'static str, Value) {
             expr.operator,
             op_full(
                 "quire.op.integer.div",
+                vec![law(
+                    "integer_division",
+                    integer_division_definition(*profile),
+                )],
+                None,
+                None,
+            ),
+        ),
+        Op::IntegerRemainder { profile, .. } => (
+            expr.operator,
+            op_full(
+                "quire.op.integer.rem",
                 vec![law(
                     "integer_division",
                     integer_division_definition(*profile),
@@ -3032,7 +3044,7 @@ fn corpus_package_with_expression_operand() -> PackageBuilder {
             "binary",
             op("quire.op.quantity.add"),
             &unit_type(),
-            // A deliberate negative fixture QSL never emits (it builds no quantity literal).
+            // A deliberate negative fixture FSL never emits (it builds no quantity literal).
             // A quantity literal is typed by its unit: IR resolves a literal operand
             // through `literal.type`, and `quantity.add` takes a quantity on both sides.
             vec![
@@ -3174,7 +3186,7 @@ fn corpus_package_with_expression_operand() -> PackageBuilder {
         .code(STATE, "state", "snapshot", &boolean, aggregate())
         // IR admits a `temporal_clause` only as a `temporal`-operator application over a
         // declared `parameter` with one `temporal_profile` law and a `temporal` formula argument
-        // (the QSpec temporal-clause rule), so this node is that minimal clause rather than a
+        // (the FSpec temporal-clause rule), so this node is that minimal clause rather than a
         // `boolean.not` stand-in. CG refuses it as an unsupported `temporal` family; IR checks
         // the admitted closure in node-id order, which puts this clause before its formula.
         .application_code_with(
@@ -3281,7 +3293,7 @@ fn corpus_package_with_expression_operand() -> PackageBuilder {
             // integer type but carrying the `decimal` value kind admits, while CG's
             // `check_operand` classifies it by its own `value_kind` and refuses the same
             // `OperandTypeMismatch { position: 1, expected: Integer, found: Some("decimal") }`.
-            // A deliberate negative fixture: the type and `value_kind` disagree, and QSL builds no
+            // A deliberate negative fixture: the type and `value_kind` disagree, and FSL builds no
             // decimal literal, so it never emits this shape.
             vec![
                 reference(&wrong_operand_anchor),
@@ -3514,7 +3526,7 @@ pub fn mode_mismatch_package() -> PackageBuilder {
     builder
 }
 
-/// The QSL parameter `x: Int[0, 9]` of [`bounded_increment_package`].
+/// The FSL parameter `x: Int[0, 9]` of [`bounded_increment_package`].
 pub const V_PARAM_X: u32 = 111;
 /// The second bounded operand for [`BOUNDED_BINARY_SUBTRACTION`].
 pub const V_PARAM_SUBTRAHEND: u32 = 121;
@@ -3527,7 +3539,7 @@ pub const BOUNDED_DECREMENT: u32 = 2036;
 /// `x - y` over independently bounded `Int[0, 9]` operands.
 pub const BOUNDED_BINARY_SUBTRACTION: u32 = 2037;
 
-/// A package holding only `x + 1` over `Int[0, 9]` in QSL's shape: `x` is typed by an
+/// A package holding only `x + 1` over `Int[0, 9]` in FSL's shape: `x` is typed by an
 /// `integer_range` `bounded_domain` over Integer whose members are `min`/`max` bindings.
 pub fn bounded_increment_package() -> PackageBuilder {
     increment_package_over(Bound::Integer(0, 9))
@@ -3995,7 +4007,7 @@ fn two_parameter_wire() -> PackageBuilder {
     builder
 }
 
-/// The body QSL emits for a parameter's `value` node (form `parameter`): an `aggregate` of its
+/// The body FSL emits for a parameter's `value` node (form `parameter`): an `aggregate` of its
 /// `name` (a `text` literal) and its `level` (an `integer` literal) as `binding` members. It is
 /// not a literal, so a reference to it is an operand, never a constant.
 pub fn parameter_body(name: &str, level: u32) -> Value {
@@ -4008,90 +4020,90 @@ pub fn parameter_body(name: &str, level: u32) -> Value {
     })
 }
 
-/// QSL's parameter `x: Int[0, 9]`, typed by an `integer_range` `bounded_domain`.
-pub const QSL_PARAM_X: u32 = 130;
-/// QSL's parameter `y: Int[10, 20]`.
-pub const QSL_PARAM_Y: u32 = 131;
-/// QSL's parameter `z: Int[0, 9]`: the same bound as `x` (bounds are content-addressed).
-pub const QSL_PARAM_Z: u32 = 132;
+/// FSL's parameter `x: Int[0, 9]`, typed by an `integer_range` `bounded_domain`.
+pub const FSL_PARAM_X: u32 = 130;
+/// FSL's parameter `y: Int[10, 20]`.
+pub const FSL_PARAM_Y: u32 = 131;
+/// FSL's parameter `z: Int[0, 9]`: the same bound as `x` (bounds are content-addressed).
+pub const FSL_PARAM_Z: u32 = 132;
 /// A parameter `p` typed by the plain Integer scalar type.
-pub const QSL_PARAM_PLAIN: u32 = 133;
+pub const FSL_PARAM_PLAIN: u32 = 133;
 /// `q`: an actual parameter typed by the plain Integer scalar type. Its
 /// aggregate parameter body has no artificial bound dependency.
-pub const QSL_PARAM_REACHING: u32 = 139;
+pub const FSL_PARAM_REACHING: u32 = 139;
 /// Parameters `u`, `v`, `w: Int[10, 20]`: an expression node's id is the digest of its content,
 /// so each further `x + y`-shaped node sums `x` with its own parameter to stay a distinct node.
-pub const QSL_PARAM_U: u32 = 136;
-pub const QSL_PARAM_V: u32 = 137;
-pub const QSL_PARAM_W: u32 = 138;
-/// The `value` node QSL emits for the literal `1`: form `literal`, a `literal` body, typed by the
+pub const FSL_PARAM_U: u32 = 136;
+pub const FSL_PARAM_V: u32 = 137;
+pub const FSL_PARAM_W: u32 = 138;
+/// The `value` node FSL emits for the literal `1`: form `literal`, a `literal` body, typed by the
 /// plain Integer scalar type.
-pub const QSL_LITERAL_ONE: u32 = 134;
+pub const FSL_LITERAL_ONE: u32 = 134;
 /// An unbounded Integer parameter with an aggregate body: a reference to it
 /// is not a constant.
-pub const QSL_NOT_LITERAL: u32 = 135;
+pub const FSL_NOT_LITERAL: u32 = 135;
 /// `x + 1` (`function inc(x: Int[0, 9]): Int[0, 10] { x + 1 }`): the literal is a reference to
-/// [`QSL_LITERAL_ONE`] and the node's own result type is the plain Integer type.
-pub const QSL_INC: u32 = 2070;
-/// The narrowing conversion of [`QSL_INC`] to `Int[0, 10]`.
-pub const QSL_INC_NARROW: u32 = 2071;
+/// [`FSL_LITERAL_ONE`] and the node's own result type is the plain Integer type.
+pub const FSL_INC: u32 = 2070;
+/// The narrowing conversion of [`FSL_INC`] to `Int[0, 10]`.
+pub const FSL_INC_NARROW: u32 = 2071;
 /// `x + y` (`function add(x: Int[0, 9], y: Int[10, 20]): Int[10, 29] { x + y }`).
-pub const QSL_ADD: u32 = 2072;
-/// The narrowing conversion of [`QSL_ADD`] to `Int[10, 29]`.
-pub const QSL_ADD_NARROW: u32 = 2073;
+pub const FSL_ADD: u32 = 2072;
+/// The narrowing conversion of [`FSL_ADD`] to `Int[10, 29]`.
+pub const FSL_ADD_NARROW: u32 = 2073;
 /// `-z` (`function negate(z: Int[0, 9]): Int[-9, 0] { -z }`).
-pub const QSL_NEGATE: u32 = 2074;
-/// The narrowing conversion of [`QSL_NEGATE`] to `Int[-9, 0]`.
-pub const QSL_NEGATE_NARROW: u32 = 2075;
+pub const FSL_NEGATE: u32 = 2074;
+/// The narrowing conversion of [`FSL_NEGATE`] to `Int[-9, 0]`.
+pub const FSL_NEGATE_NARROW: u32 = 2075;
 /// `x + p` narrowed to `Int[0, 29]`: `p` is a plain-Integer parameter.
-pub const QSL_PLAIN_OPERAND: u32 = 2076;
-/// The narrowing conversion of [`QSL_PLAIN_OPERAND`].
-pub const QSL_PLAIN_OPERAND_NARROW: u32 = 2077;
+pub const FSL_PLAIN_OPERAND: u32 = 2076;
+/// The narrowing conversion of [`FSL_PLAIN_OPERAND`].
+pub const FSL_PLAIN_OPERAND_NARROW: u32 = 2077;
 /// `q + q` narrowed to `Int[0, 29]`: no operand owns a bound, and the narrowing bounds the result.
 /// IR may refuse the unbounded parameter before CG inspects the narrowing;
 /// CG retains the typed `RequiresBound` refusal in either case.
-pub const QSL_PLAIN_PAIR: u32 = 2087;
-/// The narrowing conversion of [`QSL_PLAIN_PAIR`].
-pub const QSL_PLAIN_PAIR_NARROW: u32 = 2088;
-/// `x + n` narrowed to `Int[0, 29]`, where `n` is [`QSL_NOT_LITERAL`].
-pub const QSL_NOT_LITERAL_OPERAND: u32 = 2078;
-/// The narrowing conversion of [`QSL_NOT_LITERAL_OPERAND`].
-pub const QSL_NOT_LITERAL_OPERAND_NARROW: u32 = 2079;
+pub const FSL_PLAIN_PAIR: u32 = 2087;
+/// The narrowing conversion of [`FSL_PLAIN_PAIR`].
+pub const FSL_PLAIN_PAIR_NARROW: u32 = 2088;
+/// `x + n` narrowed to `Int[0, 29]`, where `n` is [`FSL_NOT_LITERAL`].
+pub const FSL_NOT_LITERAL_OPERAND: u32 = 2078;
+/// The narrowing conversion of [`FSL_NOT_LITERAL_OPERAND`].
+pub const FSL_NOT_LITERAL_OPERAND_NARROW: u32 = 2079;
 /// `x + u` consumed by two narrowing conversions, to `Int[10, 29]` and to `Int[0, 40]`.
-pub const QSL_TWICE_NARROWED: u32 = 2080;
-/// The narrowing conversion of [`QSL_TWICE_NARROWED`] to `Int[10, 29]`.
-pub const QSL_TWICE_NARROWED_FIRST: u32 = 2081;
-/// The narrowing conversion of [`QSL_TWICE_NARROWED`] to `Int[0, 40]`.
-pub const QSL_TWICE_NARROWED_SECOND: u32 = 2082;
+pub const FSL_TWICE_NARROWED: u32 = 2080;
+/// The narrowing conversion of [`FSL_TWICE_NARROWED`] to `Int[10, 29]`.
+pub const FSL_TWICE_NARROWED_FIRST: u32 = 2081;
+/// The narrowing conversion of [`FSL_TWICE_NARROWED`] to `Int[0, 40]`.
+pub const FSL_TWICE_NARROWED_SECOND: u32 = 2082;
 /// `x + v` narrowed to a `text_bounds` bound over Integer.
-pub const QSL_WRONG_FORM_NARROWED: u32 = 2083;
-/// The narrowing conversion of [`QSL_WRONG_FORM_NARROWED`].
-pub const QSL_WRONG_FORM_NARROW: u32 = 2084;
+pub const FSL_WRONG_FORM_NARROWED: u32 = 2083;
+/// The narrowing conversion of [`FSL_WRONG_FORM_NARROWED`].
+pub const FSL_WRONG_FORM_NARROW: u32 = 2084;
 /// `x + w` narrowed to an `integer_range` over Rational rather than Integer.
-pub const QSL_WRONG_BASE_NARROWED: u32 = 2085;
-/// The narrowing conversion of [`QSL_WRONG_BASE_NARROWED`].
-pub const QSL_WRONG_BASE_NARROW: u32 = 2086;
-/// `value` nodes of form `literal` typed by the plain Integer type, in QSL's shape for a literal
+pub const FSL_WRONG_BASE_NARROWED: u32 = 2085;
+/// The narrowing conversion of [`FSL_WRONG_BASE_NARROWED`].
+pub const FSL_WRONG_BASE_NARROW: u32 = 2086;
+/// `value` nodes of form `literal` typed by the plain Integer type, in FSL's shape for a literal
 /// operand: the integer literals `100`, `10^23` and `2`, and the text literal `"a"`.
-pub const QSL_LITERAL_HUNDRED: u32 = 140;
-pub const QSL_LITERAL_HUGE: u32 = 141;
-pub const QSL_LITERAL_TEXT: u32 = 142;
-pub const QSL_LITERAL_TWO: u32 = 143;
+pub const FSL_LITERAL_HUNDRED: u32 = 140;
+pub const FSL_LITERAL_HUGE: u32 = 141;
+pub const FSL_LITERAL_TEXT: u32 = 142;
+pub const FSL_LITERAL_TWO: u32 = 143;
 /// `x + 100` narrowed to `Int[0, 10]`: no `x` in `[0, 9]` gives a result inside the bound.
-pub const QSL_PLUS_HUNDRED: u32 = 2089;
-pub const QSL_PLUS_HUNDRED_NARROW: u32 = 2090;
+pub const FSL_PLUS_HUNDRED: u32 = 2089;
+pub const FSL_PLUS_HUNDRED_NARROW: u32 = 2090;
 /// `x + 10^23` narrowed to `Int[0, 10]`: the literal does not fit `i64`.
-pub const QSL_PLUS_HUGE: u32 = 2091;
-pub const QSL_PLUS_HUGE_NARROW: u32 = 2092;
+pub const FSL_PLUS_HUGE: u32 = 2091;
+pub const FSL_PLUS_HUGE_NARROW: u32 = 2092;
 /// `x + "a"` narrowed to `Int[0, 10]`, with the text literal in an Integer-typed `value` node.
-pub const QSL_PLUS_TEXT: u32 = 2093;
-pub const QSL_PLUS_TEXT_NARROW: u32 = 2094;
-/// `x + 2`, narrowed to `Int[0, 11]` and also an operand of [`QSL_SHARED_OUTER`].
-pub const QSL_SHARED: u32 = 2095;
-pub const QSL_SHARED_NARROW: u32 = 2096;
-/// `(x + 2) + x`, plain-Integer-typed and not narrowed: a consumer of [`QSL_SHARED`] that is not a
+pub const FSL_PLUS_TEXT: u32 = 2093;
+pub const FSL_PLUS_TEXT_NARROW: u32 = 2094;
+/// `x + 2`, narrowed to `Int[0, 11]` and also an operand of [`FSL_SHARED_OUTER`].
+pub const FSL_SHARED: u32 = 2095;
+pub const FSL_SHARED_NARROW: u32 = 2096;
+/// `(x + 2) + x`, plain-Integer-typed and not narrowed: a consumer of [`FSL_SHARED`] that is not a
 /// narrowing conversion.
-pub const QSL_SHARED_OUTER: u32 = 2097;
+pub const FSL_SHARED_OUTER: u32 = 2097;
 
 /// An `integer_range` over Rational: the right form over another base type.
 pub fn wrong_base_bound() -> Bound {
@@ -4103,9 +4115,9 @@ pub fn wrong_base_bound() -> Bound {
     }
 }
 
-/// [`corpus_package`] plus integer nodes in the shape QSL emits into a checked package for
+/// [`corpus_package`] plus integer nodes in the shape FSL emits into a checked package for
 /// `function inc using v(x: Int[0, 9]): Int[0, 10] pure { x + 1 }` and its siblings `add` and
-/// `negate` (read from QSL's emitted package, not copied from it):
+/// `negate` (read from FSL's emitted package, not copied from it):
 ///
 /// - a parameter is a `value` node of form `parameter` whose body is [`parameter_body`] and whose
 ///   type is its `bounded_domain`;
@@ -4115,35 +4127,35 @@ pub fn wrong_base_bound() -> Bound {
 ///   bounded result is the type of a `conversion` node that consumes it: a `convert`
 ///   application with the identity `quire.op.numeric.narrow`, its `type_argument` member naming
 ///   the bound, and one argument, a reference to the arithmetic node.
-pub fn qsl_shaped_package() -> PackageBuilder {
-    let mut builder = qsl_shaped_wire();
-    builder.omit_code(QSL_WRONG_FORM_NARROWED);
-    builder.omit_code(QSL_WRONG_FORM_NARROW);
+pub fn fsl_shaped_package() -> PackageBuilder {
+    let mut builder = fsl_shaped_wire();
+    builder.omit_code(FSL_WRONG_FORM_NARROWED);
+    builder.omit_code(FSL_WRONG_FORM_NARROW);
     remove_wrong_form_bound(&mut builder);
     builder
 }
 
 /// Reader-negative wrong-form narrowing, isolated from valid narrowing controls.
-pub fn qsl_wrong_form_package() -> PackageBuilder {
-    qsl_shaped_wire().focused(&[
-        code_id(QSL_WRONG_FORM_NARROWED),
-        code_id(QSL_WRONG_FORM_NARROW),
+pub fn fsl_wrong_form_package() -> PackageBuilder {
+    fsl_shaped_wire().focused(&[
+        code_id(FSL_WRONG_FORM_NARROWED),
+        code_id(FSL_WRONG_FORM_NARROW),
     ])
 }
 
-fn qsl_shaped_wire() -> PackageBuilder {
+fn fsl_shaped_wire() -> PackageBuilder {
     let mut builder = corpus_package_for_codes(&[T_INTEGER, T_TEXT, T_RATIONAL, T_DECIMAL]);
     let integer_type = key(T_INTEGER);
     let x_bound = builder.bound(&Bound::Integer(0, 9));
     let y_bound = builder.bound(&Bound::Integer(10, 20));
     for (code, name, level, typing) in [
-        (QSL_PARAM_X, "x", 0, &x_bound),
-        (QSL_PARAM_Y, "y", 1, &y_bound),
-        (QSL_PARAM_Z, "z", 0, &x_bound),
-        (QSL_PARAM_PLAIN, "p", 1, &integer_type),
-        (QSL_PARAM_U, "u", 1, &y_bound),
-        (QSL_PARAM_V, "v", 1, &y_bound),
-        (QSL_PARAM_W, "w", 1, &y_bound),
+        (FSL_PARAM_X, "x", 0, &x_bound),
+        (FSL_PARAM_Y, "y", 1, &y_bound),
+        (FSL_PARAM_Z, "z", 0, &x_bound),
+        (FSL_PARAM_PLAIN, "p", 1, &integer_type),
+        (FSL_PARAM_U, "u", 1, &y_bound),
+        (FSL_PARAM_V, "v", 1, &y_bound),
+        (FSL_PARAM_W, "w", 1, &y_bound),
     ] {
         builder.code(
             code,
@@ -4154,34 +4166,34 @@ fn qsl_shaped_wire() -> PackageBuilder {
         );
     }
     builder.code(
-        QSL_PARAM_REACHING,
+        FSL_PARAM_REACHING,
         "value",
         "parameter",
         &integer_type,
         parameter_body("q", 0),
     );
     builder.code(
-        QSL_LITERAL_ONE,
+        FSL_LITERAL_ONE,
         "value",
         "literal",
         &integer_type,
         literal("integer", "1"),
     );
     builder.code(
-        QSL_NOT_LITERAL,
+        FSL_NOT_LITERAL,
         "value",
         "parameter",
         &integer_type,
         parameter_body("n", 1),
     );
     for (code, value) in [
-        (QSL_LITERAL_HUNDRED, literal("integer", "100")),
+        (FSL_LITERAL_HUNDRED, literal("integer", "100")),
         (
-            QSL_LITERAL_HUGE,
+            FSL_LITERAL_HUGE,
             literal("integer", "100000000000000000000000"),
         ),
-        (QSL_LITERAL_TEXT, literal("text", "a")),
-        (QSL_LITERAL_TWO, literal("integer", "2")),
+        (FSL_LITERAL_TEXT, literal("text", "a")),
+        (FSL_LITERAL_TWO, literal("integer", "2")),
     ] {
         builder.code(code, "value", "literal", &integer_type, value);
     }
@@ -4196,72 +4208,72 @@ fn qsl_shaped_wire() -> PackageBuilder {
     };
     for (code, body, narrowed) in [
         (
-            QSL_INC,
-            sum(QSL_PARAM_X, QSL_LITERAL_ONE),
-            vec![(QSL_INC_NARROW, Bound::Integer(0, 10))],
+            FSL_INC,
+            sum(FSL_PARAM_X, FSL_LITERAL_ONE),
+            vec![(FSL_INC_NARROW, Bound::Integer(0, 10))],
         ),
         (
-            QSL_ADD,
-            sum(QSL_PARAM_X, QSL_PARAM_Y),
-            vec![(QSL_ADD_NARROW, Bound::Integer(10, 29))],
+            FSL_ADD,
+            sum(FSL_PARAM_X, FSL_PARAM_Y),
+            vec![(FSL_ADD_NARROW, Bound::Integer(10, 29))],
         ),
         (
-            QSL_NEGATE,
+            FSL_NEGATE,
             application(
                 "unary",
                 op("quire.op.integer.negate"),
                 &integer_type,
-                vec![param(QSL_PARAM_Z)],
+                vec![param(FSL_PARAM_Z)],
             ),
-            vec![(QSL_NEGATE_NARROW, Bound::Integer(-9, 0))],
+            vec![(FSL_NEGATE_NARROW, Bound::Integer(-9, 0))],
         ),
         (
-            QSL_PLAIN_OPERAND,
-            sum(QSL_PARAM_X, QSL_PARAM_PLAIN),
-            vec![(QSL_PLAIN_OPERAND_NARROW, Bound::Integer(0, 29))],
+            FSL_PLAIN_OPERAND,
+            sum(FSL_PARAM_X, FSL_PARAM_PLAIN),
+            vec![(FSL_PLAIN_OPERAND_NARROW, Bound::Integer(0, 29))],
         ),
         (
-            QSL_PLAIN_PAIR,
-            sum(QSL_PARAM_REACHING, QSL_PARAM_REACHING),
-            vec![(QSL_PLAIN_PAIR_NARROW, Bound::Integer(0, 29))],
+            FSL_PLAIN_PAIR,
+            sum(FSL_PARAM_REACHING, FSL_PARAM_REACHING),
+            vec![(FSL_PLAIN_PAIR_NARROW, Bound::Integer(0, 29))],
         ),
         (
-            QSL_NOT_LITERAL_OPERAND,
-            sum(QSL_PARAM_X, QSL_NOT_LITERAL),
-            vec![(QSL_NOT_LITERAL_OPERAND_NARROW, Bound::Integer(0, 29))],
+            FSL_NOT_LITERAL_OPERAND,
+            sum(FSL_PARAM_X, FSL_NOT_LITERAL),
+            vec![(FSL_NOT_LITERAL_OPERAND_NARROW, Bound::Integer(0, 29))],
         ),
         (
-            QSL_TWICE_NARROWED,
-            sum(QSL_PARAM_X, QSL_PARAM_U),
+            FSL_TWICE_NARROWED,
+            sum(FSL_PARAM_X, FSL_PARAM_U),
             vec![
-                (QSL_TWICE_NARROWED_FIRST, Bound::Integer(10, 29)),
-                (QSL_TWICE_NARROWED_SECOND, Bound::Integer(0, 40)),
+                (FSL_TWICE_NARROWED_FIRST, Bound::Integer(10, 29)),
+                (FSL_TWICE_NARROWED_SECOND, Bound::Integer(0, 40)),
             ],
         ),
         (
-            QSL_WRONG_FORM_NARROWED,
-            sum(QSL_PARAM_X, QSL_PARAM_V),
-            vec![(QSL_WRONG_FORM_NARROW, wrong_form_bound())],
+            FSL_WRONG_FORM_NARROWED,
+            sum(FSL_PARAM_X, FSL_PARAM_V),
+            vec![(FSL_WRONG_FORM_NARROW, wrong_form_bound())],
         ),
         (
-            QSL_PLUS_HUNDRED,
-            sum(QSL_PARAM_X, QSL_LITERAL_HUNDRED),
-            vec![(QSL_PLUS_HUNDRED_NARROW, Bound::Integer(0, 10))],
+            FSL_PLUS_HUNDRED,
+            sum(FSL_PARAM_X, FSL_LITERAL_HUNDRED),
+            vec![(FSL_PLUS_HUNDRED_NARROW, Bound::Integer(0, 10))],
         ),
         (
-            QSL_PLUS_HUGE,
-            sum(QSL_PARAM_X, QSL_LITERAL_HUGE),
-            vec![(QSL_PLUS_HUGE_NARROW, Bound::Integer(0, 10))],
+            FSL_PLUS_HUGE,
+            sum(FSL_PARAM_X, FSL_LITERAL_HUGE),
+            vec![(FSL_PLUS_HUGE_NARROW, Bound::Integer(0, 10))],
         ),
         (
-            QSL_PLUS_TEXT,
-            sum(QSL_PARAM_X, QSL_LITERAL_TEXT),
-            vec![(QSL_PLUS_TEXT_NARROW, Bound::Integer(0, 10))],
+            FSL_PLUS_TEXT,
+            sum(FSL_PARAM_X, FSL_LITERAL_TEXT),
+            vec![(FSL_PLUS_TEXT_NARROW, Bound::Integer(0, 10))],
         ),
         (
-            QSL_SHARED,
-            sum(QSL_PARAM_X, QSL_LITERAL_TWO),
-            vec![(QSL_SHARED_NARROW, Bound::Integer(0, 11))],
+            FSL_SHARED,
+            sum(FSL_PARAM_X, FSL_LITERAL_TWO),
+            vec![(FSL_SHARED_NARROW, Bound::Integer(0, 11))],
         ),
     ] {
         let form = body["operator"].as_str().expect("operator").to_owned();
@@ -4272,9 +4284,9 @@ fn qsl_shaped_wire() -> PackageBuilder {
             builder.narrow(narrow, &operand, &target);
         }
     }
-    let shared = fixture_label(&code_id(QSL_SHARED)).to_owned();
+    let shared = fixture_label(&code_id(FSL_SHARED)).to_owned();
     builder.application_bounded(
-        QSL_SHARED_OUTER,
+        FSL_SHARED_OUTER,
         "expression",
         "binary",
         &integer_type,
@@ -4282,7 +4294,7 @@ fn qsl_shaped_wire() -> PackageBuilder {
             "binary",
             op("quire.op.integer.add"),
             &integer_type,
-            vec![reference(&shared), reference(&key(QSL_PARAM_X))],
+            vec![reference(&shared), reference(&key(FSL_PARAM_X))],
         ),
         &[],
     );
@@ -4291,9 +4303,9 @@ fn qsl_shaped_wire() -> PackageBuilder {
 
 /// Keep the malformed Integer-range-over-Rational narrowing outside the admitted corpus.
 /// The base wire is resolved first, so its deliberate invalid shape is the first reader refusal.
-pub fn qsl_wrong_base_package() -> PackageBuilder {
+pub fn fsl_wrong_base_package() -> PackageBuilder {
     let rekey::ResolvedWire { wire, ids, outcome } =
-        qsl_shaped_package().resolved_wire(CheckedPackageReadLimits::bounded());
+        fsl_shaped_package().resolved_wire(CheckedPackageReadLimits::bounded());
     assert!(matches!(outcome, CheckedPackageV2ReadResult::Admitted(_)));
     let mut builder = PackageBuilder {
         value: wire,
@@ -4302,10 +4314,10 @@ pub fn qsl_wrong_base_package() -> PackageBuilder {
     };
     let integer = fixture_label(&ids.resolve(&code_id(T_INTEGER))).to_owned();
     let rational = fixture_label(&ids.resolve(&code_id(T_RATIONAL))).to_owned();
-    let operand_x = fixture_label(&ids.resolve(&code_id(QSL_PARAM_X))).to_owned();
-    let operand_w = fixture_label(&ids.resolve(&code_id(QSL_PARAM_W))).to_owned();
+    let operand_x = fixture_label(&ids.resolve(&code_id(FSL_PARAM_X))).to_owned();
+    let operand_w = fixture_label(&ids.resolve(&code_id(FSL_PARAM_W))).to_owned();
     builder.application_bounded(
-        QSL_WRONG_BASE_NARROWED,
+        FSL_WRONG_BASE_NARROWED,
         "expression",
         "binary",
         &integer,
@@ -4331,8 +4343,8 @@ pub fn qsl_wrong_base_package() -> PackageBuilder {
         &foreign,
     );
     builder.narrow(
-        QSL_WRONG_BASE_NARROW,
-        &fixture_label(&code_id(QSL_WRONG_BASE_NARROWED)),
+        FSL_WRONG_BASE_NARROW,
+        &fixture_label(&code_id(FSL_WRONG_BASE_NARROWED)),
         &bound_digest,
     );
     builder
@@ -4340,7 +4352,7 @@ pub fn qsl_wrong_base_package() -> PackageBuilder {
 
 impl PackageBuilder {
     /// A narrowing `conversion` of the node `operand` to the `bounded_domain` `target`, typed by
-    /// `target`, in QSL's shape.
+    /// `target`, in FSL's shape.
     pub fn narrow(&mut self, code: u32, operand: &str, target: &str) -> &mut Self {
         let body = application(
             "convert",
@@ -4364,8 +4376,9 @@ impl PackageBuilder {
     }
 }
 
-/// `x rem 2` over `Int[-5, 5]`: `integer.rem` has no derivable descriptor.
-pub const DERIVE_REM: u32 = 2040;
+/// A `numeric.narrow` conversion of an `Int[-5, 5]` operand: `numeric.narrow` has no derivable
+/// descriptor, so it is the fixture's refused identity.
+pub const DERIVE_REFUSED: u32 = 2040;
 /// `x == 2` over integers.
 pub const DERIVE_INTEGER_EQ: u32 = 2041;
 /// Checked Boolean connective and equality applications.
@@ -4584,26 +4597,23 @@ pub fn derivation_package_with(extra_codes: &[u32]) -> PackageBuilder {
     let rat = builder.bound(&RAT);
     let rem_operand =
         builder.dedicated_operand_tagged("integer", std::slice::from_ref(&int5), "derive-rem");
-    builder.application_bounded(
-        DERIVE_REM,
+    builder.application_code_with(
+        DERIVE_REFUSED,
         "expression",
-        "binary",
-        &key(T_INTEGER),
+        "conversion",
+        &int5,
         application(
-            "binary",
+            "convert",
             op_full(
-                "quire.op.integer.rem",
-                vec![law(
-                    "integer_division",
-                    integer_division_definition(DivisionProfile::Truncating),
-                )],
+                "quire.op.numeric.narrow",
+                Vec::new(),
                 None,
-                None,
+                Some(type_argument_member(&int5)),
             ),
-            &key(T_INTEGER),
-            vec![reference(&rem_operand), literal("integer", "2")],
+            &int5,
+            vec![reference(&rem_operand)],
         ),
-        &[INT5],
+        &[rem_operand.clone(), int5.clone()],
     );
     let eq_operand =
         builder.dedicated_operand_tagged("integer", std::slice::from_ref(&int), "derive-eq");
@@ -5287,7 +5297,7 @@ pub fn bare_compound_quantity_parameter_package() -> PackageBuilder {
     builder.focused(&[code_id(9909)])
 }
 
-/// Admit one carried target directly from the published QSpec carrier nodes.
+/// Admit one carried target directly from the published FSpec carrier nodes.
 pub fn carried_quantity_package(vectors: &Value, target: &str, code: u32) -> PackageBuilder {
     fn import(
         builder: &mut PackageBuilder,

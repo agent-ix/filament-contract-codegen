@@ -2,12 +2,12 @@
 use super::scalar_playback::{
     replay_fixture, replay_fixture_guarded, replay_fixture_with_extra, transcript, ReplayFixture,
 };
-use ix_trace_rs::trace;
-use qsl_replay::{NativeOutcome, OperatorParityResult, ReplayLimits};
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     LockedSource, OriginalScalarContext, ReplayInputs, ScalarBuildError, ScalarDriverObservation,
     ScalarReplayPlan, ScalarSentRequest, WitnessDecodeLimits, SCALAR_PLAYBACK_BYTES,
 };
+use ix_trace_rs::trace;
+use qsl_replay::{NativeOutcome, OperatorParityResult, ReplayLimits};
 use quire_contract_model::CheckedPackageReadLimits;
 use quire_exact::{Integer, IntegerInterval};
 use std::{collections::BTreeMap, fs, path::PathBuf, process::Command};
@@ -160,11 +160,11 @@ pub(super) fn observe(
             .map(|(path, _)| (path.clone(), fs::read(scratch.0.join(path)).unwrap()))
             .collect(),
         identity: fixture.harness.identity.clone(),
-        harness: quire_contract_codegen::Artifact::new(
+        harness: filament_contract_codegen::Artifact::new(
             fixture.harness.rust.path.clone(),
             fs::read_to_string(scratch.0.join("src/lib.rs")).unwrap(),
         ),
-        record: quire_contract_codegen::Artifact::new(
+        record: filament_contract_codegen::Artifact::new(
             fixture.harness.record.path.clone(),
             fs::read_to_string(scratch.0.join(&fixture.harness.record.path)).unwrap(),
         ),
@@ -230,15 +230,15 @@ fn original_scalar_driver_executes_independent_repeated_draws_and_binds_real_qsl
     let report = qsl_replay::replay_operator_parity(wire.clone(), claim.clone(), limits);
     assert!(
         matches!(report.result(), OperatorParityResult::Agrees { .. }),
-        "real QSL result: {:?}",
+        "real FSL result: {:?}",
         report.result()
     );
     assert!(matches!(
         completed.settlement(&sent, Some(&report)).unwrap(),
-        quire_contract_codegen::ScalarSettlement::Parity(result) if std::ptr::eq(result, report.result())
+        filament_contract_codegen::ScalarSettlement::Parity(result) if std::ptr::eq(result, report.result())
     ));
 
-    // Both are otherwise genuine membership-valid QSL claims. Structural
+    // Both are otherwise genuine membership-valid FSL claims. Structural
     // identity alone cannot authenticate the original range or opaque kind.
     let mut range = claim.clone();
     let qsl_replay::ScalarOperation::Add { left, .. } = &mut range.operation else {
@@ -502,7 +502,7 @@ fn scalar_actual_sent_context_and_every_driver_tie_are_independently_checked() {
     ));
     assert!(matches!(
         completed.settlement(&sent, Some(&report)).unwrap(),
-        quire_contract_codegen::ScalarSettlement::Parity(result) if std::ptr::eq(result, report.result())
+        filament_contract_codegen::ScalarSettlement::Parity(result) if std::ptr::eq(result, report.result())
     ));
 }
 

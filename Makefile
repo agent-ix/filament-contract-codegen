@@ -1,5 +1,5 @@
 # =============================================================================
-# Quire Contract Codegen Makefile
+# Filament Contract Codegen Makefile
 # =============================================================================
 #
 # Native orchestration: every target calls the toolchain that owns the job.
@@ -19,7 +19,7 @@ help:
 	@echo "  make fmt-check        - Verify formatting (CI gate)"
 	@echo "  make lint             - Clippy with -D warnings"
 	@echo "  make test             - cargo test"
-	@echo "  make qspec-preflight  - Verify the explicit QSpec fixture root"
+	@echo "  make fspec-preflight  - Verify the explicit FSpec fixture root"
 	@echo "  make build            - Release build"
 	@echo "  make kani             - Run the Kani obligation lane serially"
 	@echo "  make kani-scope       - Show whether changed paths require the real-Kani lane"
@@ -51,8 +51,8 @@ fmt-check:
 lint:
 	$(CARGO) clippy $(LOCKED) --all-targets -- -D warnings
 
-export QSPEC_DIR
-QSPEC_FIXTURES := positive-union-nodes positive-clause-operations positive-all-families
+export FSPEC_DIR
+FSPEC_FIXTURES := positive-union-nodes positive-clause-operations positive-all-families
 GATES_BIN := target/cg-gates
 GATES_CARGO_TARGET_DIR := $(if $(strip $(CARGO_TARGET_DIR)),$(CARGO_TARGET_DIR),target)
 
@@ -61,27 +61,27 @@ $(GATES_BIN): scripts/cg_gates.rs Cargo.toml Cargo.lock Makefile
 	$(CARGO) +$(MSRV) build $(LOCKED) --bin cg_gates --target-dir "$(GATES_CARGO_TARGET_DIR)"
 	install -m 755 "$(GATES_CARGO_TARGET_DIR)/debug/cg_gates" $@
 
-.PHONY: qspec-preflight
-qspec-preflight:
-	@if [ -z "$$QSPEC_DIR" ]; then \
-	  echo 'QSPEC_DIR is required: pass the quire-specification checkout root explicitly' >&2; exit 2; \
+.PHONY: fspec-preflight
+fspec-preflight:
+	@if [ -z "$$FSPEC_DIR" ]; then \
+	  echo 'FSPEC_DIR is required: pass the filament-specification checkout root explicitly' >&2; exit 2; \
 	fi; \
-	if [ ! -d "$$QSPEC_DIR" ]; then \
-	  echo "QSPEC_DIR is not a directory: $$QSPEC_DIR" >&2; exit 2; \
+	if [ ! -d "$$FSPEC_DIR" ]; then \
+	  echo "FSPEC_DIR is not a directory: $$FSPEC_DIR" >&2; exit 2; \
 	fi; \
-	for name in $(QSPEC_FIXTURES); do \
-	  fixture="$$QSPEC_DIR/proposals/checked-package-v2/fixtures/$$name.json"; \
+	for name in $(FSPEC_FIXTURES); do \
+	  fixture="$$FSPEC_DIR/proposals/checked-package-v2/fixtures/$$name.json"; \
 	  if [ ! -f "$$fixture" ]; then \
-	    echo "QSPEC_DIR is missing required fixture: $$fixture" >&2; exit 2; \
+	    echo "FSPEC_DIR is missing required fixture: $$fixture" >&2; exit 2; \
 	  fi; \
 	done
 
-.PHONY: qspec-preflight-selftest
-qspec-preflight-selftest: $(GATES_BIN)
-	$(GATES_BIN) qspec-selftest
+.PHONY: fspec-preflight-selftest
+fspec-preflight-selftest: $(GATES_BIN)
+	$(GATES_BIN) fspec-selftest
 
 .PHONY: test
-test: qspec-preflight qspec-preflight-selftest
+test: fspec-preflight fspec-preflight-selftest
 	$(CARGO) test $(LOCKED)
 
 # The Kani lane (FR-015, TC-025). Kani and CBMC are memory-heavy, so the lane
@@ -109,7 +109,10 @@ tools:
 
 KANI_LOCK ?= /tmp/agent-e-heavy-build.lock
 # Keep each ignored installed-Kani test module in this lane; kani-scope selects the gate by path.
-KANI_FILTERS := kani_obligations kani_obligations_symbolic_domains skeleton_spine kani_stdout_capture bounded_kani_corpus kani_generation kani_batching enum_scalar_harness float_scalar_harness
+# The three integer_division_harness reproducers (about 600 s and 8 GiB each, all expected TimedOut)
+# are deliberately outside this gate; run them by name with --ignored (see
+# docs/qualification/ir854-general-route-division-measurements.md).
+KANI_FILTERS := kani_obligations kani_obligations_symbolic_domains skeleton_spine kani_stdout_capture bounded_kani_corpus kani_generation kani_batching enum_scalar_harness float_scalar_harness shadow_kani
 KANI_TEST := $(CARGO) +$(MSRV) test $(LOCKED) -j 4 --test it --target-dir target-codex-backends -- --ignored --test-threads=1 $(KANI_FILTERS)
 
 .PHONY: kani kani-scope kani-gate
@@ -189,10 +192,10 @@ SIBLINGS ?= $(abspath $(shell git rev-parse --path-format=absolute --git-common-
 LOCAL_PATCHES ?= quire-contract-ir:quire-contract-ir:. quire-contract-ir:quire-contract-model:crates/quire-contract-model \
 	quire-contract-runtime:quire-contract-runtime:. \
 	quire-verification-contracts:quire-verification-contracts:. \
-	quire-spec-language:qsl-attrs:qsl-attrs quire-spec-language:qsl-cst:qsl-cst quire-spec-language:qsl-eval:qsl-eval \
-	quire-spec-language:qsl-forms:qsl-forms quire-spec-language:qsl-foundation:qsl-foundation \
-	quire-spec-language:qsl-package:qsl-package quire-spec-language:qsl-replay:qsl-replay \
-	quire-spec-language:qsl-semantics:qsl-semantics \
+	filament-spec-language:qsl-attrs:qsl-attrs filament-spec-language:qsl-cst:qsl-cst filament-spec-language:qsl-eval:qsl-eval \
+	filament-spec-language:qsl-forms:qsl-forms filament-spec-language:qsl-foundation:qsl-foundation \
+	filament-spec-language:qsl-package:qsl-package filament-spec-language:qsl-replay:qsl-replay \
+	filament-spec-language:qsl-semantics:qsl-semantics \
 	quire-exact:quire-exact:. quire-semantic-value:quire-semantic-value:.
 
 .PHONY: use-local
@@ -244,5 +247,5 @@ use-remote:
 
 .NOTPARALLEL: ci
 .PHONY: ci
-ci: qspec-preflight
+ci: fspec-preflight
 	$(MAKE) -j1 fmt-check spec lint msrv deny rustdoc test

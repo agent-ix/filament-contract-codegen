@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Whole-object collection operation contexts from authentic QSL emission and IR admission.
+//! Whole-object collection operation contexts from authentic FSL emission and IR admission.
 
-use ix_trace_rs::trace;
-use qsl_replay::{call_site, ClauseName, DependencyInput, Identifier, SourceIdentity};
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     negotiate_kani_obligations, CollectionKindIdentity, KaniObligationOutcome,
     KaniObligationRequest, KaniV2ClauseObligationHarness, ObligationDisposition, ObligationItem,
     ObligationKind, RequirementOccurrence, UnsupportedObligation, V2ClauseClaimField,
     V2ClauseElementDomain, V2ClauseObligationClaim, V2ClauseObligationRecord, V2ClauseParameter,
     V2ClauseRead,
 };
+use ix_trace_rs::trace;
+use qsl_replay::{call_site, ClauseName, DependencyInput, Identifier, SourceIdentity};
 use quire_contract_model::{
     CheckedNodeId, CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
     CheckedPackageV2ReadResult, CheckedTerm,
@@ -79,7 +79,7 @@ fn fixture_with_body(doc: &Value, preconditions: &str, body: &str) -> CheckedPac
         &DependencyInput::default(),
         &ClauseName(Identifier::new("CollectionReady").unwrap()),
     )
-    .expect("QSL emits the authored operation clauses");
+    .expect("FSL emits the authored operation clauses");
     let mut evidence = CheckedPackageEvidence::new();
     evidence.support_feature("quire.value.complete/v1");
     evidence
@@ -91,7 +91,7 @@ fn fixture_with_body(doc: &Value, preconditions: &str, body: &str) -> CheckedPac
         &evidence,
     ) {
         CheckedPackageV2ReadResult::Admitted(package) => *package,
-        other => panic!("strict reader must admit QSL emission: {other:?}"),
+        other => panic!("strict reader must admit FSL emission: {other:?}"),
     }
 }
 
@@ -147,7 +147,7 @@ fn postcondition(outcome: KaniObligationOutcome) -> KaniV2ClauseObligationHarnes
     v2_clause_harnesses
         .into_iter()
         .find(|harness| {
-            harness.identity.kind == quire_contract_codegen::ObligationKind::Postcondition
+            harness.identity.kind == filament_contract_codegen::ObligationKind::Postcondition
         })
         .unwrap_or_else(|| panic!("one collection postcondition harness: {records:?}"))
 }
@@ -291,8 +291,8 @@ fn subject(items: &mut quire_exact::Value, unread: &mut quire_exact::Value, coun
         let context = harness.identity.collection_operation.as_ref().unwrap();
         let subject = if let Some(result) = &context.result {
             let (ty, value) = match result.domain {
-                quire_contract_codegen::CollectionElementIdentity::Boolean => ("bool", "true"),
-                quire_contract_codegen::CollectionElementIdentity::Integer { .. } => {
+                filament_contract_codegen::CollectionElementIdentity::Boolean => ("bool", "true"),
+                filament_contract_codegen::CollectionElementIdentity::Integer { .. } => {
                     ("i64", "if action == \"result-domain\" { 99 } else { 2 }")
                 }
             };
@@ -439,10 +439,10 @@ fn operation_context_requires_and_assumes_same_anchor_preconditions() {
     assert!(v2_clause_harnesses.is_empty());
     assert!(matches!(
         records[0].disposition,
-        quire_contract_codegen::ObligationDisposition::Unsupported {
-            reason: quire_contract_codegen::UnsupportedObligation::CollectionClaimNotRendered {
+        filament_contract_codegen::ObligationDisposition::Unsupported {
+            reason: filament_contract_codegen::UnsupportedObligation::CollectionClaimNotRendered {
                 reason:
-                    quire_contract_codegen::CollectionUnsupportedReason::MissingSiblingPrecondition { ref precondition },
+                    filament_contract_codegen::CollectionUnsupportedReason::MissingSiblingPrecondition { ref precondition },
                 ..
             }
         }
@@ -477,18 +477,18 @@ fn present_unrenderable_sibling_refuses_collection_postcondition() {
     assert!(records.iter().any(|record| {
         matches!(
             &record.subject,
-            quire_contract_codegen::ObligationSubject::CheckedNode { node_id, .. }
+            filament_contract_codegen::ObligationSubject::CheckedNode { node_id, .. }
                 if node_id == pre
         ) && matches!(
             record.disposition,
-            quire_contract_codegen::ObligationDisposition::Supported { .. }
+            filament_contract_codegen::ObligationDisposition::Supported { .. }
         )
     }));
     assert!(records.iter().any(|record| matches!(
         &record.disposition,
-        quire_contract_codegen::ObligationDisposition::Unsupported {
-            reason: quire_contract_codegen::UnsupportedObligation::CollectionClaimNotRendered {
-                reason: quire_contract_codegen::CollectionUnsupportedReason::UnsupportedSiblingPrecondition { precondition },
+        filament_contract_codegen::ObligationDisposition::Unsupported {
+            reason: filament_contract_codegen::UnsupportedObligation::CollectionClaimNotRendered {
+                reason: filament_contract_codegen::CollectionUnsupportedReason::UnsupportedSiblingPrecondition { precondition },
                 ..
             }
         } if precondition == pre
@@ -496,7 +496,7 @@ fn present_unrenderable_sibling_refuses_collection_postcondition() {
     assert!(v2_clause_harnesses
         .iter()
         .all(|harness| harness.identity.kind
-            != quire_contract_codegen::ObligationKind::Postcondition));
+            != filament_contract_codegen::ObligationKind::Postcondition));
 }
 
 #[test]
@@ -541,7 +541,7 @@ fn operation_context_checks_result_domain_and_the_authored_postcondition() {
 #[test]
 #[trace("TC-025", "FR-015-AC-96", "FR-015-AC-97", "FR-015-AC-102")]
 fn unsupported_whole_object_axes_have_typed_refusals_and_no_harness() {
-    use quire_contract_codegen::{
+    use filament_contract_codegen::{
         CollectionUnsupportedReason as Reason, ObligationDisposition, UnsupportedObligation,
     };
     for (axis, reason) in [
@@ -606,7 +606,7 @@ fn whole_object_precondition_totality_and_playback_keep_all_state_and_parameters
     let harness = v2_clause_harnesses
         .iter()
         .find(|harness| {
-            harness.identity.kind == quire_contract_codegen::ObligationKind::Precondition
+            harness.identity.kind == filament_contract_codegen::ObligationKind::Precondition
         })
         .unwrap_or_else(|| panic!("precondition context: {records:?}"));
     let context = harness.identity.collection_operation.as_ref().unwrap();
@@ -642,11 +642,11 @@ fn whole_object_precondition_totality_and_playback_keep_all_state_and_parameters
         .collect::<Vec<_>>()
         .join("\n");
     let transcript = format!("/// Test generated for harness `{}::{}`\n/// Check for `assertion`: \"\"the selected precondition completes a Boolean\"\"\nlet concrete_vals: Vec<Vec<u8>> = vec![\n{entries}\n];", harness.identity.module_symbol, harness.identity.harness_symbol);
-    let limits = quire_contract_codegen::WitnessDecodeLimits {
+    let limits = filament_contract_codegen::WitnessDecodeLimits {
         bytes: 4096,
         values: 8,
     };
-    let playback = quire_contract_codegen::parse_assertion_playback(
+    let playback = filament_contract_codegen::parse_assertion_playback(
         &transcript,
         harness.identity.harness_symbol.as_str(),
         harness.identity.module_symbol.as_str(),
@@ -655,7 +655,7 @@ fn whole_object_precondition_totality_and_playback_keep_all_state_and_parameters
     )
     .unwrap();
     let (witness, settlement) =
-        quire_contract_codegen::settle_v2_collection_precondition_falsification(
+        filament_contract_codegen::settle_v2_collection_precondition_falsification(
             harness, &playback, limits,
         )
         .unwrap();
@@ -680,7 +680,7 @@ fn whole_object_precondition_totality_and_playback_keep_all_state_and_parameters
     );
     assert!(matches!(
         settlement,
-        quire_contract_codegen::ReplaySettlement::CgDefect
+        filament_contract_codegen::ReplaySettlement::CgDefect
     ));
 }
 
@@ -700,8 +700,8 @@ fn unread_collection_bounds_and_full_width_integer_domains_are_not_replaced() {
         panic!("valid request")
     };
     assert!(v2_clause_harnesses.is_empty());
-    assert!(matches!(records[0].disposition, quire_contract_codegen::ObligationDisposition::Unsupported {
-        reason: quire_contract_codegen::UnsupportedObligation::CollectionClaimNotRendered { reason: quire_contract_codegen::CollectionUnsupportedReason::UnwindBelowCollectionBound { required:10, supplied:8 }, .. }
+    assert!(matches!(records[0].disposition, filament_contract_codegen::ObligationDisposition::Unsupported {
+        reason: filament_contract_codegen::UnsupportedObligation::CollectionClaimNotRendered { reason: filament_contract_codegen::CollectionUnsupportedReason::UnwindBelowCollectionBound { required:10, supplied:8 }, .. }
     }));
     let mut doc = document();
     doc["types"][0]["constraints"][0]["operands"]["value"] = json!(i64::MIN.to_string());
@@ -803,7 +803,7 @@ fn whole_object_identity_regenerates_and_changes_with_unread_domains() {
     let context = changed.identity.collection_operation.unwrap();
     assert!(matches!(
         context.fields[1].bounds,
-        quire_contract_codegen::SymbolicBounds::Integer {
+        filament_contract_codegen::SymbolicBounds::Integer {
             minimum: 0,
             maximum: 3
         }
@@ -938,9 +938,9 @@ fn unsupported_sibling_refusal_names_the_exact_admitted_precondition() {
     };
     assert!(v2_clause_harnesses.is_empty());
     assert!(
-        matches!(&records[0].disposition, quire_contract_codegen::ObligationDisposition::Unsupported {
-        reason: quire_contract_codegen::UnsupportedObligation::CollectionClaimNotRendered {
-            reason: quire_contract_codegen::CollectionUnsupportedReason::UnsupportedSiblingPrecondition { precondition }, ..
+        matches!(&records[0].disposition, filament_contract_codegen::ObligationDisposition::Unsupported {
+        reason: filament_contract_codegen::UnsupportedObligation::CollectionClaimNotRendered {
+            reason: filament_contract_codegen::CollectionUnsupportedReason::UnsupportedSiblingPrecondition { precondition }, ..
         }
     } if precondition == pre)
     );
@@ -971,16 +971,17 @@ fn identity_binds_nonquantifier_conjuncts_and_assumed_precondition_meaning() {
         let package = fixture_with_body(&document(), pre, body);
         postcondition(negotiate(&package, &clauses(&package)))
     });
-    let quire_contract_codegen::CollectionOperationConditionIdentity::And(_, scalar) = &variants[1]
-        .identity
-        .collection_operation
-        .as_ref()
-        .unwrap()
-        .condition
+    let filament_contract_codegen::CollectionOperationConditionIdentity::And(_, scalar) = &variants
+        [1]
+    .identity
+    .collection_operation
+    .as_ref()
+    .unwrap()
+    .condition
     else {
         panic!("the public identity retains the whole conjunction");
     };
-    let quire_contract_codegen::CollectionOperationConditionIdentity::Scalar { expression } =
+    let filament_contract_codegen::CollectionOperationConditionIdentity::Scalar { expression } =
         scalar.as_ref()
     else {
         panic!("the public identity retains its scalar conjunct");
@@ -1040,8 +1041,10 @@ pub(crate) fn guard_sources() -> Vec<(&'static str, String)> {
         .into_iter()
         .map(|harness| {
             let family = match harness.identity.kind {
-                quire_contract_codegen::ObligationKind::Precondition => "whole-object precondition",
-                quire_contract_codegen::ObligationKind::Postcondition => {
+                filament_contract_codegen::ObligationKind::Precondition => {
+                    "whole-object precondition"
+                }
+                filament_contract_codegen::ObligationKind::Postcondition => {
                     "whole-object postcondition"
                 }
                 _ => panic!("only the source-authored operation clauses are emitted"),
@@ -1407,7 +1410,7 @@ fn document_with_grid(nested: bool) -> Value {
 
 fn refusal_reason(
     package: &CheckedPackageV2,
-) -> Option<quire_contract_codegen::CollectionUnsupportedReason> {
+) -> Option<filament_contract_codegen::CollectionUnsupportedReason> {
     let [clause] = clauses(package).try_into().expect("one postcondition");
     // A hand-written record that omits `grid`: a record comparison would name StateReads.
     let claim = hand_written_claim(package, &clause);
@@ -1422,7 +1425,7 @@ fn refusal_reason(
 #[test]
 #[trace("TC-025", "FR-015-AC-133")]
 fn nested_sequences_stay_refused_ahead_of_any_record_comparison() {
-    use quire_contract_codegen::CollectionUnsupportedReason as Reason;
+    use filament_contract_codegen::CollectionUnsupportedReason as Reason;
     // Control: a one-level `grid` is a drawn field that this record omits, so it is compared
     // and refused as a record mismatch, not as an unsupported shape.
     let one_level = fixture(&document_with_grid(false), "");

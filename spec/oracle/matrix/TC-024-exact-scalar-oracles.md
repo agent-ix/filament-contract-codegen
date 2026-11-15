@@ -3,9 +3,9 @@ id: TC-024
 title: "Verify exact complete-V1 scalar oracle generation and agreement"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-014
+  - target: ix://agent-ix/filament-contract-codegen/FR-014
     type: verifies
-  - target: ix://agent-ix/quire-specification/TC-218
+  - target: ix://agent-ix/filament-specification/TC-218
     type: references
 ---
 # TC-024: Verify exact complete-V1 scalar oracle generation and agreement
@@ -14,14 +14,14 @@ relationships:
 
 Verify that scalar oracles generated from an admitted CheckedPackage V2 cover
 every scalar family, refuse every non-generated item with a typed reason, are
-byte-deterministic, and agree with direct runtime execution. Agreement with the QSL value authority is outside CG's boundary and not claimed by CG (FR-014-AC-47); generated-oracle against QSL agreement is owned by quire-integration IR-842.
+byte-deterministic, and agree with direct runtime execution. Agreement with the FSL value authority is outside CG's boundary and not claimed by CG (FR-014-AC-47); generated-oracle against FSL agreement is owned by filament-integration IR-842.
 
 Current carried-target qualification (FR-014-AC-62..65, IR-1355): the compiled
 reader-admitted fixture executes every CQ-E01 through CQ-E26 vector by reference
-from QSpec. All 26 published dispositions pass with QSV
-(owner fix IR-1372, quire-semantic-value#97). Generated and direct QSV values,
+from FSpec. All 26 published dispositions pass with FSV
+(owner fix IR-1372, filament-semantic-value#97). Generated and direct FSV values,
 loss, typed outcomes, admitted charges, consumed counters and every charge-denial
-run agree. CQ-E13 completes with integer `2` at QSpec's unchanged
+run agree. CQ-E13 completes with integer `2` at FSpec's unchanged
 `L(2,0,0,1,2,1)` tuple; no published limit or expected disposition was changed.
 First-party dependency manifests track `main` with compatible version constraints. The reader-admitted fixture does not credit original source-to-generated
 IR-842 integration execution. Historical review snapshots retain their earlier
@@ -30,7 +30,7 @@ CQ-E13 blocker evidence; this qualification records the subsequent owner-fix run
 ## Test Procedure
 
 For operand-derived integer division/modulo result bounds (FR-014-AC-18/21),
-compile genuine QSL functions with bounded positive and negative operands and
+compile genuine FSL functions with bounded positive and negative operands and
 an Integer result; strict-read their exact bytes, derive descriptors and execute
 the generated native functions. Assert the actual intervals, completed signed
 values, modulo's strict divisor-magnitude bound, zero-only endpoints, signed
@@ -40,7 +40,7 @@ undefined outcome. Assert original operand-bound ids and confirmed operation
 provenance. Unbounded operands still refuse `MissingBound`; a disagreeing
 caller descriptor refuses `DerivedBoundMismatch`; an explicit wider result
 narrowing continues to control the descriptor. This verifies the CG production
-seam; IR-842 integration rows advance only after their independent QSL-authority
+seam; IR-842 integration rows advance only after their independent FSL-authority
 composition executes, not from these direct generated/runtime assertions.
 
 
@@ -66,15 +66,15 @@ composition executes, not from these direct generated/runtime assertions.
    generated source ceiling; construct invalid and incomplete body records.
 4. Generate the corpus crate at test time, compile it with the agreement cases
    as its integration test, and execute its oracles on vectors
-   adapted from QSpec TC-185, TC-186, TC-192 and TC-193 and from the TC-187 vectors U02, U03, U05, U09, U12, U13, U14, U19, U20, U21, U23, U24, U27 and U28 (FR-014-AC-6 lists the TC-187 vectors that are not covered); run each at QSpec's own limit tuple and assert QSpec's disposition, with the whole incomplete record; assert U06 and U11 against the runtime's unit-graph admission, since they have no generated oracle; compare each
+   adapted from FSpec TC-185, TC-186, TC-192 and TC-193 and from the TC-187 vectors U02, U03, U05, U09, U12, U13, U14, U19, U20, U21, U23, U24, U27 and U28 (FR-014-AC-6 lists the TC-187 vectors that are not covered); run each at FSpec's own limit tuple and assert FSpec's disposition, with the whole incomplete record; assert U06 and U11 against the runtime's unit-graph admission, since they have no generated oracle; compare each
    outcome, admitted charges and consumed counters with direct runtime
    execution, including the outcome of denying each admitted charge in turn.
-   No TC-187 vector is compared with the QSL value authority here (FR-014-AC-47).
+   No TC-187 vector is compared with the FSL value authority here (FR-014-AC-47).
    U06 and U11 are a Contract Runtime unit-graph admission check (Contract Runtime FR-012-AC-4, TC-033), not oracle agreement.
    For quantity vectors, obtain every generated and direct operand through
-   actual QSV `UnitTable::resolve` or `UnitScope::resolve`. Compare generated
-   comparison calls with QSV `compare_quantity` and arithmetic calls with
-   QSV `evaluate_quantity_unit`, asserting the paired `IdentifiedUnit` on
+   actual FSV `UnitTable::resolve` or `UnitScope::resolve`. Compare generated
+   comparison calls with FSV `compare_quantity` and arithmetic calls with
+   FSV `evaluate_quantity_unit`, asserting the paired `IdentifiedUnit` on
    both completed and stopped outcomes. Record the result unit with
    `UnitScope::form` and resolve completed products, quotients and powers for
    a subsequent operation; assert the exact id and metadata. Exercise the
@@ -84,7 +84,7 @@ composition executes, not from these direct generated/runtime assertions.
    `OracleStop` with unchanged charges and counters. Deny each admitted
    charge in turn and assert that no stopped outcome becomes completion.
    Inspect emitted source for actual owner calls and absence of CG-created
-   unit ids. These direct library tests do not claim source-authored QSL
+   unit ids. These direct library tests do not claim source-authored FSL
    grammar or table-lowering coverage (FR-014-AC-52).
 5. Compile the generated crate manifest.
 6. Derive an item for every node of the exact-scalar corpus with `derive_exact_scalar_items`
@@ -94,7 +94,7 @@ composition executes, not from these direct generated/runtime assertions.
    `numeric.convert_rounding`); derive every `quantity.convert` node of the corpus
    (each carries the `exact` mode its unit type pins) and check each derives an
    `ir_confirmed` descriptor and generates an oracle that calls `convert_quantity`
-   with `QuantityTarget::Exact`, a resolved QSV `UnitQuantity` operand and
+   with `QuantityTarget::Exact`, a resolved FSV `UnitQuantity` operand and
    `unit.unit()`, and returns a kernel `Quantity` with `unit.id()` and the
    `ConvertedValue::Exact` magnitude in the unit passed as the
    call-time argument `unit: &IdentifiedUnit`, never a scalar and never checked
@@ -104,7 +104,7 @@ composition executes, not from these direct generated/runtime assertions.
    `convert_quantity` execution, with zero charges and no counter change for
    `ill_typed` (FR-014-AC-49). Retain the target `IdentifiedUnit`, record it
    with `UnitScope::form` and resolve the completed quantity for a subsequent
-   direct QSV comparison; assert its id and exact magnitude, and inspect the
+   direct FSV comparison; assert its id and exact magnitude, and inspect the
    generated handoff for absence of identity recomputation or an added
    post-charge identity refusal (FR-014-AC-48). Request the same nodes under caller-declared
    descriptors, through `generate_routed` with source-authenticated V1
@@ -125,21 +125,21 @@ composition executes, not from these direct generated/runtime assertions.
    controls cannot enter through Contract IR's strict reader. Check that the
    composite-equality generator refuses a conversion root as `FormMismatch`
    and a conversion operand as an unsupported quantity before any artifact.
-   For admitted carried targets, load QSpec's
+   For admitted carried targets, load FSpec's
    `proposals/checked-package-v2/quantity-carrier-vectors.json` by reference.
    Build target nodes and conversions from its `nodes` and `evaluation`
    records, then admit the package through Contract IR's public reader.
    Derive and generate every CQ-E01 through CQ-E26 conversion. Assert its
    exact structural target id, carrier bound, unit, scale interval and mode.
    Compile the generated crate and compare each conversion against direct
-   QSV `convert_quantity` with `QuantityTarget::Carried` under the vector's
+   FSV `convert_quantity` with `QuantityTarget::Carried` under the vector's
    limits. Assert the vector's expected value, loss, refusal or incomplete
    record, the target unit and retained `CarriedQuantityType`; compare all
    ordered charges and counters and deny every admitted charge in turn.
    Include an incompatible-unit control that stops before any charge.
    At the private seam, a mismatched operation mode and malformed carrier
    refuse derivation without changing a valid sibling (FR-014-AC-62..65).
-   This reader-admitted generated-to-QSV agreement does not claim the
+   This reader-admitted generated-to-FSV agreement does not claim the
    original source-to-generated IR-842 integration cells have executed.
    Derive nodes that are not applications, carry no identity, name an identity
    outside the derivable set, or carry a law, mode, operand forms or bound
@@ -182,7 +182,7 @@ composition executes, not from these direct generated/runtime assertions.
     `p` is a `reference` typed by the plain Integer type, and `a + 1` with a
     literal operand. For scalar-result `a + p` that reaches only `a`'s own bound,
     assert `RequiresBound` takes precedence over `MissingBound` (FR-014-AC-25).
-12. In QSL's emitted shape (a literal as a reference to its own
+12. In FSL's emitted shape (a literal as a reference to its own
     plain-Integer-typed `value` node, a parameter as a `parameter`-form `value`
     node, the declared bound on a narrowing `conversion` consuming the
     plain-typed arithmetic node), generate and derive `x + 1` over
@@ -217,9 +217,9 @@ composition executes, not from these direct generated/runtime assertions.
 20. Generate and derive `x + 2` narrowed to `Int[0, 11]` and also an operand of
     the unnarrowed `(x + 2) + x`, and `x + 1` consumed only by its narrowing
     (FR-014-AC-34).
-20a. From admitted QSL-shaped nodes, derive and generate the outer operations
+20a. From admitted FSL-shaped nodes, derive and generate the outer operations
     `(x + 1) + 1` and `-(x + 1)` for `x: Int[0, 9]`, and `x * -1` for
-    `x: Int[1, 9]`. Use the QSL emitter's reference to a plain-Integer inner
+    `x: Int[1, 9]`. Use the FSL emitter's reference to a plain-Integer inner
     application, its negate application over a literal `1`, and the outer
     narrowing conversions. Inspect each operation's `ir_confirmed` provenance,
     checked outer result bound, and per-position inferred operand interval
@@ -237,7 +237,7 @@ composition executes, not from these direct generated/runtime assertions.
     them first. Check the exact refusal and sibling isolation (FR-014-AC-46).
 21. Direct unsupported roots (FR-014-AC-44). Admit packages through Contract
     IR's public V2 reader with `temporal`/`formula`, `temporal`/`fairness` and
-    `expression`/`case` roots, using QSpec FR-370 and FR-440 for formula and
+    `expression`/`case` roots, using FSpec FR-370 and FR-440 for formula and
     case shapes and Contract IR FR-038-AC-107 for fairness. Request each root
     with a supported scalar sibling. Compare each root's scalar-profile
     lowering record with its generated claim: the claim keeps the requested
@@ -276,7 +276,7 @@ The six attempted text-admission conversion nodes remain refused by Contract
 IR. Their refusal is evidence of the checked-package boundary, not evidence
 that a caller `TextPayload` was admitted or proved.
 
-For the bounded-parameter and QSL-shaped steps:
+For the bounded-parameter and FSL-shaped steps:
 
 - Step 7: `a + b` generates `ir_confirmed` with checked bounds `[0, 29]`,
   `[0, 9]`, `[10, 20]`, derives the descriptor over `[0, 29]`, and the
@@ -326,8 +326,8 @@ For the bounded-parameter and QSL-shaped steps:
 
 Integer arithmetic, rational arithmetic and ordering (including decimal
 ordering) oracles are checked against direct runtime execution only. Agreement
-with the QSL value authority is outside CG's boundary (FR-014-AC-47) and owned
-by quire-integration IR-842.
+with the FSL value authority is outside CG's boundary (FR-014-AC-47) and owned
+by filament-integration IR-842.
 
 ## Boolean connectives, comparisons and source maps
 
@@ -338,14 +338,14 @@ by quire-integration IR-842.
    each `eq`/`ne` calls `check_equality` and `CheckedEquality::evaluate`, each returning
    `Outcome<bool>` (FR-014-AC-35). Compile the crate against the runtime alone and run each oracle
    over the bounded domain beside direct runtime execution. Outcomes, charges and counters agree on
-   every input (FR-014-AC-37). No comparison with the QSL value authority runs here: it is outside
-   CG's boundary (CG may call the `qsl-replay` facade only, QSL arch-lint T12-A), owned by
-   quire-integration IR-842, and FR-014-AC-47 keeps CG's artifacts from claiming it.
+   every input (FR-014-AC-37). No comparison with the FSL value authority runs here: it is outside
+   CG's boundary (CG may call the `fsl-replay` facade only, FSL arch-lint T12-A), owned by
+   filament-integration IR-842, and FR-014-AC-47 keeps CG's artifacts from claiming it.
 2. Generate an oracle over an `implies` node and read its source map. It declares the consequent
    count, one evaluation-entry probe on the function-entry line outside every consequent region and
    one entry-token probe inside each consequent's region; dropping or duplicating a region leaves the
    declared count unchanged (FR-014-AC-36).
-3. From a QSL-emitted, strict-reader-admitted V2 state-clause package, select a clause whose
+3. From a FSL-emitted, strict-reader-admitted V2 state-clause package, select a clause whose
    `quire.op.state.clause` body's third argument references a separate Boolean expression node.
    Request the clause node id and assert that its descriptor and generated `ir_confirmed`
    `Outcome<bool>` oracle evaluate the referenced expression, while the claim and oracle retain
@@ -357,9 +357,9 @@ by quire-integration IR-842.
 
 ## Checked literal narrowing in a V2 clause (IR-917)
 
-1. Author QSL source with a bounded `amount` parameter and a clause comparison
+1. Author FSL source with a bounded `amount` parameter and a clause comparison
    against literal `0` that the checker lowers as a literal reference wrapped by
-   `quire.op.numeric.narrow`. Use QSL's public emitter and Contract IR's strict
+   `quire.op.numeric.narrow`. Use FSL's public emitter and Contract IR's strict
    reader; inspect the admitted conversion's `type_argument`, sole literal
    reference and target integer range. Select the clause identity through public
    CG and require an `ir_confirmed` generated oracle. Against independent
@@ -429,13 +429,13 @@ claims no executed coverage or Kani result.
    exactly successful parsing of the complete spelling as i64 followed by an
    identical canonical display round trip; vary the supported clause and
    operation context without changing this decision. Private renderer checks
-   alone do not establish public-generation behavior. Use authentic QSL-emitted
+   alone do not establish public-generation behavior. Use authentic FSL-emitted
    fixtures where its source checker admits the literal value and shape;
    separately identify controls admitted through the owner's public candidate
    and reader APIs with a producer-assigned structural ID. The latter establish CG
-   behavior for reader-admitted inputs, not QSL source emission of those values.
+   behavior for reader-admitted inputs, not FSL source emission of those values.
 2. Exercise i64 MIN-1 and MAX+1, i128 MIN and MAX, and exact integers beyond i128.
-   A QSL source-checker refusal before CG does not test CG's fallback; use
+   A FSL source-checker refusal before CG does not test CG's fallback; use
    separately identified candidate/reader-admitted general literal controls for
    values outside that source route's frontier. Their leaves retain the original
    runtime arbitrary-precision canonical parse
@@ -458,7 +458,7 @@ claims no executed coverage or Kani result.
    or spelling normalization. Exercise the defensive private rendering seam
    separately with the same fallback expectation. Do not describe a
    reader-refused package as admitted, or a candidate/reader-admitted general
-   literal control as a QSL source-emission fixture.
+   literal control as a FSL source-emission fixture.
 4. Compare generated oracles with direct owner evaluation whose operands are
    independently prepared through public canonical parsing, without reusing
    the constructor-selection helper. Include all supported integer comparisons
@@ -493,10 +493,10 @@ scalar-bound emitter and kernel canonical parsing are outside this change.
 ## Genuine emitted carried operands and IEEE calls (IR-1401, planned)
 
 This extension verifies FR-014-AC-66 through FR-014-AC-69. It supplies native
-CG-to-owner agreement evidence; quire-integration IR-842 retains ownership of
-agreement with the QSL value authority.
+CG-to-owner agreement evidence; filament-integration IR-842 retains ownership of
+agreement with the FSL value authority.
 
-1. Through the public QSL facade, emit a carried-source quantity conversion
+1. Through the public FSL facade, emit a carried-source quantity conversion
    (TC-187 U01 by reference), `a = b` over IEEE operands, and all three
    `quire::value::ieee::*` comparison intrinsics. Pass the emitted bytes unchanged
    to Contract IR's strict reader. Select actual admitted node identities and
@@ -536,10 +536,10 @@ section records planned qualification and grants no execution credit.
 
 This extension verifies FR-014-AC-72 through FR-014-AC-80. It supplies native
 CG-to-owner agreement evidence only; the Kani row for these identities is
-FR-053 and TC-067, and agreement with the QSL value authority stays with
-quire-integration IR-842.
+FR-053 and TC-067, and agreement with the FSL value authority stays with
+filament-integration IR-842.
 
-1. Through the public QSL facade, emit `quire::value::ieee::sqrt` and `fma`
+1. Through the public FSL facade, emit `quire::value::ieee::sqrt` and `fma`
    calls at `Float32[r]` and `Float64[r]`, pass the bytes unchanged to Contract
    IR's strict reader, select the actual admitted node ids and derive their
    items. Assert each item is derived and `ir_confirmed`, and that each
@@ -589,7 +589,7 @@ quire-integration IR-842.
    (e) drop the rendered `expect_width` prelude for `sqrt` and `fma`: the
    step 3 call passing a `float32` value to the `float64` oracle no longer
    stops before any charge and fails;
-   (f) reuse `add`'s binary shape for the call form: step 1's genuine QSL
+   (f) reuse `add`'s binary shape for the call form: step 1's genuine FSL
    source is refused and fails.
 6. Bind runnable tests to FR-014-AC-72 through FR-014-AC-80 in the existing
    `it` binary and inspect the computed matrix. Do not use spec-text
@@ -602,10 +602,13 @@ the sqrt/fma controls of `src/oracle/scalar/derive/tests.rs`.
 ## Integer remainder derivation (IR-854)
 
 This extension verifies FR-014-AC-81. It supplies CG-to-owner agreement evidence
-only; the Kani row for `rem` is FR-057 and TC-071. This section is planned and
-grants no execution credit until its tests run.
+only; the Kani row for `rem` is FR-057 and TC-071. Its tests are
+`remainder_derives_each_law_and_the_generated_oracle_equals_the_owner_over_the_grid`,
+`remainder_inferred_interval_and_explicit_result_refusal` (`tests/it/integer_division_bounds.rs`) and
+`tc_024_a_remainder_without_exactly_one_law_is_not_derivable` plus the identity, descriptor and
+refused-list controls of `src/oracle/scalar/derive/tests.rs`.
 
-1. Through the public QSL facade, emit `x rem y` under each of the truncating,
+1. Through the public FSL facade, emit `x rem y` under each of the truncating,
    floor and Euclidean `integer_division` selections over finite operand
    bounds, admit the bytes through Contract IR's strict reader, and derive the
    node. Assert a derived, `ir_confirmed` remainder descriptor carrying the
@@ -616,7 +619,7 @@ grants no execution credit until its tests run.
    and one with two laws and assert `LawNotDerivable`.
 3. Compile the generated crate and evaluate the oracle over the FR-014-AC-81
    grid, comparing outcome kind, value and refusal member with direct
-   quire-exact `divide(.., DivisionMember::Remainder, ..)` evaluation,
+   filament-exact `divide(.., DivisionMember::Remainder, ..)` evaluation,
    including a zero divisor and `i64::MIN rem -1`.
 4. Mutation controls: render `rem` as `modulo`, and with
    `DivisionMember::Quotient`; each must fail step 3. Assert that

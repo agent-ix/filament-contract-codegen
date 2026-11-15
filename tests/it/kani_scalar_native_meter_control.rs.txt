@@ -1,7 +1,7 @@
 #[path = "../lib.rs"]
 mod generated;
 
-use quire_exact::{
+use filament_exact::{
     Cancel, CancelCause, ChargePoint, InjectedDenial, Integer, IntegerArithmetic,
     IntegerInterval, LimitKind, Meter, NativeInteger, Outcome, Refusal, ScalarLimits,
 };
@@ -35,7 +35,7 @@ fn evaluate(
     let one = Integer::from(1_i64);
     let bound = IntegerInterval::new(Integer::from(0_i64), Integer::from(9_i64))
         .expect("original result domain");
-    let general = quire_exact::evaluate_integer_arithmetic(
+    let general = filament_exact::evaluate_integer_arithmetic(
         IntegerArithmetic::Add(&left, &one),
         Some(&bound),
         general_meter,

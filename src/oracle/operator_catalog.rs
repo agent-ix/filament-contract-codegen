@@ -25,6 +25,9 @@ pub(crate) enum Operator {
     Subtract,
     Multiply,
     Negate,
+    Divide,
+    Remainder,
+    Modulo,
     Less,
     LessOrEqual,
     Greater,
@@ -48,8 +51,9 @@ pub(crate) struct Entry {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum Family {
-    IntegerArithmetic,
-    IntegerOrdering,
+    Arithmetic,
+    Division,
+    Ordering,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -93,14 +97,23 @@ pub(crate) enum ScalarKaniOperator {
     Subtract,
     Multiply,
     Negate,
+    /// `div`: the quotient under the claim's law.
+    Divide,
+    /// `rem`: the remainder under the claim's law.
+    Remainder,
+    /// `mod`: the Euclidean remainder.
+    Modulo,
 }
 
 impl Operator {
-    pub(crate) const ALL: [Self; 10] = [
+    pub(crate) const ALL: [Self; 13] = [
         Self::Add,
         Self::Subtract,
         Self::Multiply,
         Self::Negate,
+        Self::Divide,
+        Self::Remainder,
+        Self::Modulo,
         Self::Less,
         Self::LessOrEqual,
         Self::Greater,
@@ -123,7 +136,7 @@ impl Operator {
         ) = match self {
             O::Add => (
                 "quire.op.integer.add",
-                Family::IntegerArithmetic,
+                Family::Arithmetic,
                 OperandOrder::LeftThenRight,
                 ResultKind::Integer,
                 Some(IntegerOperator::Add),
@@ -133,7 +146,7 @@ impl Operator {
             ),
             O::Subtract => (
                 "quire.op.integer.sub",
-                Family::IntegerArithmetic,
+                Family::Arithmetic,
                 OperandOrder::LeftThenRight,
                 ResultKind::Integer,
                 Some(IntegerOperator::Subtract),
@@ -143,7 +156,7 @@ impl Operator {
             ),
             O::Multiply => (
                 "quire.op.integer.mul",
-                Family::IntegerArithmetic,
+                Family::Arithmetic,
                 OperandOrder::LeftThenRight,
                 ResultKind::Integer,
                 Some(IntegerOperator::Multiply),
@@ -153,7 +166,7 @@ impl Operator {
             ),
             O::Negate => (
                 "quire.op.integer.negate",
-                Family::IntegerArithmetic,
+                Family::Arithmetic,
                 OperandOrder::Unary,
                 ResultKind::Integer,
                 Some(IntegerOperator::Negate),
@@ -161,9 +174,39 @@ impl Operator {
                 None,
                 None,
             ),
+            O::Divide => (
+                "quire.op.integer.div",
+                Family::Division,
+                OperandOrder::LeftThenRight,
+                ResultKind::Integer,
+                None,
+                Some(ScalarKaniOperator::Divide),
+                None,
+                None,
+            ),
+            O::Remainder => (
+                "quire.op.integer.rem",
+                Family::Division,
+                OperandOrder::LeftThenRight,
+                ResultKind::Integer,
+                None,
+                Some(ScalarKaniOperator::Remainder),
+                None,
+                None,
+            ),
+            O::Modulo => (
+                "quire.op.integer.mod",
+                Family::Division,
+                OperandOrder::LeftThenRight,
+                ResultKind::Integer,
+                None,
+                Some(ScalarKaniOperator::Modulo),
+                None,
+                None,
+            ),
             O::Less => (
                 "quire.op.integer.lt",
-                Family::IntegerOrdering,
+                Family::Ordering,
                 OperandOrder::LeftThenRight,
                 ResultKind::Boolean,
                 None,
@@ -173,7 +216,7 @@ impl Operator {
             ),
             O::LessOrEqual => (
                 "quire.op.integer.le",
-                Family::IntegerOrdering,
+                Family::Ordering,
                 OperandOrder::LeftThenRight,
                 ResultKind::Boolean,
                 None,
@@ -183,7 +226,7 @@ impl Operator {
             ),
             O::Greater => (
                 "quire.op.integer.gt",
-                Family::IntegerOrdering,
+                Family::Ordering,
                 OperandOrder::LeftThenRight,
                 ResultKind::Boolean,
                 None,
@@ -193,7 +236,7 @@ impl Operator {
             ),
             O::GreaterOrEqual => (
                 "quire.op.integer.ge",
-                Family::IntegerOrdering,
+                Family::Ordering,
                 OperandOrder::LeftThenRight,
                 ResultKind::Boolean,
                 None,
@@ -203,7 +246,7 @@ impl Operator {
             ),
             O::Equal => (
                 "quire.op.integer.eq",
-                Family::IntegerOrdering,
+                Family::Ordering,
                 OperandOrder::LeftThenRight,
                 ResultKind::Boolean,
                 None,
@@ -213,7 +256,7 @@ impl Operator {
             ),
             O::NotEqual => (
                 "quire.op.integer.ne",
-                Family::IntegerOrdering,
+                Family::Ordering,
                 OperandOrder::LeftThenRight,
                 ResultKind::Boolean,
                 None,
@@ -261,7 +304,7 @@ mod tests {
         let expected = [
             (
                 "quire.op.integer.add",
-                Family::IntegerArithmetic,
+                Family::Arithmetic,
                 OperandOrder::LeftThenRight,
                 ResultKind::Integer,
                 Some(ScalarKaniOperator::Add),
@@ -269,7 +312,7 @@ mod tests {
             ),
             (
                 "quire.op.integer.sub",
-                Family::IntegerArithmetic,
+                Family::Arithmetic,
                 OperandOrder::LeftThenRight,
                 ResultKind::Integer,
                 Some(ScalarKaniOperator::Subtract),
@@ -277,7 +320,7 @@ mod tests {
             ),
             (
                 "quire.op.integer.mul",
-                Family::IntegerArithmetic,
+                Family::Arithmetic,
                 OperandOrder::LeftThenRight,
                 ResultKind::Integer,
                 Some(ScalarKaniOperator::Multiply),
@@ -285,15 +328,39 @@ mod tests {
             ),
             (
                 "quire.op.integer.negate",
-                Family::IntegerArithmetic,
+                Family::Arithmetic,
                 OperandOrder::Unary,
                 ResultKind::Integer,
                 Some(ScalarKaniOperator::Negate),
                 None,
             ),
             (
+                "quire.op.integer.div",
+                Family::Division,
+                OperandOrder::LeftThenRight,
+                ResultKind::Integer,
+                Some(ScalarKaniOperator::Divide),
+                None,
+            ),
+            (
+                "quire.op.integer.rem",
+                Family::Division,
+                OperandOrder::LeftThenRight,
+                ResultKind::Integer,
+                Some(ScalarKaniOperator::Remainder),
+                None,
+            ),
+            (
+                "quire.op.integer.mod",
+                Family::Division,
+                OperandOrder::LeftThenRight,
+                ResultKind::Integer,
+                Some(ScalarKaniOperator::Modulo),
+                None,
+            ),
+            (
                 "quire.op.integer.lt",
-                Family::IntegerOrdering,
+                Family::Ordering,
                 OperandOrder::LeftThenRight,
                 ResultKind::Boolean,
                 None,
@@ -301,7 +368,7 @@ mod tests {
             ),
             (
                 "quire.op.integer.le",
-                Family::IntegerOrdering,
+                Family::Ordering,
                 OperandOrder::LeftThenRight,
                 ResultKind::Boolean,
                 None,
@@ -309,7 +376,7 @@ mod tests {
             ),
             (
                 "quire.op.integer.gt",
-                Family::IntegerOrdering,
+                Family::Ordering,
                 OperandOrder::LeftThenRight,
                 ResultKind::Boolean,
                 None,
@@ -317,7 +384,7 @@ mod tests {
             ),
             (
                 "quire.op.integer.ge",
-                Family::IntegerOrdering,
+                Family::Ordering,
                 OperandOrder::LeftThenRight,
                 ResultKind::Boolean,
                 None,
@@ -325,7 +392,7 @@ mod tests {
             ),
             (
                 "quire.op.integer.eq",
-                Family::IntegerOrdering,
+                Family::Ordering,
                 OperandOrder::LeftThenRight,
                 ResultKind::Boolean,
                 None,
@@ -333,7 +400,7 @@ mod tests {
             ),
             (
                 "quire.op.integer.ne",
-                Family::IntegerOrdering,
+                Family::Ordering,
                 OperandOrder::LeftThenRight,
                 ResultKind::Boolean,
                 None,

@@ -3,9 +3,9 @@ id: TC-056
 title: "Verify claimed-module discharge and real mutation controls"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-041
+  - target: ix://agent-ix/filament-contract-codegen/FR-041
     type: verifies
-  - target: ix://agent-ix/quire-contract-codegen/NFR-006
+  - target: ix://agent-ix/filament-contract-codegen/NFR-006
     type: verifies
 ---
 # TC-056: Verify claimed-module discharge and real mutation controls
@@ -40,9 +40,9 @@ separate obligations, each with its own generated identity.
 3. From the current build, compute each expectation's and subject's transitive reachable
    functions and their intersection. Compare it with the checked-in generated helper evidence,
    including the empty-set case; delete and add one helper in negative controls. Inspect the
-   expectation's semantic source. If it proves a `quire-exact` operation or a runtime operation
-   calling one, verify that it uses QSpec operation vectors or a specification model with no
-   `quire-exact` call (FR-041-AC-3).
+   expectation's semantic source. If it proves a `filament-exact` operation or a runtime operation
+   calling one, verify that it uses FSpec operation vectors or a specification model with no
+   `filament-exact` call (FR-041-AC-3).
 4. Verify each unmodified claimed proof first. For each claimed module and each computed shared
    helper, apply its distinct source mutation in an isolated build, compile it and run its proof
    with real Kani. Inspect a FAILURE check at the affected proposition and record the exact diff,
@@ -60,7 +60,7 @@ separate obligations, each with its own generated identity.
    and compiled module census. Inspect the generated module's named
    `subject_boolean_implication` and `expected_boolean_implication` call-graph roots:
    subject calls the runtime implication helper, expectation computes `!left || right`
-   from the same two drawn Booleans and reaches no subject, oracle or `quire-exact`
+   from the same two drawn Booleans and reaches no subject, oracle or `filament-exact`
    function. Derive and compare their transitive shared-helper intersection; include
    an explicit empty set or a distinct mutation and positive/falsifying run for each
    observed shared helper. In separate controls, remove or rename the module, disconnect
@@ -105,7 +105,7 @@ that prerequisite and is not a condition for landing the machinery.
 
 ## New V2 Boolean field-transition producer (IR-1049, planned)
 
-1. Compile the QSL-owned Switch model/source inputs by reference, adding an
+1. Compile the FSL-owned Switch model/source inputs by reference, adding an
    authored unpointed precondition `flag or self.on` to the current source.
    Read the fresh package through public IR admission and inspect its canonical
    five transition bindings, Boolean field/input/result and all claim/source

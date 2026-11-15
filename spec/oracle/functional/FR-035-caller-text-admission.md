@@ -3,11 +3,11 @@ id: FR-035
 title: "Generate and prove caller TextPayload admission"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/StR-001
+  - target: ix://agent-ix/filament-contract-codegen/StR-001
     type: satisfies
-  - target: ix://agent-ix/quire-contract-codegen/FR-014
+  - target: ix://agent-ix/filament-contract-codegen/FR-014
     type: references
-  - target: ix://agent-ix/quire-contract-codegen/ADR-006
+  - target: ix://agent-ix/filament-contract-codegen/ADR-006
     type: references
 ---
 # FR-035: Generate and prove caller TextPayload admission
@@ -18,16 +18,16 @@ When a caller requests runtime Text admission, the code generator shall emit an
 oracle and a separately bounded Kani obligation for a caller-owned
 `TextPayload` and declared `TextType`. This is a caller-ingress claim, not a
 claim about an expression node in an admitted `CheckedPackageV2`. The oracle
-calls the exact kernel's `quire_exact::admit_text` API and returns its
+calls the exact kernel's `filament_exact::admit_text` API and returns its
 outcome and metering unchanged. Its evidence identifies the caller-declared
 profile, inclusive length bounds, payload class and proof configuration,
-without `ir_confirmed` provenance, a checked node id or a QSL term identity.
+without `ir_confirmed` provenance, a checked node id or a FSL term identity.
 
 In this requirement, `rt::` denotes the exact API that the generated oracle
-and harness import, and the specified binding is `quire_exact`. The draft
+and harness import, and the specified binding is `filament_exact`. The draft
 PR #381 generator binds `rt` to Contract Runtime's separate
-`quire_contract_runtime::exact` copy; that caller-ingress generator is not
-implemented on main. Moving the draft harness binding to `quire_exact` is
+`filament_contract_runtime::exact` copy; that caller-ingress generator is not
+implemented on main. Moving the draft harness binding to `filament_exact` is
 IR-837's slice.
 
 [FR-014](./FR-014-exact-scalar-oracles.md) continues to own generated oracles
@@ -92,7 +92,7 @@ records the architecture boundary.
 - The supported proof class shall include all six profiles, a permissive type
   `Text[0,8]` and a restrictive type `Text[1,1]`. The proof claim shall name
   the exact class and type. No claim shall imply proof for arbitrary UTF-8
-  bytes, more than two scalars, source-literal provenance, or a QSL term.
+  bytes, more than two scalars, source-literal provenance, or a FSL term.
 - If the caller requests a proof for a payload class or profile/bound encoding
   outside that supported class, then the generator shall refuse it with a
   typed reason and emit no proof artifact.
@@ -113,9 +113,9 @@ records the architecture boundary.
 
 ## Dependencies
 
-- **Upstream**: quire-exact, the exact kernel this repository locks, which
-  defines and exports `quire_exact::admit_text`, `quire_exact::TextPayload`,
-  `quire_exact::TextType` and `quire_exact::Meter`.
+- **Upstream**: filament-exact, the exact kernel this repository locks, which
+  defines and exports `filament_exact::admit_text`, `filament_exact::TextPayload`,
+  `filament_exact::TextType` and `filament_exact::Meter`.
 - **Execution**: [FR-017](../../kani/functional/FR-017-kani-execution-evidence.md)
   classifies and retains evidence for the generated caller harness.
 - **Related**: [FR-014](./FR-014-exact-scalar-oracles.md) for checked-package

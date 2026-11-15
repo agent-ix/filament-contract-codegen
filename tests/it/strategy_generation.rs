@@ -2,7 +2,7 @@ use ix_trace_rs::trace;
 use std::{fs, process::Command};
 
 use crate::scratch_crate::{runtime_dependency, write_manifest, TemporaryDirectory};
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     generate_enum_strategy, generate_i64_strategy, EnumStrategyCampaign, EnumStrategyRequest,
     GenerationErrorCode, GenerationTerminalState, StrategyCampaign, StrategyConstraint,
     StrategyErrorCode, StrategyRequest, MAX_GENERATED_SOURCE_BYTES,
@@ -129,7 +129,7 @@ fn tc_004_supported_populations_are_directly_shaped_and_shrink_inside_constraint
     let range_function = function_name(&range.rust.contents);
     let correlated_function = function_name(&correlated.rust.contents);
     let residual_function = function_name(&residual.rust.contents);
-    let temporary = TemporaryDirectory::new("quire-generated-strategies");
+    let temporary = TemporaryDirectory::new("filament-generated-strategies");
     write_manifest(
         &temporary.path,
         &format!(
@@ -407,7 +407,7 @@ fn tc_004_boundary_pinned_and_no_event_bodies_compile_and_execute_with_denied_wa
     let boundary_function = function_name(&boundary.rust.contents);
     let pinned_function = function_name(&pinned.rust.contents);
     let no_event_function = function_name(&no_event.rust.contents);
-    let temporary = TemporaryDirectory::new("quire-generated-campaign-shapes");
+    let temporary = TemporaryDirectory::new("filament-generated-campaign-shapes");
     write_manifest(
         &temporary.path,
         &format!(
@@ -636,7 +636,7 @@ fn tc_004_customer_enum_memberships_are_directly_shaped_and_validated() {
         .contents
         .contains("current: Mode::Idle, related: Some(Mode::Idle)"));
 
-    let temporary = TemporaryDirectory::new("quire-generated-enum-strategy");
+    let temporary = TemporaryDirectory::new("filament-generated-enum-strategy");
     write_manifest(
         &temporary.path,
         &format!(

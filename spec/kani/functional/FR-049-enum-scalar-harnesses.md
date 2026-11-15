@@ -3,21 +3,21 @@ id: FR-049
 title: "Generate enum scalar comparison harnesses"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/StR-001
+  - target: ix://agent-ix/filament-contract-codegen/StR-001
     type: satisfies
-  - target: ix://agent-ix/quire-contract-codegen/FR-014
+  - target: ix://agent-ix/filament-contract-codegen/FR-014
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-015
+  - target: ix://agent-ix/filament-contract-codegen/FR-015
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-017
+  - target: ix://agent-ix/filament-contract-codegen/FR-017
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-025
+  - target: ix://agent-ix/filament-contract-codegen/FR-025
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-028
+  - target: ix://agent-ix/filament-contract-codegen/FR-028
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-039
+  - target: ix://agent-ix/filament-contract-codegen/FR-039
     type: depends_on
-  - target: ix://agent-ix/quire-exact/FR-407
+  - target: ix://agent-ix/filament-exact/FR-407
     type: references
 ---
 # FR-049: Generate enum scalar comparison harnesses
@@ -28,8 +28,8 @@ When an admitted request selects an `enum` scalar comparison node
 (`quire.op.enum.eq`, `.ne`, `.lt`, `.le`, `.gt` or `.ge`) over an admitted enum
 declaration (eq and ne over any admitted declaration; lt, le, gt and ge over an
 `ordered enum` declaration only), CG SHALL generate a bounded Kani row proving that the
-native enum comparison of quire-exact
-([FR-407](ix://agent-ix/quire-exact/FR-407), `compare_native_enum` over two
+native enum comparison of filament-exact
+([FR-407](ix://agent-ix/filament-exact/FR-407), `compare_native_enum` over two
 `NativeEnum` carriers) agrees with a
 native expression of the same comparison over every pair of declared members.
 Today such a node settles as `unsupported` / `OperationNotRendered`
@@ -51,7 +51,7 @@ The input authority and per-item accounting remain
 admitted ContractPackage. This requirement defines required meaning, not a new
 IR schema or a currently available Rust API. The enum carrier, its construction and its comparison
 (`NativeEnum`, `from_member`, `from_index`, `compare_native_enum`) belong to
-quire-exact (FR-407); the checked member list and ordered flag come from the
+filament-exact (FR-407); the checked member list and ordered flag come from the
 owner route ([FR-014](../../oracle/functional/FR-014-exact-scalar-oracles.md)).
 CG does not reimplement them.
 
@@ -88,7 +88,7 @@ At generation time CG SHALL run `from_member` over the `EnumShape` the owner
 route admitted, and over each checked member of it, and SHALL use that shape
 as supplied: a shape CG derived, renamed or rebuilt is not the owner-admitted
 shape. `from_member` refuses a member the shape does not admit at its position
-with `MemberNotInShape` ([FR-407-AC-3](ix://agent-ix/quire-exact/FR-407)), so a
+with `MemberNotInShape` ([FR-407-AC-3](ix://agent-ix/filament-exact/FR-407)), so a
 minted identity (same position, different key) yields no operand. Inside the
 proof the harness builds each operand with `from_index(tag, ordered, index,
 count)`, so the proof holds no variant list and no heap value. The carrier
@@ -147,7 +147,7 @@ unavailable the item is `unsupported` with no harness.
 
 | ID | Criteria | Verification |
 | --- | --- | --- |
-| FR-049-AC-1 | For `eq` and `ne` over an admitted enum declaration of at least three members, and for each of `lt`, `le`, `gt` and `ge` over an `ordered enum` of at least three members, CG generates one harness whose generated side is quire-exact's `compare_native_enum` over carriers and whose expected value is the native operator over indices. The comparison and native sides come from the same admitted node and retain its source association. | Test |
+| FR-049-AC-1 | For `eq` and `ne` over an admitted enum declaration of at least three members, and for each of `lt`, `le`, `gt` and `ge` over an `ordered enum` of at least three members, CG generates one harness whose generated side is filament-exact's `compare_native_enum` over carriers and whose expected value is the native operator over indices. The comparison and native sides come from the same admitted node and retain its source association. | Test |
 | FR-049-AC-2 | The symbolic domain is exactly the declared members: each operand index is an `i64` constrained to `0..member_count`, every ordered pair is reachable and no out-of-range index is reachable. Admitting one extra index, dropping the last member or fixing one operand to a constant fails the correspondence check. | Test |
 | FR-049-AC-3 | At generation time `from_member` is run over the owner-admitted `EnumShape` and the owner's checked members, in declared order; the shape is the owner route's own, not one CG derived. A minted member identity (same position, different key) is refused with `MemberNotInShape` (FR-407-AC-3) and no harness is built from it. A generator-mint mutant that emits a renamed key in both the shape it passes and the members it passes fails the comparison of that shape with the owner-admitted shape. Inside the proof operands are built with `from_index`, and the `eq` and `ne` proofs are over rank only and make no claim about minted identity. A member list reordered relative to the declaration makes the ordering proofs over an `ordered enum` fail. Ordering operators are not claimed to detect a minted identity. | Test |
 | FR-049-AC-4 | The assertion requires `Completed` with the native Boolean and no assumption depends on the comparison outcome. A control producing `Incomplete` keeps that typed outcome and cannot become `Verified`. A path reaching the comparison's `Err(IllTyped)` is non-`Verified` and retains its cause. | Test |
@@ -161,7 +161,7 @@ unavailable the item is `unsupported` with no harness.
 
 ## Dependencies
 
-- quire-exact [FR-407](ix://agent-ix/quire-exact/FR-407) owns the carrier, its
+- filament-exact [FR-407](ix://agent-ix/filament-exact/FR-407) owns the carrier, its
   construction and `compare_native_enum`; this requirement adds only the
   bounded proof row over them. [FR-014](../../oracle/functional/FR-014-exact-scalar-oracles.md)
   supplies only the checked member list and ordered flag.
@@ -174,13 +174,13 @@ unavailable the item is `unsupported` with no harness.
 
 PARTIAL (IR-262). The generator `generate_enum_scalar_harness` (src/kani/generate/enum_scalar.rs)
 settles an `enum` comparison node to a harness over `NativeEnum` carriers built with
-`from_index`, or to a typed refusal, from a genuine QSL source admitted through Contract IR and
+`from_index`, or to a typed refusal, from a genuine FSL source admitted through Contract IR and
 the owner's admitted context. `generate_routed_admitted` carries that context into the routed
 route, so an enum node settles to a harness (or to `EnumComparisonNotRendered` with a named
 capability) instead of `OperationNotRendered`; `generate_routed` and `generate_routed_native` pass no
-context. The owner replay route is available: `replay_enum_witness` evaluates the selected QSL
-function through `qsl_replay::replay` over the declared members (`WitnessValue::Enum`), and
-the function-replay adapter passes `WitnessValue::Enum` entries as QSL's canonical value text.
+context. The owner replay route is available: `replay_enum_witness` evaluates the selected FSL
+function through `fsl_replay::replay` over the declared members (`WitnessValue::Enum`), and
+the function-replay adapter passes `WitnessValue::Enum` entries as FSL's canonical value text.
 
 Tagged and passing:
 
@@ -200,7 +200,7 @@ Tagged and passing:
 - AC-7: one cover, last; the unsatisfied-cover, missing-cover-summary and unwind classifications
   are bound to the enum harness' cover count, and a timeout and a missing verdict are driven
   through the runner against the enum harness with their terminal values.
-- AC-8: named unsupported capabilities and the typed ill-typed cause on the carrier (the QSL
+- AC-8: named unsupported capabilities and the typed ill-typed cause on the carrier (the FSL
   source refusal is asserted by code). One routed request holds two enum nodes of the same
   operator, one carrying a path condition: it is refused with the named capability
   `enum.path_condition` and no harness, and the supported siblings are generated exactly as they
@@ -221,6 +221,6 @@ Tagged and passing:
 Tractability: enum has no refusal row in the IR-1526 table because it verifies (seconds, about
 0.3 GB healthy); that table lists only shapes that do not.
 
-QSL refuses the ill-typed sources (an ordering over an unordered enum with `OperatorIneligible`,
+FSL refuses the ill-typed sources (an ordering over an unordered enum with `OperatorIneligible`,
 operands of different enums with `TypeMismatch`) before Contract IR, so no ill-typed enum node
 reaches CG from source; the CG refusal for them is exercised on the carrier (`check_typed`).

@@ -69,7 +69,7 @@ pub(crate) struct CollectionFieldDomain {
     pub(crate) element: CollectionElementDomain,
     /// Exact element type node reached through the admitted collection type.
     pub(crate) element_type: CheckedNodeId,
-    /// Exact QSL quantifier operation.
+    /// Exact FSL quantifier operation.
     pub(crate) quantifier_operation: String,
     /// Exact predicate node.
     pub(crate) predicate: CollectionPredicateIdentity,
@@ -736,7 +736,7 @@ fn collection_array_length(
 
 /// The selected field of a declaration's effective fields. A declaration whose fields cannot be
 /// listed, and a listing without the selected field, are both `FieldNotAdmitted`: the field is
-/// never taken from another declaration. Admitted input reaches neither branch (QSL refuses an
+/// never taken from another declaration. Admitted input reaches neither branch (FSL refuses an
 /// ambiguous field set at compile time and the reader validates the declaration), so the lookup is
 /// generic over the table to be exercised directly.
 fn declared_field<'a, F, E, T: ?Sized>(

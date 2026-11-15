@@ -2,15 +2,15 @@
 //!
 //! Source minus remains an arithmetic node: in particular, i64::MIN is a
 //! negate of the positive, out-of-i64 child, never a negative literal leaf.
-//! QSL arithmetic has mathematical Integer results. Bounded-result refusals
+//! FSL arithmetic has mathematical Integer results. Bounded-result refusals
 //! and reader-admitted literal variants belong to the separate boundary controls.
 
 use std::{fmt::Write as _, fs, process::Command};
 
-use ix_trace_rs::trace;
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     generate_v2_clause_oracle, EXACT_DEPENDENCY_SOURCE, SEMANTIC_VALUE_DEPENDENCY_SOURCE,
 };
+use ix_trace_rs::trace;
 
 use crate::{kani_obligations_state_frame::native_twin::Twin, scratch_crate};
 
@@ -53,7 +53,7 @@ fn cases() -> Vec<Case> {
             skipped_arithmetic: false,
         });
     }
-    // Equality against a bounded field makes QSL wrap the literal in its
+    // Equality against a bounded field makes FSL wrap the literal in its
     // checked numeric.narrow node. The direct owner sees the same integer,
     // without a conversion charge.
     cases.push(Case {
@@ -73,7 +73,7 @@ fn cases() -> Vec<Case> {
         cases.push(Case { source: source.into(), reference: reference.into(), expected, skipped_arithmetic: false });
     }
     // The endpoint neighbours are source expressions, with explicit negation
-    // on the negative side. Positive 2^127 is outside this QSL fixture's intake.
+    // on the negative side. Positive 2^127 is outside this FSL fixture's intake.
     for (spelling, negative) in [
         ("0", false),
         ("1", false),
@@ -149,12 +149,12 @@ fn cases() -> Vec<Case> {
 
 #[trace("TC-024", "FR-014-AC-54")]
 #[test]
-fn qsl_literal_narrow_oracle_is_independent_of_a_generated_sibling() {
+fn fsl_literal_narrow_oracle_is_independent_of_a_generated_sibling() {
     let twin = Twin::with_literal_narrow_and_sibling();
     let (package, narrow) = twin.emitted_package("BalanceNeverDrops");
     let (_, sibling) = twin.emitted_package("SpareA");
     let before = generate_v2_clause_oracle(&package, &narrow)
-        .expect("QSL's checked literal narrow generates an oracle");
+        .expect("FSL's checked literal narrow generates an oracle");
     let sibling_oracle = generate_v2_clause_oracle(&package, &sibling)
         .expect("the other admitted clause generates independently");
     assert_ne!(before.descriptor.node_id, sibling_oracle.descriptor.node_id);
@@ -187,7 +187,7 @@ fn public_v2_integer_literals_preserve_owner_semantics_and_every_denial_prefix()
                             if operation.identity() == Some("quire.op.numeric.narrow")
                     )
                 }),
-                "the QSL-authored bounded equality must contain the checked narrow wrapper"
+                "the FSL-authored bounded equality must contain the checked narrow wrapper"
             );
         }
         let oracle = generate_v2_clause_oracle(&package, &node)
@@ -491,7 +491,7 @@ fn exercise_prefixes_and_limits(label: &str, expression: &Expr, x: u64,
 }
 
 // This driver is for the separately admitted public bounded-addition fixture,
-// not for QSL source arithmetic (whose result type is unbounded Integer).
+// not for FSL source arithmetic (whose result type is unbounded Integer).
 fn exercise_bounded(label: &str, expression: &Expr,
     generated: impl Fn(u64, &mut rt::Meter) -> Observation) {
     for x in 0..=1000 {

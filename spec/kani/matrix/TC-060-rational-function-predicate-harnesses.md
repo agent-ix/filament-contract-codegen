@@ -3,7 +3,7 @@ id: TC-060
 title: "Verify finite rational whole-function predicates"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-046
+  - target: ix://agent-ix/filament-contract-codegen/FR-046
     type: verifies
 ---
 # TC-060: Verify finite rational whole-function predicates
@@ -11,7 +11,7 @@ relationships:
 ## Description
 
 Verify [FR-046](../functional/FR-046-rational-function-predicate-harnesses.md)
-through genuine QSL source, strict owner admission and lowering, public CG
+through genuine FSL source, strict owner admission and lowering, public CG
 whole-function generation, installed proof execution and owner replay. This case
 is planned; historical source admission or a native arithmetic check does not
 establish proof acceptance. Execute generated proofs only with the authorized
@@ -20,7 +20,7 @@ runner and budget; a parked CG-self-proof gate is not feature evidence.
 ## Test Procedure
 
 1. Preserve the original healthy and wrong-addend source cases from the
-   QSL-owned `rational_mvp_source` intake. Admit both unchanged through the public
+   FSL-owned `rational_mvp_source` intake. Admit both unchanged through the public
    source route and strict reader, retaining original source association and
    owner-issued identities. The healthy case is:
 
@@ -59,7 +59,7 @@ runner and budget; a parked CG-self-proof gate is not feature evidence.
    single pre-body `FunctionCall` charge at entry; do not subtract it after a run,
    manually copy the charge, reset mutated Meter state or assume matching state.
    Conversion and supplied-argument admission state remain outside this body
-   comparison. Do not use an internal QSL application call or Runtime bridge as
+   comparison. Do not use an internal FSL application call or Runtime bridge as
    the reference. Full-call equivalence remains planned under IR-595 / IR-583;
    this comparison does not replace step 4's actual solver playback and public
    owner replay. Include `a = b = 9` to exercise a sum outside the input domain and

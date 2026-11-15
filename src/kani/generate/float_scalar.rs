@@ -1,11 +1,11 @@
-//! The IEEE float scalar harness (FR-053): a bounded Kani proof that quire-exact's
+//! The IEEE float scalar harness (FR-053): a bounded Kani proof that filament-exact's
 //! `compare_native_float` over two symbolic bit patterns agrees with an independent expression of
 //! the same comparison, for the three comparisons `quire.op.ieee.numeric_equal`, `.total_order`
 //! and `.bit_identical` at both widths.
 //!
-//! The supported set is the combinations whose quire-exact harnesses carry an executed Verified
+//! The supported set is the combinations whose filament-exact harnesses carry an executed Verified
 //! verdict (FR-405 Behavior 15): the three comparisons. Every arithmetic identity is refused with a
-//! named capability and no harness, because none of them has all three of its quire-exact
+//! named capability and no harness, because none of them has all three of its filament-exact
 //! harnesses Verified. A float operand is one `i64` bit pattern; the carrier admits every
 //! pattern, so the draw has no admission step and no bound is encoded into it.
 
@@ -43,7 +43,7 @@ pub struct FloatScalarRequest<'a> {
     pub ceilings: ProofCeilings,
     /// The loop unwind bound of the harness.
     pub unwind: u32,
-    /// The routed item's QSL occurrence; `None` for a direct request.
+    /// The routed item's FSL occurrence; `None` for a direct request.
     pub requirement_occurrence: Option<&'a crate::core::requirement::RequirementOccurrence>,
     /// Whether the routed item carries a path condition, which this row does not lower.
     pub has_path_condition: bool,
@@ -623,6 +623,7 @@ fn render_harness(
         path_condition: Vec::new(),
         guard_inputs: Vec::new(),
         enum_scalar: None,
+        division_scalar: None,
         float_scalar: Some(FloatScalarIdentity {
             operator: operation_identity.to_owned(),
             width: if wide { "float64" } else { "float32" }.to_owned(),

@@ -1,11 +1,11 @@
 //! Explicitly synthetic public executable projections, not a source-language frontend.
 
 use crate::scratch_crate::{runtime_dependency, write_manifest};
-use ix_trace_rs::trace;
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     generate_bound_oracles, BoundGenerationError, BoundOracleGeneration, GenerationErrorCode,
     SourceRegion,
 };
+use ix_trace_rs::trace;
 use quire_contract_model::{BoundPackage, EXECUTABLE_PROJECTION_FORMAT};
 use serde_json::{json, Value};
 
@@ -51,7 +51,7 @@ fn decode(value: &Value) -> BoundPackage {
     BoundPackage::from_json_bytes(&serde_json::to_vec(value).unwrap()).unwrap()
 }
 
-fn generated(value: &Value) -> quire_contract_codegen::GeneratedBoundOracles {
+fn generated(value: &Value) -> filament_contract_codegen::GeneratedBoundOracles {
     match generate_bound_oracles(&decode(value)).unwrap() {
         BoundOracleGeneration::Generated(result) => result,
         other => panic!("expected executable result: {other:?}"),
@@ -233,7 +233,7 @@ fn actual_bound_outputs_publish_then_compile_and_execute_against_the_runtime() {
     let destination = root.join("published");
     let result = generated(&projection("test/native", 3, true));
     assert!(!destination.exists(), "generation must not publish");
-    quire_contract_codegen::write_bundle_atomic(result.bundle(), &destination).unwrap();
+    filament_contract_codegen::write_bundle_atomic(result.bundle(), &destination).unwrap();
     for artifact in result.bundle().artifacts() {
         assert_eq!(
             fs::read(destination.join(&artifact.path)).unwrap(),

@@ -1,6 +1,7 @@
 //! The scalar family: lowering an IR-confirmed V2 exact-scalar claim and rendering its Kani
 //! harness (FR-015).
 
+mod division;
 pub(crate) mod guard;
 
 use crate::oracle::operator_catalog::{
@@ -27,6 +28,7 @@ use crate::{
     },
     oracle::scalar::{lower::OperandRange, ExactScalarClaim, GeneratedScalarClaim},
 };
+use quire_exact::DivisionProfile;
 
 /// An IR-confirmed V2 exact-scalar claim this generator can render: bounded integer arithmetic
 /// or Boolean implication. Other confirmed scalar families have no renderer yet.
@@ -48,7 +50,7 @@ pub(super) struct LoweredScalarClaim {
     upper: i64,
     pub(super) module_symbol: String,
     pub(super) harness_symbol: String,
-    /// The routed item's QSL occurrence; `None` for a direct claim.
+    /// The routed item's FSL occurrence; `None` for a direct claim.
     pub(super) requirement_occurrence: Option<crate::core::requirement::RequirementOccurrence>,
     /// The lowered path condition, with the narrowing its assumptions imply.
     guards: Option<(guard::GuardPlan, guard::NarrowedGuards)>,
@@ -61,6 +63,12 @@ enum ScalarOperation {
     Multiply,
     Negate,
     Implies,
+    /// `div` under the claim's law (FR-057).
+    Divide(DivisionProfile),
+    /// `rem` under the claim's law (FR-057).
+    Remainder(DivisionProfile),
+    /// `mod`, always the Euclidean remainder (FR-057).
+    Modulo,
 }
 
 /// One scalar operation this generator renders. The four integer operations use the catalogued
@@ -70,7 +78,10 @@ impl ScalarOperation {
     /// The renderable operation for an IR-confirmed operation identity, or `None` when this
     /// generator has no scalar-harness renderer for it. This selects, among identities IR already
     /// confirmed, which ones this generator can turn into a harness.
-    fn of(operation_identity: &str) -> Option<Self> {
+    ///
+    /// `division_profile` is the claim's own law, read from its descriptor; it selects the
+    /// profile of `div` and `rem` and is ignored for every other operation.
+    fn of(operation_identity: &str, division_profile: Option<DivisionProfile>) -> Option<Self> {
         if operation_identity == crate::kani::identity::BOOLEAN_IMPLIES_IDENTITY {
             return Some(Self::Implies);
         }
@@ -82,32 +93,50 @@ impl ScalarOperation {
             ScalarKaniOperator::Subtract => Some(Self::Subtract),
             ScalarKaniOperator::Multiply => Some(Self::Multiply),
             ScalarKaniOperator::Negate => Some(Self::Negate),
+            ScalarKaniOperator::Divide => division_profile.map(Self::Divide),
+            ScalarKaniOperator::Remainder => division_profile.map(Self::Remainder),
+            ScalarKaniOperator::Modulo => Some(Self::Modulo),
         }
+    }
+
+    /// Whether this is `div`, `rem` or `mod`, which [`division`] renders.
+    fn is_division(self) -> bool {
+        matches!(self, Self::Divide(_) | Self::Remainder(_) | Self::Modulo)
     }
 
     /// The oracle's parameter names, in call order, which are also the harness's variable names.
     fn operand_names(self) -> &'static [&'static str] {
         match self {
             Self::Negate => &["operand"],
-            Self::Add | Self::Subtract | Self::Multiply | Self::Implies => &["left", "right"],
+            Self::Add
+            | Self::Subtract
+            | Self::Multiply
+            | Self::Implies
+            | Self::Divide(_)
+            | Self::Remainder(_)
+            | Self::Modulo => &["left", "right"],
         }
     }
 
     /// The integer result as a Rust expression over the harness's native `i64` operands
     /// (`<name>_native`), evaluated in `i128` where a sum, difference, product or negation of `i64`
     /// values cannot overflow. It shares no code with the embedded oracle, which evaluates through
-    /// `quire-exact`'s `rt::Integer`; it is the independent statement of the clause that
+    /// `filament-exact`'s `rt::Integer`; it is the independent statement of the clause that
     /// [`render_scalar`] compares the oracle's result with. The implication arm is used by
     /// its separate Boolean renderer over symbolic `bool` operands.
-    fn native_expression(self) -> String {
+    ///
+    /// Division has no single native expression: its independent expected side is relational and
+    /// rendered by [`division`], so it has none here.
+    fn native_expression(self) -> Option<String> {
         let native = |index: usize| format!("i128::from({}_native)", self.operand_names()[index]);
-        match self {
+        Some(match self {
             Self::Add => format!("{} + {}", native(0), native(1)),
             Self::Subtract => format!("{} - {}", native(0), native(1)),
             Self::Multiply => format!("{} * {}", native(0), native(1)),
             Self::Negate => format!("-{}", native(0)),
             Self::Implies => "!left || right".to_owned(),
-        }
+            Self::Divide(_) | Self::Remainder(_) | Self::Modulo => return None,
+        })
     }
 
     /// The operation's operands in call order. Integer ranges come from `range_at`; Boolean
@@ -126,6 +155,21 @@ impl ScalarOperation {
                 ScalarOperands::Binary(BinaryOperation::Multiply, range_at(0)?, range_at(1)?)
             }
             Self::Implies => ScalarOperands::Binary(BinaryOperation::Implies, (0, 1), (0, 1)),
+            Self::Divide(_) => {
+                ScalarOperands::Binary(BinaryOperation::Divide, range_at(0)?, range_at(1)?)
+            }
+            Self::Remainder(profile) => ScalarOperands::Binary(
+                BinaryOperation::Remainder {
+                    euclidean: profile == DivisionProfile::Euclidean,
+                },
+                range_at(0)?,
+                range_at(1)?,
+            ),
+            Self::Modulo => ScalarOperands::Binary(
+                BinaryOperation::Remainder { euclidean: true },
+                range_at(0)?,
+                range_at(1)?,
+            ),
         })
     }
 }
@@ -137,6 +181,13 @@ enum BinaryOperation {
     Subtract,
     Multiply,
     Implies,
+    /// A quotient: its magnitude is at most the dividend's.
+    Divide,
+    /// A remainder: its magnitude is below the divisor's; `euclidean` remainders are never
+    /// negative.
+    Remainder {
+        euclidean: bool,
+    },
 }
 
 /// The operand ranges of one [`ScalarOperation`], of the operation's own arity: one range for
@@ -158,10 +209,12 @@ impl ScalarOperands {
     }
 
     /// The least and greatest exact integer results over the inclusive `i64` operand ranges,
-    /// computed in `i128`; Boolean implication reaches both encoded truth values.
-    fn reachable(self) -> (i128, i128) {
+    /// computed in `i128`; Boolean implication reaches both encoded truth values. A quotient or
+    /// remainder is bounded by its operands' magnitudes (a sound over-approximation), and a
+    /// division whose divisor range is only zero reaches no result, which is `None`.
+    fn reachable(self) -> Option<(i128, i128)> {
         let wide = |(low, high): (i64, i64)| (i128::from(low), i128::from(high));
-        match self {
+        Some(match self {
             Self::Negate(operand) => {
                 let (low, high) = wide(operand);
                 (-high, -low)
@@ -169,6 +222,20 @@ impl ScalarOperands {
             Self::Binary(operation, left, right) => {
                 let ((a, b), (c, d)) = (wide(left), wide(right));
                 match operation {
+                    BinaryOperation::Divide => {
+                        if (c, d) == (0, 0) {
+                            return None;
+                        }
+                        let magnitude = a.abs().max(b.abs());
+                        (-magnitude, magnitude)
+                    }
+                    BinaryOperation::Remainder { euclidean } => {
+                        if (c, d) == (0, 0) {
+                            return None;
+                        }
+                        let reach = c.abs().max(d.abs()) - 1;
+                        (if euclidean { 0 } else { -reach }, reach)
+                    }
                     BinaryOperation::Add => (a + c, b + d),
                     BinaryOperation::Subtract => (a - d, b - c),
                     BinaryOperation::Multiply => {
@@ -181,7 +248,7 @@ impl ScalarOperands {
                     BinaryOperation::Implies => (0, 1),
                 }
             }
-        }
+        })
     }
 }
 
@@ -251,8 +318,12 @@ pub(super) fn lower_scalar_claim(
     operand_ranges: &[OperandRange],
     guards: &Result<guard::GuardPlan, guard::GuardRefusal>,
 ) -> Result<LoweredScalarClaim, ScalarLoweringRefusal> {
-    let operation =
-        ScalarOperation::of(&claim.operation.identity).ok_or(ScalarLoweringRefusal::NoRenderer)?;
+    let division_profile = generated
+        .division
+        .as_ref()
+        .and_then(|division| division.profile);
+    let operation = ScalarOperation::of(&claim.operation.identity, division_profile)
+        .ok_or(ScalarLoweringRefusal::NoRenderer)?;
     if operation == ScalarOperation::Implies {
         let plan = guards
             .as_ref()
@@ -278,8 +349,21 @@ pub(super) fn lower_scalar_claim(
     }
     // `check_parameters` records exactly one checked bound for every `IntegerArithmetic` claim,
     // so a claim without one is a claim map this generator did not produce, which has no renderer.
+    // A division claim's result interval is its descriptor's: an inferred interval has no result
+    // bound node, so its first checked bound is an operand's.
     let Some(bound_id) = generated.checked_bounds.first() else {
         return Err(ScalarLoweringRefusal::NoRenderer);
+    };
+    let division_result = if operation.is_division() {
+        Some(
+            generated
+                .division
+                .as_ref()
+                .and_then(|division| division.result.clone())
+                .ok_or(ScalarLoweringRefusal::NoRenderer)?,
+        )
+    } else {
+        None
     };
     let range_of = |id: &CheckedNodeId| {
         derived.iter().find_map(|domain| match domain {
@@ -294,8 +378,9 @@ pub(super) fn lower_scalar_claim(
     // `check_parameters` parsed the same node with the `literal_integer` that `derive_domain`
     // uses, so a first checked bound with no `IntegerRange` is likewise a claim map this
     // generator did not produce.
-    let Some((lower, upper)) = range_of(bound_id) else {
-        return Err(ScalarLoweringRefusal::NoRenderer);
+    let (lower, upper) = match &division_result {
+        Some((lower, upper)) => (lower, upper),
+        None => range_of(bound_id).ok_or(ScalarLoweringRefusal::NoRenderer)?,
     };
     // Guards are checked after every refusal that does not depend on the path (FR-022
     // "Per-item precedence"): a claim FR-014 refuses or that has no renderer is reported first,
@@ -359,8 +444,12 @@ pub(super) fn lower_scalar_claim(
             .copied()
             .ok_or(ScalarLoweringRefusal::NoRenderer)
     })?;
-    let (reachable_lower, reachable_upper) = operands.reachable();
-    if reachable_upper < i128::from(lower) || reachable_lower > i128::from(upper) {
+    // No reachable result is the empty interval `[1, 0]` (a divisor range of only zero).
+    let (reachable_lower, reachable_upper) = operands.reachable().unwrap_or((1, 0));
+    if reachable_lower > reachable_upper
+        || reachable_upper < i128::from(lower)
+        || reachable_lower > i128::from(upper)
+    {
         return Err(ScalarLoweringRefusal::ResultUnreachable {
             lower,
             upper,
@@ -465,7 +554,7 @@ impl LoweredScalarClaim {
         if body.operation_identity != self.operation_identity {
             return Err(ScalarAuthorityError::Operation);
         }
-        // The retained body carries the admitted ranges QSL's operator parity runs over. Guards
+        // The retained body carries the admitted ranges FSL's operator parity runs over. Guards
         // narrow the harness's operand ranges inside them, so a witness in a narrowed range is
         // an input of the admitted range; without guards the ranges are equal.
         let guarded = self.guards.is_some();
@@ -496,6 +585,15 @@ impl LoweredScalarClaim {
             ScalarOperation::Multiply => IntegerOperator::Multiply,
             ScalarOperation::Negate => IntegerOperator::Negate,
             ScalarOperation::Implies => return Ok(()),
+            // No kernel-checked native division plan exists yet (FR-057-AC-6).
+            ScalarOperation::Divide(_)
+            | ScalarOperation::Remainder(_)
+            | ScalarOperation::Modulo => {
+                return Err(UnsupportedObligation::NativeDivisionPlanUnavailable {
+                    node_id: self.node_id.clone(),
+                    operation_identity: self.operation_identity.clone(),
+                })
+            }
         };
         let refusal = || UnsupportedObligation::NativeIntegerCapacity {
             node_id: self.node_id.clone(),
@@ -546,6 +644,9 @@ mod native_selection_tests {
                 ScalarOperation::Multiply => "quire.op.integer.mul",
                 ScalarOperation::Negate => "quire.op.integer.negate",
                 ScalarOperation::Implies => "quire.op.boolean.implies",
+                ScalarOperation::Divide(_) => "quire.op.integer.div",
+                ScalarOperation::Remainder(_) => "quire.op.integer.rem",
+                ScalarOperation::Modulo => "quire.op.integer.mod",
             }
             .to_owned(),
             oracle_source: String::new(),
@@ -697,6 +798,9 @@ pub(super) fn render_scalar(
     if lowered.operation == ScalarOperation::Implies {
         return render_boolean_implies(request, lowered);
     }
+    if lowered.operation.is_division() {
+        return division::render(request, lowered);
+    }
     use super::spec::{
         Argument, Cover, ExprText, HarnessSpec, Init, LetBinding, LetType, ProofKind, Statement,
     };
@@ -761,7 +865,9 @@ pub(super) fn render_scalar(
     body.push(Statement::Let(binding(
         "exact",
         Some(LetType::I128),
-        Init::Expression(expr(lowered.operation.native_expression())?),
+        Init::Expression(expr(
+            lowered.operation.native_expression().unwrap_or_default(),
+        )?),
     )));
     body.push(Statement::Let(binding(
         "admitted",
@@ -834,6 +940,7 @@ pub(super) fn render_scalar(
             .collect(),
         enum_scalar: None,
         float_scalar: None,
+        division_scalar: None,
         solver: spec.solver(),
         unwind: spec.unwind(),
         options: spec.options().to_vec(),
@@ -899,7 +1006,7 @@ fn render_boolean_implies(
             name: "native".to_owned(),
             ty: None,
             mutable: false,
-            init: Init::Expression(expr(&lowered.operation.native_expression())?),
+            init: Init::Expression(expr(&lowered.operation.native_expression().unwrap_or_default())?),
         }),
         Statement::SubjectImplicationCall,
         Statement::Assert {
@@ -964,6 +1071,7 @@ fn render_boolean_implies(
             .collect(),
         enum_scalar: None,
         float_scalar: None,
+        division_scalar: None,
         solver: spec.solver(),
         unwind: spec.unwind(),
         options: spec.options().to_vec(),
@@ -998,7 +1106,7 @@ pub(super) fn false_bound_harness_for_test(
             .clone(),
         oracle_symbol: identity.oracle_symbol.clone(),
         boolean_right_may_stop: false,
-        operation: ScalarOperation::of(&identity.operation_identity).unwrap(),
+        operation: ScalarOperation::of(&identity.operation_identity, None).unwrap(),
         operands: identity
             .arguments
             .iter()
@@ -1110,7 +1218,7 @@ mod {module} {{\n\
         module = lowered.module_symbol,
         harness = lowered.harness_symbol,
         symbol = lowered.oracle_symbol,
-        exact = lowered.operation.native_expression(),
+        exact = lowered.operation.native_expression().unwrap_or_default(),
         operation = lowered.operation_identity,
     );
     let identity = ScalarObligationIdentity {
@@ -1129,6 +1237,7 @@ mod {module} {{\n\
         guard_inputs: Vec::new(),
         enum_scalar: None,
         float_scalar: None,
+        division_scalar: None,
         solver: KaniSolver::Cadical,
         unwind: request.unwind,
         options,
@@ -1136,7 +1245,7 @@ mod {module} {{\n\
     };
     let mut source = format!(
         "// SPDX-License-Identifier: MIT OR Apache-2.0\n\
-// @generated by quire-contract-codegen. Do not edit.\n\
+// @generated by filament-contract-codegen. Do not edit.\n\
 // Obligation: exact-scalar {} `{}`\n\n",
         super::clause::v2::message_safe_node_label(&lowered.node_id),
         lowered.operation_identity,
@@ -1180,8 +1289,8 @@ mod tests {
     #[trace("FR-014-AC-2", "TC-024")]
     #[test]
     fn a_quantity_conversion_has_no_scalar_harness_renderer() {
-        assert!(ScalarOperation::of("quire.op.quantity.convert").is_none());
-        assert!(ScalarOperation::of("quire.op.integer.add").is_some());
+        assert!(ScalarOperation::of("quire.op.quantity.convert", None).is_none());
+        assert!(ScalarOperation::of("quire.op.integer.add", None).is_some());
     }
 
     use crate::oracle::{
@@ -1200,35 +1309,54 @@ mod tests {
     #[test]
     fn scalar_projection_selects_arithmetic_and_boolean_implication() {
         assert_eq!(
-            ScalarOperation::of("quire.op.integer.add"),
+            ScalarOperation::of("quire.op.integer.add", None),
             Some(ScalarOperation::Add)
         );
         assert_eq!(
-            ScalarOperation::of("quire.op.integer.sub"),
+            ScalarOperation::of("quire.op.integer.sub", None),
             Some(ScalarOperation::Subtract)
         );
         assert_eq!(
-            ScalarOperation::of("quire.op.integer.mul"),
+            ScalarOperation::of("quire.op.integer.mul", None),
             Some(ScalarOperation::Multiply)
         );
         assert_eq!(
-            ScalarOperation::of("quire.op.integer.negate"),
+            ScalarOperation::of("quire.op.integer.negate", None),
             Some(ScalarOperation::Negate)
         );
         assert_eq!(
-            ScalarOperation::of("quire.op.boolean.implies"),
+            ScalarOperation::of("quire.op.boolean.implies", None),
             Some(ScalarOperation::Implies)
         );
-        assert_eq!(ScalarOperation::of("quire.op.integer.lt"), None);
-        assert_eq!(ScalarOperation::of("quire.op.integer.eq"), None);
-        assert_eq!(ScalarOperation::of("quire.op.integer.unknown"), None);
+        for profile in DivisionProfile::ALL {
+            assert_eq!(
+                ScalarOperation::of("quire.op.integer.div", Some(profile)),
+                Some(ScalarOperation::Divide(profile))
+            );
+            assert_eq!(
+                ScalarOperation::of("quire.op.integer.rem", Some(profile)),
+                Some(ScalarOperation::Remainder(profile))
+            );
+        }
+        assert_eq!(
+            ScalarOperation::of("quire.op.integer.mod", None),
+            Some(ScalarOperation::Modulo)
+        );
+        assert_eq!(
+            ScalarOperation::of("quire.op.integer.div", None),
+            None,
+            "a division with no law of its own has no renderer"
+        );
+        assert_eq!(ScalarOperation::of("quire.op.integer.lt", None), None);
+        assert_eq!(ScalarOperation::of("quire.op.integer.eq", None), None);
+        assert_eq!(ScalarOperation::of("quire.op.integer.unknown", None), None);
         assert_eq!(
             ScalarOperation::Subtract.operand_names(),
             &["left", "right"]
         );
         assert_eq!(
-            ScalarOperation::Subtract.native_expression(),
-            "i128::from(left_native) - i128::from(right_native)"
+            ScalarOperation::Subtract.native_expression().as_deref(),
+            Some("i128::from(left_native) - i128::from(right_native)")
         );
     }
 
@@ -1271,7 +1399,7 @@ mod tests {
         }
     }
 
-    /// The symbolic domain is read from binding-shaped `min`/`max` members (the shape QSL emits,
+    /// The symbolic domain is read from binding-shaped `min`/`max` members (the shape FSL emits,
     /// FR-322); a bare-literal member is not symbolic.
     #[trace("FR-015-AC-5", "TC-025")]
     #[test]
@@ -1398,6 +1526,7 @@ mod tests {
                 dependencies: Vec::new(),
                 oracle_source: String::new(),
                 boolean_right_may_stop: false,
+                division: None,
             })),
         };
         let ClaimDisposition::Generated(generated) = &claim.result else {
@@ -1486,6 +1615,7 @@ mod tests {
                 dependencies: Vec::new(),
                 oracle_source: String::new(),
                 boolean_right_may_stop: false,
+                division: None,
             })),
         }
     }
@@ -1587,26 +1717,32 @@ mod tests {
                 .map(|operands| (operands.ranges().len(), operands.reachable()))
         };
         let small = |operation| reach(operation, -2, 3, (4, 5));
-        assert_eq!(small(ScalarOperation::Negate), Ok((1, (-3, 2))));
-        assert_eq!(small(ScalarOperation::Add), Ok((2, (2, 8))));
-        assert_eq!(small(ScalarOperation::Subtract), Ok((2, (-7, -1))));
-        assert_eq!(small(ScalarOperation::Multiply), Ok((2, (-10, 15))));
+        assert_eq!(small(ScalarOperation::Negate), Ok((1, Some((-3, 2)))));
+        assert_eq!(small(ScalarOperation::Add), Ok((2, Some((2, 8)))));
+        assert_eq!(small(ScalarOperation::Subtract), Ok((2, Some((-7, -1)))));
+        assert_eq!(small(ScalarOperation::Multiply), Ok((2, Some((-10, 15)))));
 
         // The least product is the `b * c` corner here: 1*-5 = -5, 1*-4 = -4, 2*-5 = -10,
         // 2*-4 = -8.
         assert_eq!(
             reach(ScalarOperation::Multiply, 1, 2, (-5, -4)),
-            Ok((2, (-10, -4)))
+            Ok((2, Some((-10, -4))))
         );
 
         // With every operand over the whole `i64` range, written by hand in powers of two:
         // `i64::MIN` is -2^63 and `i64::MAX` is 2^63 - 1.
         let (p63, p64, p126) = (1i128 << 63, 1i128 << 64, 1i128 << 126);
         let wide = |operation| reach(operation, i64::MIN, i64::MAX, (i64::MIN, i64::MAX));
-        assert_eq!(wide(ScalarOperation::Negate), Ok((1, (1 - p63, p63))));
-        assert_eq!(wide(ScalarOperation::Add), Ok((2, (-p64, p64 - 2))));
-        assert_eq!(wide(ScalarOperation::Subtract), Ok((2, (1 - p64, p64 - 1))));
-        assert_eq!(wide(ScalarOperation::Multiply), Ok((2, (p63 - p126, p126))));
+        assert_eq!(wide(ScalarOperation::Negate), Ok((1, Some((1 - p63, p63)))));
+        assert_eq!(wide(ScalarOperation::Add), Ok((2, Some((-p64, p64 - 2)))));
+        assert_eq!(
+            wide(ScalarOperation::Subtract),
+            Ok((2, Some((1 - p64, p64 - 1))))
+        );
+        assert_eq!(
+            wide(ScalarOperation::Multiply),
+            Ok((2, Some((p63 - p126, p126))))
+        );
     }
     #[trace("FR-015-AC-115", "TC-025")]
     #[test]

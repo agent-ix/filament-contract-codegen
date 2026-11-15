@@ -3,9 +3,9 @@ id: TC-033
 title: "Verify routed generation per backend kind without re-negotiation"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-022
+  - target: ix://agent-ix/filament-contract-codegen/FR-022
     type: verifies
-  - target: ix://agent-ix/quire-contract-codegen/FR-015
+  - target: ix://agent-ix/filament-contract-codegen/FR-015
     type: verifies
 ---
 # TC-033: Verify routed generation per backend kind without re-negotiation
@@ -27,17 +27,17 @@ the FR-015 generator returns for the same items.
   fixtures serve.
 - The package alone: no claim map is built or supplied.
 - A package with a `quire.op.integer.rem` node, and the bounded-increment
-  package (`x + 1` over a parameter `Int[0, 9]`). Amended by IR-854 (planned):
-  once FR-014-AC-81 makes `rem` derivable, the underivable-sibling node of steps
-  11 and 15 becomes another identity FR-014 still refuses, such as
-  `quire.op.numeric.narrow`, with the same expected results.
+  package (`x + 1` over a parameter `Int[0, 9]`). Amended by IR-854 (landed):
+  FR-014-AC-81 made `rem` derivable, so the underivable-sibling node of steps
+  11 and 15 is `quire.op.numeric.narrow`, an identity FR-014 still refuses,
+  with the same expected results.
 - A `KaniGenerationContext` with a valid subject path and unwind `1`.
 - The routed backend `Candidate { identity: "kani" }`.
-- QSL RR-16's checked package and its occurrence-keyed requirement records:
+- FSL RR-16's checked package and its occurrence-keyed requirement records:
   two occurrences of one `x + 1` application, with direct narrows to
   `Int[0, 10]` and `Int[0, 20]`.
 - The IR-304 guarded package named in FR-022 ("Path conditions in the scalar
-  harness"): one QSL-checked package with `f`, `g`, `h`, `k`, `c` and `j` and their
+  harness"): one FSL-checked package with `f`, `g`, `h`, `k`, `c` and `j` and their
   requirement records, so guarded and unguarded items route in one
   `generate_routed` call over one source package.
 
@@ -74,10 +74,10 @@ unchanged. Then alter one lowering position's pair after preflight, remove
 its conversion context root, and mispair its occurrence in separate cases.
 Check the typed whole-call selection refusal occurs before any harness.
 Inspect the generation path for any bound search across the package or
-source-text/QSL context reconstruction.
+source-text/FSL context reconstruction.
 
 For FR-022-AC-26 and AC-28 (slice a), build each item's `RoutedRequirement` and the package's
-`RequirementRecords` from the QSL `RequirementItem` and `RequirementRecord` values for the
+`RequirementRecords` from the FSL `RequirementItem` and `RequirementRecord` values for the
 checked RR-16 package, with node keys mapped to `CheckedNodeId`. Route both RR-16 items
 together, then reverse their input order, and compare each request index's disposition and
 result assertion. Exchange only the two items' `RoutedRequirement` values and expect
@@ -108,7 +108,7 @@ single reported refusal each time. In the IR-304 guarded package, route `k`'s `x
 carries `[(x > 20, holds=true), (x + 1 > 5, holds=true)]` with both guard nodes as context roots;
 read each disposition.
 
-For FR-022-AC-27 and AC-31 to AC-35, route the QSL-emitted packages named in each
+For FR-022-AC-27 and AC-31 to AC-35, route the FSL-emitted packages named in each
 criterion, with each guard's node as a `ContextRoot` in its item's context span. Inspect each
 harness's `Statement::Assume` list and order, symbolic input ranges, `guard_inputs`,
 `path_condition` and `requirement_occurrence`, and the persisted record JSON. For AC-27, also
@@ -177,12 +177,12 @@ diagnostic-string parsing.
     and look up each `Generated` claim's oracle symbol in the returned
     `src/lib.rs` and in the harness's Rust source. Route alone the `integer.rem`
     node, and route nothing.
-16. **QSL-shaped nodes (FR-022-AC-15, FR-015-AC-16).** Route alone, from a package in QSL's
+16. **FSL-shaped nodes (FR-022-AC-15, FR-015-AC-16).** Route alone, from a package in FSL's
     emitted shape, `x + 1`, `x + y` and `-z` narrowed to `Int[0, 10]`,
     `Int[10, 29]` and `Int[-9, 0]`; `x + p` with `p` a plain-Integer parameter;
     `x + n` with `n` a non-literal-bodied `value` node; and a sum narrowed to
     two distinct bounds.
-17. **QSL-shaped literal and consumer refusals (FR-015-AC-17, FR-015-AC-18,
+17. **FSL-shaped literal and consumer refusals (FR-015-AC-17, FR-015-AC-18,
     FR-014-AC-31, FR-014-AC-34).** Route alone, in the same shape, `x + 100` and
     `x + 10^23` narrowed to `Int[0, 10]`, `x + "a"` with the text literal in an
     Integer-typed `value` node, and `x + 2` narrowed to `Int[0, 11]` and also
@@ -193,7 +193,7 @@ diagnostic-string parsing.
     makes the duplicate unreachable from `generate_routed` itself, so this step
     runs on the pairing function (`index_harnesses`).
 19. **Nested bounded operands (FR-014-AC-45, FR-015-AC-103).** Route the outer
-    applications of QSL-emitted `(x + 1) + 1` over `x: Int[0, 9]` into
+    applications of FSL-emitted `(x + 1) + 1` over `x: Int[0, 9]` into
     `Int[0, 20]`, `x * -1` over `x: Int[1, 9]` into `Int[-9, -1]`, and
     `-(x + 1)` over `x: Int[0, 9]` into `Int[-10, -1]`, with no caller claim
     map. Read the per-position harness ranges, result assertion, claim

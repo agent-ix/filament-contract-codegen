@@ -2,9 +2,9 @@
 //! FR-024).
 //!
 //! The witness decode types a Kani playback against the persisted argument bindings, and the
-//! function and frame replays build QSL's replay request from the decoded values.
+//! function and frame replays build FSL's replay request from the decoded values.
 
-// Binding of QSL composite reports to their retained sent claim.
+// Binding of FSL composite reports to their retained sent claim.
 // Implements: FR-033-AC-9, FR-029-AC-28
 pub(crate) mod composite;
 pub(crate) mod composite_artifact;

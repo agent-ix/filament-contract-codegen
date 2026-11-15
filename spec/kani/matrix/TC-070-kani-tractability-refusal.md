@@ -3,7 +3,7 @@ id: TC-070
 title: "Verify measured-table tractability refusal and decider corpus"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-056
+  - target: ix://agent-ix/filament-contract-codegen/FR-056
     type: verifies
 ---
 # TC-070: Verify measured-table tractability refusal and decider corpus

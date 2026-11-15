@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::core::diagnostic::GenerationTerminalState;
 
-const BUNDLE_SCHEMA: &str = "quire.artifact-bundle/v1";
+const BUNDLE_SCHEMA: &str = "filament.artifact-bundle/v1";
 pub(crate) const MAX_ARTIFACTS: usize = 4096;
 pub(crate) const MAX_ARTIFACT_BYTES: usize = 16 * 1024 * 1024;
 pub(crate) const MAX_BUNDLE_BYTES: usize = 128 * 1024 * 1024;

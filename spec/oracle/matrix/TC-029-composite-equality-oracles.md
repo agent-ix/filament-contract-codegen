@@ -3,9 +3,9 @@ id: TC-029
 title: "Verify composite equality oracle generation and agreement with direct runtime execution"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-018
+  - target: ix://agent-ix/filament-contract-codegen/FR-018
     type: verifies
-  - target: ix://agent-ix/quire-contract-runtime/TC-026
+  - target: ix://agent-ix/filament-contract-runtime/TC-026
     type: references
 ---
 # TC-029: Verify composite equality oracle generation and agreement with direct runtime execution
@@ -16,8 +16,8 @@ Verify that composite equality oracles generated from an admitted
 CheckedPackage V2 cover every admitted composite and collection shape, refuse
 every non-generated item with its own typed reason, are byte-deterministic, and
 agree — outcome, admitted charges and consumed counters — with direct runtime
-execution. Agreement with the QSL value authority is outside CG's boundary and
-not claimed by CG (FR-014-AC-47); it is owned by quire-integration IR-842.
+execution. Agreement with the FSL value authority is outside CG's boundary and
+not claimed by CG (FR-014-AC-47); it is owned by filament-integration IR-842.
 
 The discriminating evidence is the agreement of step 4. No generated output is
 committed: step 4 generates the corpus crate at test time and executes it
@@ -48,15 +48,15 @@ the enum-only owner facade does not excuse dropping it.
    unlowered node, a non-`binary` form, a descriptor disagreeing with its
    operand types, one node id repeated under one descriptor, and a request that
    exceeds the lowering work limit.
-   Exercise a duplicate record field in authentic source as a separate QSL
+   Exercise a duplicate record field in authentic source as a separate FSL
    admission control through root `compile_admitted`, with ordinary source and
    dependency provision. Retain `AdmittedRefusal::Package` and its real
    `CompileRefusal` payload and available locus. Through the root facade's
    public accessors assert `code() == Code::AmbiguousDeclaration` and
    `cause() == Some("ambiguous-name")` for this Assembly refusal, retaining the
-   actual native cause now exposed by the published QSL facade. Do not erase or
+   actual native cause now exposed by the published FSL facade. Do not erase or
    synthesize the cause from an internal assembly diagnosis, add a dependency
-   on QSL assembly internals, or require a new QSL API. The precise
+   on FSL assembly internals, or require a new FSL API. The precise
    duplicate name/cause remains asserted in the separate private
    declaration-defense control below.
    No successful `AdmittedContext` or CG artifact is produced; do not attempt
@@ -80,8 +80,8 @@ the enum-only owner facade does not excuse dropping it.
    test holds, never against values parsed out of the generated source.
 3. Inspect each refusal: its typed cause, that the item's symbols are absent
    from the generated source, that its siblings are unchanged, and that the
-   three upstream blockers (quire-spec-language#120, quire-contract-runtime#34,
-   quire-spec-language#121) are distinct values rather than one reason. Assert
+   three upstream blockers (filament-spec-language#120, filament-contract-runtime#34,
+   filament-spec-language#121) are distinct values rather than one reason. Assert
    the invalid-target reference composite in its own package is refused at
    Contract IR's strict reader as `InvalidPackage/InvalidDerivedShape` at its
    reference type node id; assert the valid-target reference equality with an
@@ -91,22 +91,22 @@ the enum-only owner facade does not excuse dropping it.
    record whose reference targets a permitted model object type, and retain its
    unchanged healthy sibling. These controls follow Contract IR's
    `CompositeTypeForm::Reference` target check in
-   `crates/quire-contract-model/src/checked_package/v2/derived_keys.rs`,
+   `crates/filament-contract-model/src/checked_package/v2/derived_keys.rs`,
    `check_conforming_reference` in
-   `crates/quire-contract-model/src/checked_package/v2/operations.rs`, and
+   `crates/filament-contract-model/src/checked_package/v2/operations.rs`, and
    `ModelRefusal::ineligible` in
-   `crates/quire-contract-model/src/checked_package/v2/model_members.rs`.
+   `crates/filament-contract-model/src/checked_package/v2/model_members.rs`.
    Assert the generated source contains no `unwrap`, `expect`, panicking index or
    charge or pair-count literal, and that the crate manifest declares
    `publish = false` and the runtime dependency (git source, `branch = "main"`, no pinned `rev`)
-   with the `exact` feature only for Runtime residue; direct exact/QSV and
+   with the `exact` feature only for Runtime residue; direct exact/FSV and
    equality's root replay dependency come from the same profile authority.
 4. Generate the corpus crate at test time, compile it with the agreement cases
    as its integration test, and execute it on the corpus vectors. For each vector compare the `Outcome<bool>`, the admitted
    charge sequence and the consumed counters against a direct call to
    `TypeEnvironment::check_equality` and `CheckedEquality::evaluate` on an
    environment, operands **and descriptor** constructed in the test from the
-   request, not by or from the generator. No comparison with the QSL value
+   request, not by or from the generator. No comparison with the FSL value
    authority runs here (FR-014-AC-47). The descriptor
    is the thing an emitter mutation changes, so reading it back out of the
    generated crate would make the comparison follow the mutation and be
@@ -196,7 +196,7 @@ the enum-only owner facade does not excuse dropping it.
    `match` whose `Err` arm yields `EnvironmentError::Reconstruction` without
    calling the oracle, and `EnvironmentError` has the
    typed variants required by FR-018 Outputs, including `Declaration` retaining
-   QSV `EnvironmentFailure` and `Reconstruction(ReconstructionError)`.
+   FSV `EnvironmentFailure` and `Reconstruction(ReconstructionError)`.
    `ReconstructionError` has the unit variants `Integer`, `Interval`, `Rational`,
    `Decimal`, `Text`, `Cardinality`, `Enum` and `Composite`. Inspect the emitted
    oracle separately: a wrong prepared binding, expected package identity or
@@ -206,7 +206,7 @@ the enum-only owner facade does not excuse dropping it.
    genuine lookup whose record/tuple form or qualified name disagrees with
    the retained recipe returns `Reconstruction(Composite)`. Facade Unknown,
    Foreign and WrongKind retain `Lookup` and their owning details; missing
-   context, package mismatch and QSV environment admission keep their separate
+   context, package mismatch and FSV environment admission keep their separate
    typed errors. No key is constructed or substituted. Keep this structural
    defense distinct from public admission or execution credit. Assert no call of `IntegerInterval::new`,
    `RationalDomain::new`, `TextType::new`, `CardinalityBound::new`,
@@ -253,28 +253,38 @@ the enum-only owner facade does not excuse dropping it.
     reachable through the public API); `work` gives `LoweringWorkExhausted`; each of
     `nodes`, `edges`, `occurrences` and `diagnostics` gives `LoweringLimitUnrecognised` with that
     snake_case `limit_kind`, with no panic and never `LoweringWorkExhausted`.
-13. Declaration closure (FR-018-AC-21, planned, IR-264). For every item of the step 1 package whose
-    leaves are Boolean or bounded integers, read the claim-map entry's closure (each declaration's
-    key, form, members in declaration order with name, presence and type, each leaf's family and
-    declared bound) and compare it member by member with the declarations of the
-    `TypeEnvironment` the item's generated environment constructor returns, held by the test and
-    not parsed from the source.
-14. Totality and schedule over the refinement domain (FR-018-AC-22, planned, IR-264). For the
+13. Declaration closure (FR-018-AC-21, IR-264). For every item of the bounded corpus (the
+    `bounded` source case: a record with an optional field under both operators, a tuple, an
+    option, a nested option and a union `Empty | Flag(Boolean) | Both(Boolean, Int[0, 2])` over Boolean and
+    `Int[0, 2]`), read the claim-map entry's closure (each declaration's
+    key, form, members in declaration order with name, presence and type, a union member's ordered
+    payload types, empty for a nullary member, each leaf's family and declared bound) and the
+    operand comparison types, and compare them member by member with the declarations and the
+    prepared operand types of the `TypeEnvironment` the item's generated environment constructor
+    returns, held by the test and not parsed from the source. Hand the comparison a closure that
+    dropped a member, narrowed a bound, read an optional member as required, reordered members, or
+    dropped a nullary union member or a payload position, and read each fail.
+14. Totality and schedule over the refinement domain (FR-018-AC-22, partial, IR-264, IR-241). For the
     record, tuple and option items of step 13, whose declared integer ranges are chosen so the
     domain fits the case cap (both Booleans, an integer range of three values, every presence
     state of an option and of an optional field), enumerate every operand pair of that domain, the
     whole of it, and call each generated oracle with its own environment and a `Meter` whose
-    limits are all `u64::MAX`: read `Completed` with the QSpec FR-149 verdict computed by the test
+    limits are all `u64::MAX`: read `Completed` with the FSpec FR-149 verdict computed by the test
     from the values, the admitted charges `equality.plan-form`, `equality.plan`, one
     `equality.pair` per node of the occurrence-pair tree counted by the test, then
     `equality.result-retain`, and no `Refused` or `Incomplete`.
-15. Independent closure (FR-018-AC-23, planned, IR-264). For each item of step 13, read the
-    package's declared types through Contract IR's reader, not through the generator, and compare
-    member names, presence and each integer leaf's inclusive bounds with the claim-map closure;
-    then hand the check a closure that dropped a member, one whose bound was narrowed by one, and
-    one that read an optional member as required, and read each fail.
+15. Independent closure (FR-018-AC-23, IR-264). For each item of step 13 and for the retained
+    `option` case of step 1 (`Option<Int[-100, 100]>`), read the package's declared types through
+    Contract IR's reader, not through the generator, and compare member names, presence, union
+    payload types, the operand types and each integer leaf's inclusive bounds with the claim-map
+    closure; then hand the check a closure that dropped a member (a nullary union member and a
+    payload position included), one whose bound was narrowed by one (in a record member, an
+    option's payload and the retained case), one that read an optional member as required, one that
+    lost a nested option layer, one that read an option as its payload, and a record operand
+    replaced by a scalar, and read each fail. A reconstruction that narrowed an integer bound or
+    read `T?` as `T` is run as a source mutant and read to fail through the package read.
 16. Recursive records and authoritative shape reads (FR-018-AC-24, AC-26 and AC-27, planned,
-    IR-643). Read the authoritative QSpec
+    IR-643). Read the authoritative FSpec
     `proposals/checked-package-v2/fixtures/positive-recursive-records.json` through Contract IR's
     strict reader, without copying it into this repository. Preserve exact
     admission and inspect the original List `next` binding: its value is an
@@ -282,7 +292,7 @@ the enum-only owner facade does not excuse dropping it.
     payload reference returns to List. Inspect Tree `kids`: its direct
     reference targets `collection_bounds`, whose `semantic_type` names a
     Sequence with only the Tree element reference; the named bounds are [0,3].
-    A skipped external check, including QSPEC_REPO being unset, supplies no
+    A skipped external check, including FSPEC_REPO being unset, supplies no
     conformance or public-generation credit.
 
     Independently author authentic source with these same List/Tree shapes
@@ -292,7 +302,7 @@ the enum-only owner facade does not excuse dropping it.
     optional `next` field with the source List's genuine NodeKey, and Tree
     `kids` with that source Tree's genuine NodeKey and exact [0,3] bounds.
     Preserve each source's original identity and context binding: this is a
-    separate public positive, not the original QSpec fixture or an appended
+    separate public positive, not the original FSpec fixture or an appended
     fixture package authenticated by its old identity. Retain the exact
     fixture-shaped reconstruction assertions at the separately labelled
     private type-resolution seam, including optional presence, both record
@@ -367,7 +377,7 @@ the enum-only owner facade does not excuse dropping it.
     Supply `u64::MAX - 1` to a counter seam at its last admissible unit and
     assert the first denied `consumed` is `u64::MAX`, without wraparound.
 21. Direct unsupported roots (FR-018-AC-32). Admit formula, fairness and case
-    roots through Contract IR's public V2 reader, using QSpec FR-370/FR-440
+    roots through Contract IR's public V2 reader, using FSpec FR-370/FR-440
     for formula/case shapes and Contract IR FR-038-AC-107 for fairness. Request
     each with a supported equality sibling. Compare the requested claim id
     with the IR equality-profile lowering record: if it is `Unsupported`,
@@ -381,13 +391,13 @@ the enum-only owner facade does not excuse dropping it.
 
 ### Package-bound enum migration controls
 
-Use authentic retained QSL source, original dependency provision and original
+Use authentic retained FSL source, original dependency provision and original
 request stage/replay limits. Call root `compile_admitted`, check the emitted
 and context package identities against the original checked-package identity,
 strictly re-read emitted bytes and compare the complete package with the
 original. Preserve original source-byte/owner and library-lock authentication;
 only a successfully authenticated request exposes `admitted_context()`.
-Exercise malformed source and dependency input (Package), QSL stage and
+Exercise malformed source and dependency input (Package), FSL stage and
 above-reader resource refusal (Resource), a subsequent IR read stop
 (PackageReadLimit), and the typed internal Fault path;
 none exposes a partial successful context. Do not widen the current imported
@@ -397,7 +407,7 @@ Run the real generated `environment_symbol(Some(context))` and
 `oracle_symbol(prepared, left, right, meter)` ABI, with ordered and unordered
 enums including unused cases and a parameter without member literal nodes.
 Check canonical positions and original member identities against genuine
-facade/QSV values. Use same-spelled cases under distinct declarations to
+facade/FSV values. Use same-spelled cases under distinct declarations to
 expose conflated identity. Reject a different package context before lookup;
 reject a different item/descriptor prepared wrapper before charging. Exercise
 Unknown declaration, Unknown case and Foreign direct/transitive dependency
@@ -497,7 +507,7 @@ a public descriptor field; this control is direct-root-only.
 
 ### Inline Integer literal operand controls
 
-For FR-018-AC-47, compile a genuine QSL source containing a closed Integer
+For FR-018-AC-47, compile a genuine FSL source containing a closed Integer
 equality over two inline literals. Read its unchanged checked package through
 Contract IR and select the emitted `binary` expression and the authentic
 Integer type node. Confirm the admitted `CheckedTerm::Literal` operands retain
@@ -527,7 +537,7 @@ Inspect emitted preparation for original-node lookup, declaration/type use of
 `key()` and `seal_union_verified(key(), node(), cloned member() bindings)`;
 a Union enum spelling alone does not discharge the criterion.
 
-Construct the in-process environment through public QSV/kernel APIs from those
+Construct the in-process environment through public FSV/kernel APIs from those
 same owner declarations and bindings. Seal every Union after closing the full
 environment and admit values of every member, nested unions included. Compare
 with independent genuine owner-context values and retain the owning refusal
@@ -562,7 +572,7 @@ unit. Inspect emitted environment preparation for attachment of the original
 context's complete `unit_table().clone()` at the equivalent post-guard boundary.
 Deleting either attachment must fail its corresponding check. Source inspection
 is evidence of the emitted recipe only; do not report it as execution of that
-constructor. These controls do not repeat QSL's unit-conversion suite.
+constructor. These controls do not repeat FSL's unit-conversion suite.
 
 Retain valid context-free `None` construction for non-nominal supported items
 and the existing wrong-package whole-request refusal before reconstruction or
@@ -628,9 +638,9 @@ No vector produces `Refusal::ForeignReference`: reference operands are excluded,
 so `CheckedInvariant` from step 6 is the only run-time `Refused` a generated
 oracle here can yield.
 
-Steps 13 to 15 (FR-018-AC-21 to FR-018-AC-23, IR-264) are planned and narrow the paragraph above
+Steps 13 to 15 (FR-018-AC-21 to FR-018-AC-23, IR-264) are implemented as stated in their steps and narrow the paragraph above
 for the shapes they cover: for a record, tuple or option over Boolean and bounded-integer leaves
-the pair count is asserted, against a count the test makes from the values by QSpec FR-149's
+the pair count is asserted, against a count the test makes from the values by FSpec FR-149's
 occurrence-pair rule and not from the runtime, because the shadow of FR-015-AC-69 models exactly
 that count and the refinement obligation of FR-028-AC-15 compares the oracle with it.
 
@@ -642,7 +652,7 @@ preparation error boundary without changing the original semantic refusal
 reported by the oracle.
 
 1. Generate and compile a genuine admitted equality item. At the emitted
-   preparation's actual QSV type traversal, deny a real allocator reservation
+   preparation's actual FSV type traversal, deny a real allocator reservation
    with the owner allocator test tool. Assert `EnvironmentError::TypeCheck`
    retains `Allocation` and the actual request class/unit/amount unchanged;
    no prepared wrapper or equality-meter charge is published. Release denial

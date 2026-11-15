@@ -3,13 +3,13 @@ id: FR-037
 title: "Preserve producer-assigned structural checked-package fixture identities"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/StR-001
+  - target: ix://agent-ix/filament-contract-codegen/StR-001
     type: satisfies
-  - target: ix://agent-ix/quire-contract-ir/FR-038
+  - target: ix://agent-ix/filament-contract-ir/FR-038
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-014
+  - target: ix://agent-ix/filament-contract-codegen/FR-014
     type: references
-  - target: ix://agent-ix/quire-contract-codegen/FR-018
+  - target: ix://agent-ix/filament-contract-codegen/FR-018
     type: references
 ---
 # FR-037: Preserve producer-assigned structural checked-package fixture identities
@@ -64,7 +64,7 @@ expecting an identity mismatch.
 
 ## Dependencies
 
-Contract IR [FR-038](ix://agent-ix/quire-contract-ir/FR-038) owns strict
+Contract IR [FR-038](ix://agent-ix/filament-contract-ir/FR-038) owns strict
 checked-package admission and typed structural, graph and byte-limit refusals.
 The checked-package producer assigns structural IDs; CG's builders preserve
 them and do not become an identity authority.

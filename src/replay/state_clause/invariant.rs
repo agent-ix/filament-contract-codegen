@@ -1,10 +1,10 @@
 //! Native replay of a Falsified V2 invariant harness (FR-024-AC-57 to AC-64, IR-1505): the
-//! harness's concrete playback is put before QSL's `replay_state_clause` as a `Current`
+//! harness's concrete playback is put before FSL's `replay_state_clause` as a `Current`
 //! observation, one snapshot document and the caller's anchor.
 //!
 //! CG never infers the anchor: a drawn-state invariant harness carries none, so the caller supplies
 //! the [`SelectedAnchor`] and the self object's address. The snapshot binds every declared field
-//! of the object (QSL refuses a `Current` snapshot lacking any, FR-106): a field the harness draws
+//! of the object (FSL refuses a `Current` snapshot lacking any, FR-106): a field the harness draws
 //! takes the playback's value and a declared field the invariant does not read takes the value the
 //! caller supplied in [`InvariantReplayInputs::unread_values`] (FR-024-AC-58, IR-1512). This module
 //! invents no value for any field.
@@ -335,8 +335,8 @@ impl StateClauseReplay {
     ///
     /// # Errors
     ///
-    /// [`StateClauseReplayError`] when the lock's dependencies are not admitted, QSL does not
-    /// compile the unit or find the clause, the clause node is not the one QSL names, a drawn
+    /// [`StateClauseReplayError`] when the lock's dependencies are not admitted, FSL does not
+    /// compile the unit or find the clause, the clause node is not the one FSL names, a drawn
     /// field has no playback value, a playback name is undeclared or repeated, a value is outside
     /// its field's range, or the document or the transcript is not admitted.
     pub fn new_invariant(
@@ -462,7 +462,7 @@ mod tests {
     use super::*;
 
     /// FR-024-AC-62: documents sharing the snapshot's identity labels return
-    /// `DuplicateDocumentIdentity` at the seam `new_invariant` builds its documents through. The domain package QSL admits has no top-level identity
+    /// `DuplicateDocumentIdentity` at the seam `new_invariant` builds its documents through. The domain package FSL admits has no top-level identity
     /// member, so the public path has no second document that can collide; the guard is the one
     /// the postcondition path shares.
     #[trace("FR-024-AC-62", "TC-035")]

@@ -40,8 +40,8 @@ pub(crate) mod checked_package_evidence;
 #[path = "../common/mod.rs"]
 pub(crate) mod common;
 
-pub(crate) const fn unbounded_decode_limits() -> quire_contract_codegen::WitnessDecodeLimits {
-    quire_contract_codegen::WitnessDecodeLimits {
+pub(crate) const fn unbounded_decode_limits() -> filament_contract_codegen::WitnessDecodeLimits {
+    filament_contract_codegen::WitnessDecodeLimits {
         bytes: usize::MAX,
         values: usize::MAX,
     }
@@ -63,6 +63,7 @@ mod bounded_kani_corpus;
 mod capability_settlement;
 mod composite_artifact_binding;
 mod composite_equality_agreement;
+mod composite_equality_closure;
 mod composite_equality_generation;
 mod composite_original_eq;
 mod composite_parity_converter;
@@ -80,6 +81,7 @@ mod harness_generation;
 mod ieee_sqrt_fma;
 mod inline_integer_equality;
 mod integer_division_bounds;
+mod integer_division_harness;
 mod kani_batching;
 mod kani_function_harness;
 mod kani_gate;
@@ -91,6 +93,7 @@ mod kani_obligations_state_frame;
 mod kani_obligations_symbolic_domains;
 mod kani_obligations_symbolic_graphs;
 mod kani_obligations_v2_clause_controls;
+mod kani_obligations_v2_control;
 mod kani_obligations_v2_profiles;
 mod kani_probes;
 mod kani_run_scan;
@@ -137,3 +140,5 @@ mod constrained_method;
 mod native_driver_artifacts;
 
 mod scalar_source_forms;
+mod shadow_kani;
+mod shadow_refinement;

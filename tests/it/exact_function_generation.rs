@@ -8,8 +8,7 @@
 //! admitted 100K-call flat SSA control is exercised below.
 
 use crate::exact_scalar_generation::invokes_panicking_macro;
-use ix_trace_rs::trace;
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     generate_exact_function_oracles, generate_function_schedules,
     generate_function_schedules_with_limits, CallPointKind, ClaimDisposition, ExactFunctionItem,
     ExactFunctionRefusal, FunctionScheduleDeclaration, FunctionScheduleDisposition,
@@ -17,6 +16,7 @@ use quire_contract_codegen::{
     FunctionScheduleParameter, FunctionScheduleRefusal as ScheduleRefusal,
     FunctionScheduledOperation, GeneratedExactFunctionClaim, UpstreamBlocker,
 };
+use ix_trace_rs::trace;
 use quire_contract_model::CheckedPackageV2;
 use std::ops::Deref;
 
@@ -542,7 +542,7 @@ fn tc_031_ac34_public_strict_reader_chain_generates_compilable_flat_schedule() {
     assert!(one_less.refused_functions.iter().all(|function| {
         matches!(
             function.refusal,
-            quire_contract_codegen::FunctionScheduleRefusal::WorkExhausted {
+            filament_contract_codegen::FunctionScheduleRefusal::WorkExhausted {
                 limit: 11,
                 consumed: 12
             }
@@ -556,7 +556,7 @@ fn tc_031_ac34_public_strict_reader_chain_generates_compilable_flat_schedule() {
     assert!(projection_denied.refused_functions.iter().all(|function| {
         matches!(
             function.refusal,
-            quire_contract_codegen::FunctionScheduleRefusal::WorkExhausted {
+            filament_contract_codegen::FunctionScheduleRefusal::WorkExhausted {
                 limit: 4,
                 consumed: 5
             }
@@ -578,7 +578,7 @@ fn tc_031_ac34_public_strict_reader_chain_generates_compilable_flat_schedule() {
             .first()
             .map(|function| &function.refusal),
         Some(
-            quire_contract_codegen::FunctionScheduleRefusal::WorkExhausted {
+            filament_contract_codegen::FunctionScheduleRefusal::WorkExhausted {
                 limit: 10,
                 consumed: 11
             }
@@ -661,7 +661,7 @@ fn tc_031_ac34_public_strict_reader_chain_generates_compilable_flat_schedule() {
     assert!(matches!(
         &claim_order.claims[1].result,
         FunctionScheduleDisposition::Refused {
-            refusal: quire_contract_codegen::FunctionScheduleRefusal::DuplicateRequest { .. },
+            refusal: filament_contract_codegen::FunctionScheduleRefusal::DuplicateRequest { .. },
             ..
         }
     ));
@@ -1122,7 +1122,7 @@ use package::*;
 /// undischargeable capability (AC-6), and a dangling nested call (AC-12);
 /// and one function wholly unrelated to any of the refused ones, to prove
 /// isolation (AC-12).
-fn main_functions() -> Vec<quire_contract_codegen::ExactFunctionDeclaration> {
+fn main_functions() -> Vec<filament_contract_codegen::ExactFunctionDeclaration> {
     vec![
         function_add("add_fn"),
         function_eq("eq_fn"),
@@ -1180,7 +1180,7 @@ fn admit_with(
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(super) struct FixtureOracles {
-    output: quire_contract_codegen::ExactFunctionOracles,
+    output: filament_contract_codegen::ExactFunctionOracles,
     ids: FixtureIds,
 }
 
@@ -1191,7 +1191,7 @@ impl FixtureOracles {
 }
 
 impl Deref for FixtureOracles {
-    type Target = quire_contract_codegen::ExactFunctionOracles;
+    type Target = filament_contract_codegen::ExactFunctionOracles;
 
     fn deref(&self) -> &Self::Target {
         &self.output
@@ -1200,7 +1200,7 @@ impl Deref for FixtureOracles {
 
 fn generate(
     package: &FixturePackage,
-    functions: &[quire_contract_codegen::ExactFunctionDeclaration],
+    functions: &[filament_contract_codegen::ExactFunctionDeclaration],
     items: &[ExactFunctionItem],
 ) -> FixtureOracles {
     let input = admitted_full_request(package, functions, items);
@@ -1209,14 +1209,14 @@ fn generate(
 
 struct AdmittedFunctionRequest {
     contract: quire_contract_model::ContractPackageV1,
-    roots: Vec<quire_contract_codegen::ContractRequestPosition>,
+    roots: Vec<filament_contract_codegen::ContractRequestPosition>,
 }
 
 /// One complete FR-330 lowering request, independent of descriptor ordering.
 /// Repeated root keys retain separate accounting positions.
 fn admitted_full_request(
     package: &FixturePackage,
-    functions: &[quire_contract_codegen::ExactFunctionDeclaration],
+    functions: &[filament_contract_codegen::ExactFunctionDeclaration],
     items: &[ExactFunctionItem],
 ) -> AdmittedFunctionRequest {
     let mut requested = functions
@@ -1240,7 +1240,7 @@ fn admitted_full_request(
 fn generate_in_request(
     package: &FixturePackage,
     input: &AdmittedFunctionRequest,
-    functions: &[quire_contract_codegen::ExactFunctionDeclaration],
+    functions: &[filament_contract_codegen::ExactFunctionDeclaration],
     items: &[ExactFunctionItem],
 ) -> FixtureOracles {
     let functions = functions
@@ -1256,9 +1256,11 @@ fn generate_in_request(
     let mut available = std::collections::BTreeMap::new();
     for (position, root) in input.roots.iter().enumerate() {
         let node_id = match root {
-            quire_contract_codegen::ContractRequestPosition::DriverItem { node_id, .. }
-            | quire_contract_codegen::ContractRequestPosition::Excluded { node_id }
-            | quire_contract_codegen::ContractRequestPosition::ContextRoot { node_id } => node_id,
+            filament_contract_codegen::ContractRequestPosition::DriverItem { node_id, .. }
+            | filament_contract_codegen::ContractRequestPosition::Excluded { node_id }
+            | filament_contract_codegen::ContractRequestPosition::ContextRoot { node_id } => {
+                node_id
+            }
         };
         available
             .entry(node_id.clone())
@@ -1334,7 +1336,7 @@ fn tc_031_ac23_byte_ceiling_has_failed_records_and_no_contract_package() {
         .iter()
         .map(|item| generous.ids.resolve(&item.call_node_id))
         .collect::<Vec<_>>();
-    let profile = measuring_profile(false, "quire.codegen.exact-function/v1");
+    let profile = measuring_profile(false, "filament.codegen.exact-function/v1");
     let body_length = lowered_package_length(&generous, &body_nodes, &profile);
     let call_length = lowered_package_length(&generous, &call_nodes, &profile);
     let combined_nodes = body_nodes
@@ -1436,7 +1438,7 @@ fn tc_031_ac23_small_shared_chain_lowers_with_complete_closures() {
         }
     }
     let package = admit_with(&builder, limits_under(LARGEST_CEILING));
-    let profile = measuring_profile(false, "quire.codegen.exact-function/v1");
+    let profile = measuring_profile(false, "filament.codegen.exact-function/v1");
     let wire_length = serde_json::to_vec(&builder.wire())
         .expect("small-chain wire")
         .len();
@@ -1478,7 +1480,7 @@ fn tc_031_ac1_every_item_gets_one_disposition_and_refusal_does_not_cascade() {
             .find(|claim| claim.node_id == expected.node_id && claim.result == expected.result);
         assert!(
             actual.is_some(),
-            "healthy QSL claim unchanged: {expected:?}"
+            "healthy FSL claim unchanged: {expected:?}"
         );
     }
     assert_eq!(
@@ -1513,8 +1515,8 @@ fn tc_031_ac1_every_item_gets_one_disposition_and_refusal_does_not_cascade() {
 fn tc_031_scalar_body_operator_must_match_checked_operation_identity() {
     let package = admit(source_bound_call_package());
     let mut declaration = source_function(&format!("n{}", key(SOURCE_FUNCTION)), SOURCE_BODY);
-    declaration.body = quire_contract_codegen::ExactFunctionBody::Scalar {
-        operator: quire_contract_codegen::oracle::operator_catalog::IntegerOperator::Subtract,
+    declaration.body = filament_contract_codegen::ExactFunctionBody::Scalar {
+        operator: filament_contract_codegen::oracle::operator_catalog::IntegerOperator::Subtract,
     };
     let oracles = generate(&package, &[declaration], &[source_call()]);
     assert!(matches!(
@@ -1553,7 +1555,7 @@ fn tc_031_ac3_claim_records_function_and_origin_from_the_request() {
             .map(|(_, index)| *index)
             .expect("claim names a requested function");
         match &generated.function_origin {
-            quire_contract_codegen::RecordedOrigin::Body { function, index } => {
+            filament_contract_codegen::RecordedOrigin::Body { function, index } => {
                 assert_eq!(function, &generated.function);
                 assert_eq!(*index, expected_index);
             }
@@ -1577,7 +1579,7 @@ fn tc_031_ac6_undischargeable_capability_refuses_before_any_item() {
         disposition_for(&oracles, ITEM_CALL_ADD),
         ClaimDisposition::Refused {
             refusal: ExactFunctionRefusal::UnsupportedCapability { capability }
-        } if capability == "quire.capability.undischargeable-in-v1"
+        } if capability == "filament.capability.undischargeable-in-v1"
     ));
 }
 
@@ -1635,7 +1637,7 @@ fn tc_031_ac11_model_and_state_are_distinct_blockers() {
         disposition_for(&oracles, ITEM_CALL_SOURCE_MODEL),
         ClaimDisposition::Refused {
             refusal: ExactFunctionRefusal::BlockedOnUpstream {
-                issue: UpstreamBlocker::QuireSpecLanguage120,
+                issue: UpstreamBlocker::FilamentSpecLanguage120,
                 ..
             }
         }
@@ -1644,7 +1646,7 @@ fn tc_031_ac11_model_and_state_are_distinct_blockers() {
         disposition_for(&oracles, ITEM_CALL_SOURCE_STATE),
         ClaimDisposition::Refused {
             refusal: ExactFunctionRefusal::BlockedOnUpstream {
-                issue: UpstreamBlocker::QuireSpecLanguage121,
+                issue: UpstreamBlocker::FilamentSpecLanguage121,
                 ..
             }
         }
@@ -1659,8 +1661,8 @@ fn tc_031_ac11_model_and_state_are_distinct_blockers() {
 
 fn assert_healthy_ac12_siblings(
     package: &CheckedPackageV2,
-    baseline: &quire_contract_codegen::ExactFunctionOracles,
-    oracles: &quire_contract_codegen::ExactFunctionOracles,
+    baseline: &filament_contract_codegen::ExactFunctionOracles,
+    oracles: &filament_contract_codegen::ExactFunctionOracles,
 ) {
     let mut surviving = ["add", "eq"]
         .into_iter()
@@ -1689,7 +1691,7 @@ fn assert_healthy_ac12_siblings(
             unreachable!("the selected baseline claim is generated")
         };
         // AC-3 renumbers the exact body-root index when `nested` no longer survives.
-        let quire_contract_codegen::RecordedOrigin::Body { index, .. } =
+        let filament_contract_codegen::RecordedOrigin::Body { index, .. } =
             &mut generated.function_origin;
         *index = surviving
             .iter()
@@ -1716,7 +1718,7 @@ fn assert_healthy_ac12_siblings(
 fn tc_031_ac12_dangling_callee_refuses_only_its_own_items() {
     let (package, baseline) = super::exact_function_agreement::genuine_corpus();
     let (_, oracles) = super::exact_function_agreement::genuine_corpus_with_bad_nested(
-        quire_contract_codegen::ExactFunctionBody::Call {
+        filament_contract_codegen::ExactFunctionBody::Call {
             callee: "not_declared_anywhere".to_owned(),
         },
     );
@@ -1749,8 +1751,8 @@ fn tc_031_ac12_dangling_callee_refuses_only_its_own_items() {
 fn tc_031_ac12_form_mismatch_refuses_only_its_own_item() {
     let (package, baseline) = super::exact_function_agreement::genuine_corpus();
     let (_, oracles) = super::exact_function_agreement::genuine_corpus_with_bad_nested(
-        quire_contract_codegen::ExactFunctionBody::Scalar {
-            operator: quire_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
+        filament_contract_codegen::ExactFunctionBody::Scalar {
+            operator: filament_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
         },
     );
     let nested_call = baseline
@@ -1845,7 +1847,7 @@ fn tc_031_ac33_direct_case_call_node_is_unsupported() {
     assert_eq!(combined.location_map, healthy_only.location_map);
 }
 
-/// QSL emits both temporal roots beside a separate callable; Contract IR
+/// FSL emits both temporal roots beside a separate callable; Contract IR
 /// admits those exact bytes before the generator classifies either request.
 #[trace("FR-021-AC-33", "TC-031")]
 #[test]
@@ -1933,16 +1935,16 @@ fn tc_031_signature_mismatch_refuses_arity_and_result_type_disagreement() {
     let package = admit(ext_corpus_package());
 
     // Arity: FN_ADD's real body needs two operands; declared with one.
-    let arity_mismatch = quire_contract_codegen::ExactFunctionDeclaration {
+    let arity_mismatch = filament_contract_codegen::ExactFunctionDeclaration {
         node_id: code_id(FN_ADD),
         name: "one_param_add".to_owned(),
-        parameters: vec![quire_contract_codegen::FunctionParameter {
+        parameters: vec![filament_contract_codegen::FunctionParameter {
             name: "a".to_owned(),
             type_node_id: code_id(T_INTEGER),
         }],
         result_type: code_id(T_INTEGER),
-        body: quire_contract_codegen::ExactFunctionBody::Scalar {
-            operator: quire_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
+        body: filament_contract_codegen::ExactFunctionBody::Scalar {
+            operator: filament_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
         },
         capability_requirements: Vec::new(),
     };
@@ -1957,22 +1959,22 @@ fn tc_031_signature_mismatch_refuses_arity_and_result_type_disagreement() {
 
     // Result type: FN_ADD's node, a Scalar body (Integer-only), declared
     // with a Boolean result.
-    let result_mismatch = quire_contract_codegen::ExactFunctionDeclaration {
+    let result_mismatch = filament_contract_codegen::ExactFunctionDeclaration {
         node_id: code_id(FN_ADD),
         name: "boolean_result_add".to_owned(),
         parameters: vec![
-            quire_contract_codegen::FunctionParameter {
+            filament_contract_codegen::FunctionParameter {
                 name: "a".to_owned(),
                 type_node_id: code_id(T_INTEGER),
             },
-            quire_contract_codegen::FunctionParameter {
+            filament_contract_codegen::FunctionParameter {
                 name: "b".to_owned(),
                 type_node_id: code_id(T_INTEGER),
             },
         ],
         result_type: code_id(T_BOOLEAN),
-        body: quire_contract_codegen::ExactFunctionBody::Scalar {
-            operator: quire_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
+        body: filament_contract_codegen::ExactFunctionBody::Scalar {
+            operator: filament_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
         },
         capability_requirements: Vec::new(),
     };
@@ -1986,7 +1988,7 @@ fn tc_031_signature_mismatch_refuses_arity_and_result_type_disagreement() {
     ));
 }
 
-/// Two QSL-authored body roots deliberately share a request name. Their
+/// Two FSL-authored body roots deliberately share a request name. Their
 /// refusal leaves a third source-bound function's request and location origins intact.
 #[trace("FR-021-AC-15", "FR-021-AC-17", "TC-031")]
 #[test]
@@ -2032,7 +2034,7 @@ fn tc_031_ambiguous_function_name_refuses_both_and_does_not_corrupt_indices() {
     };
     assert!(matches!(
         &generated.function_origin,
-        quire_contract_codegen::RecordedOrigin::Body { function, index }
+        filament_contract_codegen::RecordedOrigin::Body { function, index }
             if function == "unrelated" && *index == 6
     ));
     assert_eq!(sibling, baseline);
@@ -2048,7 +2050,7 @@ fn tc_031_ambiguous_function_name_refuses_both_and_does_not_corrupt_indices() {
 fn tc_031_arity_mismatch_refuses_when_item_argument_count_disagrees() {
     let oracles = super::exact_function_agreement::genuine_bad_arity();
     let [claim] = oracles.claim_map.items.as_slice() else {
-        panic!("one QSL-authored bad-arity call claim");
+        panic!("one FSL-authored bad-arity call claim");
     };
     assert!(matches!(
         &claim.result,
@@ -2069,22 +2071,22 @@ fn tc_031_arity_mismatch_refuses_when_item_argument_count_disagrees() {
 #[test]
 fn tc_031_ac21_unsupported_operator_refuses_unary_negate_scalar_body() {
     let package = admit(ext_corpus_package());
-    let functions = vec![quire_contract_codegen::ExactFunctionDeclaration {
+    let functions = vec![filament_contract_codegen::ExactFunctionDeclaration {
         node_id: code_id(FN_ADD),
         name: "negate_fn".to_owned(),
         parameters: vec![
-            quire_contract_codegen::FunctionParameter {
+            filament_contract_codegen::FunctionParameter {
                 name: "a".to_owned(),
                 type_node_id: code_id(T_INTEGER),
             },
-            quire_contract_codegen::FunctionParameter {
+            filament_contract_codegen::FunctionParameter {
                 name: "b".to_owned(),
                 type_node_id: code_id(T_INTEGER),
             },
         ],
         result_type: code_id(T_INTEGER),
-        body: quire_contract_codegen::ExactFunctionBody::Scalar {
-            operator: quire_contract_codegen::oracle::operator_catalog::IntegerOperator::Negate,
+        body: filament_contract_codegen::ExactFunctionBody::Scalar {
+            operator: filament_contract_codegen::oracle::operator_catalog::IntegerOperator::Negate,
         },
         capability_requirements: Vec::new(),
     }];
@@ -2109,9 +2111,9 @@ fn tc_031_ac21_unsupported_operator_refuses_unary_negate_scalar_body() {
 
 /// `declaration` moved onto the node `code`.
 fn on_node(
-    mut declaration: quire_contract_codegen::ExactFunctionDeclaration,
+    mut declaration: filament_contract_codegen::ExactFunctionDeclaration,
     code: u32,
-) -> quire_contract_codegen::ExactFunctionDeclaration {
+) -> filament_contract_codegen::ExactFunctionDeclaration {
     declaration.node_id = code_id(code);
     declaration
 }
@@ -2135,7 +2137,7 @@ fn permutations<T: Clone>(items: &[T]) -> Vec<Vec<T>> {
 /// One FR-021-AC-22 fixture: declarations of which `pair_names` share the declaring node
 /// `FN_ADD`, and the requested `(call node, function)` items.
 struct DuplicateNodeFixture {
-    functions: Vec<quire_contract_codegen::ExactFunctionDeclaration>,
+    functions: Vec<filament_contract_codegen::ExactFunctionDeclaration>,
     items: Vec<(u32, &'static str)>,
     /// Names held by a declaration sharing `FN_ADD`.
     pair_names: Vec<&'static str>,
@@ -2454,7 +2456,7 @@ fn unknown(name: &str) -> ClaimDisposition<GeneratedExactFunctionClaim, ExactFun
 /// order given, then reversed), asserted identical to each other, and returned once.
 fn both_orders(
     package: &FixturePackage,
-    functions: &[quire_contract_codegen::ExactFunctionDeclaration],
+    functions: &[filament_contract_codegen::ExactFunctionDeclaration],
     names: [&str; 2],
 ) -> FixtureOracles {
     let forward = generate(
@@ -2706,7 +2708,7 @@ pub(super) fn main_oracles() -> FixtureOracles {
     )
 }
 
-pub fn contents(oracles: &quire_contract_codegen::ExactFunctionOracles, path: &str) -> String {
+pub fn contents(oracles: &filament_contract_codegen::ExactFunctionOracles, path: &str) -> String {
     oracles
         .artifacts
         .iter()
@@ -2738,7 +2740,7 @@ fn tc_031_ac13_generation_is_deterministic_across_runs_and_permutations() {
             .filter(|claim| matches!(claim.result, ClaimDisposition::Generated(_)))
             .count(),
         4,
-        "all four QSL-authored call items generate"
+        "all four FSL-authored call items generate"
     );
     let subjects = first
         .claim_map
@@ -2783,7 +2785,7 @@ fn generated_manifest_exposes_semantic_value_owner_source() {
     let manifest = contents(&oracles, "Cargo.toml");
     let dependency = format!(
         "quire-semantic-value = {{ {} }}",
-        quire_contract_codegen::SEMANTIC_VALUE_DEPENDENCY_SOURCE
+        filament_contract_codegen::SEMANTIC_VALUE_DEPENDENCY_SOURCE
     );
     assert!(manifest.lines().any(|line| line == dependency));
 }
@@ -2843,7 +2845,7 @@ fn tc_031_ac15_location_map_round_trips_to_the_request_structurally() {
             .map(|(_, index)| *index)
             .unwrap_or_else(|| panic!("{} not a survivor", entry.function));
         match &entry.location.origin {
-            quire_contract_codegen::RecordedOrigin::Body { function, index } => {
+            filament_contract_codegen::RecordedOrigin::Body { function, index } => {
                 assert_eq!(function, &entry.function);
                 assert_eq!(*index, expected_index);
             }
@@ -2860,7 +2862,7 @@ fn tc_031_ac15_location_map_round_trips_to_the_request_structurally() {
 
 /// FR-021-AC-16 (Inspection). No generated code or claim map
 /// reads, branches on, or asserts non-emptiness of `Evaluation.location` or
-/// `Evaluation.losses`: the generated oracle returns the full QSL evaluation
+/// `Evaluation.losses`: the generated oracle returns the full FSL evaluation
 /// without inspecting either field, and this test greps the
 /// generated source and the serialized claim/location maps to confirm no
 /// occurrence of either field name slipped in some other way.

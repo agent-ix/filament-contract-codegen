@@ -1,10 +1,10 @@
-//! Projects the QSL requirement item and record the driver would hand CG for a fixture's
+//! Projects the FSL requirement item and record the driver would hand CG for a fixture's
 //! authenticated `OwnResult` selections (FR-022, IR-304). The result bound is the semantic type of
 //! the selected conversion, or of the application when there is none; the path condition is empty.
 
 use std::collections::BTreeMap;
 
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     ContractDriverResultSelection, ContractRequestPosition, GenerationContexts,
     KaniGenerationContext, RequirementOccurrence, RequirementRecordInput, RequirementRecords,
     RoutedGenerationItem, RoutedRequirement,
@@ -69,7 +69,7 @@ pub fn project(
         .collect()
 }
 
-/// The record QSL writes for each projected requirement.
+/// The record FSL writes for each projected requirement.
 pub fn records(requirements: &BTreeMap<usize, RoutedRequirement>) -> RequirementRecords {
     RequirementRecords::new(
         requirements

@@ -1,21 +1,21 @@
 ---
 id: TC-059
-title: "Bind QSL-encoded HP-2 induction queries to solver-run evidence"
+title: "Bind FSL-encoded HP-2 induction queries to solver-run evidence"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-045
+  - target: ix://agent-ix/filament-contract-codegen/FR-045
     type: verifies
 ---
-# TC-059: Bind QSL-encoded HP-2 induction queries to solver-run evidence
+# TC-059: Bind FSL-encoded HP-2 induction queries to solver-run evidence
 
 ## Description
 
 Verify CG's solver invocation, exact query association, bounded capture and
-typed non-success over QSL-owned canonical HP-2 queries. QSL owns the query
+typed non-success over FSL-owned canonical HP-2 queries. FSL owns the query
 encoder, method outcome and terminal settlement; this test does not build a
 second encoder or claim CG execution alone proves a hyperproperty.
 Also verify CG's typed refinement Base and Step run-record handoff to the
-QSL FR-314 certificate adapter. The refinement procedures include synthetic
+FSL FR-314 certificate adapter. The refinement procedures include synthetic
 handoff, source-authored seven-row permutation, Base-only zero-step,
 production preparation/execution and actual FR-315 refusal controls.
 The live readback control requires a selected real cvc5
@@ -23,7 +23,7 @@ executable; synthetic solver stdout supplies no execution credit for it.
 
 ## Test Procedure
 
-1. Supply a QSL-admitted HP-2 safety clause, ordered subjects, one bound
+1. Supply a FSL-admitted HP-2 safety clause, ordered subjects, one bound
    instance and a Meter. At `k = 1`, obtain base and step bytes using
    FR-315's `encode_hyper_query` call shape. Capture the bytes at CG's
    selected solver stdin boundary and assert byte equality. Check the two
@@ -32,15 +32,15 @@ executable; synthetic solver stdout supplies no execution credit for it.
    AC-3). This step waits for QSL-1010's production encoder.
 2. Return one `Unsat` response from each of two bounded solver invocations.
    Assert CG retains two matching completed query records and offers only
-   this pair for QSL-owned `Inductive { depth: 1 }` settlement; QSL's
+   this pair for FSL-owned `Inductive { depth: 1 }` settlement; FSL's
    FR-182-AC-7 test owns the `proved`, `decisive-witness`, `Uncertified`
    assertion. Swap one record's product, item, instance, depth, kind or query
    bytes and assert that the pair is ineligible (FR-045-AC-1, AC-2).
 3. Drive base `Sat` with raw emitted model bytes, base `Unsat` with step
-   `Sat`, solver `Unknown`, an original QSL encoding refusal, missing and
+   `Sat`, solver `Unknown`, an original FSL encoding refusal, missing and
    malformed responses, contradictory statuses, nonzero process exit and
    stale response association. Assert distinct typed run evidence and no
-   CG terminal proof or refutation. QSL reconstruction/replay alone can
+   CG terminal proof or refutation. FSL reconstruction/replay alone can
    turn a base candidate into a decisive product path (FR-045-AC-2).
 4. Use a selected nonexistent executable and finite input-byte, wall-clock
    and capture limits. Assert `MissingTool` before any answer, an
@@ -49,14 +49,14 @@ executable; synthetic solver stdout supplies no execution credit for it.
    only its own exact query on stdin, captures only its own stdout/stderr,
    and retains the selected executable, arguments, limits, completion and
    any emitted model/proof bytes. Neither refusal is `Unsat`; the reached
-   resource limit is handed to QSL FR-182 V-7 as incomplete
+   resource limit is handed to FSL FR-182 V-7 as incomplete
    (FR-045-AC-2, AC-3).
 5. Through the production driver, take the selected refinement key and row
    count from its replay-owned request. Pre-encode every query before any solver
    launch; preserve a real `any`-row encoding refusal and pre-encoding
    cancellation as distinct typed failures, with no executable collection.
    Using a recompiled refinement with seven step rows, take row `r` from
-   its `steps` array in authored declaration order under QSpec FR-375-AC-22.
+   its `steps` array in authored declaration order under FSpec FR-375-AC-22.
    Obtain `Initial` and each `Step { row: r }` query from FR-315.
    Observe the selected solver's stdin for every invocation.
    Assert one typed `Base` and seven typed `Step` records for rows 0 through
@@ -85,7 +85,7 @@ executable; synthetic solver stdout supplies no execution credit for it.
    capture real cvc5 output and assert that the proof field equals the
    exact bytes between the one outer proof list's parentheses. Check that
    removing only those delimiters leaves the original interior bytes and
-   that the public QSL FR-314 adapter preserves those commands byte-for-byte
+   that the public FSL FR-314 adapter preserves those commands byte-for-byte
    when assembling the complete certificate. Invoke its native proof checker
    and require either native `Verified` or the independently expected typed
    `Unverifiable` result for the unchanged matched queries. A query mismatch,
@@ -94,7 +94,7 @@ executable; synthetic solver stdout supplies no execution credit for it.
    relabelling it `Verified`. An expected `Unverifiable` gives no checked-proof
    credit. This checks assembly and typed readback, not checked-refutation
    acceptance or certified settlement;
-   QSL TC-893 owns those stronger obligations. Supply records in two
+   FSL TC-893 owns those stronger obligations. Supply records in two
    different orders. Decode
    the serialized handoff and assert both byte streams are identical and
    contain `Base` followed by rows 0 through 6, with the exact query and
@@ -102,9 +102,9 @@ executable; synthetic solver stdout supplies no execution credit for it.
    make one proof present but empty, then change only one proof byte, and
    assert byte preservation and field isolation. For the empty case, capture
    `Unsat` followed by one empty outer list and assert a present zero-length
-   proof field; distinguish status-only output as absent. Feed the handoff to the QSL
+   proof field; distinguish status-only output as absent. Feed the handoff to the FSL
    adapter and assert it can form the FR-314 certificate in row order;
-   QSL's TC-893 owns certificate checking and settlement (FR-045-AC-5).
+   FSL's TC-893 owns certificate checking and settlement (FR-045-AC-5).
 7. From step 6's valid collection, remove `Base`, remove row 3, duplicate
    `Base`, duplicate row 3, and add row 7, one mutation at a time. Assert
    typed shape refusal and no serialized certificate handoff each time.
@@ -124,11 +124,11 @@ executable; synthetic solver stdout supplies no execution credit for it.
 
 ## Expected Results
 
-Only two completed, correctly associated `Unsat` records make QSL induction
+Only two completed, correctly associated `Unsat` records make FSL induction
 eligible. Every other response, encoding refusal, missing tool or reached
 limit remains typed non-proof evidence with the available identities and
-depth. CG does not mint QSL outcome types, certificates or terminal records.
+depth. CG does not mint FSL outcome types, certificates or terminal records.
 For refinement, only a complete set of correctly associated completed `Unsat`
-records with present query and proof fields yields the deterministic QSL
+records with present query and proof fields yields the deterministic FSL
 adapter handoff. Refusal cases retain their distinct typed reasons. A present
-empty proof reaches QSL unchanged for its checker to judge.
+empty proof reaches FSL unchanged for its checker to judge.

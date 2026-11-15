@@ -3,11 +3,11 @@
 //!
 //! A requested item names one declared function and one admitted `call`
 //! expression applying it. The generator classifies each function body from
-//! Contract IR, resolves its QSL callable identity from the same checked
+//! Contract IR, resolves its FSL callable identity from the same checked
 //! graph, and emits a Rust body factory. Each generated oracle reacquires the
-//! checked closure through `qsl-replay`, selects the function by its owner and
+//! checked closure through `fsl-replay`, selects the function by its owner and
 //! wire node identity, registers the generated body, and applies it through
-//! `quire-eval`. The QSL application session owns the call charge and
+//! `filament-eval`. The FSL application session owns the call charge and
 //! refusal ordering; this module does not implement a second evaluator.
 //!
 //! ## Scope of the function-body vocabulary (V1)
@@ -17,7 +17,7 @@
 //! (FR-018's forms), or a nested `call` expression (this requirement's own
 //! form). This generator's nested-`call` support is complete: any declared
 //! function may call another declared function in the same request through a
-//! QSL-selected call site and the `quire-eval` child scheduler. Its scalar
+//! FSL-selected call site and the `filament-eval` child scheduler. Its scalar
 //! and composite-equality support is a deliberately scoped subset, not the
 //! full FR-014/FR-018 operator matrix:
 //!
@@ -40,7 +40,7 @@
 //! [`ExactFunctionRefusal::SignatureMismatch`], checked once every
 //! parameter and result type is resolved, before the function can ever
 //! reach generated application. The location map retains a static V1
-//! description; the QSL session supplies dynamic application locations.
+//! description; the FSL session supplies dynamic application locations.
 //!
 //! Reused types, not reimplemented: this module imports
 //! [`crate::oracle::operator_catalog::IntegerOperator`] and
@@ -60,9 +60,9 @@
 //! another declared function in the same request
 //! ([`ExactFunctionRefusal::AmbiguousFunctionName`], caught before
 //! application), a `reference` composite operand
-//! ([`UpstreamBlocker::QuireSpecLanguage120`]), a
+//! ([`UpstreamBlocker::FilamentSpecLanguage120`]), a
 //! model/relation/state/temporal/protocol node
-//! ([`UpstreamBlocker::QuireSpecLanguage120`]/[`UpstreamBlocker::QuireSpecLanguage121`]),
+//! ([`UpstreamBlocker::FilamentSpecLanguage120`]/[`UpstreamBlocker::FilamentSpecLanguage121`]),
 //! or a nested `call` naming a callee absent from the request or itself
 //! refused -- refuses only the items naming that function (AC-10, AC-11,
 //! AC-12), never a sibling function's items. Two kinds of duplicate are
@@ -86,13 +86,13 @@
 //!
 //! The static V1 location map records the admitted body's source order and one
 //! root call point per classified body. Its path is empty for this one-node
-//! body vocabulary. Generated oracles return the QSL application's full
-//! `quire-eval::Evaluation` without reading its dynamic `location` or
+//! body vocabulary. Generated oracles return the FSL application's full
+//! `filament-eval::Evaluation` without reading its dynamic `location` or
 //! `losses` fields and make no claim that either is populated.
 //!
 //! TC-031 checks parity with a separately assembled FR-485 session application
-//! of the same admitted source, as AC-2 requires. It makes no QSL value-authority
-//! agreement claim; quire-integration IR-842 owns that cross-repository boundary.
+//! of the same admitted source, as AC-2 requires. It makes no FSL value-authority
+//! agreement claim; filament-integration IR-842 owns that cross-repository boundary.
 
 use crate::core::artifact::{Artifact, MAX_ARTIFACT_BYTES, MAX_GENERATED_SOURCE_BYTES};
 mod kani_descriptor;
@@ -1129,7 +1129,7 @@ fn schedule_term_value_kind(
 pub const EXACT_FUNCTION_LOWERING_WORK_LIMIT: u64 = 65_536;
 
 /// Name of the generated crate.
-pub const EXACT_FUNCTION_CRATE_NAME: &str = "quire-exact-function-oracles";
+pub const EXACT_FUNCTION_CRATE_NAME: &str = "filament-exact-function-oracles";
 
 // ---------------------------------------------------------------------------
 // Request types
@@ -1194,7 +1194,7 @@ pub struct ExactFunctionDeclaration {
     /// Unlike `capability_requirements`, this request type carries no field
     /// at all for the underlying `IeeeItemRequirement`/`IntegerDivisionConsumer`
     /// lists themselves. This request refuses any non-empty named capability
-    /// before application because no backend is registered. The checked QSL
+    /// before application because no backend is registered. The checked FSL
     /// graph and application facade own the corresponding runtime
     /// requirements; this request cannot invent or discharge them.
     pub capability_requirements: Vec<String>,
@@ -1387,14 +1387,14 @@ pub enum ExactFunctionRefusal {
         /// Diagnostic payload, never a dispatch input.
         detail: String,
     },
-    /// QSL did not issue a callable selection.
+    /// FSL did not issue a callable selection.
     FacadeLookup {
-        /// Stable CG cause code, mapped exhaustively from QSL's typed refusal.
+        /// Stable CG cause code, mapped exhaustively from FSL's typed refusal.
         cause_code: &'static str,
         /// The original typed refusal rendered for diagnostics.
         detail: String,
     },
-    /// QSL did not issue a checked nested-call location for the selected body.
+    /// FSL did not issue a checked nested-call location for the selected body.
     NestedCallSite {
         /// Stable CG cause code, preserving the typed source or facade refusal.
         cause_code: &'static str,
@@ -1410,14 +1410,14 @@ pub enum ExactFunctionRefusal {
     },
     /// The selection did not belong to the registry's acquisition.
     SelectionRefused {
-        /// Stable CG cause code, mapped exhaustively from QSL's typed refusal.
+        /// Stable CG cause code, mapped exhaustively from FSL's typed refusal.
         cause_code: &'static str,
         /// The original typed refusal rendered for diagnostics.
         detail: String,
     },
     /// Begin refused before any generated body or application charge.
     ApplicationBeginRefused {
-        /// Stable CG cause code, mapped exhaustively from QSL's typed refusal.
+        /// Stable CG cause code, mapped exhaustively from FSL's typed refusal.
         cause_code: &'static str,
         /// The original typed refusal rendered for diagnostics.
         detail: String,
@@ -1430,7 +1430,7 @@ pub enum ExactFunctionRefusal {
 
 /// Static body origin in the complete admitted source function order.
 /// Claim and location records preserve that order when requested functions are
-/// omitted or refused. QSL owns dynamic application locations.
+/// omitted or refused. FSL owns dynamic application locations.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum RecordedOrigin {
@@ -1532,7 +1532,7 @@ pub struct ExactFunctionOracles {
     /// the item key (FR-021-AC-13). `blocked` is always empty: every blocker
     /// is recorded on its own entry's refusal. A `Generated` disposition
     /// means one oracle function was emitted. The blockers this generator
-    /// records are `QuireSpecLanguage120` and `QuireSpecLanguage121`.
+    /// records are `FilamentSpecLanguage120` and `FilamentSpecLanguage121`.
     pub claim_map: ClaimMap<ExactFunctionClaim>,
     /// Typed location map, identical to `location-map.json`.
     pub location_map: Vec<LocationMapEntry>,
@@ -2589,7 +2589,7 @@ fn lowering_profile() -> CompleteLoweringProfileV2 {
     CompleteLoweringProfileV2 {
         reference: quire_contract_model::LoweringProfileRef {
             authority: "agent-ix".into(),
-            identity: "quire.codegen.exact-function/v1".into(),
+            identity: "filament.codegen.exact-function/v1".into(),
         },
         required_source_selections: Vec::new(),
         supported_tags: BTreeSet::from([
@@ -2658,14 +2658,14 @@ fn resolve_operand_type(
             Err(ExactFunctionRefusal::BlockedOnUpstream {
                 unsupported_node_id: type_node_id.clone(),
                 node_tag: "composite_type.reference",
-                issue: UpstreamBlocker::QuireSpecLanguage120,
+                issue: UpstreamBlocker::FilamentSpecLanguage120,
             })
         }
         Some(tag @ (CheckedNodeTag::Model | CheckedNodeTag::Relation)) => {
             Err(ExactFunctionRefusal::BlockedOnUpstream {
                 unsupported_node_id: type_node_id.clone(),
                 node_tag: tag.as_wire(),
-                issue: UpstreamBlocker::QuireSpecLanguage120,
+                issue: UpstreamBlocker::FilamentSpecLanguage120,
             })
         }
         Some(
@@ -2673,7 +2673,7 @@ fn resolve_operand_type(
         ) => Err(ExactFunctionRefusal::BlockedOnUpstream {
             unsupported_node_id: type_node_id.clone(),
             node_tag: tag.as_wire(),
-            issue: UpstreamBlocker::QuireSpecLanguage121,
+            issue: UpstreamBlocker::FilamentSpecLanguage121,
         }),
         _ => Err(ExactFunctionRefusal::UnsupportedOperandType {
             type_node_id: type_node_id.clone(),
@@ -2689,10 +2689,10 @@ fn unsupported_family(node_id: &CheckedNodeId, tag: CheckedNodeTag) -> ExactFunc
     };
     match tag {
         CheckedNodeTag::Model | CheckedNodeTag::Relation => {
-            blocked(UpstreamBlocker::QuireSpecLanguage120)
+            blocked(UpstreamBlocker::FilamentSpecLanguage120)
         }
         CheckedNodeTag::State | CheckedNodeTag::Temporal | CheckedNodeTag::Protocol => {
-            blocked(UpstreamBlocker::QuireSpecLanguage121)
+            blocked(UpstreamBlocker::FilamentSpecLanguage121)
         }
         _ => ExactFunctionRefusal::Unsupported {
             unsupported_node_id: node_id.clone(),
@@ -3059,7 +3059,7 @@ pub fn generate_exact_function_oracles(
                 shape,
                 Err(ExactFunctionRefusal::BlockedOnUpstream {
                     node_tag: "temporal",
-                    issue: UpstreamBlocker::QuireSpecLanguage121,
+                    issue: UpstreamBlocker::FilamentSpecLanguage121,
                     ..
                 })
             ) && unauthenticated_temporal_root(package, accounting_index, &admitted))
@@ -3150,7 +3150,7 @@ pub fn generate_exact_function_oracles(
         .collect();
 
     // A location origin follows the admitted source's function order, which
-    // is what the checked QSL call site records. Omitting or refusing another
+    // is what the checked FSL call site records. Omitting or refusing another
     // function in the request cannot renumber this source location.
     let location_index = source_body_indices(source);
     let source_location = |declaration: &ExactFunctionDeclaration| {
@@ -3173,7 +3173,7 @@ pub fn generate_exact_function_oracles(
         .map(|function| (&function.declaration.node_id, function))
         .collect();
 
-    // Static location records describe the admitted IR graph, independently of a later QSL run.
+    // Static location records describe the admitted IR graph, independently of a later FSL run.
     let mut location_map = Vec::with_capacity(survivors.len());
     for declaration in &survivors {
         let index = source_location(declaration).ok_or(OracleGenerationError::InvalidPlanState)?;

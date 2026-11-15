@@ -154,7 +154,7 @@ impl<Item, Subjects> RefinementRun<Item, Subjects> {
     }
 }
 
-/// Why a collection cannot be offered to QSL's refinement certificate adapter.
+/// Why a collection cannot be offered to FSL's refinement certificate adapter.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum RefinementHandoffError {
     /// The expected or recorded Base/Step set has a missing, duplicate or out-of-range role.
@@ -171,7 +171,7 @@ pub enum RefinementHandoffError {
     ProofProvenanceUnavailable,
 }
 
-/// Validate run records and serialize the proof-bearing QSL adapter handoff.
+/// Validate run records and serialize the proof-bearing FSL adapter handoff.
 ///
 /// Expected entries must come from the recompiled refinement and FR-315 output, indexed by
 /// declaration-order step position. Proof bytes must match the same completed invocation's stdout.

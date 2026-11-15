@@ -3,7 +3,7 @@ id: TC-052
 title: "Verify checked-package fixture identity ownership"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-037
+  - target: ix://agent-ix/filament-contract-codegen/FR-037
     type: verifies
 ---
 # TC-052: Verify checked-package fixture identity ownership

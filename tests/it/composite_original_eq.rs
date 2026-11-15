@@ -5,6 +5,10 @@
 
 use std::collections::BTreeMap;
 
+use filament_contract_codegen::{
+    CompositeBuildError, CompositePacketMember, DependencyLock, LockedSource,
+    OriginalCompositeEqContext, OriginalCompositeEqRequest, ReplayInputs,
+};
 use ix_trace_rs::trace;
 use qsl_replay::{
     compile_package, parity_obligation, DependencyInput, Domain, DomainKey, DomainKind,
@@ -12,10 +16,6 @@ use qsl_replay::{
     ParityBoundRefusal, ProofBound, Refinement, ReplayLimits, ReplayRefusal, ReplayRequest,
     ReplayTarget, ScalarIdentityMismatch, ScalarLimits, SourceIdentity, StageLimits,
     SuppliedLibrary, TerminalValue, VerifiedShadow, VerifiedShadowResult,
-};
-use quire_contract_codegen::{
-    CompositeBuildError, CompositePacketMember, DependencyLock, LockedSource,
-    OriginalCompositeEqContext, OriginalCompositeEqRequest, ReplayInputs,
 };
 use quire_contract_model::{
     CheckedCompositeOperandDomain, CheckedCompositeOperandError, CheckedNodeId,
@@ -159,7 +159,7 @@ fn compiled(source: &str, dependencies: &DependencyInput) -> qsl_replay::Compile
         StageLimits::default(),
         ReplayLimits::default(),
     )
-    .expect("fixture compiles through public QSL facade")
+    .expect("fixture compiles through public FSL facade")
 }
 
 fn read_checked(bytes: &[u8], evidence: &CheckedPackageEvidence) -> OriginalPackage {
@@ -168,7 +168,7 @@ fn read_checked(bytes: &[u8], evidence: &CheckedPackageEvidence) -> OriginalPack
             checked: *package,
             raw: qsl_replay::ReplayPackage::read(bytes, u64::MAX).unwrap(),
         },
-        other => panic!("QSL fixture must admit in IR: {other:?}"),
+        other => panic!("FSL fixture must admit in IR: {other:?}"),
     }
 }
 
@@ -332,7 +332,7 @@ pub(super) fn parameter_bounds(
         .collect()
 }
 
-/// Original parameter/parameter construction reaches a genuine QSL verified report and converter.
+/// Original parameter/parameter construction reaches a genuine FSL verified report and converter.
 /// This is a constructor control with supplied verified evidence, not a generated-family proof.
 #[trace("FR-033-AC-1", "FR-033-AC-18", "TC-048")]
 #[test]
@@ -1183,7 +1183,7 @@ fn tc_035_original_composite_request_requires_its_own_packet() {
     );
     assert_eq!(request.wire().backend, packet.backend.as_deref().unwrap());
     let readback = ReplayRequest::decode(request.wire().clone(), ReplayLimits::default())
-        .expect("the packet-backed request has a typed QSL readback");
+        .expect("the packet-backed request has a typed FSL readback");
     assert_eq!(
         readback
             .replay_target()
@@ -1332,7 +1332,7 @@ fn tc_035_original_composite_packets_bind_distinct_real_occurrences() {
             checked_operation_identity(&node.body) == Some("quire.op.structural.eq")
                 && node.occurrences.len() >= 2
         })
-        .expect("QSL emits one structural equality node with two actual occurrences");
+        .expect("FSL emits one structural equality node with two actual occurrences");
     let node = application.node_id.clone();
     let first = application.occurrences[0].clone();
     let second = application.occurrences[1].clone();
@@ -1365,7 +1365,7 @@ fn tc_035_original_composite_packets_bind_distinct_real_occurrences() {
             )
             .expect("the matching independently produced packet is accepted");
         let readback = ReplayRequest::decode(request.wire().clone(), ReplayLimits::default())
-            .expect("QSL reads the packet-backed occurrence");
+            .expect("FSL reads the packet-backed occurrence");
         assert_eq!(
             readback
                 .replay_target()
@@ -1388,10 +1388,10 @@ fn tc_035_original_composite_packets_bind_distinct_real_occurrences() {
     ));
 }
 
-/// QSL owns body membership and refuses an admitted node from another function before Disagreed.
+/// FSL owns body membership and refuses an admitted node from another function before Disagreed.
 #[trace("FR-033-AC-1", "FR-033-AC-12", "TC-048")]
 #[test]
-fn another_functions_node_reaches_binding_checked_qsl_refusal() {
+fn another_functions_node_reaches_binding_checked_fsl_refusal() {
     let package = checked(SOURCE);
     let (node, occurrence) = application(&package, "g");
     let request = context(package.clone(), "f")
@@ -1408,7 +1408,7 @@ fn another_functions_node_reaches_binding_checked_qsl_refusal() {
     assert_eq!(report.report().claim(), report.sent());
     let settlement = report.settlement().unwrap();
     let VerifiedShadowResult::Refused(refusal) = settlement.result() else {
-        panic!("QSL membership refusal: {:?}", settlement.result())
+        panic!("FSL membership refusal: {:?}", settlement.result())
     };
     assert!(
         matches!(&**refusal, ReplayRefusal::ScalarIdentity(cause) if matches!(&**cause, ScalarIdentityMismatch::Function { node: refused, .. } if *refused == node_key(&package, &node)))
@@ -1419,10 +1419,10 @@ fn another_functions_node_reaches_binding_checked_qsl_refusal() {
     );
 }
 
-/// An actual nonoperand Node bound survives CG's filter and QSL refuses it before Disagreed.
+/// An actual nonoperand Node bound survives CG's filter and FSL refuses it before Disagreed.
 #[trace("FR-033-AC-11", "FR-033-AC-12", "TC-048")]
 #[test]
-fn unrelated_node_bound_reaches_binding_checked_qsl_refusal() {
+fn unrelated_node_bound_reaches_binding_checked_fsl_refusal() {
     let package = checked(SOURCE);
     let (node, occurrence) = application(&package, "f");
     let (other_node, other_occurrence) = application(&package, "g");
@@ -1477,7 +1477,7 @@ fn unrelated_node_bound_reaches_binding_checked_qsl_refusal() {
     assert_eq!(report.report().claim(), report.sent());
     let settlement = report.settlement().unwrap();
     let VerifiedShadowResult::Refused(refusal) = settlement.result() else {
-        panic!("QSL bound refusal: {:?}", settlement.result())
+        panic!("FSL bound refusal: {:?}", settlement.result())
     };
     assert!(
         matches!(&**refusal, ReplayRefusal::ParityBound(cause) if matches!(&**cause, ParityBoundRefusal::HarnessUnknownKey { key: refused } if *refused == key))
@@ -1499,7 +1499,7 @@ fn original_operand_projection_obeys_work_ceiling() {
     );
 }
 
-/// Original non-default stage limits reach QSL recompilation without substituting defaults.
+/// Original non-default stage limits reach FSL recompilation without substituting defaults.
 #[trace("FR-033-AC-1", "TC-048")]
 #[test]
 fn original_stage_limit_stops_recompile_before_invocation() {

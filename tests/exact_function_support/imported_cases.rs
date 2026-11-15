@@ -3,7 +3,7 @@
 use ix_trace_rs::trace;
 
 mod generated {
-    pub use quire_exact_function_imported_oracles::*;
+    pub use filament_exact_function_imported_oracles::*;
     include!(concat!(env!("CARGO_MANIFEST_DIR"), "/names.rs"));
 }
 
@@ -11,7 +11,7 @@ use qsl_replay::{
     acquire_checked_closure, ApplicationEnvironment, CompileUnit, DependencyInput, LibraryName,
     ReplayLimits, SourceIdentity, StageLimits, SuppliedLibrary,
 };
-use quire_contract_codegen::{checked_function_key, CheckedFunctionSource};
+use filament_contract_codegen::{checked_function_key, CheckedFunctionSource};
 use quire_contract_model::{
     CheckedNodeId, CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
     CheckedPackageV2ReadResult,
@@ -55,7 +55,7 @@ fn admitted(bytes: &[u8], library: Option<&CheckedPackageV2>) -> CheckedPackageV
     }
     let read = CheckedPackageV2::read(bytes, CheckedPackageReadLimits::bounded(), &evidence);
     let CheckedPackageV2ReadResult::Admitted(package) = read else {
-        panic!("IR admits exact QSL bytes: {read:?}");
+        panic!("IR admits exact FSL bytes: {read:?}");
     };
     *package
 }
@@ -96,7 +96,7 @@ fn generated_library_body_matches_importer_facade_application() {
         StageLimits::default(),
         ReplayLimits::default(),
     )
-    .expect("QSL admits the source library");
+    .expect("FSL admits the source library");
     let library = admitted(compiled_library.package().bytes(), None);
     let dependencies = DependencyInput::new([SuppliedLibrary {
         identity: "test/function-library".to_owned(),
@@ -104,7 +104,7 @@ fn generated_library_body_matches_importer_facade_application() {
         path: "function-library.native".to_owned(),
         bytes: generated::LIBRARY_SOURCE.as_bytes().to_vec(),
     }])
-    .expect("one genuine QSL library dependency");
+    .expect("one genuine FSL library dependency");
     let compiled_unit = acquire_checked_closure(
         CompileUnit {
             source: importer_identity(),
@@ -117,7 +117,7 @@ fn generated_library_body_matches_importer_facade_application() {
         StageLimits::default(),
         ReplayLimits::default(),
     )
-    .expect("QSL admits the source importer");
+    .expect("FSL admits the source importer");
     let unit = admitted(compiled_unit.package().bytes(), Some(&library));
     let arguments = vec![
         Value::Integer(Integer::from(3_u64)),
@@ -143,7 +143,7 @@ fn generated_library_body_matches_importer_facade_application() {
         ObjectClosure::default(),
         &mut generated_meter,
     )
-    .expect("QSL selects and accepts generated imported body")
+    .expect("FSL selects and accepts generated imported body")
     .expect("generated imported body completes");
 
     let fresh = acquire_checked_closure(
@@ -165,16 +165,16 @@ fn generated_library_body_matches_importer_facade_application() {
         checked_function_key(&library, &function_id(&library)).expect("exact function wire id");
     let selection = handle
         .lookup_callable(&owner, &wire)
-        .expect("QSL selects imported callable");
+        .expect("FSL selects imported callable");
     assert_eq!(selection.owner_package_name(), &owner);
     let mut registry = handle.registry();
     let environment = ApplicationEnvironment::new(ObjectClosure::default());
     let mut direct_meter = meter();
     let expected = registry
         .begin_call(&selection, arguments, &environment, &mut direct_meter)
-        .expect("QSL begins without generated registration")
+        .expect("FSL begins without generated registration")
         .run()
-        .expect("QSL interpreter completes");
+        .expect("FSL interpreter completes");
     assert_eq!(
         format!("{:?}", actual.outcome),
         format!("{:?}", expected.outcome)

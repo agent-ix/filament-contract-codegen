@@ -1,5 +1,5 @@
 //! Native replay of a Falsified relationship-end graph harness (FR-015-AC-106, FR-024): the
-//! harness's concrete playback is decoded into the graph it drew and put before QSL's
+//! harness's concrete playback is decoded into the graph it drew and put before FSL's
 //! `replay_state_clause` as a `Current` observation, so the authored clause itself, not a
 //! separately written reachability, judges the graph.
 //!
@@ -9,7 +9,7 @@
 //! invent. Only a `reaches(self, self, role)` claim is replayed, because the harness draws one
 //! `start` that is also the `target`, and `self` is the object the harness started from. CG never
 //! infers the anchor or the addresses of the population and the relationship: the caller supplies
-//! them, and QSL refuses a snapshot that names an object type, population or relationship the
+//! them, and FSL refuses a snapshot that names an object type, population or relationship the
 //! recompiled package does not declare.
 
 use qsl_replay::{
@@ -321,7 +321,7 @@ fn not_in_domain() -> StateClauseReplayError {
     StateClauseReplayError::GraphWitnessNotInDomain
 }
 
-/// Whether QSL's call-site origin is the clause node occurrence a harness is keyed by: the same
+/// Whether FSL's call-site origin is the clause node occurrence a harness is keyed by: the same
 /// role and the same ordinal within that role.
 fn names_occurrence(origin: &Origin, occurrence: &CheckedOccurrence) -> bool {
     let role = match occurrence.role {
@@ -412,8 +412,8 @@ impl StateClauseReplay {
     /// # Errors
     ///
     /// [`StateClauseReplayError`] when no witness was decoded, the lock's dependencies are not
-    /// admitted, QSL does not compile the unit or find the clause, the clause node is not the one
-    /// QSL names, or a document or the transcript is not admitted.
+    /// admitted, FSL does not compile the unit or find the clause, the clause node is not the one
+    /// FSL names, or a document or the transcript is not admitted.
     pub fn new_graph_invariant(
         inputs: GraphReplayInputs<'_>,
     ) -> Result<Self, StateClauseReplayError> {

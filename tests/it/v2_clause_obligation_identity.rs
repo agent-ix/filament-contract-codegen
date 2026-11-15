@@ -1,18 +1,18 @@
-//! FR-015-AC-48: a V2 clause claim carries QSL's producer-issued `ObligationIdentity` unchanged
+//! FR-015-AC-48: a V2 clause claim carries FSL's producer-issued `ObligationIdentity` unchanged
 //! and its separately stated obligation record is cross-checked against the independently
 //! selected clause before any harness is generated.
 //!
 //! Every record here is written by hand from the fixture source. None is read back from the
 //! generator, so a cross-check that ignored the clause would fail these tests.
 
-use ix_trace_rs::trace;
-use qsl_replay::{ModelIdentity, ObligationIdentity};
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     negotiate_kani_native_obligations, negotiate_kani_obligations, KaniObligationOutcome,
     KaniObligationRequest, KaniV2ClauseObligationHarness, ObligationDisposition, ObligationItem,
     ObligationKind, RequirementOccurrence, UnsupportedObligation, V2ClauseClaimField,
     V2ClauseObligationClaim, V2ClauseObligationRecord, V2ClauseParameter, V2ClauseRead,
 };
+use ix_trace_rs::trace;
+use qsl_replay::{ModelIdentity, ObligationIdentity};
 use quire_contract_model::{CheckedNodeId, CheckedPackageV2};
 use quire_exact::{NodeKey, PathSegment};
 

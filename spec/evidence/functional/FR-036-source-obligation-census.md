@@ -3,19 +3,19 @@ id: FR-036
 title: "Export a typed source-obligation census and producer facts"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/StR-001
+  - target: ix://agent-ix/filament-contract-codegen/StR-001
     type: traces_to
-  - target: ix://agent-ix/quire-contract-codegen/AD-005
+  - target: ix://agent-ix/filament-contract-codegen/AD-005
     type: references
-  - target: ix://agent-ix/quire-contract-codegen/FR-015
+  - target: ix://agent-ix/filament-contract-codegen/FR-015
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-017
+  - target: ix://agent-ix/filament-contract-codegen/FR-017
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-019
+  - target: ix://agent-ix/filament-contract-codegen/FR-019
     type: depends_on
-  - target: ix://agent-ix/quire-contract-ir/FR-045
+  - target: ix://agent-ix/filament-contract-ir/FR-045
     type: references
-  - target: ix://agent-ix/quire-contract-ir/AD-008
+  - target: ix://agent-ix/filament-contract-ir/AD-008
     type: references
 ---
 # FR-036: Export a typed source-obligation census and producer facts
@@ -39,7 +39,7 @@ candidate tuples and unmapped-entity gaps before negotiation, generation or exec
 The authored correspondence is the upstream prerequisite
 [IR-759](https://linear.app/agent-ix/issue/IR-759). Its concrete type
 name and placement are pending that owner's reviewed contract; they are not current
-IR or QSL APIs. [AD-005](../../assurance/AD-005-source-obligation-producer.md)
+IR or FSL APIs. [AD-005](../../assurance/AD-005-source-obligation-producer.md)
 identifies the usable current inputs and the missing correspondence.
 
 ## Outputs
@@ -150,8 +150,8 @@ version or pin catalog.
 The upstream IR-759 reviewed neutral typed correspondence is required before the
 complete export and its consumer conformance can be implemented. IR-740 implements
 this planned producer contract after that prerequisite. IR-737 implements the
-accounting policy defined by `ix://agent-ix/quire-contract-ir/FR-045` and
-`ix://agent-ix/quire-contract-ir/AD-008`; it does not give CG permission to mint
+accounting policy defined by `ix://agent-ix/filament-contract-ir/FR-045` and
+`ix://agent-ix/filament-contract-ir/AD-008`; it does not give CG permission to mint
 missing upstream facts.
 
 [FR-015](../../kani/functional/FR-015-bounded-kani-obligations.md),

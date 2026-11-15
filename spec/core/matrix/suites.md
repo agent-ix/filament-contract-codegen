@@ -14,7 +14,7 @@ type: SuiteRegistry
 | SUITE-004 | Static specification and coverage export | `quire coverage --scope . --json` | quire | Static |
 | SUITE-007 | Minimum supported Rust version build | `make msrv` | rustc | Static |
 | SUITE-008 | Bounded Kani generation and execution | `cargo test --locked --target-dir target-codex-backends --test it kani_generation -- --test-threads=1` | cargo-kani / rustc | Analysis |
-| SUITE-010 | Atomic generated-boundary publication | `cargo test --lib publication` | quire-contract-codegen / rustc | Integration |
+| SUITE-010 | Atomic generated-boundary publication | `cargo test --lib publication` | filament-contract-codegen / rustc | Integration |
 | SUITE-011 | Kani obligation execution | `make kani` | cargo-kani / rustc | Analysis |
 
 SUITE-008 retains its `kani_generation` selector after IR-348 retires V1 bundle tests.

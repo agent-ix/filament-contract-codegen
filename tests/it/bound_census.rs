@@ -2,7 +2,7 @@ use ix_trace_rs::trace;
 use std::{fs, process::Command};
 
 use crate::scratch_crate::TemporaryDirectory;
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     compute_census, render_boundary_constants, render_edge_constants, BoundaryCensus, CensusEdge,
     CensusNames, CensusRead, CensusTag, ComparisonOperator, Domain, EdgeDirection,
     GenerationErrorCode, GenerationTerminalState, OperandPosition, OutOfDomainCase, Partner,
@@ -366,7 +366,7 @@ mod generated_tests {
 "#,
     );
 
-    let temporary = TemporaryDirectory::new("quire-generated-bound-census");
+    let temporary = TemporaryDirectory::new("filament-generated-bound-census");
     fs::write(
         temporary.path.join("Cargo.toml"),
         "[package]\nname = \"generated-bound-census\"\nversion = \"0.0.0\"\nedition = \"2021\"\n\n[dependencies]\n\n[workspace]\n",

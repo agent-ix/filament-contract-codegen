@@ -1,20 +1,20 @@
 //! FR-015-AC-137 to FR-015-AC-142 and FR-024-AC-71 to FR-024-AC-75 (IR-1520): the state-frame
-//! lane carries one QSL `ObligationIdentity` per role in the harness identity and the persisted
+//! lane carries one FSL `ObligationIdentity` per role in the harness identity and the persisted
 //! record, and replay cross-checks it.
 //!
 //! Every identity here is a hand-written literal from `common::state_frame_identities`, never
-//! derived from the code under test; the replay controls use the identities QSL's selected
+//! derived from the code under test; the replay controls use the identities FSL's selected
 //! sites mint, taken from the twin.
 
-use ix_trace_rs::trace;
-use qsl_replay::{ModelIdentity, ObligationIdentity};
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     generate_state_frame_obligations, negotiate_kani_obligations, parse_state_clause_falsification,
     FrameReplayError, KaniObligationOutcome, KaniObligationRequest, KaniRunOutcome, ObligationItem,
     ReplaySettlement, StateClauseHarnessMember, StateClauseReplayError, StateFrameHarness,
     StateFrameIdentity, StateFrameObligations, StateFrameRecordError, StateFrameRefusal,
     StateFrameRequest, StateFrameRole, StateFrameRoleIdentities, StateFrameRoleIdentitiesError,
 };
+use ix_trace_rs::trace;
+use qsl_replay::{ModelIdentity, ObligationIdentity};
 use serde_json::{json, Value};
 
 use super::kani_obligations_state_frame::{
@@ -334,7 +334,7 @@ fn negotiate(
     fixture: &Fixture,
     roles: [(StateFrameRole, &ObligationIdentity); 2],
 ) -> (
-    Vec<quire_contract_codegen::ObligationRecord>,
+    Vec<filament_contract_codegen::ObligationRecord>,
     Vec<StateFrameHarness>,
 ) {
     let items = roles.map(|(role, obligation)| ObligationItem::StateFrame {
@@ -451,11 +451,11 @@ fn kani_check() -> String {
 }
 
 fn decode(
-    inputs: &mut quire_contract_codegen::StateClauseReplayInputs<'_>,
+    inputs: &mut filament_contract_codegen::StateClauseReplayInputs<'_>,
     harness: &StateFrameIdentity,
 ) -> Result<(), StateClauseReplayError> {
     let transcript = playback_text(harness, &kani_check(), &[5, 7]);
-    let limits = quire_contract_codegen::WitnessDecodeLimits {
+    let limits = filament_contract_codegen::WitnessDecodeLimits {
         bytes: transcript.len(),
         values: 2,
     };
@@ -499,7 +499,7 @@ fn tc_035_postcondition_decode_cross_checks_the_identity() {
     decode(&mut accepted, &distinct.postcondition.identity)
         .expect("the matching identity is accepted");
     assert_eq!(accepted.playback.len(), 2);
-    let replay = quire_contract_codegen::StateClauseReplay::new(accepted)
+    let replay = filament_contract_codegen::StateClauseReplay::new(accepted)
         .expect("the accepted inputs build a replay");
     assert_eq!(replay.packet.obligation_identity, Some(ids::accepted()));
     assert_eq!(replay.wire.obligation_identity, ids::accepted());
@@ -560,7 +560,7 @@ fn tc_035_postcondition_decode_cross_checks_the_identity() {
 }
 
 /// FR-024-AC-73 and FR-024-AC-74: the frame replay compares the harness's identity with the one
-/// QSL's selected site mints.
+/// FSL's selected site mints.
 #[trace("TC-035", "FR-024-AC-73", "FR-024-AC-74", "FR-032-AC-14", "TC-047")]
 #[test]
 fn tc_035_frame_replay_cross_checks_the_minted_identity() {
@@ -646,7 +646,7 @@ fn tc_035_frame_replay_cross_checks_the_minted_identity() {
     );
     let mut field_set = harness.clone();
     field_set.obligation = ids::contract();
-    field_set.property = quire_contract_codegen::StateFrameProperty::Frame {
+    field_set.property = filament_contract_codegen::StateFrameProperty::Frame {
         granted: vec!["audit".to_owned()],
         checked: vec![],
     };

@@ -20,7 +20,16 @@ pub const CASES: &[&str] = &[
     "conv_dec_int",
 ];
 
+/// Boolean and bounded-integer shapes whose refinement domains fit the case cap: a record
+/// with an optional field, a tuple, an option and a nested option (FR-018-AC-21..23).
+pub const BOUNDED_CASE: &str = "bounded";
+
+const BOUNDED_SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nrecord Flags { a: Boolean; b: Int[0, 2]; c: Int[0, 2]?; }\ntuple Duo(Boolean, Int[0, 2]);\nfunction fr using v(a: Flags, b: Flags): Boolean pure { a = b }\nfunction ft using v(a: Duo, b: Duo): Boolean pure { a = b }\nfunction fo using v(a: Option<Int[0, 2]>, b: Option<Int[0, 2]>): Boolean pure { a = b }\nfunction fq using v(a: Option<Option<Boolean>>, b: Option<Option<Boolean>>): Boolean pure { a = b }\nunion Shape { Empty, Flag(Boolean), Both(Boolean, Int[0, 2]) }\nfunction fu using v(a: Shape, b: Shape): Boolean pure { a = b }\n";
+
 pub fn source(case: &str) -> String {
+    if case == BOUNDED_CASE {
+        return BOUNDED_SOURCE.to_owned();
+    }
     let (declarations, left, right, target) = match case {
         "record" => ("record Point { x: Integer; y: Integer; }\nrecord OtherPoint { x: Integer; y: Integer; }\n", "Point", "Point", None),
         "tuple" => ("tuple Pair(Int[-100, 100], Text[0, 16; nfc]);\n", "Pair", "Pair", None),
@@ -46,7 +55,7 @@ pub fn source(case: &str) -> String {
 
 pub fn compile(case: &str) -> AdmittedCompilation {
     assert!(
-        CASES.contains(&case),
+        CASES.contains(&case) || case == BOUNDED_CASE,
         "the retained source case is declared"
     );
     compile_source(&source(case))

@@ -3,43 +3,43 @@ id: StR-001
 title: "Traceable multi-backend contract generation"
 type: StR
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-014
+  - target: ix://agent-ix/filament-contract-codegen/FR-014
     type: satisfied_by
-  - target: ix://agent-ix/quire-contract-codegen/FR-002
+  - target: ix://agent-ix/filament-contract-codegen/FR-002
     type: satisfied_by
-  - target: ix://agent-ix/quire-contract-codegen/FR-015
+  - target: ix://agent-ix/filament-contract-codegen/FR-015
     type: satisfied_by
-  - target: ix://agent-ix/quire-contract-codegen/FR-004
+  - target: ix://agent-ix/filament-contract-codegen/FR-004
     type: satisfied_by
-  - target: ix://agent-ix/quire-contract-codegen/FR-005
+  - target: ix://agent-ix/filament-contract-codegen/FR-005
     type: satisfied_by
-  - target: ix://agent-ix/quire-contract-codegen/FR-008
+  - target: ix://agent-ix/filament-contract-codegen/FR-008
     type: satisfied_by
-  - target: ix://agent-ix/quire-contract-codegen/FR-009
+  - target: ix://agent-ix/filament-contract-codegen/FR-009
     type: satisfied_by
-  - target: ix://agent-ix/quire-contract-codegen/FR-010
+  - target: ix://agent-ix/filament-contract-codegen/FR-010
     type: satisfied_by
-  - target: ix://agent-ix/quire-contract-codegen/FR-011
+  - target: ix://agent-ix/filament-contract-codegen/FR-011
     type: satisfied_by
-  - target: ix://agent-ix/quire-contract-codegen/FR-012
+  - target: ix://agent-ix/filament-contract-codegen/FR-012
     type: satisfied_by
-  - target: ix://agent-ix/quire-contract-codegen/FR-013
+  - target: ix://agent-ix/filament-contract-codegen/FR-013
     type: satisfied_by
-  - target: ix://agent-ix/quire-contract-codegen/FR-016
+  - target: ix://agent-ix/filament-contract-codegen/FR-016
     type: satisfied_by
-  - target: ix://agent-ix/quire-contract-codegen/FR-017
+  - target: ix://agent-ix/filament-contract-codegen/FR-017
     type: satisfied_by
-  - target: ix://agent-ix/quire-contract-codegen/FR-018
+  - target: ix://agent-ix/filament-contract-codegen/FR-018
     type: satisfied_by
-  - target: ix://agent-ix/quire-contract-codegen/FR-019
+  - target: ix://agent-ix/filament-contract-codegen/FR-019
     type: satisfied_by
-  - target: ix://agent-ix/quire-contract-codegen/FR-021
+  - target: ix://agent-ix/filament-contract-codegen/FR-021
     type: satisfied_by
-  - target: ix://agent-ix/quire-contract-codegen/FR-022
+  - target: ix://agent-ix/filament-contract-codegen/FR-022
     type: satisfied_by
-  - target: ix://agent-ix/quire-contract-codegen/FR-024
+  - target: ix://agent-ix/filament-contract-codegen/FR-024
     type: satisfied_by
-  - target: ix://agent-ix/quire-contract-codegen/FR-025
+  - target: ix://agent-ix/filament-contract-codegen/FR-025
     type: satisfied_by
 ---
 # StR-001: Traceable multi-backend contract generation

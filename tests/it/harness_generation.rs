@@ -2,7 +2,7 @@ use ix_trace_rs::trace;
 use std::{fs, process::Command};
 
 use crate::scratch_crate::{runtime_dependency, write_manifest, TemporaryDirectory};
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     generate_tristate_harness, GenerationErrorCode, GenerationTerminalState, HarnessErrorCode,
     HarnessRequest, MAX_GENERATED_SOURCE_BYTES,
 };
@@ -200,7 +200,7 @@ fn tc_004_generated_harness_binds_clauses_and_executes_all_three_terminal_paths(
             < first.rust.contents.find("if postcondition").unwrap()
     );
 
-    let temporary = TemporaryDirectory::new("quire-generated-harness");
+    let temporary = TemporaryDirectory::new("filament-generated-harness");
     write_manifest(
         &temporary.path,
         &format!(
@@ -655,7 +655,7 @@ fn tc_004_state_only_and_dependency_free_harnesses_compile_with_denied_warnings(
         ),
     ] {
         let function = harness_function_name(&artifact.rust.contents);
-        let temporary = TemporaryDirectory::new(&format!("quire-generated-harness-{name}"));
+        let temporary = TemporaryDirectory::new(&format!("filament-generated-harness-{name}"));
         write_manifest(
             &temporary.path,
             &format!(

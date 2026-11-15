@@ -20,7 +20,7 @@ pub(crate) fn discover_scratch(name: &str) -> PathBuf {
         .ancestors()
         .nth(3)
         .expect("the test executable sits under a target directory");
-    let base = target.join("tmp").join("quire-kani-discover");
+    let base = target.join("tmp").join("filament-kani-discover");
     fs::create_dir_all(&base).unwrap();
     SWEEP.call_once(|| {
         for entry in fs::read_dir(&base).unwrap().flatten() {

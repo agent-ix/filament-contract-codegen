@@ -109,10 +109,10 @@ pub(crate) const fn default_settlement_ceilings() -> crate::kani::identity::Proo
     }
 }
 
-/// The QSL obligation identity of each role of one postcondition clause, for
+/// The FSL obligation identity of each role of one postcondition clause, for
 /// [`generate_state_frame_obligations`] (FR-015-AC-137, FR-015-AC-142).
 ///
-/// Each is QSL's producer-issued identity, supplied by the caller from QSL's claim and carried
+/// Each is FSL's producer-issued identity, supplied by the caller from FSL's claim and carried
 /// unchanged into its harness; CG never fabricates one.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct StateFrameRoleIdentities {
@@ -190,7 +190,10 @@ impl StateComparison {
             CatalogOperator::Add
             | CatalogOperator::Subtract
             | CatalogOperator::Multiply
-            | CatalogOperator::Negate => return None,
+            | CatalogOperator::Negate
+            | CatalogOperator::Divide
+            | CatalogOperator::Remainder
+            | CatalogOperator::Modulo => return None,
         })
     }
 
@@ -554,7 +557,7 @@ fn lower_clause(request: &StateFrameRequest<'_>) -> Result<(), StateFrameRefusal
     let profile = CompleteLoweringProfileV2 {
         reference: quire_contract_model::LoweringProfileRef {
             authority: "agent-ix".into(),
-            identity: "quire.codegen.state-frame/v1".into(),
+            identity: "filament.codegen.state-frame/v1".into(),
         },
         required_source_selections: Vec::new(),
         supported_tags: BTreeSet::from(STATE_FRAME_LOWERING_TAGS),
@@ -697,7 +700,7 @@ impl ClauseShape {
             .collect()
     }
 
-    /// Decodes the clause, its anchor and its frame by QSpec FR-341 and FR-342.
+    /// Decodes the clause, its anchor and its frame by FSpec FR-341 and FR-342.
     pub(crate) fn read<'g>(
         graph: &ClauseGraphView<'g>,
         clause: &'g CheckedNodeId,

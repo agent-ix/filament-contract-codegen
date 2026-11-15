@@ -108,7 +108,7 @@ fn union_closure_seals_owner_members_and_admits_each_nested_payload() {
     let mut nested = Vec::new();
     for name in ["Shape", "Other"] {
         let actual = declaration(&context, name);
-        // Structural identity (QSL admitted composites): a Union's type handle is derived from
+        // Structural identity (FSL admitted composites): a Union's type handle is derived from
         // its declaration node, so the facade key and the settled node are the same NodeKey.
         assert_eq!(
             actual.key(),

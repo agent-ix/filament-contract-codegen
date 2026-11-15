@@ -3,7 +3,7 @@
 //! The V2 transport names only an operator class (`binary`, `unary`,
 //! `convert`) for a scalar expression, not the operation law. Each request
 //! item therefore pairs a checked node with a typed [`ExactScalarOperation`]
-//! built from quire-exact values and runtime-owned residue, and this module cross-checks
+//! built from filament-exact values and runtime-owned residue, and this module cross-checks
 //! that descriptor against the lowered node before emitting anything.
 //!
 //! Every parameter the node can carry is checked against the IR: the
@@ -40,7 +40,7 @@
 //! | `float_rounding` | rounding |
 //! | `text_bounds` | minimum length, maximum length, profile |
 //!
-//! Generated functions call `quire-exact` scalar operators, `quire-semantic-value`
+//! Generated functions call `filament-exact` scalar operators, `filament-semantic-value`
 //! quantity and enumeration operators, or Runtime Boolean operators with a caller-supplied `Meter`. Each
 //! operator owns its charges; no amount is copied into the generated source.
 //! An item that fails any check receives a typed
@@ -121,7 +121,7 @@ pub(crate) const QUANTITY_CONVERT_IDENTITY: &str = "quire.op.quantity.convert";
 pub const SCALAR_LOWERING_WORK_LIMIT: u64 = 65_536;
 
 /// Name of the generated crate.
-pub const EXACT_SCALAR_CRATE_NAME: &str = "quire-exact-scalar-oracles";
+pub const EXACT_SCALAR_CRATE_NAME: &str = "filament-exact-scalar-oracles";
 
 /// The `CheckedNodeTag` families `scalar_profile`'s `CompleteLoweringProfileV2` admits.
 ///
@@ -262,6 +262,13 @@ pub enum ExactScalarOperation {
     },
     /// The quotient of `divide` under a selected law.
     IntegerDivision {
+        /// Division law.
+        profile: DivisionProfile,
+        /// Consumer domain.
+        domain: IntegerDomain,
+    },
+    /// The remainder of `divide` under a selected law.
+    IntegerRemainder {
         /// Division law.
         profile: DivisionProfile,
         /// Consumer domain.
@@ -719,6 +726,41 @@ pub enum OperandRangeLimitKind {
     EndpointBits,
 }
 
+/// The division descriptor one generated `div`, `rem` or `mod` oracle was rendered from: the law
+/// the oracle selects and the result interval it checks (FR-057). A Kani harness reads these from
+/// the descriptor, so its expected side and the embedded oracle derive from one value.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DivisionClaim {
+    /// The `DivisionProfile` of a `div` or `rem` oracle; `None` for `mod`, which carries no law.
+    pub profile: Option<DivisionProfile>,
+    /// The descriptor's inclusive result interval, canonical decimal endpoints; `None` for an
+    /// unbounded domain, which no harness renders.
+    pub result: Option<(String, String)>,
+}
+
+impl DivisionClaim {
+    /// The division claim of a descriptor, or `None` when it is not `div`, `rem` or `mod`.
+    pub(crate) fn of(operation: &ExactScalarOperation) -> Option<Self> {
+        let (profile, domain) = match operation {
+            ExactScalarOperation::IntegerDivision { profile, domain }
+            | ExactScalarOperation::IntegerRemainder { profile, domain } => {
+                (Some(*profile), domain)
+            }
+            ExactScalarOperation::IntegerModulo { domain } => (None, domain),
+            _ => return None,
+        };
+        Some(Self {
+            profile,
+            result: match domain {
+                IntegerDomain::Bounded(interval) => {
+                    Some((interval.lower().to_string(), interval.upper().to_string()))
+                }
+                IntegerDomain::Mathematical => None,
+            },
+        })
+    }
+}
+
 /// Traceability for one generated oracle.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct GeneratedScalarClaim {
@@ -751,7 +793,7 @@ pub struct GeneratedScalarClaim {
     pub dependencies: Vec<CheckedNodeId>,
     /// This oracle's function, self-contained (its own preamble and any
     /// helper it needs) for direct embedding in a generated Kani harness
-    /// file. Process-internal: not part of the `quire.codegen.exact-scalar-
+    /// file. Process-internal: not part of the `filament.codegen.exact-scalar-
     /// claim-map/v1` wire schema (this struct has no `Deserialize`, so
     /// nothing round-trips it through `claim-map.json`), consumed only by
     /// `kani::generate::scalar::render_scalar` from the live claim map this
@@ -761,6 +803,10 @@ pub struct GeneratedScalarClaim {
     /// Whether a generated Boolean oracle's right parameter is a lazy outcome closure.
     #[serde(skip)]
     pub boolean_right_may_stop: bool,
+    /// The division descriptor this claim's oracle was rendered from, for `div`, `rem` and `mod`
+    /// claims; `None` for every other claim. Process-internal, like `oracle_source`.
+    #[serde(skip)]
+    pub division: Option<DivisionClaim>,
 }
 
 /// One claim-map entry per selected requested occurrence.
@@ -784,7 +830,7 @@ pub struct ExactScalarOracles {
     /// `blocked` lists the upstream gaps every
     /// entry is subject to. A `Generated` disposition means one oracle
     /// function was emitted. The blockers this generator records are
-    /// `QuireSpecLanguage120`, `QuireContractRuntime34` and
+    /// `FilamentSpecLanguage120`, `FilamentContractRuntime34` and
     /// `OperationIdentityNotConsumed`.
     pub claim_map: ClaimMap<ExactScalarClaim>,
 }
@@ -983,6 +1029,7 @@ mod tests {
             dependencies: Vec::new(),
             oracle_source: String::new(),
             boolean_right_may_stop: false,
+            division: None,
         };
         let value = serde_json::to_value(generated).expect("claim serializes");
         assert_eq!(value["node_id"], serde_json::json!(node_id('b')));

@@ -3,13 +3,13 @@ id: FR-056
 title: "Refuse a V2 clause whose operation at its width is a measured not-Kani-tractable row"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/StR-001
+  - target: ix://agent-ix/filament-contract-codegen/StR-001
     type: satisfies
-  - target: ix://agent-ix/quire-contract-codegen/FR-015
+  - target: ix://agent-ix/filament-contract-codegen/FR-015
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-017
+  - target: ix://agent-ix/filament-contract-codegen/FR-017
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-028
+  - target: ix://agent-ix/filament-contract-codegen/FR-028
     type: depends_on
 ---
 # FR-056: Refuse a V2 clause whose operation at its width is a measured not-Kani-tractable row
@@ -37,17 +37,17 @@ The same decider also runs at the run, not generation, for the one other measure
 routed exact-scalar harness (its route `general` when it uses the `rt::Integer` carrier, `native`
 otherwise), which is not a V2 clause and which generation keeps emitting. A caller opts in by passing a
 table to `execute_kani_obligation_decided` or `execute_kani_obligations_decided` (the production
-caller is quire-driver, `src/provider.rs` and `src/upstream.rs`, wired under IR-1530 in a quire-driver
+caller is filament-driver, `src/provider.rs` and `src/upstream.rs`, wired under IR-1530 in a filament-driver
 change); with no table passed every harness runs, as for generation. The refusal deliberately reuses
 the `V2ClauseNotTractable` arm for that non-V2-clause harness (no second mechanism); it is returned
 wrapped in `DecidedRunRefusal` because `kani::run` may not import generation types. CG embeds the
-measured general-route rows, add from 2 bits and sub from 4 bits (`TractabilityTable::shipped_general_route_scalar`, from
+measured general-route rows, add from 2 bits and sub, div, rem and mod from 4 bits (`TractabilityTable::shipped_general_route_scalar`, from
 `docs/qualification/ir1530-general-route-scalar-table.json`). Widths below a row's
-`max_operand_bits` (2 for add, 4 for sub) on the general route are unmeasured and left to the wall-clock backstop.
+`max_operand_bits` (2 for add, 4 for sub, div, rem and mod) on the general route are unmeasured and left to the wall-clock backstop.
 The shipped scalar table is CG's single shipped record of measured scalar rows for both routes.
 Each row carries its required `route` field, so general-route and native-route rows sit in the same
 file, and each applies only to its own route. The file name and the constructor name keep their
-historical `general_route` spelling; no rename is planned. Native-route rows measured in quire-exact
+historical `general_route` spelling; no rename is planned. Native-route rows measured in filament-exact
 (FR-409, TC-957 evidence) are copied into this table by the CG PR that consumes them. For integer
 `div`, `rem` and `mod`, that is the IR-854 coder's PR after IR-1541 lands (FR-057).
 
@@ -71,7 +71,7 @@ Terms:
   Because the native carrier is signed, `Int[0, 2^k]` is counted as `k + 1` bits; `Int[0, 2^63 - 1]`
   is 63 unsigned bits and `Int[0, 2^64 - 1]` is 64.
 - The *generator version* is the CG crate version (`CARGO_PKG_VERSION` of this crate); the *kernel
-  version* is the integer `quire_exact::KERNEL_VERSION` of the quire-exact crate CG links (a row's
+  version* is the integer `filament_exact::KERNEL_VERSION` of the filament-exact crate CG links (a row's
   kernel version is that integer). CG exposes one constant for each; no hash or pin is involved.
 
 ## Inputs

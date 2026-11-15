@@ -234,7 +234,7 @@ pub(crate) fn scalar_source_fixture(
     use crate::kani::identity::{
         KaniScalarObligationHarness, ScalarObligationArgument, ScalarObligationIdentity,
     };
-    let package_name = "quire-exact-scalar-oracles";
+    let package_name = "filament-exact-scalar-oracles";
     let identity = ScalarObligationIdentity {
         integer_representation: crate::kani::identity::ScalarIntegerRepresentation::General,
         native_integer_selection: None,
@@ -263,6 +263,7 @@ pub(crate) fn scalar_source_fixture(
         guard_inputs: Vec::new(),
         enum_scalar: None,
         float_scalar: None,
+        division_scalar: None,
         solver: KaniSolver::Cadical,
         unwind: 3,
         options: vec![

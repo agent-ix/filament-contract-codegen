@@ -17,8 +17,10 @@ pub const SCALAR_PLAYBACK_BYTES: usize = 8 * 1024 * 1024;
 
 /// Decodes typed integer scalar playback in the identity's persisted symbolic draw order.
 ///
-/// Accepts only integer add, subtract, multiply and negate, with their required operand arity
-/// and valid inclusive ranges. Literal singleton operands remain separate positions. The selected
+/// Accepts the integer operations of the catalog's scalar Kani projection (add, subtract,
+/// multiply, negate, divide, remainder and modulo), with their required operand arity and valid
+/// inclusive ranges. Decoding division does not make it replayable: the scalar replay builder
+/// still refuses it as `ScalarBuildError::Operation`. Literal singleton operands remain separate positions. The selected
 /// single-harness transcript is limited to 8 MiB by this decoder, even if the output reader
 /// accepted a larger input. Every draw
 /// must contain exactly eight little-endian bytes and agree with Kani's decoded-value comment.
@@ -295,7 +297,7 @@ pub struct FloatWitness {
     pub operator: String,
     /// Operand width, `float32` or `float64`.
     pub width: String,
-    /// Each operand as the QSL parameter name and its bit pattern, in operand order. A `float32`
+    /// Each operand as the FSL parameter name and its bit pattern, in operand order. A `float32`
     /// pattern is below `2^32`; a `float64` pattern is the drawn `i64` reinterpreted, never
     /// converted through a host float or a checked signed conversion.
     pub operands: Vec<(String, u64)>,

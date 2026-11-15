@@ -3,27 +3,27 @@ id: TC-030
 title: "Verify capability settlement at one negotiation point"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-019
+  - target: ix://agent-ix/filament-contract-codegen/FR-019
     type: verifies
-  - target: ix://agent-ix/quire-contract-codegen/FR-014
+  - target: ix://agent-ix/filament-contract-codegen/FR-014
     type: verifies
-  - target: ix://agent-ix/quire-specification/TC-271
+  - target: ix://agent-ix/filament-specification/TC-271
     type: references
-  - target: ix://agent-ix/quire-spec-language/ADR-018
+  - target: ix://agent-ix/filament-spec-language/ADR-018
     type: references
-  - target: ix://agent-ix/quire-spec-language/ADR-020
+  - target: ix://agent-ix/filament-spec-language/ADR-020
     type: references
-  - target: ix://agent-ix/quire-spec-language/ADR-021
+  - target: ix://agent-ix/filament-spec-language/ADR-021
     type: references
-  - target: ix://agent-ix/quire-spec-language/ADR-022
+  - target: ix://agent-ix/filament-spec-language/ADR-022
     type: references
-  - target: ix://agent-ix/quire-spec-language/ADR-023
+  - target: ix://agent-ix/filament-spec-language/ADR-023
     type: references
-  - target: ix://agent-ix/quire-spec-language/ADR-025
+  - target: ix://agent-ix/filament-spec-language/ADR-025
     type: references
-  - target: ix://agent-ix/quire-spec-language/ADR-027
+  - target: ix://agent-ix/filament-spec-language/ADR-027
     type: references
-  - target: ix://agent-ix/quire-spec-language/FR-335
+  - target: ix://agent-ix/filament-spec-language/FR-335
     type: references
 ---
 # TC-030: Verify capability settlement at one negotiation point
@@ -245,17 +245,17 @@ arm or count a current unregistered backend as implemented support.
    Compare dispositions and routed subject identities. A protocol acceptance retains its protocol
    transition-system identity.
 
-For planned FR-019-AC-15, inspect the driver projection from each QSL
+For planned FR-019-AC-15, inspect the driver projection from each FSL
 `Registry::descriptors()` value to CG's descriptor. Build two registries separately, each with
 an otherwise equal descriptor, one with `Linked` and one with `Process` origin. Project each,
 and confirm identity and advertised pairs
 are equal in the CG values while origin alone differs. Verify that a linked
-Kani descriptor remains `Linked`, the driver conversion exhaustively matches both QSL origin
+Kani descriptor remains `Linked`, the driver conversion exhaustively matches both FSL origin
 variants with no wildcard, no identity or manifest byte test chooses
-the origin, and CG has no direct `qsl-route` dependency or new FR-331 origin
+the origin, and CG has no direct `fsl-route` dependency or new FR-331 origin
 wire member. Run this row when IR-633 implements the projection.
 
-For planned FR-019-AC-24, use the QSL FR-335 request for the `+` value-validity
+For planned FR-019-AC-24, use the FSL FR-335 request for the `+` value-validity
 claim in `f using v(s: Set<Int[0,9999]>): Integer pure { size(s) + 1 }`.
 Supply the already-classified claim item to CG settlement with: (1) an empty
 registry and candidate set; (2) one linked Kani candidate advertising only bounded
@@ -267,8 +267,8 @@ each item's request index across settlement and routing. Inspect warning
 cause, artifact absence and Kani outcome absence for unsupported and
 requires-bound items; settlement of the bounded supported item makes no
 execution-outcome claim.
-QSL TC-845 owns compiling the source into the claim and request fixture;
-quire-integration owns a composed source-to-claim, CG and driver execution.
+FSL TC-845 owns compiling the source into the claim and request fixture;
+filament-integration owns a composed source-to-claim, CG and driver execution.
 
 ## Expected Results
 
@@ -359,7 +359,7 @@ settlement. An unbounded `requires-bound` item receives no substituted bound,
 while a new bounded request retains the exact caller-supplied proof-bound value
 and domain identity and settles `supported`.
 
-Under FR-019-AC-15, the driver preserves the QSL registry origin as a typed
+Under FR-019-AC-15, the driver preserves the FSL registry origin as a typed
 CG value without altering identity or advertised pairs; the CG crate boundary
 and FR-331 wire remain as specified.
 
@@ -394,9 +394,9 @@ reduce AC-25's scope.
 | Boolean scalar `expression` claim, IR-confirmed generated claim, operation identity other than the four implemented integer identities above | Planned (IR-269) | Remaining typed Boolean scalar operations. | `OperationNotRendered` (`classify_claim` maps `ScalarLoweringRefusal::NoRenderer`). |
 | Integer scalar `expression` claim, IR-confirmed generated claim, operation identity other than the four implemented integer identities above | Planned (IR-269) | Remaining typed integer operations. | `OperationNotRendered` (`classify_claim` maps `ScalarLoweringRefusal::NoRenderer`). |
 | Rational scalar `expression` claim, IR-confirmed generated claim | Planned (IR-269) | Rational scalar operation forms. | `OperationNotRendered` (`classify_claim` maps `ScalarLoweringRefusal::NoRenderer`). |
-| Decimal scalar `expression` claim, IR-confirmed generated claim | Planned (IR-269) | Decimal scalar operation forms; the arithmetic, rounding and ordering operations are planned under FR-051 (conditional on the quire-exact decimal carrier, IR-1444), which supersedes this row for them only when delivered. | `OperationNotRendered` (`classify_claim` maps `ScalarLoweringRefusal::NoRenderer`). |
-| IEEE-float scalar `expression` claim, IR-confirmed generated claim | Planned (IR-269) | IEEE-float scalar operation forms; the three comparisons and `float32`/`float64` `add`, `sub`, `mul` and `div` are planned under FR-053 (conditional on the quire-exact float carrier, IR-1446; `sqrt` and `fma` derive under the delivered FR-014 derivation of IR-1502), which supersedes this row for them only when delivered. | `OperationNotRendered` (`classify_claim` maps `ScalarLoweringRefusal::NoRenderer`). |
-| Text scalar `expression` claim, IR-confirmed generated claim | Planned (IR-269) | Text scalar operation forms; the six comparisons are planned under FR-052 (conditional on the quire-exact text carrier, IR-1445, a non-metered `Text` constructor, IR-1499, and for normalizing profiles a payload-byte bound, IR-1500, and a loop-free normalization, IR-1501), which supersedes this row for them only when delivered. | `OperationNotRendered` (`classify_claim` maps `ScalarLoweringRefusal::NoRenderer`). |
+| Decimal scalar `expression` claim, IR-confirmed generated claim | Planned (IR-269) | Decimal scalar operation forms; the arithmetic, rounding and ordering operations are planned under FR-051 (conditional on the filament-exact decimal carrier, IR-1444), which supersedes this row for them only when delivered. | `OperationNotRendered` (`classify_claim` maps `ScalarLoweringRefusal::NoRenderer`). |
+| IEEE-float scalar `expression` claim, IR-confirmed generated claim | Planned (IR-269) | IEEE-float scalar operation forms; the three comparisons and `float32`/`float64` `add`, `sub`, `mul` and `div` are planned under FR-053 (conditional on the filament-exact float carrier, IR-1446; `sqrt` and `fma` derive under the delivered FR-014 derivation of IR-1502), which supersedes this row for them only when delivered. | `OperationNotRendered` (`classify_claim` maps `ScalarLoweringRefusal::NoRenderer`). |
+| Text scalar `expression` claim, IR-confirmed generated claim | Planned (IR-269) | Text scalar operation forms; the six comparisons are planned under FR-052 (conditional on the filament-exact text carrier, IR-1445, a non-metered `Text` constructor, IR-1499, and for normalizing profiles a payload-byte bound, IR-1500, and a loop-free normalization, IR-1501), which supersedes this row for them only when delivered. | `OperationNotRendered` (`classify_claim` maps `ScalarLoweringRefusal::NoRenderer`). |
 | Enum scalar `expression` claim, IR-confirmed generated claim | Planned (IR-269) | Enum scalar operation forms. | `OperationNotRendered` (`classify_claim` maps `ScalarLoweringRefusal::NoRenderer`). |
 | Quantity scalar `expression` claim, IR-confirmed generated claim, including identity `quire.op.quantity.convert`, read through source-authenticated V1 handoff | Planned (IR-269) | Quantity scalar operation forms; the conversion's settlement is FR-014-AC-51; non-conversion operations are planned under FR-050 (conditional on IR-1443; operands are conversions of carried-quantity leaves, IR-1497), which supersedes this row for them only when delivered. | `OperationNotRendered` (`classify_claim` maps `ScalarLoweringRefusal::NoRenderer`). |
 | Record/tuple equality claim with a derivable IR-confirmed operation and bounded shadow shape | Planned (IR-264, IR-241) | FR-015-AC-69 through AC-76. | `OperationNotRendered` (`classify_claim` maps `ScalarLoweringRefusal::NoRenderer` for the non-integer renderer). |

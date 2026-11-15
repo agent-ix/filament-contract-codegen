@@ -2,16 +2,16 @@
 // Copyright (C) 2026 Agent-IX
 
 //! IEEE `sqrt` and `fma` derivation and generation (FR-014-AC-72 through FR-014-AC-80, IR-1502).
-//! Genuine QSL source is passed unchanged through the strict reader; the generated native oracles
+//! Genuine FSL source is passed unchanged through the strict reader; the generated native oracles
 //! are compiled and compared with a direct owner `evaluate_ieee` call.
 
 use crate::scalar_source_forms::{compiled, generated, run_native};
-use ix_trace_rs::trace;
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     derive_exact_scalar_items, generate_exact_scalar_oracles, ClaimDerivationRefusal,
     ClaimDisposition, ExactScalarItem, ExactScalarOperation, ExactScalarRefusal,
     IeeeArithmeticOperator, OperationProvenance, ScalarForm,
 };
+use ix_trace_rs::trace;
 use quire_contract_model::{CheckedPackageV2, CheckedTerm};
 use quire_exact::{IeeeWidth, RoundingMode};
 
@@ -88,7 +88,7 @@ fn only_node<'a>(
     node
 }
 
-/// The four identities derive from genuine QSL-emitted `call` forms, are `ir_confirmed`, and the
+/// The four identities derive from genuine FSL-emitted `call` forms, are `ir_confirmed`, and the
 /// descriptor names the operation and width the identity names (identity, descriptor, identity).
 #[trace("TC-024", "FR-014-AC-72", "FR-014-AC-73", "FR-014-AC-74")]
 #[test]
@@ -287,7 +287,7 @@ fn defensive_seam_refuses_other_shapes_for_sqrt_and_fma() {
 }
 
 /// `from_exact`, `to_rational` and both `negate` identities keep the `OperationNotDerivable`
-/// refusal over genuine QSL-emitted nodes, and a supported sibling is unaffected (FR-014-AC-80).
+/// refusal over genuine FSL-emitted nodes, and a supported sibling is unaffected (FR-014-AC-80).
 #[trace("TC-024", "FR-014-AC-80")]
 #[test]
 fn from_exact_to_rational_and_negate_stay_not_derivable() {

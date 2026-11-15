@@ -102,7 +102,7 @@ pub(super) fn check_item<'r, Body: GraphBody>(
             return Err(ExactScalarRefusal::BlockedOnUpstream {
                 unsupported_node_id: requested_node_id.clone(),
                 node_tag: "model",
-                issue: UpstreamBlocker::QuireSpecLanguage120,
+                issue: UpstreamBlocker::FilamentSpecLanguage120,
             }
             .into());
         }
@@ -301,9 +301,9 @@ pub(super) fn unsupported_family(
         issue,
     };
     match tag {
-        CheckedNodeTag::Function => blocked(UpstreamBlocker::QuireContractRuntime34),
+        CheckedNodeTag::Function => blocked(UpstreamBlocker::FilamentContractRuntime34),
         CheckedNodeTag::Model | CheckedNodeTag::Relation => {
-            blocked(UpstreamBlocker::QuireSpecLanguage120)
+            blocked(UpstreamBlocker::FilamentSpecLanguage120)
         }
         CheckedNodeTag::State
         | CheckedNodeTag::Temporal
@@ -434,7 +434,7 @@ fn reference_form<Body: GraphBody>(graph: &Graph<'_, Body>, term: &CheckedTerm) 
 
 /// The scalar form of `type_id`, following one `bounded_domain` step. A parameter typed
 /// `Int[0, 9]` is typed by a `bounded_domain` whose own `semantic_type` is its base scalar type:
-/// QSL emits a bounded domain directly over its scalar base, so one step reaches the type the form
+/// FSL emits a bounded domain directly over its scalar base, so one step reaches the type the form
 /// is read from. A node's result typed by a bounded domain reads the same way.
 pub(crate) fn scalar_type_form<Body: GraphBody>(
     graph: &Graph<'_, Body>,
@@ -466,7 +466,7 @@ pub(crate) fn operand_own_bound<'g, Body: GraphBody>(
 /// The type of a `reference` operand that no `bounded_domain` types; `None` for a literal, a
 /// reference to a literal value node, or an operand with an own bound.
 ///
-/// QSL emits a literal operand as a `reference` to its own `value` node, whose body is the
+/// FSL emits a literal operand as a `reference` to its own `value` node, whose body is the
 /// literal and whose type is the plain scalar type. That is a constant, like an inline literal,
 /// and is decided by the referenced node's body, never by its type: a `value` node with any other
 /// body (a parameter) and a plain type is an unbounded operand.
@@ -481,7 +481,7 @@ fn plain_reference_type<Body: GraphBody>(
     (!is_literal_value(graph, node)).then(|| node.semantic_type.clone())
 }
 
-/// A `value` node whose body is a literal: the node QSL emits for a literal operand.
+/// A `value` node whose body is a literal: the node FSL emits for a literal operand.
 fn is_literal_value<Body: GraphBody>(
     graph: &Graph<'_, Body>,
     node: &CheckedSemanticNodeV2<Body>,
@@ -490,7 +490,7 @@ fn is_literal_value<Body: GraphBody>(
         && matches!(graph.term(&node.node_id), Some(CheckedTerm::Literal { .. }))
 }
 
-/// The catalogued identity of the narrowing conversion QSL wraps a bounded-context expression in.
+/// The catalogued identity of the narrowing conversion FSL wraps a bounded-context expression in.
 pub(super) const NARROW_IDENTITY: &str = "quire.op.numeric.narrow";
 
 /// How the nodes that consume a scalar-typed node bound its result.
@@ -968,11 +968,16 @@ pub(super) fn check_parameters_from_view<Body: GraphBody, NodeBody>(
             return Ok(vec![carrier.clone()]);
         }
         ExactScalarOperation::IntegerDivision { domain, .. }
+        | ExactScalarOperation::IntegerRemainder { domain, .. }
         | ExactScalarOperation::IntegerModulo { domain } => {
-            let (actual, checked) = bounds.integer_division_bounds(matches!(
-                operation,
-                ExactScalarOperation::IntegerModulo { .. }
-            ))?;
+            let member = match operation {
+                ExactScalarOperation::IntegerRemainder { profile, .. } => {
+                    DivisionBounds::Remainder(*profile)
+                }
+                ExactScalarOperation::IntegerModulo { .. } => DivisionBounds::Modulo,
+                _ => DivisionBounds::Quotient,
+            };
+            let (actual, checked) = bounds.integer_division_bounds(member)?;
             if domain != &IntegerDomain::Bounded(actual) {
                 let refusal = match bounds.read(BoundForm::IntegerRange, read_integer_range) {
                     Ok((bound, _)) => ExactScalarRefusal::BoundMismatch {
@@ -1084,6 +1089,17 @@ impl<'n> BoundView<'n, CheckedJson> {
     }
 }
 
+/// Which member an inferred division result interval bounds.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) enum DivisionBounds {
+    /// The quotient of `div`.
+    Quotient,
+    /// The remainder of `rem` under one law.
+    Remainder(quire_exact::DivisionProfile),
+    /// The Euclidean remainder of `mod`.
+    Modulo,
+}
+
 pub(super) struct Bounds<'g, 'n, Body: GraphBody = CheckedJson, NodeBody = CheckedTerm> {
     pub(super) graph: &'g Graph<'g, Body>,
     pub(super) node: BoundView<'n, NodeBody>,
@@ -1095,7 +1111,7 @@ impl<Body: GraphBody, NodeBody> Bounds<'_, '_, Body, NodeBody> {
     /// a result-bound node in the provenance.
     pub(super) fn integer_division_bounds(
         &self,
-        modulo: bool,
+        member: DivisionBounds,
     ) -> Result<(IntegerInterval, Vec<CheckedNodeId>), ExactScalarRefusal> {
         match self.read(BoundForm::IntegerRange, read_integer_range) {
             Ok((result, domain)) => {
@@ -1180,17 +1196,31 @@ impl<Body: GraphBody, NodeBody> Bounds<'_, '_, Body, NodeBody> {
         };
         let dividend = interval(left)?;
         let divisor = interval(right)?;
-        let source = if modulo { divisor } else { dividend };
+        let source = if member == DivisionBounds::Quotient {
+            dividend
+        } else {
+            divisor
+        };
         let magnitude = source.lower().abs().max(source.upper().abs());
-        let domain = if modulo {
-            let upper = if magnitude.is_zero() {
-                magnitude
+        let window_upper = || {
+            if magnitude.is_zero() {
+                magnitude.clone()
             } else {
                 magnitude.sub(&quire_exact::Integer::one())
-            };
-            IntegerInterval::spanning(quire_exact::Integer::zero(), upper)
-        } else {
-            IntegerInterval::spanning(magnitude.neg(), magnitude)
+            }
+        };
+        let domain = match member {
+            DivisionBounds::Quotient => IntegerInterval::spanning(magnitude.neg(), magnitude),
+            DivisionBounds::Modulo
+            | DivisionBounds::Remainder(quire_exact::DivisionProfile::Euclidean) => {
+                IntegerInterval::spanning(quire_exact::Integer::zero(), window_upper())
+            }
+            DivisionBounds::Remainder(
+                quire_exact::DivisionProfile::Truncating | quire_exact::DivisionProfile::Floor,
+            ) => {
+                let upper = window_upper();
+                IntegerInterval::spanning(upper.neg(), upper)
+            }
         };
         Ok((domain, checked))
     }
@@ -1200,7 +1230,7 @@ impl<Body: GraphBody, NodeBody> Bounds<'_, '_, Body, NodeBody> {
     ///
     /// The result's role is named by the node itself. A result typed by a `bounded_domain` has
     /// that domain as its bound. A result typed by a scalar type has the bound of the narrowing
-    /// conversion that consumes it (QSL's shape for a bounded context); failing one, the one
+    /// conversion that consumes it (FSL's shape for a bounded context); failing one, the one
     /// reachable bound of `form` over that type that is not an operand's own bound; where several
     /// are reachable, exactly one must be outside the operands' own bounds.
     pub(super) fn read<T>(
@@ -1270,7 +1300,7 @@ impl<Body: GraphBody, NodeBody> Bounds<'_, '_, Body, NodeBody> {
     }
 
     /// How the nodes consuming this node narrow it, for a node whose result is typed by a scalar
-    /// type. QSL wraps an expression in a bounded context in a narrowing `conversion` typed by the
+    /// type. FSL wraps an expression in a bounded context in a narrowing `conversion` typed by the
     /// bound, and IR's forward-only `bounds` closure never reaches it from the expression, so the
     /// enclosing conversion is where the result bound is named.
     pub(super) fn narrowing(&self) -> Narrowing<'_, Body> {
@@ -1655,6 +1685,7 @@ impl Shape {
                 }
             },
             ExactScalarOperation::IntegerDivision { .. }
+            | ExactScalarOperation::IntegerRemainder { .. }
             | ExactScalarOperation::IntegerModulo { .. } => {
                 Self::binary(&[F::Integer, F::Integer], F::Integer)
             }
@@ -1870,6 +1901,7 @@ pub(super) fn catalogued_operation(
             IntegerOperator::Negate => CatalogOperator::Negate.entry().identity,
         }),
         Op::IntegerDivision { .. } => plain("quire.op.integer.div"),
+        Op::IntegerRemainder { .. } => plain("quire.op.integer.rem"),
         Op::IntegerModulo { .. } => plain("quire.op.integer.mod"),
         Op::RationalArithmetic { operator, .. } => plain(match operator {
             RationalOperator::Add => "quire.op.rational.add",
@@ -2084,7 +2116,9 @@ pub(super) fn operation_confirmed<Body: GraphBody>(
             return Ok(false);
         }
     }
-    if let ExactScalarOperation::IntegerDivision { profile, .. } = operation {
+    if let ExactScalarOperation::IntegerDivision { profile, .. }
+    | ExactScalarOperation::IntegerRemainder { profile, .. } = operation
+    {
         if !scalar_ir::has_law(term, profile.definition_identity()) {
             return Ok(false);
         }
@@ -2142,6 +2176,11 @@ pub(super) fn operation_identity(
         }
         ExactScalarOperation::IntegerDivision { profile, domain } => format!(
             "{} domain={}",
+            profile.definition_identity(),
+            integer_domain_identity(domain)?
+        ),
+        ExactScalarOperation::IntegerRemainder { profile, domain } => format!(
+            "{} remainder domain={}",
             profile.definition_identity(),
             integer_domain_identity(domain)?
         ),
@@ -2753,6 +2792,7 @@ pub(super) fn plan_contract_scalar_oracles(
                                             ..
                                         }
                                     ),
+                                    division: super::DivisionClaim::of(&operation),
                                 })),
                             )
                         }
@@ -2897,6 +2937,7 @@ pub(super) fn plan_exact_scalar_oracles(
                                             ..
                                         }
                                     ),
+                                    division: super::DivisionClaim::of(operation),
                                 })),
                             )
                         }
@@ -2952,7 +2993,7 @@ pub(crate) fn scalar_profile() -> CompleteLoweringProfileV2 {
     CompleteLoweringProfileV2 {
         reference: quire_contract_model::LoweringProfileRef {
             authority: "agent-ix".into(),
-            identity: "quire.codegen.exact-scalar/v1".into(),
+            identity: "filament.codegen.exact-scalar/v1".into(),
         },
         required_source_selections: Vec::new(),
         supported_tags: BTreeSet::from(SCALAR_LOWERING_SUPPORTED_TAGS),

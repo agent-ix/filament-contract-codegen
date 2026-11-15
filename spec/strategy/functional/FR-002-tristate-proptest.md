@@ -3,9 +3,9 @@ id: FR-002
 title: "Generate tri-state harnesses and shaped strategies"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-014
+  - target: ix://agent-ix/filament-contract-codegen/FR-014
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/interface-001
+  - target: ix://agent-ix/filament-contract-codegen/interface-001
     type: implements
 ---
 # FR-002: Generate tri-state harnesses and shaped strategies
@@ -21,18 +21,18 @@ proptest strategies that preserve pass, failed postcondition, and rejected preco
 - Planned (IR-815): for the V2 harness, an admitted `CheckedPackageV2` with one selected
   precondition and one selected postcondition, each selected by its checked clause id and authentic
   `claim` `CheckedOccurrence`. Planned (IR-1013, FR-058): Contract IR's typed accessor, which does
-  not yet exist, returns each selected tuple's accepted QSL `ClauseBinding.execution_point` as its
-  owned `quire_contract_model::ExecutionPoint` (variant and `AnchorName`). QSL owns `ClauseBinding`.
+  not yet exist, returns each selected tuple's accepted FSL `ClauseBinding.execution_point` as its
+  owned `filament_contract_model::ExecutionPoint` (variant and `AnchorName`). FSL owns `ClauseBinding`.
   One checked clause node may have multiple authentic claims; precondition claims sharing one body
   and operation anchor share one `Pre` point, and postcondition claims sharing one body and operation
-  anchor share one `Post` point (QSpec FR-341). The two harness selections may have different points.
+  anchor share one `Post` point (FSpec FR-341). The two harness selections may have different points.
   For FR-002-AC-12, a repeated V2 selection names the same checked clause id and authentic claim
   occurrence; the clause identity checks of FR-002-AC-10 retain their original scope.
-  The caller supplies no separate point. Each requirement identity is the QSL driver's bound
+  The caller supplies no separate point. Each requirement identity is the FSL driver's bound
   FR-331 item's authentic `claim` occurrence in this same admitted package; its full `package_id`
   supplies the revision. For a process provider, CG compares FR-331 `request.package_id` with the
   separately admitted package. For a linked provider, the driver exports, emits, and admits one
-  package before CG receives that admitted package and selected claim. QSL export refusals stay
+  package before CG receives that admitted package and selected claim. FSL export refusals stay
   with the driver; CG checks the occurrence and referenced V2 model bindings defensively.
 
 ## Outputs
@@ -128,7 +128,7 @@ proptest strategies that preserve pass, failed postcondition, and rejected preco
 - Planned (IR-815): the V2 harness generator shall read clause kind, identity and body only through
   the one typed node-access layer `core/ir/` of AD-004.
 - Planned (IR-815): the V2 harness generator shall not name or read a `BoundPackage`, a `ClauseRef`,
-  a `quire_contract_model::TypedExpression`, or the `oracle::boolean_v1` module.
+  a `filament_contract_model::TypedExpression`, or the `oracle::boolean_v1` module.
 - Planned (IR-815): if a selected clause identity is unknown, is not of the expected kind, or
   names the same clause as both selections, then the V2 harness generator shall return a typed,
   located diagnostic and no artifact.
@@ -137,8 +137,8 @@ proptest strategies that preserve pass, failed postcondition, and rejected preco
   fallback to filtering.
 - When a V2 precondition and postcondition are selected, the V2 harness generator shall call the planned Contract IR FR-058 accessor for the one admitted package and each selected checked clause id and `claim` occurrence tuple (planned, IR-815).
 - Planned (IR-815): the V2 harness generator shall take each execution point only from the
-  accepted QSL binding point returned for that exact selection.
-- Planned (IR-815): CG shall use each QSL driver-bound FR-331 `claim` occurrence only after the
+  accepted FSL binding point returned for that exact selection.
+- Planned (IR-815): CG shall use each FSL driver-bound FR-331 `claim` occurrence only after the
   FR-011 process owner comparison when a process frame exists, and the admitted V2 relation check
   for either route. Linked generation uses its one E5-admitted package. CG shall not call
   `export_bindings`, accept a bare unbound item, or substitute a sibling package's occurrence.
@@ -195,7 +195,7 @@ proptest strategies that preserve pass, failed postcondition, and rejected preco
 | FR-002-AC-6 | Integer and generated Boolean harness campaign cases bind exact values to executable accepted/rejected expectations; enum cases execute an all-admitted membership expectation. | Test (TC-004) |
 | FR-002-AC-7 | PLANNED (IR-815). For one precondition and one postcondition selected from an admitted `CheckedPackageV2`, the generated harness embeds each selected clause's FR-014 V2 clause oracle. | Test (TC-004) |
 | FR-002-AC-8 | PLANNED (IR-815). In the V2 harness, an instrumented snapshot, precondition oracle, subject and postcondition oracle record that the snapshot precedes precondition evaluation, which precedes subject invocation, which precedes postcondition evaluation, for every case. | Test (TC-004) |
-| FR-002-AC-9 | PLANNED (IR-815). Source inspection shows the V2 harness generator opens a `CheckedPackageV2` body only through the `core/ir/` layer of AD-004, and names no `BoundPackage`, `ClauseRef`, `quire_contract_model::TypedExpression` or `oracle::boolean_v1` item, each of which today's V1 harness names or uses. | Inspection |
+| FR-002-AC-9 | PLANNED (IR-815). Source inspection shows the V2 harness generator opens a `CheckedPackageV2` body only through the `core/ir/` layer of AD-004, and names no `BoundPackage`, `ClauseRef`, `filament_contract_model::TypedExpression` or `oracle::boolean_v1` item, each of which today's V1 harness names or uses. | Inspection |
 | FR-002-AC-10 | PLANNED (IR-815). A selected clause identity that is unknown, of the wrong clause kind, or the same for both selections yields a typed, located diagnostic naming the selection and no artifact. | Test (TC-004) |
 | FR-002-AC-11 | PLANNED (IR-815). A selected clause body outside the FR-014-AC-38 shape yields a structured unsupported diagnostic and no artifact, and the generator emits no filtering strategy for it. | Test (TC-004) |
 | FR-002-AC-12 | PLANNED (IR-815). Repeated V2 harness generation for the same admitted package, selected checked clause ids, authentic `claim` occurrences, and campaign policy is byte-identical. The repeated selections include the same FR-011 identity inputs; the generated header, runtime identities, source map, symbols, and remaining bytes all agree across repetitions. | Test (TC-004) |
@@ -205,16 +205,16 @@ proptest strategies that preserve pass, failed postcondition, and rejected preco
 | FR-002-AC-16 | PLANNED (IR-364). For each selected precondition and postcondition oracle, a seeded `Ok(Outcome::Undefined)`, `Ok(Outcome::Refused)`, `Ok(Outcome::Incomplete)`, `Err(ClauseStop::Oracle(OracleStop))`, and `Err(ClauseStop::InvalidConstant)` returns CG-owned `V2HarnessCaseResult::NonCompleted` retaining the exact typed stop cause, selected claim identity, and selected accepted typed `ExecutionPoint`. The generated campaign returns `V2HarnessCampaignResult::NonCompleted` carrying that case and a summary whose `attempted` includes this stopped case once and whose `non_completed` is one. No runtime verdict is constructed or recorded for the stopped case; prior runtime accepted, rejected, failed, and discarded counters are unchanged. The case is not reported as a pass, rejection, failure, explicit discard, or framework exhaustion. | Test (TC-004) |
 | FR-002-AC-17 | PLANNED (IR-815). A seeded V2 case on which the precondition oracle returns an outcome that does not complete does not invoke the subject. | Test (TC-004) |
 | FR-002-AC-18 | PLANNED (IR-815). A seeded V2 case on which the precondition oracle returns an outcome that does not complete does not evaluate the postcondition oracle. | Test (TC-004) |
-| FR-002-AC-19 | PLANNED (IR-815). Each V2 selection preserves the accepted QSL `ClauseBinding.execution_point` for its exact admitted package, checked clause id, and authentic `claim` occurrence through the injective runtime rendering; precondition and postcondition points may differ. Two requests selecting different authentic claims on the same precondition node each retain that node's accepted `Pre` operation point while selecting the correct occurrence. A rejection carries the precondition point; a failed or passed verdict after completed postcondition evaluation carries the postcondition point; a non-completed case carries the point of the oracle that did not complete and retains its cause without counting as a pass. | Test (TC-004) |
+| FR-002-AC-19 | PLANNED (IR-815). Each V2 selection preserves the accepted FSL `ClauseBinding.execution_point` for its exact admitted package, checked clause id, and authentic `claim` occurrence through the injective runtime rendering; precondition and postcondition points may differ. Two requests selecting different authentic claims on the same precondition node each retain that node's accepted `Pre` operation point while selecting the correct occurrence. A rejection carries the precondition point; a failed or passed verdict after completed postcondition evaluation carries the postcondition point; a non-completed case carries the point of the oracle that did not complete and retains its cause without counting as a pass. | Test (TC-004) |
 | FR-002-AC-20 | PLANNED (IR-815). After FR-002-AC-10's clause id, kind, and distinctness checks, a wrong-role, wrong-ordinal, or other-node `claim` occurrence for either selected V2 clause yields `HarnessErrorCode::MissingClaimOccurrence` and no artifact even if a sibling occurrence has a point; an authentic selected tuple with no accepted point yields `HarnessErrorCode::MissingExecutionPoint` and no artifact even if another authentic occurrence of that node has a point; a render mutant that changes only that selection's generated harness or verdict point yields `HarnessErrorCode::ExecutionPointMismatch` before publication and no artifact. Each diagnostic names the affected precondition or postcondition selection, and no point is inferred from clause kind. | Test (TC-004) |
-| FR-002-AC-22 | PLANNED (IR-815). For either selection, an out-of-driver missing or non-claim occurrence returns `HarnessErrorCode::MissingClaimOccurrence`, a referenced model element absent from the admitted V2 relation returns `HarnessErrorCode::UnboundModelElement` naming it, and a process FR-331 owner differing from the admitted package returns `HarnessErrorCode::OwnerIdentityMismatch`. Each produces no artifact. A linked request uses one driver-exported/E4-emitted/E5-admitted package and a selected claim checked against that package; a foreign claim absent from it returns `HarnessErrorCode::MissingClaimOccurrence`. QSL `export_bindings`, process package-byte/id, and linked E4/E5 handoff refusals retain their own upstream causes. | Test (TC-004) |
+| FR-002-AC-22 | PLANNED (IR-815). For either selection, an out-of-driver missing or non-claim occurrence returns `HarnessErrorCode::MissingClaimOccurrence`, a referenced model element absent from the admitted V2 relation returns `HarnessErrorCode::UnboundModelElement` naming it, and a process FR-331 owner differing from the admitted package returns `HarnessErrorCode::OwnerIdentityMismatch`. Each produces no artifact. A linked request uses one driver-exported/E4-emitted/E5-admitted package and a selected claim checked against that package; a foreign claim absent from it returns `HarnessErrorCode::MissingClaimOccurrence`. FSL `export_bindings`, process package-byte/id, and linked E4/E5 handoff refusals retain their own upstream causes. | Test (TC-004) |
 | FR-002-AC-24 | PLANNED (IR-364). With a supplied runtime report whose snapshot is `at_limit` before a seeded non-completed V2 oracle case, `V2HarnessCampaignResult::NonCompleted` retains that case and a summary with `non_completed == 1` and exact `attempted == None`; it does not infer an exact prior count from the saturated report. The report's existing counters and `at_limit` signal remain unchanged, and no runtime verdict is constructed or recorded for the stopped case. | Test (TC-004) |
 | FR-002-AC-25 | PLANNED (IR-815). The V2 harness header, `RequirementId`, `RevisionId`, source map and symbols carry FR-011's canonical structural `qocc2_`/`qpkg2_` renderings of each driver's selected claim's complete node, role and ordinal and the same admitted package's name and complete lock. Changing any one structural identity component changes its rendered text. An unchanged node and lock identity never excuses a changed admitted body from the existing body comparison. | Test (TC-004) |
 | FR-002-AC-26 | PLANNED (IR-815). At a V2 harness identity text comparison boundary, malformed, truncated, case-folded or otherwise noncanonical structural `qocc2_`/`qpkg2_` text, including an invalid byte count or malformed nested path or lock encoding, returns `HarnessErrorCode::InvalidIdentityRendering` before publication and without normalizing or mutating a report. A different but canonical occurrence returns `MissingClaimOccurrence`; a different but canonical package name or lock returns `OwnerIdentityMismatch`, likewise before publication. Exact typed and canonical-text comparisons agree on the accepted selection. | Test (TC-004) |
 
 ## Open Questions
 
-- OQ-1 (resolved, identity): FR-011 OQ-2 resolves each requirement to its selected QSL
+- OQ-1 (resolved, identity): FR-011 OQ-2 resolves each requirement to its selected FSL
   driver-bound FR-331 claim occurrence in its one admitted Contract IR package; process FR-331
   owner comparison and linked E4/E5 admission establish that package. Its
   the admitted package name plus complete lock supplies the revision. The generated header,
@@ -245,7 +245,7 @@ criteria AC-25 and AC-26 exist and remain in scope; earlier identity criteria ar
 
 - **Upstream**: [FR-014](../../oracle/functional/FR-014-exact-scalar-oracles.md);
   QSL-1082 (accepted binding point on the V2 carrier; planned prerequisite);
-  IR-1013 / Contract IR FR-058 (typed accessor for the accepted QSL binding point keyed by admitted
+  IR-1013 / Contract IR FR-058 (typed accessor for the accepted FSL binding point keyed by admitted
   package, checked clause id, and authentic claim occurrence; planned,
   blocks the V2 execution-point slice).
 - **Downstream**: bound numeric/state-scalar refinement in

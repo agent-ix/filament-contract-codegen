@@ -3,9 +3,9 @@ id: TC-025
 title: "Verify separate bounded Kani obligations"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-015
+  - target: ix://agent-ix/filament-contract-codegen/FR-015
     type: verifies
-  - target: ix://agent-ix/quire-specification/TC-218
+  - target: ix://agent-ix/filament-specification/TC-218
     type: references
 ---
 # TC-025: Verify separate bounded Kani obligations
@@ -17,12 +17,12 @@ are historical V1-bundle procedures, not active V2 evidence. Step 18's inspectio
 and FR-015-AC-7/53/58 remain open for their surviving harness families. The historical V1
 procedure below remains for traceability and does not count as current V2 evidence. IR-1044
 backs the V2 generation-time census in steps 4, 7 and 13 through two tagged tests over an admitted
-QSL precondition; no installed-Kani verdict follows from that evidence. IR-917 owns the remaining
-QSL-authored V2 clause control.
+FSL precondition; no installed-Kani verdict follows from that evidence. IR-917 owns the remaining
+FSL-authored V2 clause control.
 
 Verify that bounded contracts produce one harness per obligation kind and
 refuse non-finite obligations. IR-268 covers the collection half of planned V2
-symbolic obligations: the claim is an admitted QSL clause/function body over a
+symbolic obligations: the claim is an admitted FSL clause/function body over a
 selected model collection field. Graph reachability is required by
 FR-015-AC-98 and FR-015-AC-105 to FR-015-AC-108 (IR-805); it is not IR-268
 evidence. The finite-input collection and graph corpus is not proof evidence
@@ -30,10 +30,10 @@ for either symbolic family.
 
 ## Test Procedure
 
-For IR-268, author a QSL model with a bounded `Sequence<IntRange>` field
+For IR-268, author a FSL model with a bounded `Sequence<IntRange>` field
 whose cardinality and element domains both have nonzero inclusive endpoints,
 and clauses/function bodies that apply `forall` and `exists` to that selected
-field. Emit each package through QSL's public replay path and admit the emitted
+field. Emit each package through FSL's public replay path and admit the emitted
 V2 package through Contract IR. Inspect that the admitted claim is the clause /
 function body and that its `quire.op.collection.forall` or
 `quire.op.collection.exists` operation identifies the selected field path; do
@@ -44,10 +44,10 @@ used.
 
 Distinguish the two missing-upper-bound cases using otherwise identical
 `Sequence<IntRange>` fields. With multiplicity lower bound `0` and no `upper`,
-emit and admit the QSL V2 package, confirm the selected field is an unbounded
+emit and admit the FSL V2 package, confirm the selected field is an unbounded
 collection (`bounds: None`), then submit its collection claim to IR and require
 `requires_bound` naming the selected field or its unbounded collection type,
-with no harness. With multiplicity lower bound `1` and no `upper`, require QSL
+with no harness. With multiplicity lower bound `1` and no `upper`, require FSL
 assembly to refuse `unknown_required_feature`/`unsupported-feature` for
 `UnsupportedModelMember`; no V2 package or IR item is produced, so this case
 must not be reported as an IR `requires_bound`. Separately use an admitted,
@@ -58,9 +58,9 @@ For each supported function-body and invariant collection claim, inspect the
 generated `kani::any()` draws and assumptions. Check both cardinality endpoints and every intervening
 length, both inclusive `IntRange` endpoints and intervening values, both
 Boolean values, and preservation of declared order and uniqueness. For a function-body control, replay the same authored function with
-`qsl_replay::replay` as the independent native oracle and compare its result
+`fsl_replay::replay` as the independent native oracle and compare its result
 with the generated claim's assertion for the same input. For a falsified
-invariant, use `qsl_replay::replay_state_clause` with a snapshot observation. Seed a claim or subject defect and require installed Kani to report
+invariant, use `fsl_replay::replay_state_clause` with a snapshot observation. Seed a claim or subject defect and require installed Kani to report
 `Falsified` with an in-domain playback; the healthy direct-assertion case must
 be `Verified` with its final cover satisfied. Refuse an unbounded cardinality, unbounded
 element type, unsupported collection form or unsupported `forall`/`exists`
@@ -69,7 +69,7 @@ Check typed `requires_bound` versus `unsupported`, no emitted harness for each
 refusal, and one disposition per item in a mixed request.
 
 For FR-015-AC-96/99 (IR-1091), author precondition and postcondition
-collection clauses over the same QSL-emitted, IR-admitted OrderedSet field as a
+collection clauses over the same FSL-emitted, IR-admitted OrderedSet field as a
 function-body and invariant control. Submit one item per clause through the
 public V2 request. Require the same inclusive cardinality, element, order and
 uniqueness assumptions for every drawn input kind, with no duplicate standalone
@@ -78,7 +78,7 @@ a Boolean, permitting both true and false, and separately covers a true case;
 an impossible but total precondition reports `CoverUnsatisfied`. Seed a
 precondition oracle mutant that yields `Undefined`, `Refused` or `Incomplete`
 on an in-domain draw and require a falsified totality assertion, never an
-assumption. Compare its native result with QSL's public clause-evaluation
+assumption. Compare its native result with FSL's public clause-evaluation
 facade once available; counterexample replay alone cannot classify true, false and incomplete
 evaluation across the admitted domain.
 For the collection postcondition, identify the selected model object and
@@ -86,7 +86,7 @@ every admitted model field, including fields neither the postcondition nor
 any sibling precondition reads. Read each
 field's admitted type and domain; require the selected field's exact
 `CollectionType`, inclusive cardinality and element domain. Generate one
-`CgObjectState` struct with a `quire_exact::Value` field for every admitted model field in checked declaration order, with generated names that remain distinct for two
+`CgObjectState` struct with a `filament_exact::Value` field for every admitted model field in checked declaration order, with generated names that remain distinct for two
 source spellings that would collide after naive Rust identifier conversion.
 Compare the persisted mapping of each generated name to its checked declaring node ID
 and field name before and after equal regeneration. Draw and validate all fields
@@ -98,7 +98,7 @@ uniqueness in that field. Verify a nonselected contract-read field and an unread
 stay present in the generated state, retain their identities, and participate
 in their declared domain assumptions.
 Copy every field value, then call the customer subject at `subject_path` as
-`fn(&mut quire_exact::Value, &mut quire_exact::Value, ..., P0, P1, ...) -> R`: one
+`fn(&mut filament_exact::Value, &mut filament_exact::Value, ..., P0, P1, ...) -> R`: one
 mutable exact-value reference per admitted field in checked declaration
 order, then FR-025-ordered supported parameters and the admitted supported
 result type (`()` if absent). Inspect the generated call and the retained
@@ -129,17 +129,17 @@ OrderedSet's stored member order to match its prestate order and seed a subject
 that reorders distinct members. FR-392 inspection must admit that reordered
 set while the authored order postcondition falsifies; a mere permutation is
 not a collection-domain failure. The invariant keeps a direct assertion.
-Replay a falsified invariant through `qsl_replay::replay_state_clause` with a
+Replay a falsified invariant through `fsl_replay::replay_state_clause` with a
 snapshot observation, and a falsified postcondition with an invocation plus
 pre/post snapshots. A healthy postcondition verifies; an authored
 postcondition or subject mutant falsifies with in-domain playback. These
 pre/post controls are planned and receive no current proof credit. FR-392
 defines the collection value and checked boundary; CG owns the generated call
-and state struct, while this procedure claims no QSL generation of either.
+and state struct, while this procedure claims no FSL generation of either.
 
-For FR-015-AC-128 (IR-1091), author a QSL invariant and a constraint clause
+For FR-015-AC-128 (IR-1091), author a FSL invariant and a constraint clause
 with collection quantifiers over the same bounded field, emit the package through
-QSL and admit it through Contract IR. Submit the invariant as one claim and the
+FSL and admit it through Contract IR. Submit the invariant as one claim and the
 constraint as a separate claim. The constraint item must settle `unsupported` with
 `CollectionClaimNotRendered` / `UnsupportedClaimShape`, no harness and no proof
 credit; it must not turn into a `kani::assume` or change the invariant item.
@@ -148,7 +148,7 @@ unique-capacity refusal. Constrained-method request identity, boundary-state
 evaluation, `Undefined`/`Refused`/`Incomplete` handling and Kani outcome mapping
 remain planned under IR-1157; no constrained proof is expected from this control.
 
-For FR-015-AC-96, use QSL-emitted, IR-admitted unique Boolean and bounded `IntRange`
+For FR-015-AC-96, use FSL-emitted, IR-admitted unique Boolean and bounded `IntRange`
 fields after the applicable
 form, empty-domain, representation, unwind and memory checks pass. A feasible
 unique maximum equal to its distinct-value capacity retains both cardinality
@@ -185,7 +185,7 @@ FR-015-AC-101 checks, not one disjunctive control. The current
 control establishes only the present unsupported-form behavior; it does not
 back the new capacity-refusal or feasible-unique obligations.
 
-For AC-101's selected-field boundary, ask QSL to bind a missing selected model
+For AC-101's selected-field boundary, ask FSL to bind a missing selected model
 field and check its typed source-located refusal before it emits a package.
 Separately submit a malformed selected projection to Contract IR strict
 admission and check its typed located refusal before it admits a claim. Neither
@@ -207,25 +207,25 @@ flags in order, and that its solver kind and unwind equal the identity's. The
 collection-family tests exist and are tagged
 (IR-268, CG #396); the Kani-lane run is `Verified` (94 SUCCESS) with the
 mutant `Falsified` (93 SUCCESS and 1 FAILURE), per IR-268's close-out evidence.
-Graph family: Slice A of IR-805 (relationship-end graph claims) is delivered and every graph criterion is PARTIAL with its own gap, as FR-015's graph paragraph states: slice D implements AC-98 and AC-105 for the field-edge `reaches_field` form and leaves them PARTIAL on QSL-1904's population link; AC-106's slice B is delivered for the relationship-end form (the negated-claim, zero-length-path and rejected-self-loop mutants are Falsified under installed Kani, each replayed through `qsl_replay` over the authored clause; the wrong-role clause is NOT evidenced; the lib tests run outside `make kani-gate`); slice C is delivered for the relationship-end form (the domain oracle, healthy pass, boundary probes and the three pure-bound mutants, each over a unique and a non-unique end, run under installed Kani; status in FR-015-AC-106), and its `{0,3}` installed-Kani runs are tautological smoke runs with no healthy-case credit; AC-107's one-node-under-two-clauses clause is evidenced as its row states; AC-108's evidence is stated branch by branch, with inspection-only branches named. AC-100's and AC-101's graph clauses are implemented for both forms. The collection-family AC-100 ordered-option comparison is covered by the AC-100/TC-025-tagged `collection_run_evidence_preserves_every_ordered_identity_option` test, which compares actual launched arguments and evidence with the identity options, solver kind and unwind; the graph-family clause is covered by `graph_run_evidence_preserves_every_ordered_identity_option` (AC-100/TC-025). This is launcher evidence, not a new installed-Kani proof. The representational-ceiling clause has AC-101-tagged generator tests; selected-field boundary refusals still need source-located QSL and Contract IR tests. FR-015-AC-96 has tagged feasible OrderedSet uniqueness and Boolean/IntRange capacity-refusal controls; CG #616's installed-Kani controls verify an OrderedSet over IntRange lengths `[2,3]`, falsify and natively replay its claim mutant over that domain, and verify a Boolean OrderedSet at length `[2,2]` while falsifying the comparable Sequence on duplicate Boolean values. AC-96 remains PARTIAL: tagged generation tests cover function-body Sequence and OrderedSet symbolic domains, order, uniqueness and capacity, plus invariant-clause Sequence and OrderedSet domains, order and uniqueness; whole-object collection preconditions and postconditions have generation and compiled ordinary-execution controls in `tests/it/kani_collection_operation.rs`, including extra parameters, results, unread fields, sibling assumptions and retained prestate order. These controls do not add installed-backend or independent native-replay proof credit; CG #654 owns native precondition equivalence, and submitted constraint clauses remain typed unsupported under FR-015-AC-128 pending constrained-method semantics (IR-1157). Nonunique and unsupported-form admitted-item controls are tagged. The admitted full `i64` element interval at feasible maximum `3` has an AC-96-tagged generation control through QSL and IR; it adds no installed-Kani proof credit. The `u64::MAX` cardinality comparison remains helper/property-only because earlier representational, unwind or memory checks preempt rendering. An admitted QSL/IR control now backs `DomainNotRepresentableInI64` before unique capacity for an endpoint above `i64::MAX`; empty-IntRange precedence remains helper-only because QSL rejects that malformed model before emission. The installed controls exercise only the stated OrderedSet bounds. FR-015-AC-99 has tagged symbolic-draw and native replay controls, while its final reviewed-head Kani gate and graph family remain pending. The finite-input
+Graph family: Slice A of IR-805 (relationship-end graph claims) is delivered and every graph criterion is PARTIAL with its own gap, as FR-015's graph paragraph states: slice D implements AC-98 and AC-105 for the field-edge `reaches_field` form and leaves them PARTIAL on QSL-1904's population link; AC-106's slice B is delivered for the relationship-end form (the negated-claim, zero-length-path and rejected-self-loop mutants are Falsified under installed Kani, each replayed through `fsl_replay` over the authored clause; the wrong-role clause is NOT evidenced; the lib tests run outside `make kani-gate`); slice C is delivered for the relationship-end form (the domain oracle, healthy pass, boundary probes and the three pure-bound mutants, each over a unique and a non-unique end, run under installed Kani; status in FR-015-AC-106), and its `{0,3}` installed-Kani runs are tautological smoke runs with no healthy-case credit; AC-107's one-node-under-two-clauses clause is evidenced as its row states; AC-108's evidence is stated branch by branch, with inspection-only branches named. AC-100's and AC-101's graph clauses are implemented for both forms. The collection-family AC-100 ordered-option comparison is covered by the AC-100/TC-025-tagged `collection_run_evidence_preserves_every_ordered_identity_option` test, which compares actual launched arguments and evidence with the identity options, solver kind and unwind; the graph-family clause is covered by `graph_run_evidence_preserves_every_ordered_identity_option` (AC-100/TC-025). This is launcher evidence, not a new installed-Kani proof. The representational-ceiling clause has AC-101-tagged generator tests; selected-field boundary refusals still need source-located FSL and Contract IR tests. FR-015-AC-96 has tagged feasible OrderedSet uniqueness and Boolean/IntRange capacity-refusal controls; CG #616's installed-Kani controls verify an OrderedSet over IntRange lengths `[2,3]`, falsify and natively replay its claim mutant over that domain, and verify a Boolean OrderedSet at length `[2,2]` while falsifying the comparable Sequence on duplicate Boolean values. AC-96 remains PARTIAL: tagged generation tests cover function-body Sequence and OrderedSet symbolic domains, order, uniqueness and capacity, plus invariant-clause Sequence and OrderedSet domains, order and uniqueness; whole-object collection preconditions and postconditions have generation and compiled ordinary-execution controls in `tests/it/kani_collection_operation.rs`, including extra parameters, results, unread fields, sibling assumptions and retained prestate order. These controls do not add installed-backend or independent native-replay proof credit; CG #654 owns native precondition equivalence, and submitted constraint clauses remain typed unsupported under FR-015-AC-128 pending constrained-method semantics (IR-1157). Nonunique and unsupported-form admitted-item controls are tagged. The admitted full `i64` element interval at feasible maximum `3` has an AC-96-tagged generation control through FSL and IR; it adds no installed-Kani proof credit. The `u64::MAX` cardinality comparison remains helper/property-only because earlier representational, unwind or memory checks preempt rendering. An admitted FSL/IR control now backs `DomainNotRepresentableInI64` before unique capacity for an endpoint above `i64::MAX`; empty-IntRange precedence remains helper-only because FSL rejects that malformed model before emission. The installed controls exercise only the stated OrderedSet bounds. FR-015-AC-99 has tagged symbolic-draw and native replay controls, while its final reviewed-head Kani gate and graph family remain pending. The finite-input
 corpus's Boolean and generation-time outcome do not satisfy these controls.
 
-For the graph family (IR-805), author a QSL unit whose model has an object
+For the graph family (IR-805), author a FSL unit whose model has an object
 type `Order` with an optional `Reference<Order>` field, a `Reference` field and
 a bounded `Sequence<Reference<Order>>` field, and relationships `next`
 (`{0,1}`), `kids` (`{0,3}` unique), `litter` (`{0,3}` not unique) and a `{2,3}`
 end; write invariant/precondition/postcondition clauses of the form
 `reaches(self, target, <name>)` and `not reaches(self, self, <name>)`. Emit
-through QSL and admit through Contract IR (no copied wire or hand-built
+through FSL and admit through Contract IR (no copied wire or hand-built
 builder). The IR-851 `relationship_end` and IR-852 `reaches_population`
 accessors are merged (IR #438 and #442); relationship-end graph harness
-generation is delivered (IR-805 slice A) and the field-edge form is implemented (slice D), needing QSL's population link (QSL-1904) to generate.
+generation is delivered (IR-805 slice A) and the field-edge form is implemented (slice D), needing FSL's population link (QSL-1904) to generate.
 Real-package population emission and
 the claim's population link remain owned by QSL-820. The following refusal
 controls remain Planned CG checks, with no harness: (1) the claim is the
 `state_clause` node id and argument path of a reachability application of one
-of the forms defined by [QSL FR-365](ix://agent-ix/quire-spec-language/FR-365)
-and [QSL FR-105](ix://agent-ix/quire-spec-language/FR-105); (2) a claim with
+of the forms defined by [FSL FR-365](ix://agent-ix/filament-spec-language/FR-365)
+and [FSL FR-105](ix://agent-ix/filament-spec-language/FR-105); (2) a claim with
 `Unavailable` population selection settles `unsupported` naming it, without
 assuming the merged IR mapping makes a missing package link available;
 (3) with an `Unbounded` selection, a claim whose population has no finite
@@ -238,18 +238,18 @@ clauses, the two forms, a collection claim and a bad path (FR-015-AC-107); no
 caller `max_expansions`, population or multiplicity changes any outcome.
 Inspection: the three `relationship_end` refusals (`UnknownNode`,
 `NotReachesApplication`, `UnresolvedEnd`; Contract IR FR-038-AC-262 to
-FR-038-AC-268) cannot arise from a QSL-emitted, IR-admitted package
+FR-038-AC-268) cannot arise from a FSL-emitted, IR-admitted package
 (`UnresolvedEnd` needs a crate-internal post-admission mutation), so their
 `unsupported` mapping in FR-015-AC-108 is checked by inspection of the
 generator's error mapping, or by a named in-crate accessor test double, and is
 not a real-package runtime step. AC-107's location refusal runs before the accessor, so
-a path naming no reachability is never `NotReachesApplication`. Also, QSL refuses `reaches` in a function body, so no function-body graph
-claim can reach the generator. Slice D delivers the field-edge healthy and mutant controls (FR-015-AC-106 records them; they run only against a QSL that links `reaches_field` to its population, QSL-1904). Real-package steps that wait on CG integration and QSL-820 emission (unbacked):
+a path naming no reachability is never `NotReachesApplication`. Also, FSL refuses `reaches` in a function body, so no function-body graph
+claim can reach the generator. Slice D delivers the field-edge healthy and mutant controls (FR-015-AC-106 records them; they run only against a FSL that links `reaches_field` to its population, QSL-1904). Real-package steps that wait on CG integration and QSL-820 emission (unbacked):
 inclusive
 populations `N = 0` and the maximum, edge counts `lower`, `upper` and between,
 `kids` uniqueness, `litter` repeats and `{2,3}`; the field-edge `{0,3}` run and the field-edge `Set`/`Bag`/`OrderedSet` runs, and a wrong-role mutant (slice B delivered the relationship-end claim
 mutant and the zero-length and rejected-self-loop harness mutants: the claim
-mutant reproduces the violation under `qsl_replay`, each harness mutant is a
+mutant reproduces the violation under `fsl_replay`, each harness mutant is a
 counterexample the unchanged authored clause does not reproduce); the separate
 domain-bound controls below; and identity
 changes for the clause path, form, field or role, population extent, edge
@@ -257,7 +257,7 @@ multiplicity, subject and unwind, with byte identity on equal inputs. The
 finite-input `GraphRequest` corpus is not evidence.
 
 For FR-015-AC-106's separate domain controls (IR-939, slice C of IR-805: delivered for the relationship-end form in `tests/it/kani_graph_domain_private.rs`; the field-edge form is not delivered by slice D), retain the
-original authored QSL source, admitted package, selected clause/path and typed
+original authored FSL source, admitted package, selected clause/path and typed
 population/edge projections. Independently check the expected domain against
 the authored declarations before seeding a mutation. Use an available real-
 package population profile with `N = 4`, lower degree `0` and upper degree `U
@@ -303,9 +303,9 @@ candidate carrier:
 Retain source, actual installed-backend evidence, failed property identity,
 non-vacuity/boundary cover results and native domain-witness checks for each
 profile and run. Slice C's runs do not yet retain the generated source, failed property identity or FR-017 evidence as files (the lib tests keep only the verdict and the decoded witness checks, and delete their scratch crate); that retention is an open gap, so the recorded verdicts in FR-015-AC-106 must be repeated to inspect them. This is a separately identified domain oracle, not a new
-reachability assertion or a claim that the original QSL clause changes truth.
+reachability assertion or a claim that the original FSL clause changes truth.
 Do not replay mutant-only graphs as original-domain semantic counterexamples.
-The semantic mutants still require same-authored-clause `qsl_replay` on
+The semantic mutants still require same-authored-clause `fsl_replay` on
 original-valid graphs (reproduced violation for a claim mutant, a holding clause for a harness mutant). No sampler filtering, reduced authored range, metadata
 comparison, generation-time Boolean or substituted traversal mutant qualifies.
 If the actual owner inputs or verification carrier are unavailable, record
@@ -344,11 +344,11 @@ over a healthy subject, a subject mutated to debit, a subject writing a granted
 field, a subject also writing an ungranted field, and the allowed subject against
 a frame regenerated from a package whose `modifies` is emptied; then execute the
 forbidden counterexample natively and replay it, and the allowed run, through
-QSL's `replay_frame`.
+FSL's `replay_frame`.
 
 ## Expected Results
 
-The QSL-authored V2 postcondition declares a Boolean operation result, binds
+The FSL-authored V2 postcondition declares a Boolean operation result, binds
 both `amount` reads to one drawn operation parameter, and binds the exact
 Boolean returned by the subject to `result` without a separate draw or
 parameter argument. The compiled postcondition, clause oracle and independent
@@ -374,8 +374,8 @@ and uniqueness as well as its authored clause. These pre/post
 results remain planned under IR-1091 and are not credited by the current
 function-body evidence.
 For the collection claim, lower `0` with no finite upper bound is admitted by
-QSL and settles as IR `requires_bound`; lower greater than `0` with no finite
-upper bound is rejected by QSL assembly as `unknown_required_feature`/
+FSL and settles as IR `requires_bound`; lower greater than `0` with no finite
+upper bound is rejected by FSL assembly as `unknown_required_feature`/
 `unsupported-feature` before IR receives a package or item. A finite
 collection containing unbounded `Integer` elements reaches IR and settles as
 `requires_bound` for the element type. A constraint clause submitted as its
@@ -451,9 +451,9 @@ unsatisfiable requires as `cover_unsatisfied`.
    shape outside that encoding is refused by name with no harness (FR-015-AC-29). The installed
    backend verifies the healthy subject, falsifies the debiting subject, verifies the granted write,
    falsifies the ungranted write naming its field, falsifies the allowed subject against a frame
-   regenerated with nothing granted, and QSL's `replay_frame` reproduces the forbidden write and
+   regenerated with nothing granted, and FSL's `replay_frame` reproduces the forbidden write and
    finds the allowed run inside its frame (FR-015-AC-30 to FR-015-AC-32). The default suite builds that
-   replay's request and envelope through `qsl_replay::call_site` and settles a forbidden and a
+   replay's request and envelope through `fsl_replay::call_site` and settles a forbidden and a
    granted write without Kani, and refuses an operation with no frame, declared or not (FR-015-AC-33 to FR-015-AC-36).
 9. Generate the scalar harness of each integer operation (add, subtract, multiply, negate). Each
    asserts the oracle's outcome against the operation evaluated natively in `i128`, with a `Completed`
@@ -480,10 +480,10 @@ referenced operators and an inline Boolean literal. Other V2 controls retain the
     Boolean literal condition. Compare each embedded oracle with the FR-014 crate's
     clause-identified function byte for byte, retaining the clause node identity in both
     forms (FR-015-AC-40; needs FR-014-AC-38). Operator applications stand at their
-    referenced nodes' body roots under QSpec FR-322's flat body grammar, rather than
+    referenced nodes' body roots under FSpec FR-322's flat body grammar, rather than
     nested in the clause's condition argument. Then generate the
     arithmetic postcondition `amount < 1000` implies `amount + 1 <= 1000`, check the
-    native `i128` assertion of each arithmetic subterm. Admit QSL's checked
+    native `i128` assertion of each arithmetic subterm. Admit FSL's checked
     `numeric.narrow` wrapper around literal `1` through FR-014-AC-54, without
     treating it as an arbitrary conversion or adding an admission charge.
 
@@ -505,16 +505,16 @@ referenced operators and an inline Boolean literal. Other V2 controls retain the
     does not satisfy this control (FR-015-AC-40, FR-015-AC-41).
     Each unconstrained mutant run is the two-phase run of FR-017-AC-63 (IR-1022): its witness
     phase needs the trace mode. On the meter harness the traced refusal-order mutant peaked at
-    19,671,392,256 B on a Peter-authorised 40 GiB probe and exhausted 16 GiB with no verdict (quire-exact TC-931
-    Status and IR-844); no healthy-proof fit is claimed. The AC-41, AC-119 and AC-126 harnesses are unmeasured, so their mutant
+    19,671,392,256 B on a Peter-authorised 40 GiB probe and exhausted 16 GiB with no verdict (cited from
+    filament-exact TC-931 Status and IR-844; unverified here, not re-measured by CG); no healthy-proof fit is claimed. The AC-41, AC-119 and AC-126 harnesses are unmeasured, so their mutant
     controls may not fit 16 GiB. A witness phase stopped by the ceiling is `Inconclusive` and
     leaves the control unmet; no ceiling raise, smaller range or weaker assertion may stand in.
-    The package comes from QSL's facade on source, never a copied fixture
+    The package comes from FSL's facade on source, never a copied fixture
     (AD-004 step 4a); if the facade cannot build it, the real-Kani control is the
-    quire-integration exemplar of AD-004 L-5, a test in a repository above both.
+    filament-integration exemplar of AD-004 L-5, a test in a repository above both.
 
-    Current AC-40 controls: `qsl_v2_precondition_embeds_exact_referenced_clause_oracle`
-    admits QSL preconditions for `and`, `or`, `not`, `implies`, Boolean `eq` and `ne`,
+    Current AC-40 controls: `fsl_v2_precondition_embeds_exact_referenced_clause_oracle`
+    admits FSL preconditions for `and`, `or`, `not`, `implies`, Boolean `eq` and `ne`,
     and integer `eq`, `ne`, `lt`, `le`, `gt`, `ge`; it compares the embedded oracle
     bytes with `generate_v2_clause_oracle` for the same clause id.
     `inline_v2_precondition_embeds_exact_clause_oracle` makes the same comparison
@@ -530,7 +530,7 @@ referenced operators and an inline Boolean literal. Other V2 controls retain the
 
     Current AC-42 control: `v2_unsupported_clause_operator_names_exact_identity_without_suppressing_sibling`
     admits separate division and modulo clause bodies with integer literal operands and a Text
-    equality clause over Text literals, requests all three beside an admitted QSL bounded-parameter
+    equality clause over Text literals, requests all three beside an admitted FSL bounded-parameter
     precondition, and checks one typed
     `V2ClauseOperatorNotSupported` per unsupported item with its exact clause node and operator
     identity, no harness for any of the three, and the supported sibling's one harness. The Text
@@ -547,7 +547,7 @@ referenced operators and an inline Boolean literal. Other V2 controls retain the
     `not_run`; reordering leaves its bytes unchanged (FR-015-AC-44, FR-015-AC-45).
 14. Count the covers and locate each relative to the assumptions and the subject call; run
     a clause with jointly unsatisfiable assumptions; regenerate from equal inputs; vary the
-    unwind bound, the subject and the source span while holding QSL's producer-issued
+    unwind bound, the subject and the source span while holding FSL's producer-issued
     structural identity fixed. The harness identity record changes with the unwind bound
     and subject; the carried structural identity remains unchanged. Compare claims with
     a changed structural node, model or producer ordinal: each has a different structural
@@ -557,8 +557,8 @@ referenced operators and an inline Boolean literal. Other V2 controls retain the
     generation. The source span is excluded from the structural identity
     (FR-015-AC-46 to FR-015-AC-48).
 
-    Current AC-47 generation-time controls: `qsl_v2_scalar_clause_identity_tracks_request_facts`
-    regenerates authentic QSL precondition, postcondition and invariant harnesses from equal
+    Current AC-47 generation-time controls: `fsl_v2_scalar_clause_identity_tracks_request_facts`
+    regenerates authentic FSL precondition, postcondition and invariant harnesses from equal
     requests, then varies unwind and customer subject independently. Each equal request has
     identical generated source and persisted record bytes; each variation changes the harness
     identity and record. The invariant source calls neither customer subject. The authentic
@@ -607,7 +607,7 @@ referenced operators and an inline Boolean literal. Other V2 controls retain the
 
 ## A disposition for every state clause (IR-461)
 
-19. Negotiate one request of `StateFrame` items over one admitted QSL-emitted package with
+19. Negotiate one request of `StateFrame` items over one admitted FSL-emitted package with
     selected model declarations: first a `precondition` clause (refused), then one clause in
     both roles that yields, one whose lowering is a `RequiresBound` record, one whose selected
     model field has no representable `i64` range, one comparing two fields, one whose frame
@@ -724,9 +724,9 @@ bounded integer only, and composite equality has an oracle (FR-018) and a native
 (TC-029) but no Kani harness. The value of `SHADOW_PAIR_NODE_BUDGET` and the case cap's default are
 set by the code change's measurement and recorded here.
 
-## State field ranges from the package QSL emits (planned, IR-624)
+## State field ranges from the package FSL emits (planned, IR-624)
 
-37. Call `model_object_fields(&object_id)` for the QSL-emitted twin's model declaration
+37. Call `model_object_fields(&object_id)` for the FSL-emitted twin's model declaration
     object and read both `balance` and unread `audit` as `IntRange { lower: 0, upper: 1000 }`;
     convert their `i128` endpoints to `i64`, and compare the resulting `domains` with the
     state-clause replay's declared ranges. Admit a second unit with the same declaration but
@@ -744,9 +744,9 @@ set by the code change's measurement and recorded here.
     clause field refuses its item as `unsupported`, `StateFrameRefused`. For a non-model
     object and an admitted unselected model/object_type with a nonempty body, verify
     `NotModelObjectType` refuses without any assumption, `domains` entry or harness, even
-    when the body contains an apparent range. Use an admitted QSL-emitted graph with
+    when the body contains an apparent range. Use an admitted FSL-emitted graph with
     selected-model-document override and recomputed digests for `None` and out-of-`i64`
-    type cases QSL cannot emit directly. Separately submit a selected model/object_type
+    type cases FSL cannot emit directly. Separately submit a selected model/object_type
     whose nonempty body is read by the state clause and verify IR admission refuses
     `StaleNodeKey` before CG receives a package; do not expect a CG `NotModelObjectType`
     result from that rejected input (FR-015-AC-78; IR TC-227).
@@ -761,10 +761,10 @@ set by the code change's measurement and recorded here.
     has no range assumption and records `TypeNotRange` in identity and persisted record.
     Regenerate for byte identity, and reject a record naming a field twice (FR-015-AC-81).
 
-Steps 37 to 41 are planned. The IR-628 accessor has merged; the QSL-emitted model declaration
+Steps 37 to 41 are planned. The IR-628 accessor has merged; the FSL-emitted model declaration
 path awaits CG's dependency update and implementation. The hand-built non-declaration
 body-member range path is retired; an agreeing read does not make that body trusted. The code change
-replaces `tc_035_the_generator_reads_no_field_range_from_the_object_shape_qsl_emits`, updates
+replaces `tc_035_the_generator_reads_no_field_range_from_the_object_shape_fsl_emits`, updates
 the typed accessor refusal and AC-66 mapping tests, and edits or supersedes the test of
 FR-024-AC-30 that calls `Twin::aligned`; this PR restates AC-30 over the emitted-package
 harness, so its previous test evidence remains planned until that migration lands.
@@ -817,7 +817,7 @@ with the required author `make kani-gate`; independent review and final acceptan
 48. Using the FR-014-AC-35 V2 Boolean oracle, generate a scalar `implies`
     claim over two symbolic Boolean operands. Inspect that the embedded oracle
     matches FR-014's function byte for byte, and that the generated subject calls
-    `quire_contract_runtime::operators::implies_short_circuit` with `left` and a
+    `filament_contract_runtime::operators::implies_short_circuit` with `left` and a
     closure returning `right`. Inspect separate assertions that the subject
     result equals independent native `!left || right` over those operands and
     the oracle's `Outcome<bool>` is `Completed` with that expectation. Run the
@@ -830,14 +830,14 @@ with the required author `make kani-gate`; independent review and final acceptan
     native expectation remain unchanged. Do not count a generation-time Boolean
     as a proof result (FR-015-AC-118).
 
-## QSL-authored V2 clause runtime-helper mutation (IR-917; installed controls in FR-015-AC-151, pipeline subject planned)
+## FSL-authored V2 clause runtime-helper mutation (IR-917; installed controls in FR-015-AC-151, pipeline subject planned)
 
-49. Author a QSL operation with one finite-bounded integer parameter
+49. Author a FSL operation with one finite-bounded integer parameter
     `amount: Int[0, 1000]`, a declared Boolean result, and its postcondition
     `result = (amount < 1000 implies amount + 1 <= 1000)`. Both bare `amount` reads
     name that operation parameter; no read names a state field or
     subject-produced post-state value. Emit its exact `CheckedPackageV2`
-    through QSL's public facade,
+    through FSL's public facade,
     admit it through Contract IR, and select the postcondition by its clause
     node identity. Check that the FR-014-AC-38 oracle and FR-015 harness name
     that same clause, that the oracle is embedded byte for byte, and that the
@@ -851,11 +851,11 @@ with the required author `make kani-gate`; independent review and final acceptan
     assertion that the oracle completes true for the produced result. Confirm
     the compiled postcondition and clause oracle use that same parameter value. Inspect the
     compiled subject to require a call to
-    `quire_contract_runtime::operators::implies_short_circuit` and inspect
+    `filament_contract_runtime::operators::implies_short_circuit` and inspect
     the parsed authoritative helper body; fail before running either proof if
     the call or body is absent. Run the unmodified package, harness and subject
     with installed Kani and require `Verified` with its final cover satisfied.
-    In an isolated checkout of `quire-contract-runtime`, change only the
+    In an isolated checkout of `filament-contract-runtime`, change only the
     parsed body of that helper to return `false`, rebuild the same compiled
     subject against it, and run the same clause, oracle and harness again.
     Require `Falsified` with a concrete in-domain playback whose independent
@@ -868,10 +868,10 @@ with the required author `make kani-gate`; independent review and final acceptan
     state-field range path (FR-015-AC-119; distinct from the scalar
     FR-015-AC-118 and arithmetic mutant of step 11).
 
-## QSL-source four-kind installed-backend run (IR-948, planned)
+## FSL-source four-kind installed-backend run (IR-948, planned)
 
 50. Author the FR-015-AC-129 fixture: the domain package declaring `Bank`, `Account`,
-    `balance: Int[0, 100]`, `withdraw(amount: Int[0, 100])` and its frame, and the QSL unit with
+    `balance: Int[0, 100]`, `withdraw(amount: Int[0, 100])` and its frame, and the FSL unit with
     the named `pre`, `post` and `invariant` clauses. Emit and admit its one package. Request the
     four claims; require four harnesses with pairwise distinct identities, every drawn domain
     equal to the package's accessor range or `bounded_domain`, and no FR-021 prepared-function
@@ -880,7 +880,7 @@ with the required author `make kani-gate`; independent review and final acceptan
     cover satisfied (the frame's allowed effect by FR-015-AC-31). Run the two invariant mutants
     (`balance >= 1`; the package field widened to `Int[-1, 100]`) and require each invariant
     harness `Falsified` with counterexample `balance = 0` and `balance = -1`, replayed through
-    `qsl_replay::replay_state_clause` as a reproduced violation of the same clause; credit no
+    `fsl_replay::replay_state_clause` as a reproduced violation of the same clause; credit no
     other kind's verdict of the widened package. Run the `amount > 100` precondition and require
     `CoverUnsatisfied`. Record the teardown of each job and its peak when the environment provides one (ADR-007);
     `WitnessDisagreed`, `NoVerdict`, `MissingCoverSummary` and timeout are `Inconclusive`, the
@@ -888,7 +888,7 @@ with the required author `make kani-gate`; independent review and final acceptan
 
 ## Exhaustive concrete enumeration (IR-1022 specified, IR-1509 implemented)
 
-51. Build the FR-015-AC-119 clause crate from QSL source as in step 49, with no Kani launch, and run
+51. Build the FR-015-AC-119 clause crate from FSL source as in step 49, with no Kani launch, and run
     the host enumeration of FR-015-AC-132 over `amount_current = 0` through `1000`, evaluating all
     1001 values whatever fails: the sealed generated harness body as a host test (draw replaced by
     the value) and the independent `i128` comparison of the subject result. Healthy: require
@@ -896,9 +896,9 @@ with the required author `make kani-gate`; independent review and final acceptan
     false and the other record fields of FR-017-AC-64. Then apply one mutant per run at its owner's
     site and rerun the same enumeration, requiring the exact `failing_inputs` set: in the compiled
     subject source, the consequent `amount + 2 <= 1000` gives {999}, `amount + 1 < 1000` gives {999}
-    and the antecedent `amount <= 1000` gives {1000}; in an isolated quire-contract-runtime
+    and the antecedent `amount <= 1000` gives {1000}; in an isolated filament-contract-runtime
     checkout, the body of `implies_short_circuit` returning `false` gives all 1001 values; in an
-    isolated quire-exact checkout, `left.0.checked_add(right.0)` rewritten to
+    isolated filament-exact checkout, `left.0.checked_add(right.0)` rewritten to
     `left.0.checked_add(right.0)?.checked_add(1)` and, separately, to `Some(left.0)` each give exactly {0, 1, ..., 999} through the generated probe. Run an
     enumeration that omits 999 and one that visits 998 twice and omits 999, and require each to
     fail the sequence check. Check the printed record and the status column of the FR-015-AC-132
@@ -1053,17 +1053,17 @@ with the required author `make kani-gate`; independent review and final acceptan
 
 ## Installed clause controls through CG's runner (IR-1509)
 
-56. FR-015-AC-151. Compile the FR-015-AC-119 clause package from QSL source, generate the sealed harness
+56. FR-015-AC-151. Compile the FR-015-AC-119 clause package from FSL source, generate the sealed harness
     and, one run at a time in a 24 GiB cgroup with swap 0 and a 30 minute cap, run CG's
     `execute_kani_obligation` over a crate holding the sealed artifact and the `crate::subject` module.
     Healthy: require `Verified` from one proof-phase launch. Then one run per mutant, each requiring
     `Falsified` from the witness phase with the proof phase nested, `concrete-playback` only in the witness
     vector, equal ceilings across phases, one harness path and an in-domain playback: in an isolated
-    copy of the locked quire-exact checkout `left.0.checked_add(right.0)` rewritten to
+    copy of the locked filament-exact checkout `left.0.checked_add(right.0)` rewritten to
     `left.0.checked_add(right.0)?.checked_add(1)` and separately to `Some(left.0)` (failing check: the
     generated arithmetic assertion, playback below 1000); in the compiled subject the consequent
     `amount + 2 <= 1000` (the produced-result comparison, playback exactly 999); in an isolated copy of
-    the locked quire-contract-runtime checkout the body of `implies_short_circuit` returning `false` (the
+    the locked filament-contract-runtime checkout the body of `implies_short_circuit` returning `false` (the
     produced-result comparison). Append the 999 playback test inside the generated module before its
     closing brace, require that removing the appended bytes restores the sealed artifact exactly and that
     regeneration reproduces the artifact and record, run it on the host against the plus-one kernel mutant
@@ -1072,17 +1072,17 @@ with the required author `make kani-gate`; independent review and final acceptan
     verdicts are in `docs/qualification/ir1509-kani-clause-controls.md`. Require the `amount + 2` playback
     control to fail at the produced-result comparison, not at a preamble. The Kani-backed playback through
     `execute_kani_concrete_playback` is TC-027 step 5 (FR-017-AC-60, IR-917; `docs/qualification/ir917-kani-playback.md`).
-    PLANNED: the subject compiled by the pipeline (blocked on QSL operation bodies).
+    PLANNED: the subject compiled by the pipeline (blocked on FSL operation bodies).
 
 ## Control construct lowering (IR-1447)
 
-57. FR-015-AC-152 to FR-015-AC-173 (PLANNED, IR-1447; FR-025-AC-19 is TC-036 step 19). Control construct lowering.
+57. FR-015-AC-152 to FR-015-AC-173 (PARTIAL, IR-1447: `let`, `if`, nested and the laziness, refusal and unread-initializer fixtures are executed, the union `case`, collection and shadowing fixtures are not; the eager-branch and skip-unread mutants of AC-168 and AC-172 run as equivalent packages (the runner requires the generated source byte for byte), the `false`-mapping mutant of AC-169 as a host stop probe only; AC-166 has no test for the `option.value` clause; FR-025-AC-19 is TC-036 step 19). Control construct lowering.
     Generate a native V2 clause harness for each fixture of FR-015-AC-152 to FR-015-AC-155,
     FR-015-AC-164, FR-015-AC-170 and FR-015-AC-173 (`let`, `if`, `case` over a three-member arity-0
     union drawn as an `i64` member index, an `if` in an invariant collection `forall`, the nested
     `let`/`if`, and the shadowing and nested-rebinding `let`, the last two as constructed packages
-    because QSL refuses shadowing) and require one harness each, the native `let`, `if` and `match`
-    forms (no wildcard arm for the `case`), the union parameter bound as one `i64` (FR-025-AC-19) and
+    because FSL refuses shadowing) and require one harness each, the native `let`, `if` and `match`
+    forms (one `case` arm per member, the last holding the exhaustive pattern, none for a value outside the members), the union parameter bound as one `i64` (FR-025-AC-19) and
     the independent `i128` expectation, with each fixture's arithmetic-node bounds as its criterion states them
     (the kernel checks an integer result only against the arithmetic node's own bound, never an `if`, `let` or
     `case` node). Then, one Kani job at a time, run each fixture through CG's
@@ -1116,7 +1116,7 @@ with the required author `make kani-gate`; independent review and final acceptan
 ## Blocked
 
 - Frame harnesses in the clause negotiation: FR-025 accounts every frame obligation
-  `unsupported` there until QSpec decides how a frame node lowers into a Kani form (ADR-004). The
+  `unsupported` there until FSpec decides how a frame node lowers into a Kani form (ADR-004). The
   frame of a `postcondition` state clause over one integer field is instead generated with that
   clause by `generate_state_frame_obligations` (FR-015-AC-26 to FR-015-AC-32).
 - V2 scalar harnesses outside `IntegerArithmetic`: an IR-confirmed claim over
@@ -1128,4 +1128,4 @@ with the required author `make kani-gate`; independent review and final acceptan
   from a claim map this generator did not produce (NFR-005-AC-2). A claim this generator lowered but
   whose operation it did not confirm against the node's own catalogued
   identity, mode or law definition is refused as `CallerDeclaredOperation`.
-- Model and graph bounds: refused as blocked on `agent-ix/quire-spec-language#120`.
+- Model and graph bounds: refused as blocked on `agent-ix/filament-spec-language#120`.

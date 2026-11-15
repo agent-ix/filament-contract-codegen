@@ -4,11 +4,11 @@ use super::admitted_composite_fixture as fixture;
 use super::admitted_enum_equality::{
     checked, direct_source_item, generate_items, generate_items_with_libraries,
 };
-use ix_trace_rs::trace;
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     ClaimDisposition, CompositeEqualityLimits, CompositeEqualityRefusal, EqualityOperatorKind,
     OracleGenerationError,
 };
+use ix_trace_rs::trace;
 
 fn foreign_context() -> qsl_replay::AdmittedCompilation {
     qsl_replay::compile_admitted(
@@ -497,7 +497,7 @@ fn genuine_union_capability_refusals_preserve_the_healthy_sibling() {
     let batch = [union.clone(), healthy.clone()];
     let alone = generate_items(&package, None, std::slice::from_ref(&healthy), &[]).unwrap();
     let absent = generate_items(&package, None, &batch, &[]).unwrap();
-    let code = |output: &quire_contract_codegen::CompositeEqualityOracles| {
+    let code = |output: &filament_contract_codegen::CompositeEqualityOracles| {
         output
             .artifacts
             .iter()

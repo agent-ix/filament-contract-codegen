@@ -3,9 +3,9 @@ id: TC-019
 title: "Verify domain and relation boundary censuses"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-010
+  - target: ix://agent-ix/filament-contract-codegen/FR-010
     type: verifies
-  - target: ix://agent-ix/quire-contract-codegen/NFR-004
+  - target: ix://agent-ix/filament-contract-codegen/NFR-004
     type: verifies
 ---
 # TC-019: Verify domain and relation boundary censuses
@@ -19,7 +19,7 @@ exactly the cases FR-010 defines, in order, with correct tags and bounded size.
 
 1. For IR-admitted `CheckedPackageV2` selected claims (a selected clause id and authentic claim
    occurrence each), generate the `Boundary` bundle for `amount < 7`, `amount < 1`, and the
-   QSL-produced `VersionUnchanged` claim over 0..=1000, compile each, and read the three generated
+   FSL-produced `VersionUnchanged` claim over 0..=1000, compile each, and read the three generated
    arrays.
 2. Generate and compile the `Boundary` bundle for `amount < 7` with the accessor's domain exactly
    `i64::MIN..=i64::MAX`, and for `x == y` over that domain.

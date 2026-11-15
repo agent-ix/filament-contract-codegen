@@ -3,9 +3,9 @@ id: TC-046
 title: "Verify process-provider settlement and empty generation"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-019
+  - target: ix://agent-ix/filament-contract-codegen/FR-019
     type: verifies
-  - target: ix://agent-ix/quire-contract-codegen/FR-022
+  - target: ix://agent-ix/filament-contract-codegen/FR-022
     type: verifies
 ---
 # TC-046: Verify process-provider settlement and empty generation
@@ -16,10 +16,10 @@ Verify that `Process(BackendId)` settles from the FR-331 manifest's advertised
 (kind, mode) pairs and `domains`, against the requested item's capability kind
 and full `extent`.
 Manifest `bounds` are run-limit defaults and do not set admission maxima.
-Bounded `ProofBound.kind` is required by QSpec FR-331; QSL-654 owns the
-producer and admit-side `invalid-domains` enforcement. QSpec FR-290-AC-13
+Bounded `ProofBound.kind` is required by FSpec FR-331; QSL-654 owns the
+producer and admit-side `invalid-domains` enforcement. FSpec FR-290-AC-13
 owns the domain-kind check. The test does not infer a kind from `DomainKey`.
-Verify the empty generation arm and absence of plugin calls (QSL ADR-029
+Verify the empty generation arm and absence of plugin calls (FSL ADR-029
 PV-4).
 
 ## Test Procedure
@@ -68,7 +68,7 @@ PV-4).
    proof bound while keeping its explicit `kind`; leave the domain coverage
    decision unchanged. Give the same `DomainKey` two distinct explicit domain
    kinds and verify that the explicit kind controls coverage.
-   Supply only descriptors admitted by QSL under QSpec FR-290 "Advertised
+   Supply only descriptors admitted by FSL under FSpec FR-290 "Advertised
    mode" and FR-331-AC-22. On a bounded-capable descriptor, verify that CG
    uses the admitted manifest `domains` without a missing-`domains` fallback.
    QSL-654 owns admit-side `invalid-domains` enforcement.
@@ -131,7 +131,7 @@ FR-019-AC-14 is verified by analysis of the arm's `Disposition` return type, not
 
 ## Status
 
-Planned (IR-629). QSpec FR-331 now requires `ProofBound.kind` in the wire schema;
+Planned (IR-629). FSpec FR-331 now requires `ProofBound.kind` in the wire schema;
 QSL-654 still owns its producer, admit-side `invalid-domains` enforcement,
 and ADR-029 PV-4 wording. The admitted-descriptor assumption depends on that
 admit-side delivery. The process variant and its arms are not implemented in

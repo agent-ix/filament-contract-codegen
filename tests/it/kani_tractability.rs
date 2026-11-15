@@ -7,8 +7,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use ix_trace_rs::trace;
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     derive_v2_clause_operation_widths, generate_v2_clause_native_oracle, interval_bits,
     negotiate_kani_obligations, negotiate_kani_obligations_with_options, ClauseFeatures, Decision,
     GenerationOptions, InputBound, IntegerRoute, KaniObligationError, KaniObligationOutcome,
@@ -16,6 +15,7 @@ use quire_contract_codegen::{
     TractabilityDecider, TractabilityLoadError, TractabilityRow, TractabilityTable,
     UnsupportedObligation, WallSeconds, GENERATOR_VERSION, KERNEL_VERSION,
 };
+use ix_trace_rs::trace;
 use quire_contract_model::{CheckedNodeId, CheckedPackageV2};
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -116,7 +116,7 @@ fn request<'a>(items: &'a [ObligationItem<'a>]) -> KaniObligationRequest<'a> {
 fn item<'a>(
     package: &'a CheckedPackageV2,
     clause: &'a CheckedNodeId,
-    claim: &'a quire_contract_codegen::V2ClauseObligationClaim,
+    claim: &'a filament_contract_codegen::V2ClauseObligationClaim,
 ) -> ObligationItem<'a> {
     ObligationItem::V2Clause {
         package,
@@ -1080,18 +1080,18 @@ fn tc_070_the_embedded_general_route_table_is_the_docs_file() {
         TractabilityTable::load(&Path::new(env!("CARGO_MANIFEST_DIR")).join(GENERAL_SCALAR_TABLE))
             .expect("the docs file loads");
     assert_eq!(general_scalar_table(), from_file);
-    assert_eq!(from_file.rows().len(), 7);
+    assert_eq!(from_file.rows().len(), 10);
 }
 
 /// A request whose launcher and crate do not exist: any attempt to run it would be a different
 /// refusal (`Tool` or `HarnessNotInCrate`), so a `NotTractable` refusal proves no launch.
 fn unlaunchable<'a>(
     cancel: &'a quire_exact::Cancel,
-    installation: &'a quire_contract_codegen::KaniInstallation,
-    harness: quire_contract_codegen::KaniExecutableHarness<'a>,
+    installation: &'a filament_contract_codegen::KaniInstallation,
+    harness: filament_contract_codegen::KaniExecutableHarness<'a>,
     missing: &'a Path,
-) -> quire_contract_codegen::KaniExecutionRequest<'a> {
-    quire_contract_codegen::KaniExecutionRequest {
+) -> filament_contract_codegen::KaniExecutionRequest<'a> {
+    filament_contract_codegen::KaniExecutionRequest {
         cancel,
         installation,
         harness,
@@ -1104,13 +1104,13 @@ fn unlaunchable<'a>(
 #[trace("TC-070", "FR-056-AC-15")]
 #[test]
 fn tc_070_a_general_route_scalar_harness_is_refused_before_kani_with_its_row() {
-    use quire_contract_codegen::{
+    use filament_contract_codegen::{
         execute_kani_obligation_decided, execute_kani_obligations_decided, DecidedRunRefusal,
     };
     let table = general_scalar_table();
     let (harness, _) = super::kani_obligations::routed_scalar_increment();
     let cancel = quire_exact::Cancel::new();
-    let installation = quire_contract_codegen::KaniInstallation::new("/nonexistent/cargo-kani");
+    let installation = filament_contract_codegen::KaniInstallation::new("/nonexistent/cargo-kani");
     let missing = Path::new("/nonexistent/crate");
     let request = unlaunchable(&cancel, &installation, (&harness).into(), missing);
 
@@ -1180,13 +1180,13 @@ fn tc_070_a_general_route_scalar_harness_is_refused_before_kani_with_its_row() {
 #[trace("TC-070", "FR-056-AC-15")]
 #[test]
 fn tc_070_native_route_and_v2_clause_features_are_not_refused_by_the_general_row() {
-    use quire_contract_codegen::{
+    use filament_contract_codegen::{
         execute_kani_obligation_decided, DecidedRunRefusal, KaniExecutionRefusal,
     };
     let table = general_scalar_table();
     let (native, _) = super::kani_obligations::native_scalar_increment();
     let cancel = quire_exact::Cancel::new();
-    let installation = quire_contract_codegen::KaniInstallation::new("/nonexistent/cargo-kani");
+    let installation = filament_contract_codegen::KaniInstallation::new("/nonexistent/cargo-kani");
     let missing = Path::new("/nonexistent/crate");
     let request = unlaunchable(&cancel, &installation, (&native).into(), missing);
     // The decider lets the native harness through: the run proceeds to its own refusals.
@@ -1253,7 +1253,7 @@ fn tc_070_the_decider_receives_the_negotiation_route() {
         let (package, clause) = package(1 << 9, 1 << 9, "other * offset + 3 <= 100");
         let claim = crate::common::v2_claim::claim_for(&package, &clause);
         let recording = Recording(std::cell::RefCell::new(Vec::new()));
-        quire_contract_codegen::negotiate_kani_obligations_with_decider(
+        filament_contract_codegen::negotiate_kani_obligations_with_decider(
             &request(&[item(&package, &clause, &claim)]),
             &recording,
             route,

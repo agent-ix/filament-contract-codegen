@@ -3,25 +3,25 @@ id: FR-011
 title: "Run numeric oracle-conformance campaigns and report rates"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/StR-001
+  - target: ix://agent-ix/filament-contract-codegen/StR-001
     type: satisfies
-  - target: ix://agent-ix/quire-contract-codegen/FR-008
+  - target: ix://agent-ix/filament-contract-codegen/FR-008
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-009
+  - target: ix://agent-ix/filament-contract-codegen/FR-009
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-010
+  - target: ix://agent-ix/filament-contract-codegen/FR-010
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-002
+  - target: ix://agent-ix/filament-contract-codegen/FR-002
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/interface-001
+  - target: ix://agent-ix/filament-contract-codegen/interface-001
     type: implements
-  - target: ix://agent-ix/quire-contract-runtime/FR-001
+  - target: ix://agent-ix/filament-contract-runtime/FR-001
     type: depends_on
-  - target: ix://agent-ix/quire-contract-runtime/FR-003
+  - target: ix://agent-ix/filament-contract-runtime/FR-003
     type: references
-  - target: ix://agent-ix/quire-contract-runtime/FR-004
+  - target: ix://agent-ix/filament-contract-runtime/FR-004
     type: depends_on
-  - target: ix://agent-ix/quire-contract-runtime/interface-001
+  - target: ix://agent-ix/filament-contract-runtime/interface-001
     type: depends_on
 ---
 # FR-011: Run numeric oracle-conformance campaigns and report rates
@@ -50,13 +50,13 @@ until specified.
   the complete claim key: checked clause id, claim owner node id, and authentic `claim`
   `CheckedOccurrence`. The owner is part of that key; the caller supplies no second owner field.
 - Planned (IR-1013, FR-058): one admitted `CheckedPackageV2`, the selected checked clause id, and
-  that clause's authentic `claim` `CheckedOccurrence`. Together they select one accepted QSL
+  that clause's authentic `claim` `CheckedOccurrence`. Together they select one accepted FSL
   `ClauseBinding.execution_point`; Contract IR's typed accessor returns its owned
   `ExecutionPoint` with an `ExecutionPointName` (variant and exact nonempty point name) for that
-  package, clause, and occurrence. QSpec's V2 point-name wire domain admits every nonempty string;
+  package, clause, and occurrence. FSpec's V2 point-name wire domain admits every nonempty string;
   `ExecutionPointName` preserves that domain, while authored `AnchorName` identifier validation
-  remains at its own boundary. QSL owns `ClauseBinding`; the
-  caller supplies no separate point. The QSL driver supplies the FR-331 bound item for that selected
+  remains at its own boundary. FSL owns `ClauseBinding`; the
+  caller supplies no separate point. The FSL driver supplies the FR-331 bound item for that selected
   `claim`. A process-provider FR-331 frame carries `request.package_id`, which its reader checks
   against the frame's canonical package bytes; CG compares that id with its separately admitted
   `CheckedPackageV2`. An in-process linked provider has no FR-331 package frame or independent
@@ -64,9 +64,9 @@ until specified.
   package at E4, then E5 admits those exact emitted bytes as the `CheckedPackageV2` it passes to
   CG; E5 checks the emitted and admitted ids. The linked CG input is this admitted package and its
   selected claim, so the package tie is by construction. CG still verifies the claim is authentic
-  in that held package and does not substitute a sibling claim. No QSL facade, owner parameter,
+  in that held package and does not substitute a sibling claim. No FSL facade, owner parameter,
   or FR-331 wire member is added.
-- A caller-owned proptest `TestRunner` and `quire_contract_runtime::CampaignReport`.
+- A caller-owned proptest `TestRunner` and `filament_contract_runtime::CampaignReport`.
 - The existing campaign policy: minimum accepted, minimum rejected, and maximum discarded counts.
 - Planned (IR-1124, after IR-1072): the typed V2 selected-claim result, the FR-008
   contextual comparison and V2 oracle for that same claim, and the requested
@@ -83,7 +83,7 @@ until specified.
   `StrategyErrorCode::MissingExecutionPoint`, `StrategyErrorCode::ExecutionPointMismatch`,
   `StrategyErrorCode::OwnerIdentityMismatch`, `StrategyErrorCode::UnboundModelElement`, or
   `StrategyErrorCode::InvalidIdentityRendering`, with no artifact.
-  QSL `export_bindings` refusals remain with the driver.
+  FSL `export_bindings` refusals remain with the driver.
 - Planned (IR-1072): the selected-claim entry returns either a typed V2 selection for the exact
   supplied key or a distinct typed V2 selection diagnostic retaining Contract IR's refusal code,
   clause id, claim owner id, and occurrence. This entry alone emits no strategy bundle or runner.
@@ -145,15 +145,15 @@ until specified.
   - for a `Precondition` clause, `true` to `Passed` and `false` to `RejectedPrecondition`;
   - for a `Postcondition` clause, `true` to `Passed` and `false` to `FailedPostcondition`;
   - for an `Invariant` clause, `true` to `Passed` and `false` to `FailedPostcondition` whose clause
-    observation carries the runtime's invariant clause kind, which quire-contract-runtime
+    observation carries the runtime's invariant clause kind, which filament-contract-runtime
     implements but does not yet specify.
 - When a V2 claim is selected, the generator shall call the Contract IR FR-058 typed
   accessor on the admitted package with the checked clause id and selected owner-bound `claim`
   occurrence.
-- The generator shall use only the accepted QSL binding point returned for that exact tuple.
+- The generator shall use only the accepted FSL binding point returned for that exact tuple.
 - When generation is requested, CG shall require the selected FR-331 bound item's `claim`
   occurrence to be authentic for the checked clause in the admitted package and shall read every
-  referenced model binding from that package's V2 abstraction relation. The QSL driver shall
+  referenced model binding from that package's V2 abstraction relation. The FSL driver shall
   forward only items accepted by `export_bindings`; `UnknownItem`, `Unbound`, and `Fault` remain
   driver-side refusals. CG shall defend an out-of-driver request without calling
   `export_bindings` or trusting a bare item: an absent or non-claim occurrence returns
@@ -191,22 +191,22 @@ until specified.
   CG shall preserve every admitted name byte, including names that are not identifiers.
 - CG shall use the returned `ExecutionPoint` without adding a fallback point.
 - The runner shall construct each verdict through the runtime `construct_verdict` operation
-  (quire-contract-runtime interface-001) with the selected driver-bound FR-331 claim's complete
+  (filament-contract-runtime interface-001) with the selected driver-bound FR-331 claim's complete
   occurrence key as requirement identity, the same admitted
   structural package name and complete immutable lock as revision identity, the runtime execution point rendered from
   the selected occurrence's accepted binding, and the clause observations. The runner shall retain
   the occurrence's structural node, role, and ordinal and the package's name and full lock via
   the canonical V2 rendering below. CG shall create no separate requirement-revision artifact.
 - For a false invariant, the runner shall use the failure detail the runtime
-  provides for a contract clause, because quire-contract-runtime's specification does not yet state
+  provides for a contract clause, because filament-contract-runtime's specification does not yet state
   the failure detail of an invariant; a runtime specification of that mapping supersedes this rule.
 - The runner shall record each verdict through the runtime `record_campaign_verdict` operation, so
-  the counters follow quire-contract-runtime FR-004: a passed or failed case counts in `accepted`, a
+  the counters follow filament-contract-runtime FR-004: a passed or failed case counts in `accepted`, a
   failed case also counts in `failed`, and a rejected precondition counts in `rejected`.
 - If recording refuses the verdict with an identity mismatch, then the runner shall fail the campaign
   with that error and record nothing further.
 - The runner shall not use the runtime `adapt_to_proptest` or `adapt_to_proptest_and_record`
-  operations, which map a rejection only to a proptest rejection (quire-contract-runtime FR-003);
+  operations, which map a rejection only to a proptest rejection (filament-contract-runtime FR-003);
   this runner tests oracle conformance, where an expected rejection is the correct oracle result
   rather than a case to skip.
 - When the observed verdict equals the verdict the case's tag predicts, the runner shall return a
@@ -216,7 +216,7 @@ until specified.
 - The runner shall never return a proptest global reject or an explicit discard, so framework
   exhaustion cannot come from rejected preconditions.
 - The runner's passing result shall not count a rejected precondition as contract success: the
-  rejection stays counted only in `rejected`, preserving the quire-contract-runtime interface-001
+  rejection stays counted only in `rejected`, preserving the filament-contract-runtime interface-001
   invariant that rejected preconditions are never successful evidence.
 - The census runner shall evaluate every in-domain census case exactly once, in census order, without
   proptest sampling or shrinking.
@@ -225,7 +225,7 @@ until specified.
   pair `(discarded, attempted)` or `(rejected, attempted)` over the existing `attempted` denominator
   from interface-001 `accounting_unit`.
 - When `attempted` is zero, `discard_rate()` and `rejection_rate()` shall return `None`.
-- When the report snapshot is `at_limit` (quire-contract-runtime FR-004), `discard_rate()` and
+- When the report snapshot is `at_limit` (filament-contract-runtime FR-004), `discard_rate()` and
   `rejection_rate()` shall return `None`, because a saturated counter is not an exact count.
 - The generator shall emit the rate accessors on the strategy-bundle summary type only, leaving the
   harness summary unchanged.
@@ -271,15 +271,15 @@ producer and artifact association required by FR-004.
 
 | ID | Criteria | Verification |
 |----|----------|--------------|
-| FR-011-AC-1 | PLANNED (IR-364). Over V2 selected claims, a QSL-produced `VersionUnchanged` (`Postcondition`) `Broad` campaign records `Holds` cases as `Passed` and `Violated` cases as `FailedPostcondition` and passes; a `Precondition` fixture records `Violated` cases as `RejectedPrecondition` in `rejected` and passes with zero proptest global rejects; the `amount < 7` `Invariant` records `Violated` cases as `FailedPostcondition`. | Test (TC-020) |
+| FR-011-AC-1 | PLANNED (IR-364). Over V2 selected claims, a FSL-produced `VersionUnchanged` (`Postcondition`) `Broad` campaign records `Holds` cases as `Passed` and `Violated` cases as `FailedPostcondition` and passes; a `Precondition` fixture records `Violated` cases as `RejectedPrecondition` in `rejected` and passes with zero proptest global rejects; the `amount < 7` `Invariant` records `Violated` cases as `FailedPostcondition`. | Test (TC-020) |
 | FR-011-AC-2 | PLANNED (IR-364). A V2 comparison oracle deliberately swapped for its negation fails each campaign with `ConformanceMismatch` carrying the case values, expected tag, and observed verdict kind. | Test (TC-020) |
 | FR-011-AC-3 | PLANNED (IR-364). The census runner evaluates each of the 10 `VersionUnchanged` in-domain census cases exactly once, in census order, and evaluates none of the out-of-domain cases. | Test (TC-020) |
 | FR-011-AC-4 | PLANNED (IR-364). A campaign over a report seeded with fixed prior counts returns `discard_rate() == Some((discarded, attempted))` and `rejection_rate() == Some((rejected, attempted))` with those exact values, a fresh zero-attempt summary returns `None` for both, and a runtime snapshot whose counters are `at_limit` returns `None` for both through the generated snapshot-summary operation. | Test (TC-020) |
 | FR-011-AC-5 | PLANNED (IR-364). A fresh 10,000-case `Broad` campaign for each fixture returns `discard_rate() == Some((0, attempted))` with `attempted > 0`, passes a zero discard ceiling, and does not end `Exhausted`. | Test (TC-020) |
-| FR-011-AC-10 | PLANNED. The QSL driver forwards only FR-331 items accepted by `export_bindings`; its `UnknownItem`, `Unbound`, and `Fault` results stay driver-side. An out-of-driver non-claim or absent occurrence returns CG `StrategyErrorCode::MissingClaimOccurrence`, and a selected claim with an unbound referenced model element returns `StrategyErrorCode::UnboundModelElement` naming it. Neither produces an artifact or verdict, and a matched sibling remains unaffected. | Test (TC-020) |
+| FR-011-AC-10 | PLANNED. The FSL driver forwards only FR-331 items accepted by `export_bindings`; its `UnknownItem`, `Unbound`, and `Fault` results stay driver-side. An out-of-driver non-claim or absent occurrence returns CG `StrategyErrorCode::MissingClaimOccurrence`, and a selected claim with an unbound referenced model element returns `StrategyErrorCode::UnboundModelElement` naming it. Neither produces an artifact or verdict, and a matched sibling remains unaffected. | Test (TC-020) |
 | FR-011-AC-12 | Repeated numeric runner generation with the same admitted package, selected driver-bound FR-331 claim, checked clause, and campaign policy yields byte-identical source and map. | Test (TC-020) |
 | FR-011-AC-13 | PLANNED (IR-1072). The public V2 selected-claim entry accepts an admitted `CheckedPackageV2` and a typed complete claim key (checked clause id, claim owner node id, authentic `claim` `CheckedOccurrence`) without a second caller-supplied owner; a matching key selects only that claim and its exact checked point. With the same clause and occurrence but a different claim owner, the entry returns a distinct typed V2 diagnostic retaining Contract IR `CheckedExecutionPointRefusal::MissingClaimOccurrence` and the supplied clause, owner, and occurrence, and publishes no artifact. The V1 `BoundPackage` entry and `StrategyDiagnostic` are unchanged. | Test |
-| FR-011-AC-14 | PLANNED (IR-1070). For selected authentic `claim` occurrences of distinct V2 invariant clause nodes whose condition and anchor are equal but whose accepted points are respectively `initialization{name: "startup"}` and `handler{name: "tick"}`, each constructed verdict carries the exact point of its selected node through the FR-058 accessor and injective runtime rendering. The nodes and otherwise identical packages have distinct identities; changing only the accepted handler name changes its rederived node and package identities and runtime point. Precondition and postcondition claims preserve their accepted `pre` and `post` points, including their operation names (QSpec FR-322-AC-131, FR-341-AC-14, FR-342-AC-10; IR FR-058-AC-9). Two authentic claims of one pointed node return its one identical point; no claim occurrence supplies a second point. | Test (TC-020) |
+| FR-011-AC-14 | PLANNED (IR-1070). For selected authentic `claim` occurrences of distinct V2 invariant clause nodes whose condition and anchor are equal but whose accepted points are respectively `initialization{name: "startup"}` and `handler{name: "tick"}`, each constructed verdict carries the exact point of its selected node through the FR-058 accessor and injective runtime rendering. The nodes and otherwise identical packages have distinct identities; changing only the accepted handler name changes its rederived node and package identities and runtime point. Precondition and postcondition claims preserve their accepted `pre` and `post` points, including their operation names (FSpec FR-322-AC-131, FR-341-AC-14, FR-342-AC-10; IR FR-058-AC-9). Two authentic claims of one pointed node return its one identical point; no claim occurrence supplies a second point. | Test (TC-020) |
 | FR-011-AC-15 | PLANNED (IR-1070). An absent checked clause returns `StrategyErrorCode::UnknownClause`, a non-state clause returns `StrategyErrorCode::UnsupportedClauseKind`, and a wrong-role, wrong-ordinal, or other-node occurrence returns `StrategyErrorCode::MissingClaimOccurrence`, each before artifact publication and without substituting another claim or node's point. An authentic claim of a separate V2 clause node whose optional point is absent returns `StrategyErrorCode::MissingExecutionPoint` without borrowing a pointed sibling node's point. A renderer mutant changing only the selected point returns `StrategyErrorCode::ExecutionPointMismatch` before publication. Two authentic claims of one pointed node use the same point; clause kind and anchor never synthesize a missing point. | Test (TC-020) |
 | FR-011-AC-16 | PLANNED (IR-1124; depends on IR-1072 and FR-008). A public V2 strategy request over an admitted checked package and one authentic selected claim produces a complete source, map, census and numeric runner bundle whose selected clause, owner, occurrence, package revision, comparison and runner identities agree exactly. The runner executes the FR-009 constructive population and FR-010 census with the selected V2 oracle; source inspection finds no V1 `BoundPackage`, V1 `ClauseRef`, `generate_bound_strategy` call or V1-to-V2 adapter in this V2 path, while the selected V2 checked clause key is retained. | Test |
 | FR-011-AC-17 | PLANNED (IR-1124). Independently injected unknown clause, unsupported kind, wrong owner/role/ordinal, missing accepted point, FR-008 comparison refusal, empty population, identity mismatch, point-render mutant, invalid generated syntax and resource overflow each return a typed diagnostic with the selected key and available structural locus, publish zero artifacts and start no campaign. Pairwise overlapping defects return the first cause in Behavior order; a valid sibling still publishes its complete bundle. | Test |
@@ -290,18 +290,18 @@ producer and artifact association required by FR-004.
 
 ## Open Questions
 
-- OQ-2 (resolved, requirement and revision identity): the QSL driver's selected FR-331 bound
+- OQ-2 (resolved, requirement and revision identity): the FSL driver's selected FR-331 bound
   `claim` supplies its authentic occurrence key; after process-owner comparison or linked
-  single-package admission, the same admitted `CheckedPackageV2::name()` plus complete `lock()` supplies the revision. A changed name or lock changes the structural package identity; an unchanged identity still requires the admitted-body comparison. QSL supplies no separate
+  single-package admission, the same admitted `CheckedPackageV2::name()` plus complete `lock()` supplies the revision. A changed name or lock changes the structural package identity; an unchanged identity still requires the admitted-body comparison. FSL supplies no separate
   requirement-revision artifact, and CG creates none. These identities do not authenticate the
   producer/run/artifact association of FR-004-AC-10 and AC-14.
 
 ## Dependencies
 
 - **Upstream**: [FR-002](./FR-002-tristate-proptest.md) campaign policy and conclusions;
-  quire-contract-runtime FR-001, FR-003, FR-004, and interface-001;
+  filament-contract-runtime FR-001, FR-003, FR-004, and interface-001;
   QSL-1082 (accepted binding point on the V2 carrier; planned prerequisite);
-  IR-1013 / Contract IR FR-058 (typed accessor for the accepted QSL binding point keyed by admitted
+  IR-1013 / Contract IR FR-058 (typed accessor for the accepted FSL binding point keyed by admitted
   package, checked clause id, and authentic claim occurrence; planned,
   blocks this V2 execution-point slice);
   [FR-008](./FR-008-bound-domain-strategy-admission.md) (the selected claim's V2 comparison
@@ -312,17 +312,17 @@ producer and artifact association required by FR-004.
 - **Downstream**: [FR-012](./FR-012-constraint-preserving-shrinking.md),
   [FR-013](./FR-013-it010-consumable-output.md),
   [TC-020](../matrix/TC-020-numeric-harness-campaigns.md).
-- **Driver boundary**: QSL ADR-017 AR-4 and FR-307 put `export_bindings` after S4 and before
+- **Driver boundary**: FSL ADR-017 AR-4 and FR-307 put `export_bindings` after S4 and before
   FR-331 request construction. The linked driver exports and emits the same S4 package, then
   retains E5's admission of those bytes; the process frame carries a reader-validated package id.
   CG receives the bound claim, checks the admitted package's occurrence and V2 relation, and on
-  the process route compares that frame id; it adds no QSL export facade or copied relation type.
+  the process route compares that frame id; it adds no FSL export facade or copied relation type.
 
 ## Scoped evidence status (IR-1316)
 
 FR-011-AC-12 is backed by
 `tests/it/v2_numeric_strategy.rs::v2_numeric_bundle_keeps_selected_identity_and_runs_both_modes`:
-the same QSL-produced admitted package, selected authentic claim and policy produce equal complete
+the same FSL-produced admitted package, selected authentic claim and policy produce equal complete
 source/map artifacts; the generated consumer executes its population and census runners.
 
 The remaining scoped rows stay Planned:

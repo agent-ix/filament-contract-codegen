@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Agent-IX
 
-//! Convert an admitted IR node identity to the exact structural key used by QSL.
+//! Convert an admitted IR node identity to the exact structural key used by FSL.
 
 use quire_contract_model::{CheckedNodeId, CheckedNodePathSegment, CheckedOperandEntry};
 use quire_exact::{NodeKey, PathSegment};

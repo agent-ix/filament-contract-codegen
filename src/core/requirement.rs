@@ -1,16 +1,16 @@
-//! The driver's typed projection of QSL's per-occurrence requirement records (FR-022, IR-304).
+//! The driver's typed projection of FSL's per-occurrence requirement records (FR-022, IR-304).
 //!
-//! One application node can carry several QSL occurrences, each with its own result bound and
+//! One application node can carry several FSL occurrences, each with its own result bound and
 //! path condition, so a node id alone cannot say which claim an item makes. These are CG-owned
-//! types: the driver projects QSL's checked values into them at the boundary, and CG takes no
-//! QSL library dependency for them. Node ids are in the authenticated V2 source frame.
+//! types: the driver projects FSL's checked values into them at the boundary, and CG takes no
+//! FSL library dependency for them. Node ids are in the authenticated V2 source frame.
 
 use std::collections::BTreeMap;
 
 use quire_contract_model::{CheckedNodeId, CheckedOccurrenceRole, ContractOccurrenceKeyV1};
 use serde::Serialize;
 
-/// CG's key for one QSL `OccurrenceKey`, field for field the IR `ContractOccurrenceKeyV1`.
+/// CG's key for one FSL `OccurrenceKey`, field for field the IR `ContractOccurrenceKeyV1`.
 // Implements: FR-022
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct RequirementOccurrence {
@@ -32,7 +32,7 @@ impl From<&ContractOccurrenceKeyV1> for RequirementOccurrence {
     }
 }
 
-/// One QSL `PathGuard`: the guard's `expression` occurrence and its required outcome.
+/// One FSL `PathGuard`: the guard's `expression` occurrence and its required outcome.
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct RequirementGuard {
     /// The guard expression's occurrence.
@@ -41,10 +41,10 @@ pub struct RequirementGuard {
     pub holds: bool,
 }
 
-/// The projection of one QSL `RequirementRecord`.
+/// The projection of one FSL `RequirementRecord`.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RequirementRecordInput {
-    /// QSL's `ResultBound` type node: the semantic type of the selected narrow, or of the
+    /// FSL's `ResultBound` type node: the semantic type of the selected narrow, or of the
     /// application when there is none.
     pub result_bound: CheckedNodeId,
     /// The direct conversion occurrence, when the result is narrowed.
@@ -79,7 +79,7 @@ impl RequirementRecords {
     }
 }
 
-/// The projection of the QSL `RequirementItem` at one request index.
+/// The projection of the FSL `RequirementItem` at one request index.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RoutedRequirement {
     /// The item's occurrence key.

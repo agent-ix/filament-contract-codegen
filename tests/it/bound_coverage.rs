@@ -1,10 +1,10 @@
 //! Synthetic projections and exports are explicit; native control below uses real LLVM.
 use crate::scratch_crate::{runtime_dependency, write_manifest};
-use ix_trace_rs::trace;
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     analyze_bound_coverage, generate_bound_oracles, ArtifactBytes, BoundCoverageInputs,
     BoundOracleGeneration,
 };
+use ix_trace_rs::trace;
 use quire_contract_model::{BoundPackage, EXECUTABLE_PROJECTION_FORMAT};
 use serde_json::{json, Value};
 
@@ -112,7 +112,7 @@ fn export(generated: &BoundOracleGeneration) -> Value {
     let mut files = Vec::new();
     if let BoundOracleGeneration::Generated(g) = generated {
         for clause in g.clauses() {
-            let map: Vec<quire_contract_codegen::SourceRegion> =
+            let map: Vec<filament_contract_codegen::SourceRegion> =
                 serde_json::from_str(&clause.bundle().source_map.contents).unwrap();
             let mut segments = Vec::new();
             for region in map {
@@ -155,7 +155,7 @@ fn analyze(
 
 fn schema() -> jsonschema::JSONSchema {
     let schema: Value =
-        serde_json::from_str(quire_contract_codegen::BOUND_COVERAGE_SCHEMA).unwrap();
+        serde_json::from_str(filament_contract_codegen::BOUND_COVERAGE_SCHEMA).unwrap();
     jsonschema::JSONSchema::options()
         .with_draft(jsonschema::Draft::Draft202012)
         .compile(&schema)
@@ -202,7 +202,7 @@ fn resource_profile_and_path_refusals_preserve_no_classifications() {
     let artifacts = inventory(&generated);
     let mut unsupported = export(&generated);
     unsupported["type"] = json!("other");
-    let oversized = vec![b' '; quire_contract_codegen::MAX_COVERAGE_BYTES + 1];
+    let oversized = vec![b' '; filament_contract_codegen::MAX_COVERAGE_BYTES + 1];
     for bytes in [serde_json::to_vec(&unsupported).unwrap(), oversized] {
         let result = analyze(&package, &generated, &artifacts, Some(&bytes));
         assert_eq!(result["state"], "unsupported");
@@ -265,7 +265,7 @@ fn complete_bound_package_is_observed_against_actual_native_llvm() {
         panic!("native expected executable")
     };
     let source_root = root.join("package");
-    quire_contract_codegen::write_bundle_atomic(g.bundle(), &source_root).unwrap();
+    filament_contract_codegen::write_bundle_atomic(g.bundle(), &source_root).unwrap();
     let mut modules = String::from("#![allow(dead_code)]\n");
     let mut calls = String::from("#[test] fn native_run() {\n");
     for (index, clause) in g.clauses().iter().enumerate() {
@@ -385,7 +385,7 @@ fn complete_bound_package_is_observed_against_actual_native_llvm() {
     assert_eq!(report["clauses"][5]["consequents"][0]["count"], 1);
     let mut changed: Value = serde_json::from_slice(&coverage).unwrap();
     let clause = &g.clauses()[5];
-    let map: Vec<quire_contract_codegen::SourceRegion> =
+    let map: Vec<filament_contract_codegen::SourceRegion> =
         serde_json::from_str(&clause.bundle().source_map.contents).unwrap();
     let probe = map[2].probe.unwrap();
     let expected_path = source_root.join(&clause.bundle().rust.path);
@@ -622,7 +622,7 @@ fn aggregate_consequent_cannot_outcount_its_loop_free_oracle() {
     let BoundOracleGeneration::Generated(g) = &generated else {
         unreachable!()
     };
-    let map: Vec<quire_contract_codegen::SourceRegion> =
+    let map: Vec<filament_contract_codegen::SourceRegion> =
         serde_json::from_str(&g.clauses()[0].bundle().source_map.contents).unwrap();
     let probe = map[2].probe.unwrap();
     let segment = coverage["data"][0]["files"][0]["segments"]
