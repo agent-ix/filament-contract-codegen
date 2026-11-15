@@ -56,3 +56,14 @@ whole `--test it` 1097 passed, 2 failed (known `oracle_generation::tc_001_...` a
 not re-run on main). All `layout::` and `cover_last::` tests pass, as do the six new default-lane
 control tests. The Kani lane was not re-run by the reviewer. FND-001 should be
 fixed in this PR together with the gap-analysis status findings; FND-002 can ride the same round.
+
+## Dispositions
+
+Round 1, checked against the fix commits 5ff50540 and 1733eb3e (head 1733eb3e).
+
+| FND | outcome | reason |
+|---|---|---|
+| FND-001 | fixed | `control_shape_tests` (src/kani/generate/clause/v2.rs) tests `control_operands` for `IfBranchNotNativeScalar`, `CaseUnionPayloadNotSupported`, `CaseArmNotNativeScalar`, `CaseScrutineeNotParameter` and the accepted case/if shapes over an FSL-compiled package (`src/core/ir/clause_control_fixture.rs`); `src/core/ir/clause_tests.rs` tests `union_members`, `case_term` (declaration order from source order C, A, B; payload, duplicate, missing arm, Pre side, foreign scrutinee) and `Reader::binder`. Each reason now has a test that fails if its branch is deleted or swapped. |
+| FND-002 | fixed | `a_binder_read_resolves_to_the_innermost_binding` retagged to FR-015-AC-152 only; the new `a_parameter_read_resolves_to_the_innermost_binder_of_its_declared_name` exercises `Reader::binder` (none, innermost of two, other name does not hide) and carries the AC-170/AC-173 tags. |
+
+Round 1 gates at 1733eb3e, run by the reviewer in its own worktree: `cargo fmt --check` ok; clippy `--locked --all-targets -- -D warnings` ok; `make spec` rc 0; whole `--lib` 598 passed, 1 failed (known `native_meter::routed_native_oracle_preserves_denial_cancellation_counters_and_refusal`), and `role_parity_tests::clause_planning_and_reading_share_one_graph_walk` plus the new `control_shape_tests` and `clause::tests` pass; whole `--test it` 1098 passed, 2 failed (known `oracle_generation::tc_001_...` and `tc_029_authoritative_fspec_recursive_items_generate_through_reader`); all 15 `layout::` and `cover_last::` tests pass. The reviewer did not re-run the Kani lane; the two new installed runs are as recorded in `docs/qualification/ir1447-kani-control-clause-runs.md`.

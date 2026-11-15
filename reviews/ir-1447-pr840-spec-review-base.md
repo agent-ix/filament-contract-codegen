@@ -45,3 +45,11 @@ touches; AC-170/173 were left with the old style (FND-001, low). Statuses agree 
 FR-025, TC-025, TC-036 and tests.md; the Implemented overclaims are recorded in the gap-analysis
 SpecReview. AC-156 keeps a Kani version in its criterion text from before this PR (not
 introduced here); the new run record carries none.
+
+## Dispositions
+
+Round 1, checked against the fix commits 5ff50540 and 1733eb3e (head 1733eb3e).
+
+| FND | outcome | reason |
+|---|---|---|
+| FND-001 | fixed | AC-170 and AC-173 now read "the constructed package ... keeps FSL's mathematical-integer arithmetic, so no node carries a result bound and the kernel refuses none of them", matching AC-152/153/154/165. |

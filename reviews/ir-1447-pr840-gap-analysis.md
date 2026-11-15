@@ -65,3 +65,17 @@ needs its status wording narrowed (FND-003). AC-160 and AC-166 have untested cla
 FND-005). The PARTIAL groups are honest in substance and consistent across FR-015, FR-025,
 TC-025, TC-036 and tests.md, apart from the "unit-level only" wording (FND-006) and owner naming
 (FND-007). Not mergeable until FND-001 to FND-006 are fixed in this PR.
+
+## Dispositions
+
+Round 1, checked against the fix commits 5ff50540 and 1733eb3e (head 1733eb3e).
+
+| FND | outcome | reason |
+|---|---|---|
+| FND-001 | fixed | AC-168 now says the executed Kani verdict is for the equivalent clause `let e = amount + 1000 in (if amount < 1000 then amount else e) >= 0` (strict `let` evaluates the never-selected branch value), with the hand-edited oracle as a host stop probe only. `tc_025_installed_eager_branch_equivalent_is_falsified_at_the_postcondition` runs it through `run_installed`, asserting Falsified at the postcondition step with an in-domain witness (record: 109.3 s, amount = 31). Accepted as satisfying the control: in the healthy harness the else-branch probe is guarded by its selection and never fires, so the eager-oracle mutant's only failing check is the postcondition on `Err(IntegerOutOfDomain)`, the same check and outcome the equivalent package produces on every draw. |
+| FND-002 | fixed | AC-172 now names the equivalent clause `result = (amount >= 0)` as the executed mutant verdict (Verified, 6.1 s) with the hand-edited oracle as host stop probe only; `tc_025_installed_clause_without_the_unread_initializer_verifies`. Accepted: in the healthy harness with a skip-initializer oracle, the arithmetic probe of `amount + 1` checks the kernel against the i128 domain independently of the oracle (Refused and out of domain agree at 1000), the result comparison is gated off by `completed_prefix`, and the postcondition sees `Ok(true)`, so that mutant harness is Verified exactly as the equivalent package is. |
+| FND-003 | fixed | AC-169 now reads "Only the stop was run, as a host probe of the hand-edited generated oracle (`Ok(false)` at `amount = 1000`); the mutant's Kani verdict is not run"; the "also Falsified" claim is gone. Stays Implemented: the healthy verdict and both stops are executed and the AC says the stop is the only discriminator. |
+| FND-004 | fixed | `tc_025_a_let_binding_a_non_native_value_is_a_typed_control_refusal_and_spares_a_sibling` covers text and option families, asserts reason, identity, `node_id == clause` and that `control_node_id` holds a `quire.op.control.let` application, and sends a two-item request whose supported sibling keeps its harness. Status cites the test file, not the run record. |
+| FND-005 | fixed | AC-166 is now PARTIAL: operator-first, control-first, two-control and option-parameter `let` (`tc_025_a_let_of_an_option_parameter_is_a_control_refusal_not_an_option_refusal`) are tested; the `option.value` clause is named as untested because the FSL checker refuses `value(...)` over the nullable fixture parameter. TC-025 step 57 says the same. |
+| FND-006 | fixed | New tests: `control_shape_tests` in v2.rs (one per reason, all four refusal reasons plus the accepted case/if shapes) over an FSL-compiled function package, and `clause_tests.rs` (`union_members`, `case_term` order/payload/duplicate/missing/side/foreign, `Reader::binder`). The PARTIAL notes now describe exactly those tests and say no end-to-end clause fixture exists. |
+| FND-007 | fixed | AC-154 and AC-155 now read "unowned, planner to assign". |
