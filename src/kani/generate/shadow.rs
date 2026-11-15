@@ -433,6 +433,11 @@ pub(crate) fn generate_with(
         .map_err(|violation| ShadowRefusal::SourceCheck {
             violation: format!("{violation:?}"),
         })?;
+    if source_check::contains_loop(&rust.contents) {
+        return Err(ShadowRefusal::SourceCheck {
+            violation: "the shadow holds a loop construct".to_owned(),
+        });
+    }
     let declared_draws: Vec<(String, i128, i128)> = leaves
         .iter()
         .map(|leaf| {

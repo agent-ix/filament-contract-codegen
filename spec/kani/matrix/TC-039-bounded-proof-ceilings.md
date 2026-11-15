@@ -216,7 +216,29 @@ memory-overage, observer, procfs, ancestry and gated-startup fixtures: FR-028-AC
 environmental. The identity-ceiling and expired-deadline fixtures above are unaffected. Steps 23 to 26 are implemented under
 IR-1510: `execute.rs` (`identity_ceilings_govern_execution_and_the_runner_enforces_no_memory_cap`, `the_evidence_records_the_named_peak_the_environment_provides_in_bytes`, `an_environment_memory_kill_is_classified_from_the_report_only`), `two_phase_tests.rs` (`a_witness_phase_killed_by_the_environment_is_no_verdict`, `a_witness_report_stating_out_of_memory_is_failed_without_counterexample`) and `tests/it/kani_run_scan.rs`.
 
-Steps 5 to 9 and steps 11 to 18 and 20 to 22 remain planned. The ceiling slice supplies no shadow,
-refinement obligation, proof strength, family/proof-subject field or tool-version evidence. In
-particular, process-tree memory enforcement does not complete the shadow contract or IR-241's
-stand-in refinement and seeded-mutant obligations.
+Steps 5 to 9 remain planned: the ceiling slice supplies no family or proof-subject field on the
+other identities.
+
+Steps 11 to 18, 20 and 22 are implemented over the stand-in family (IR-264 PR2), in
+`src/kani/generate/shadow/tests.rs`: the shadow generator and its parsed-source check
+(`tc_039_the_shadow_source_has_no_runtime_path_no_stub_and_no_assumption_beyond_its_domain`), the
+obligation (`tc_039_the_obligation_names_its_parts_and_the_abstraction_module_is_imported_by_none`),
+the native refinement over a mutable stand-in subject
+(`tc_039_each_production_divergence_is_a_recorded_disagreement_never_skipped`), the case plan
+(`tc_039_a_refinement_domain_is_exhaustive_up_to_the_cap_and_sampled_beyond_it`,
+`tc_039_a_native_sampled_run_records_class_count_cases_and_seed`), the strengths
+(`tc_039_proof_strength_follows_the_subject_and_the_refinement_run`), the identity and its helpers
+(`tc_039_the_identity_lists_what_the_shadow_abstracts_and_an_undischarged_one_is_refused`,
+`tc_039_a_value_bearing_helper_mutant_fails_a_check_and_an_order_only_permutation_none`), the
+domain and shape refusals (`tc_039_a_refinement_domain_narrower_than_the_drawn_domain_is_refused`,
+`tc_039_unsupported_shapes_are_refused_without_a_harness_or_a_production_fallback`), the
+installed-backend shadow runs (`tc_039_installed_kani_verifies_the_shadow_and_falsifies_its_mutant_in_two_phases`)
+and the refinement at a ceiling or ended by a signal
+(`tc_039_a_refinement_at_a_ceiling_or_ended_by_a_signal_is_inconclusive_with_its_evidence`).
+The installed-backend run took about 2 s of wall time with a cgroup `memory.peak` of 187,551,744 B
+(one cgroup, swap 0, the three proofs and the test binary together).
+
+Still partial: step 21 has the per-phase vectors but not the tool versions in the shadow run's own
+evidence (owner IR-241 follow-up); the strength is not yet a member of the terminal value, the
+composite observables, the `evaluate_record` construction refusals and FR-018-AC-23's independent
+read of the closure belong to the composite family (IR-264 PR1 for the oracle side, PR3).

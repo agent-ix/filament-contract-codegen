@@ -169,6 +169,14 @@ fn tc_039_the_shadow_source_has_no_runtime_path_no_stub_and_no_assumption_beyond
         ..Hooks::default()
     });
     assert!(relation.contains("Assumption"));
+    let looping = violation(&Hooks {
+        shadow_body: Some(
+            "let mut n = 0; loop { n += 1; if n > 2 { break; } }\n        (true, pair_count())"
+                .to_owned(),
+        ),
+        ..Hooks::default()
+    });
+    assert!(looping.contains("loop"));
     let one_sided = violation(&Hooks {
         body_extra: "        kani::assume(left >= 0_i64);\n".to_owned(),
         ..Hooks::default()

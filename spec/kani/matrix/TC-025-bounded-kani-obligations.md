@@ -505,8 +505,8 @@ referenced operators and an inline Boolean literal. Other V2 controls retain the
     does not satisfy this control (FR-015-AC-40, FR-015-AC-41).
     Each unconstrained mutant run is the two-phase run of FR-017-AC-63 (IR-1022): its witness
     phase needs the trace mode. On the meter harness the traced refusal-order mutant peaked at
-    19,671,392,256 B on a Peter-authorised 40 GiB probe and exhausted 16 GiB with no verdict (filament-exact TC-931
-    Status and IR-844); no healthy-proof fit is claimed. The AC-41, AC-119 and AC-126 harnesses are unmeasured, so their mutant
+    19,671,392,256 B on a Peter-authorised 40 GiB probe and exhausted 16 GiB with no verdict (cited from
+    filament-exact TC-931 Status and IR-844; unverified here, not re-measured by CG); no healthy-proof fit is claimed. The AC-41, AC-119 and AC-126 harnesses are unmeasured, so their mutant
     controls may not fit 16 GiB. A witness phase stopped by the ceiling is `Inconclusive` and
     leaves the control unmet; no ceiling raise, smaller range or weaker assertion may stand in.
     The package comes from FSL's facade on source, never a copied fixture
