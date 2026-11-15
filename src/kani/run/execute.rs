@@ -1798,7 +1798,7 @@ mod tests {
         fs::write(crate_directory.join("src/lib.rs"), "").unwrap();
         if let Some(stale) = stale {
             fs::write(
-                target_directory.join("quire-kani-report-other-run.json"),
+                target_directory.join("filament-kani-report-other-run.json"),
                 stale,
             )
             .unwrap();
@@ -1842,7 +1842,7 @@ mod tests {
         if stale.is_some() {
             assert!(
                 target_directory
-                    .join("quire-kani-report-other-run.json")
+                    .join("filament-kani-report-other-run.json")
                     .is_file(),
                 "another run's report is not this run's to remove"
             );
@@ -1851,7 +1851,7 @@ mod tests {
             let leftovers = fs::read_dir(&target_directory)
                 .unwrap()
                 .filter_map(Result::ok)
-                .filter(|entry| entry.file_name() != "quire-kani-report-other-run.json")
+                .filter(|entry| entry.file_name() != "filament-kani-report-other-run.json")
                 .count();
             assert_eq!(leftovers, 0, "a run removes its own report file");
         }
@@ -1923,7 +1923,7 @@ mod tests {
         );
         let report = arguments.last().unwrap();
         assert!(
-            report.starts_with("/target/quire-kani-report-") && report.ends_with(".json"),
+            report.starts_with("/target/filament-kani-report-") && report.ends_with(".json"),
             "{report}"
         );
         // Two launches into one target directory never name the same report file.
@@ -3006,7 +3006,7 @@ exit 0
     fn collection_totality_controls_single_readonly_and_batch_evidence() {
         use serde_json::json;
 
-        let harness = runner_precondition_fixture("quire.op.collection.forall");
+        let harness = runner_precondition_fixture("filament.op.collection.forall");
         let marker = harness.identity.collection_precondition.as_ref().unwrap();
         assert_eq!(
             harness
@@ -3285,7 +3285,7 @@ exit 0
             Err(KaniExecutionRefusal::HarnessProvenanceMismatch { .. })
         ));
 
-        let other = runner_precondition_fixture("quire.op.collection.exists");
+        let other = runner_precondition_fixture("filament.op.collection.exists");
         let other_path = format!(
             "{}::{}",
             other.identity.module_symbol, other.identity.harness_symbol
@@ -3336,7 +3336,7 @@ exit 0
     #[trace("FR-015-AC-9", "TC-025")]
     #[test]
     fn a_tampered_witness_vector_of_a_clause_harness_is_a_provenance_mismatch() {
-        let harness = runner_precondition_fixture("quire.op.collection.forall");
+        let harness = runner_precondition_fixture("filament.op.collection.forall");
         assert!(KaniExecutableHarness::from(&harness).has_valid_provenance());
         let mut tampered = harness.clone();
         tampered.identity.witness_options.push("--extra".to_owned());
@@ -3628,7 +3628,7 @@ exec sleep 45
         }
     }
 
-    /// Reversing real caller events reverses the launch/evidence/IR/QSL cause; no report exists.
+    /// Reversing real caller events reverses the launch/evidence/IR/FSL cause; no report exists.
     #[trace("FR-040-AC-1", "FR-040-AC-2", "FR-040-AC-6")]
     #[test]
     fn live_cancellation_preserves_first_event_through_ir_and_qsl() {
@@ -3892,7 +3892,7 @@ exec sleep 45
             );
             assert!(
                 export[0].starts_with(&format!(
-                    "{}/quire-kani-report-",
+                    "{}/filament-kani-report-",
                     after.target_directory.display()
                 )),
                 "{export:?}"
@@ -5333,7 +5333,9 @@ printf '%s' "$!" > "$CALLS.child"
                 );
                 stripped.push(evidence);
             }
-            assert!(paths.iter().all(|path| path.contains("quire-kani-report-")));
+            assert!(paths
+                .iter()
+                .all(|path| path.contains("filament-kani-report-")));
             assert_ne!(
                 paths[0], paths[1],
                 "each run exports to its own report path"

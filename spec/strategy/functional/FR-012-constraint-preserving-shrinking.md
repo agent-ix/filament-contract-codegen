@@ -3,13 +3,13 @@ id: FR-012
 title: "Preserve numeric constraints while shrinking"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/StR-001
+  - target: ix://agent-ix/filament-contract-codegen/StR-001
     type: satisfies
-  - target: ix://agent-ix/quire-contract-codegen/FR-009
+  - target: ix://agent-ix/filament-contract-codegen/FR-009
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-011
+  - target: ix://agent-ix/filament-contract-codegen/FR-011
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/interface-001
+  - target: ix://agent-ix/filament-contract-codegen/interface-001
     type: implements
 ---
 # FR-012: Preserve numeric constraints while shrinking

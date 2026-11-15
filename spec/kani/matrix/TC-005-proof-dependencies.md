@@ -3,7 +3,7 @@ id: TC-005
 title: "Verify Kani proof dependency closure"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-015
+  - target: ix://agent-ix/filament-contract-codegen/FR-015
     type: verifies
 ---
 # TC-005: Verify Kani proof dependency closure
@@ -19,7 +19,7 @@ proof-family and installed-backend controls remain in TC-025.
 
 ## Test Procedure
 
-Use an admitted QSL V2 precondition through the public Kani obligation request.
+Use an admitted FSL V2 precondition through the public Kani obligation request.
 Declare empty and duplicate identities, a state or path inconsistent with its
 kind, and a non-`Required` kind. Require typed invalid-request records and no
 harness. Declare two passed required dependencies, then change one to missing

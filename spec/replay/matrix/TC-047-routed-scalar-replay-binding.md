@@ -3,11 +3,11 @@ id: TC-047
 title: "Check public routed scalar lowering replay and staged-content binding"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-032
+  - target: ix://agent-ix/filament-contract-codegen/FR-032
     type: verifies
-  - target: ix://agent-ix/quire-contract-codegen/FR-029
+  - target: ix://agent-ix/filament-contract-codegen/FR-029
     type: references
-  - target: ix://agent-ix/quire-contract-codegen/FR-022
+  - target: ix://agent-ix/filament-contract-codegen/FR-022
     type: references
 ---
 # TC-047: Check public routed scalar lowering replay and staged-content binding
@@ -18,7 +18,7 @@ Planned public-consumer coverage of
 [FR-032](../functional/FR-032-routed-scalar-replay-binding.md), distinguishing lowering parity
 failure from source-property refutation. Partial native evidence exists (IR-1184: #702, #741,
 #757, #481): `scalar_playback.rs`, `scalar_literal_operands.rs`, `scalar_replay_binding.rs` and
-`scalar_replay_residuals.rs` drive the real routed generation, the real QSL operator facade and
+`scalar_replay_residuals.rs` drive the real routed generation, the real FSL operator facade and
 a compiled generated artifact, without a Kani run. `scalar_settlement.rs` implements the
 settlement steps 10 to 14 (IR-631), and `kani_obligations.rs` implements the descriptor-level
 bounded-addition check of step 2. `scalar_replay_acceptance.rs` implements the setup-precedence (step 3, with the absent capability last), single-member binding (step 6), stale-dependency and invented-membership (the membership half of step 8, FR-032-AC-12) checks. Step 9 (FR-032-AC-19) is implemented by IR-304 slice (b) in `scalar_playback.rs` and `requirement_records.rs`. Steps 1 and 7, the rest of step 8 (the canonical preimage members, the unencodable-preimage `IdentityEncodeError` path and a changed range or kind under a retained digest) remain
@@ -26,13 +26,13 @@ Planned. The real-Kani run of step 2 is implemented (IR-631) by the ignored Kani
 `a_real_falsified_native_mutant_plans_observes_and_settles_diverged_failed` in
 `scalar_replay_real_kani_private.rs`: real Kani falsifies the re-sealed native arithmetic mutant,
 `plan` decodes its playback, the cfg(test) CG helper (not the driver) observes the same staged bytes natively, and the genuine
-QSL facade and converter reach `Parity(Diverged)` and `Failed`
+FSL facade and converter reach `Parity(Diverged)` and `Failed`
 (`docs/qualification/ir631-scalar-replay-real-kani-evidence.md`). No driver-run proof-driven replay
 is claimed.
 
 ## Test Procedure
 
-1. Obtain a real QSL-emitted checked package for `x + 1` with input `Int[0,9]` and result
+1. Obtain a real FSL-emitted checked package for `x + 1` with input `Int[0,9]` and result
    `Int[0,10]`; check those emitted ranges, then call public
    `generate_routed` for its scalar node and retain the returned identity and generated harness.
    Compile a public scalar builder call using those types directly, without a function identity.
@@ -44,11 +44,11 @@ is claimed.
    `[-1000,1000]`, assert the operand bounds and the harness's checked result domain, decode a
    playback of an in-domain pair (for example `(600,600)` giving `1200`), require the adjacent
    out-of-domain operand to be refused, and derive the pair's exact sum and assert it is outside
-   the result range. QSL's checker refuses a source with those checked ranges (`Unproved(Range)`),
-   so no QSL-emitted package exists for this case and its native observation and
+   the result range. FSL's checker refuses a source with those checked ranges (`Unproved(Range)`),
+   so no FSL-emitted package exists for this case and its native observation and
    harness-assertion mutation are not part of this step. An arithmetic mutation of the
    increment fixture supplies the divergence control. The observed increment ranges must be
-   asserted; a hand-built package never replaces QSL admission.
+   asserted; a hand-built package never replaces FSL admission.
 3. Build the scalar plan from the actual identity, decoded playback, proving package and
    retained staged path and byte set of that same proved generated oracle and the retained original generation
    limits context. Check setup precedence with one defect at a time: context/identity/schema,
@@ -58,8 +58,8 @@ is claimed.
    Try missing limits context and replay limits altered from the original retained context;
    no current `ScalarObligationIdentity.limits` member or default is assumed. The original
    context is recorded by the scalar generation authority alongside the proved source.
-4. For the admitted upstream route, record the exact QSL request's operator, operands, operand
-   ranges, result range and retained original limits, plus its QSL obligation identity and
+4. For the admitted upstream route, record the exact FSL request's operator, operands, operand
+   ranges, result range and retained original limits, plus its FSL obligation identity and
    original `call_site` package/source tie required by AD-002 R-6/R-7. Check package/source and
    scalar-node membership mismatches through the upstream typed refusal. Operand correspondence
    remains governed by [FR-015](../../kani/functional/FR-015-bounded-kani-obligations.md) AC-16.
@@ -69,31 +69,31 @@ is claimed.
    by comparing the receipt's staged bytes with its original artifacts, alongside the decoded vector and retained limits. Attempt
    replay with a bare echoed outcome, without authenticated observation, with another
    artifact's observation and with a regenerated correct oracle replacing the proved arithmetic
-   mutation. Each must refuse before QSL evaluation; QSL receives no artifact and cannot be
+   mutation. Each must refuse before FSL evaluation; FSL receives no artifact and cannot be
    credited with authenticating the driver's execution.
 5. Call `replay_operator_parity(wire, claim, replay_limits)` in the public consumer, with
    retained `ReplayLimits` last; keep that byte-admission guard distinct from the claim's
    retained `ScalarLimits` and do not invent a report identity member for it. Then pass the
    result to the CG converter.
-   Compare generated/exact divergence, agreement despite retained Kani falsification, a QSL
+   Compare generated/exact divergence, agreement despite retained Kani falsification, a FSL
    non-fault refusal and an executor fault. Distinguish native `Incomplete`/execution fault
    (`GeneratedFault`, `Failed`) from exact limit exhaustion (`Incomplete(ResourceExhausted)`);
-   verify `RefusedInput` keeps `invalid_runtime_input` and other QSL refusals follow the typed map.
+   verify `RefusedInput` keeps `invalid_runtime_input` and other FSL refusals follow the typed map.
    Check all four supported integer operators and
    refuse an undefined/incomplete generated outcome as agreement; those outcomes do not
    satisfy [FR-015](../../kani/functional/FR-015-bounded-kani-obligations.md) AC-37. Change the
    actual generated arithmetic, not the
    claimed replay verdict. Error-path seam observations may use a recording/failing executor;
-   the positive evaluation must use QSL and the actual generated artifact.
+   the positive evaluation must use FSL and the actual generated artifact.
 6. For every `Diverged`, `Agrees`, `GeneratedFault`, `RefusedInput`, exact `Incomplete` and
-   other `Refused` report produced by the actual public QSL facade, pass that immutable report
+   other `Refused` report produced by the actual public FSL facade, pass that immutable report
    with CG's retained expected sent `OperatorIdentity` and checked run/context completion to
    the converter. Compare its full `claim()` before settlement. Hold the real report fixed and
    change only one retained expected member at a time: obligation, node,
    occurrence, kind, operator, operand identity/value/range, result range, limits or native
    outcome. Require binding refusal with no settlement. Keep the obligation digest equal for
    the other member mutations; a native-outcome-only difference cannot be found by the digest.
-   Do not mutate or fabricate QSL's private report representation. A faithful report of a
+   Do not mutate or fabricate FSL's private report representation. A faithful report of a
    mutated request still equals that request's sent claim. Separately bind a report from
    another run and require refusal. Retain the actual wire used by checked driver completion
    and compare it against the original proving context. Substitute a consistently compiled
@@ -103,7 +103,7 @@ is claimed.
    The converter-refusal half of these tests is exercised by `scalar_replay_binding.rs`; the
    settled half is step 10.
 
-7. Using the positional rule measured in merged QSL change #650, after
+7. Using the positional rule measured in merged FSL change #650, after
    IR-648's authoritative typed `CheckedPackageV2` operand access (Done), independently
    inspect the scalar preimage passed to the public shared `parity_obligation` mint function. Use the claimed operator application node and its actual selected
    expression occurrence. With exactly one such occurrence, retain it; with zero or multiple
@@ -130,7 +130,7 @@ is claimed.
    an invented literal node is not the typed scalar accessor; IR-648 (Done) exposes
    the same tagged operand identity.
 
-8. Using merged QSL O-09 and the public shared `qsl_replay::parity_obligation` mint function,
+8. Using merged FSL O-09 and the public shared `fsl_replay::parity_obligation` mint function,
    check CG calls that owner through its existing dependency and implements no second encoder.
    Verify independently from current-run authoritative metadata that the canonical scalar
    preimage has the exact closed members,
@@ -166,7 +166,7 @@ is claimed.
     FR-032 table value. `RefusedInput`, exact `Incomplete` and non-fault `Refused` are unreachable
     through a completed plan: CG refuses out-of-domain operands first, the original limits are the
     renderer's `u64::MAX`, and `plan` itself decodes the request under the context's replay limits
-    (a too-small `input_bytes` fails there as `ScalarBuildError::Context`, before any QSL report).
+    (a too-small `input_bytes` fails there as `ScalarBuildError::Context`, before any FSL report).
     Pass genuine facade reports for a claim with an out-of-range operand, with
     `limits.work_units = 0` and with a changed occurrence ordinal (the claim of member 5 in
     `scalar_replay_binding.rs`) straight to `ScalarSettlement::Parity` and assert
@@ -213,7 +213,7 @@ is claimed.
     `CgDefect` reading, and by Inspection of the two sites.
 14. Typed seam (FR-032-AC-25). Compile the full flow of steps 1 and 10 to 12 using only
     `ScalarObligationIdentity`. Scan `src/replay/scalar_builder.rs` and `src/lib.rs` re-exports
-    for `KaniObligationIdentity`, CG's `ReplayPackage` (not `qsl_replay::ReplayPackage`) and a
+    for `KaniObligationIdentity`, CG's `ReplayPackage` (not `fsl_replay::ReplayPackage`) and a
     `settle` method on `CompletedScalarReplay`; require none.
 
 ## Expected Results
@@ -224,17 +224,17 @@ is claimed.
 | FR-032-AC-2 | Adapter-decoded playback uses persisted order; builder rejects above 8 MiB before parsing | Decode in alphabetic order, ignore another harness name or discard extra bytes |
 | FR-032-AC-3 | Operand endpoints and request operator/ranges agree with the harness/package; limits match original generation context, including AD-002 identities | Skip a bound check, replace operator/node, use result bounds for a literal or swap operands |
 | FR-032-AC-4 | Driver authenticates same-proved-artifact observation by direct staged-byte comparison and checked completion ties operands/limits/content | Accept an unchecked outcome echo, treat playback as a generated result or accept fresh regeneration that removes the mutation |
-| FR-032-AC-5 | Driver executes the proved artifact and calls QSL between builder and converter; QSL measures the current four-operator completed-value/refused-outside-range projection | Execute inside the CG builder, substitute a local evaluator, stub the positive verdict, accept `Undefined`/`Incomplete` as agreement or add unproved refusal-cause/accounting-counter equality |
+| FR-032-AC-5 | Driver executes the proved artifact and calls FSL between builder and converter; FSL measures the current four-operator completed-value/refused-outside-range projection | Execute inside the CG builder, substitute a local evaluator, stub the positive verdict, accept `Undefined`/`Incomplete` as agreement or add unproved refusal-cause/accounting-counter equality |
 | FR-032-AC-6 | Immutable full report claim and actual sent context match the retained binding/original proving context on every outcome, or no settlement | Check only the obligation digest or agreement; omit node/operator/operand range/result range/limits/native outcome on a refusal, exact Incomplete, generated fault or divergence |
-| FR-032-AC-7 | Divergence/generated fault is `Failed`, agreement is `Inconclusive(ScalarAgrees)`, exact exhaustion is `Incomplete(ResourceExhausted)` and typed QSL refusal keeps its code; never `Refuted`/`Verified` | Convert every Kani falsification to `Reproduced`, fabricate a predicate disagreement or turn a fault into a data refusal |
+| FR-032-AC-7 | Divergence/generated fault is `Failed`, agreement is `Inconclusive(ScalarAgrees)`, exact exhaustion is `Incomplete(ResourceExhausted)` and typed FSL refusal keeps its code; never `Refuted`/`Verified` | Convert every Kani falsification to `Reproduced`, fabricate a predicate disagreement or turn a fault into a data refusal |
 | FR-032-AC-8 | Increment emission/result range is observed and its reachable exact sums are derived from the generated identity and shown inside the result range; the descriptor-level bounded-addition check asserts the `[-1000,1000]` bounds and checked result domain, refuses the adjacent operand and derives a chosen pair's exact sum outside the result range, with no claim of native observation for that case | Use a hand-built function harness, substitute increment as the out-of-range case, compare two hard-coded intervals instead of deriving them, relabel an expected refusal as source falsification, accept wrong emitted fixture ranges or claim native observation of the bounded-addition case |
-| FR-032-AC-9 | Scalar positional shape measured in merged QSL change #650: actual application/expression occurrence/kind and one ordinal/tagged-identity/range entry per draw; `GraphChild` for graph references, `InlineLiteral` for application/occurrence/position, literal value in singleton range, repeated parameter draws distinct | Invent occurrence/operand ids or extra literal nodes, omit or swap identity tags, sort by identifier, deduplicate repeated nodes, omit a literal position, add unrelated function parameters/content/outcome/tracking fields or narrow a harness range |
-| FR-032-AC-10 | Shared mint conforms to independently checked O-09 scalar bytes and actual QSL accepts the identity once kind/metadata authority is available | Use a copied encoder, stand-in verifier or synthetic acceptance |
+| FR-032-AC-9 | Scalar positional shape measured in merged FSL change #650: actual application/expression occurrence/kind and one ordinal/tagged-identity/range entry per draw; `GraphChild` for graph references, `InlineLiteral` for application/occurrence/position, literal value in singleton range, repeated parameter draws distinct | Invent occurrence/operand ids or extra literal nodes, omit or swap identity tags, sort by identifier, deduplicate repeated nodes, omit a literal position, add unrelated function parameters/content/outcome/tracking fields or narrow a harness range |
+| FR-032-AC-10 | Shared mint conforms to independently checked O-09 scalar bytes and actual FSL accepts the identity once kind/metadata authority is available | Use a copied encoder, stand-in verifier or synthetic acceptance |
 | FR-032-AC-11 | Digest mismatch yields typed Obligation refusal with both digests and owning codes | Retain old digest after positional/occurrence/kind change and accept |
 | FR-032-AC-12 | Correctly hashed invented occurrence/child or false literal value/range yields typed membership refusal | Accept self-consistent hashing as membership authority |
 | FR-032-AC-13 | Public mint refuses an unencodable preimage; CG setup returns no identity or replay | Return a usable sentinel identity or accept an unencodable claim |
 | FR-032-AC-14 | Scalar addition preserves function/clause carry-only and function/frame identity rules | Redirect other paths through scalar positional parity |
-| FR-032-AC-19 | Guard entries follow the operands in `guard_inputs` order; a short playback is `kani_witness_arity_mismatch`, a wrong width `kani_witness_width_mismatch`, a Boolean byte `2` or an out-of-domain guard value `cg_scalar_witness_guard_out_of_domain`; guard values never reach QSL as operands; an identity without guard inputs decodes as before | Count only operands, decode a Boolean as eight bytes, skip the guard domain check or append guard values to the QSL operand vector |
+| FR-032-AC-19 | Guard entries follow the operands in `guard_inputs` order; a short playback is `kani_witness_arity_mismatch`, a wrong width `kani_witness_width_mismatch`, a Boolean byte `2` or an out-of-domain guard value `cg_scalar_witness_guard_out_of_domain`; guard values never reach FSL as operands; an identity without guard inputs decodes as before | Count only operands, decode a Boolean as eight bytes, skip the guard domain check or append guard values to the FSL operand vector |
 | FR-032-AC-20 | Step 10: `settlement` returns `Parity` over the genuine report's result after the AC-6 checks and no `ScalarSettlement` otherwise; `settle` is gone | Skip the sent-context comparison (the changed-`input_bytes` report then settles); return `ScalarSettlement::CgDefect` for an absent report instead of `Err` (the `settlement(...).ok()` input then yields `Failed`, not `MissingSettlement`); keep `settle` alongside (step 14 finds it) |
 | FR-032-AC-21 | Step 10: the six result classes read as the table; equal to `report.terminal_value()` | Map `Diverged` to `Refuted` (fails the `Completed(7)` input); map `Agrees` to `Failed` (fails the unchanged observation); map `RefusedInput` to `Failed` (fails the out-of-range operand report); map `Incomplete` to `Incomplete(TimedOut)` (fails the `work_units = 0` report); read every `Refused` as `Failed` (fails the changed-occurrence report, which must carry a catalog code); replace a `result.terminal_value()` arm with a wildcard (fails the lint and the inspection) |
 | FR-032-AC-22 | Step 11: settlement pairs only with falsified or counterexample outcomes | Return `Refuted` for any `Parity` (fails the `Agrees` report); return a value for `Verified` plus a settlement (fails the `UnexpectedSettlement` input); ignore the settlement for a `Counterexample` IR outcome (fails equality with the run entry point) |
@@ -247,4 +247,4 @@ Checks other than the criteria the replay matrix lists as implemented are planne
 produces a source-property `Refuted` or `Verified` terminal. The scalar absent-settlement check is FR-032-AC-23; ordinary
 [FR-029](../../kani/functional/FR-029-run-outcome-terminal-record.md) AC-15 is unchanged and
 still governs `run_terminal_value`. Missing upstream types/causes
-must be reported as a gate, not implemented as local QSL lookalikes.
+must be reported as a gate, not implemented as local FSL lookalikes.

@@ -660,7 +660,7 @@ fn projected(authored: &Authored) -> Declared {
             matches!(
                 authored.package.term(id),
                 Some(CheckedTerm::Application { operation, .. })
-                    if operation.identity() == Some("quire.op.model.reaches")
+                    if operation.identity() == Some("filament.op.model.reaches")
             )
         })
         .expect("the claim's reachability application");

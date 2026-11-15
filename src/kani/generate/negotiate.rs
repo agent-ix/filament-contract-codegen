@@ -12,7 +12,7 @@
 //! `operation.mode` and (for the one family with more than one catalogued law definition)
 //! `operation.laws` all confirm the request item's own descriptor, is [`OperationProvenance::IrConfirmed`]
 //! and -- for the `IntegerArithmetic` families this generator has a Kani renderer for
-//! (`quire.op.integer.{add,sub,mul,negate}`) -- reaches a real Kani harness via
+//! (`filament.op.integer.{add,sub,mul,negate}`) -- reaches a real Kani harness via
 //! [`Outcome::LoweredScalar`]/`render_scalar`. Every other confirmed family is honestly refused as
 //! [`UnsupportedObligation::OperationNotRendered`], never silently mis-rendered. A claim that
 //! codegen generated but whose operation it did not confirm reports the request item's own
@@ -35,7 +35,7 @@
 //! (see `refuse_unknown_node_kind`).
 //!
 
-// These admitted QSL fixtures exercise request-level lookup work in this Kani layer.
+// These admitted FSL fixtures exercise request-level lookup work in this Kani layer.
 #[cfg(test)]
 #[allow(dead_code, clippy::duplicate_mod)]
 #[path = "../../../tests/state_frame_support/model.rs"]
@@ -2162,12 +2162,12 @@ mod tests {
                 &qsl_replay::DependencyInput::default(),
                 &qsl_replay::ClauseName(qsl_replay::Identifier::new(&names[0]).unwrap()),
             )
-            .expect("distinct authored QSL clauses compile through the owner");
+            .expect("distinct authored FSL clauses compile through the owner");
             let mut evidence = quire_contract_model::CheckedPackageEvidence::new();
             evidence
                 .insert_domain_package_document("test/bank", twin.domain.clone())
                 .unwrap();
-            evidence.support_feature("quire.value.complete/v1");
+            evidence.support_feature("filament.value.complete/v1");
             let package = match CheckedPackageV2::read(
                 &located.package,
                 quire_contract_model::CheckedPackageReadLimits::bounded(),
@@ -2256,7 +2256,7 @@ mod tests {
         );
     }
 
-    // Fixture dependencies are upstream QSL, strict IR reader and canonical encoding only.
+    // Fixture dependencies are upstream FSL, strict IR reader and canonical encoding only.
     fn admitted_collection_request_fixture(
         quantifiers: usize,
     ) -> (CheckedPackageV2, CheckedNodeId, Vec<CheckedNodeId>) {
@@ -2284,7 +2284,7 @@ mod tests {
             .join(" and ");
         let source = format!(
             "language \"ix:native\" edition \"1-draft\";\n\
-         profile v = \"quire.model.complete/v1\";\n\
+         profile v = \"filament.model.complete/v1\";\n\
          model Bank = \"test/bank\";\n\
          predicate inspect using v (input: Bank::Account): Boolean {{ {body} }}\n"
         );
@@ -2301,16 +2301,16 @@ mod tests {
             &qsl_replay::DependencyInput::default(),
             &selection,
         )
-        .expect("public QSL admission of authored finite collection predicate");
+        .expect("public FSL admission of authored finite collection predicate");
         let mut evidence = quire_contract_model::CheckedPackageEvidence::new();
         evidence
             .insert_domain_package_document("test/bank", domain)
             .unwrap();
-        evidence.support_feature("quire.value.complete/v1");
+        evidence.support_feature("filament.value.complete/v1");
         let package = match CheckedPackageV2::read(
             &located.package,
             quire_contract_model::CheckedPackageReadLimits {
-                // The controlled 32-quantifier QSL output is about 6.2 MiB.
+                // The controlled 32-quantifier FSL output is about 6.2 MiB.
                 bytes: 8 << 20,
                 ..quire_contract_model::CheckedPackageReadLimits::bounded()
             },
@@ -2338,7 +2338,7 @@ mod tests {
                 matches!(
                     &node.body,
                     CheckedTerm::Application { operation, .. }
-                        if operation.identity() == Some("quire.op.collection.forall")
+                        if operation.identity() == Some("filament.op.collection.forall")
                 )
             })
             .map(|node| node.node_id.clone())

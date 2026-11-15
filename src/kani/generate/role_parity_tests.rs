@@ -4,7 +4,7 @@
 #[allow(dead_code)]
 #[path = "../../../tests/state_frame_support/model.rs"]
 mod model;
-// The QSL twin supplies an admitted CheckedPackageV2; this test uses only its package builder.
+// The FSL twin supplies an admitted CheckedPackageV2; this test uses only its package builder.
 #[allow(dead_code)]
 #[path = "../../../tests/state_frame_support/native_twin.rs"]
 mod native_twin;
@@ -81,7 +81,7 @@ fn clause_test_node(number: u8, label: &str) -> CheckedSemanticNodeV2 {
     CheckedSemanticNodeV2 {
         node_id: clause_test_id(number),
         owner_model: None,
-        schema_version: "quire.checked-semantic-graph/v2".into(),
+        schema_version: "filament.checked-semantic-graph/v2".into(),
         node_tag: "expression".into(),
         semantic_form: "literal".into(),
         semantic_type: clause_test_id(0),

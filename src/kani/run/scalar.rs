@@ -40,10 +40,13 @@ use crate::{
 static NEXT_SNAPSHOT: AtomicU64 = AtomicU64::new(0);
 const LOCKED_DEPENDENCIES: [(&str, &str); 2] = [
     (
-        "quire-contract-runtime",
-        "https://github.com/agent-ix/quire-contract-runtime",
+        "filament-contract-runtime",
+        "https://github.com/agent-ix/filament-contract-runtime",
     ),
-    ("quire-exact", "https://github.com/agent-ix/quire-exact"),
+    (
+        "filament-exact",
+        "https://github.com/agent-ix/filament-exact",
+    ),
 ];
 
 /// Input retained by a caller that already admitted the routed scalar occurrence.
@@ -68,29 +71,29 @@ pub struct KaniScalarNativeRequest<'a> {
 
 /// The opaque result of proving and natively invoking one staged scalar artifact.
 /// ```compile_fail,E0599
-/// use quire_contract_codegen::KaniScalarNativeReceipt;
+/// use filament_contract_codegen::KaniScalarNativeReceipt;
 /// fn no_digest(receipt: &KaniScalarNativeReceipt) {
 ///     let _ = receipt.proof_content_digest();
 /// }
 /// ```
 /// ```compile_fail
-/// use quire_contract_codegen::KaniScalarNativeReceipt;
+/// use filament_contract_codegen::KaniScalarNativeReceipt;
 /// let receipt = KaniScalarNativeReceipt {};
 /// ```
 /// ```compile_fail,E0616
-/// use quire_contract_codegen::KaniScalarNativeReceipt;
+/// use filament_contract_codegen::KaniScalarNativeReceipt;
 /// fn mutate(receipt: &mut KaniScalarNativeReceipt) { receipt.entries.clear(); }
 /// ```
 /// ```compile_fail,E0596
-/// use quire_contract_codegen::KaniScalarNativeReceipt;
+/// use filament_contract_codegen::KaniScalarNativeReceipt;
 /// fn mutate(receipt: &mut KaniScalarNativeReceipt) { receipt.staged_entries()[0].1.clear(); }
 /// ```
 /// ```compile_fail,E0594
-/// use quire_contract_codegen::KaniScalarNativeReceipt;
+/// use filament_contract_codegen::KaniScalarNativeReceipt;
 /// fn mutate(receipt: &mut KaniScalarNativeReceipt) { receipt.meter_observation().limits().work_units = 0; }
 /// ```
 /// ```compile_fail,E0277
-/// use quire_contract_codegen::KaniScalarNativeReceipt;
+/// use filament_contract_codegen::KaniScalarNativeReceipt;
 /// let _: KaniScalarNativeReceipt = serde_json::from_str("{}").unwrap();
 /// ```
 #[derive(Debug)]
@@ -186,7 +189,7 @@ impl KaniScalarNativeReceipt {
 ///
 /// The frozen code catalog is available at the crate root:
 /// ```
-/// use quire_contract_codegen::{
+/// use filament_contract_codegen::{
 ///     SCALAR_NATIVE_CODE_INVALID_REQUEST,
 ///     SCALAR_NATIVE_CODE_ARTIFACT_PACKAGE,
 ///     SCALAR_NATIVE_CODE_SNAPSHOT_IO,
@@ -215,7 +218,7 @@ impl KaniScalarNativeReceipt {
 ///
 /// Downstream consumers must leave room for future error variants:
 /// ```compile_fail,E0004
-/// use quire_contract_codegen::KaniScalarNativeError as E;
+/// use filament_contract_codegen::KaniScalarNativeError as E;
 /// fn exhaustive(error: E) {
 ///     match error {
 ///         E::InvalidRequest(_) | E::ArtifactPackage(_) | E::Snapshot(_) | E::Kani(_)
@@ -225,7 +228,7 @@ impl KaniScalarNativeReceipt {
 /// }
 /// ```
 /// ```
-/// use quire_contract_codegen::{KaniScalarNativeError as E, KaniScalarNativeErrorClass as C};
+/// use filament_contract_codegen::{KaniScalarNativeError as E, KaniScalarNativeErrorClass as C};
 /// fn consumer(error: E) -> &'static str {
 ///     let _ = match &error { E::InvalidRequest(_) => true, _ => false };
 ///     match error.class() { C::CompletionRefusal => error.code(), C::EnvironmentFault => error.code() }
@@ -668,7 +671,7 @@ fn stage_package(
 }
 
 /// Pure original scalar staging layout, shared by proof execution and checked replay.
-/// This constructs bytes only: no process, native invocation, or QSL evaluation occurs here.
+/// This constructs bytes only: no process, native invocation, or FSL evaluation occurs here.
 pub(crate) fn scalar_staged_entries(
     harness: &KaniScalarObligationHarness,
     oracle_artifacts: &[Artifact],
@@ -1616,7 +1619,7 @@ mod tests {
         .expect("checked source key");
         let (oracle, _) = crate::oracle::scalar::native::select(
             &node_id,
-            "quire.op.integer.add",
+            "filament.op.integer.add",
             "checked_oracle",
             crate::oracle::operator_catalog::IntegerOperator::Add,
             &[(0, 9), (1, 1)],
@@ -1724,10 +1727,13 @@ mod tests {
             run(&directory, &["generate-lockfile", "--offline"]);
             for (package, repository) in [
                 (
-                    "quire-contract-runtime",
-                    "https://github.com/agent-ix/quire-contract-runtime",
+                    "filament-contract-runtime",
+                    "https://github.com/agent-ix/filament-contract-runtime",
                 ),
-                ("quire-exact", "https://github.com/agent-ix/quire-exact"),
+                (
+                    "filament-exact",
+                    "https://github.com/agent-ix/filament-exact",
+                ),
             ] {
                 let staged_lock = fs::read_to_string(directory.join("Cargo.lock")).unwrap();
                 let version = lock_owning_version(&staged_lock, package, repository)
@@ -1765,10 +1771,13 @@ mod tests {
                 .unwrap();
             for (name, repository) in [
                 (
-                    "quire-contract-runtime",
-                    "https://github.com/agent-ix/quire-contract-runtime",
+                    "filament-contract-runtime",
+                    "https://github.com/agent-ix/filament-contract-runtime",
                 ),
-                ("quire-exact", "https://github.com/agent-ix/quire-exact"),
+                (
+                    "filament-exact",
+                    "https://github.com/agent-ix/filament-exact",
+                ),
             ] {
                 let mut matches = metadata["packages"]
                     .as_array()
@@ -1808,7 +1817,7 @@ mod tests {
                 .as_array()
                 .unwrap()
                 .iter()
-                .find(|package| package["name"] == "quire-exact")
+                .find(|package| package["name"] == "filament-exact")
                 .unwrap();
             let node = metadata["resolve"]["nodes"]
                 .as_array()
@@ -2104,8 +2113,8 @@ mod tests {
         let snapshot = PrivateSnapshot::create().unwrap();
         let root = snapshot.path();
         fs::create_dir(root.join("observer")).unwrap();
-        let runtime = "[[package]]\nname = \"quire-contract-runtime\"\nversion = \"0.1.0\"\nsource = \"git+https://github.com/agent-ix/quire-contract-runtime?branch=main#";
-        let exact = "[[package]]\nname = \"quire-exact\"\nversion = \"0.2.0\"\nsource = \"git+https://github.com/agent-ix/quire-exact?branch=main#";
+        let runtime = "[[package]]\nname = \"filament-contract-runtime\"\nversion = \"0.1.0\"\nsource = \"git+https://github.com/agent-ix/filament-contract-runtime?branch=main#";
+        let exact = "[[package]]\nname = \"filament-exact\"\nversion = \"0.2.0\"\nsource = \"git+https://github.com/agent-ix/filament-exact?branch=main#";
         let complete = format!("{runtime}one\"\n{exact}two\"\n");
         fs::write(root.join("Cargo.lock"), &complete).unwrap();
         fs::write(root.join("observer/Cargo.lock"), &complete).unwrap();
@@ -2118,13 +2127,13 @@ mod tests {
         assert!(verify_staged_locks(root).is_ok());
 
         for invalid in [
-            complete.replace("name = \"quire-exact\"", "name = \"missing-exact\""),
+            complete.replace("name = \"filament-exact\"", "name = \"missing-exact\""),
             complete.replace(
-                "https://github.com/agent-ix/quire-exact",
-                "https://example.org/quire-exact",
+                "https://github.com/agent-ix/filament-exact",
+                "https://example.org/filament-exact",
             ),
             complete.replace(
-                "source = \"git+https://github.com/agent-ix/quire-exact?branch=main#two\"\n",
+                "source = \"git+https://github.com/agent-ix/filament-exact?branch=main#two\"\n",
                 "",
             ),
             format!("{complete}{exact}two\"\n"),

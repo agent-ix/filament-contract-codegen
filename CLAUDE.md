@@ -1,6 +1,6 @@
-# quire-contract-codegen
+# filament-contract-codegen
 
-Deterministic Rust, property-test, proof, and evidence generation from Quire contracts.
+Deterministic Rust, property-test, proof, and evidence generation from Filament contracts.
 
 ## Commands
 
@@ -47,10 +47,10 @@ procfs or pidfd requirement, so the launch path runs on Linux and macOS. A struc
 src/lib.rs                 # crate root
 tests/it/main.rs           # the merged integration test binary; each former tests/*.rs file is a mod here
 schemas/                   # domain output contracts included by their owning library producers
-spec/                      # spec.md (Subsystem Registry), tests.md (matrix index), <subsystem>/{stakeholder,functional,non-functional,matrix}/ per quire-contract-ir:ADR-0056; the suite registry is spec/core/matrix/suites.md
+spec/                      # spec.md (Subsystem Registry), tests.md (matrix index), <subsystem>/{stakeholder,functional,non-functional,matrix}/ per filament-contract-ir:ADR-0056; the suite registry is spec/core/matrix/suites.md
 reviews/                   # quire-validated SpecReview artifacts
 scripts/                   # dependency gate data and one-copy check
-scripts/cg_gates.rs        # Rust Kani scope/gate and QSpec preflight selftest
+scripts/cg_gates.rs        # Rust Kani scope/gate and FSpec preflight selftest
 ```
 
 New integration tests go under `tests/it/` as a module of the single `it` binary (add the file plus a

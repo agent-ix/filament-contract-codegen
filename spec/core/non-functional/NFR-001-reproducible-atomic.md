@@ -4,11 +4,11 @@ title: "Reproducible and atomic generation"
 type: NFR
 quality_attribute: reliability
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-014
+  - target: ix://agent-ix/filament-contract-codegen/FR-014
     type: constrains
-  - target: ix://agent-ix/quire-contract-codegen/FR-005
+  - target: ix://agent-ix/filament-contract-codegen/FR-005
     type: constrains
-  - target: ix://agent-ix/quire-contract-codegen/FR-015
+  - target: ix://agent-ix/filament-contract-codegen/FR-015
     type: constrains
 ---
 # NFR-001: Reproducible and atomic generation

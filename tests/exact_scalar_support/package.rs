@@ -10,7 +10,7 @@
 //! references (see `Bound::key`/`Bound::foreign`). Applications reach them
 //! through dedicated value-shaped expression operands. Literal nodes have
 //! empty dependencies, as strict Contract IR admission requires. Bound bodies
-//! use the encoding `quire_contract_codegen::exact_scalar` documents.
+//! use the encoding `filament_contract_codegen::exact_scalar` documents.
 
 #![allow(dead_code)] // Each test binary uses a different subset.
 
@@ -25,7 +25,7 @@ use super::scalar_fixture_types::{
     BooleanOperator, DecimalOperator, EqualityOperandKind, ExactScalarItem, ExactScalarOperation,
     IeeeArithmeticOperator, OrderingOperandKind, QuantityOperator, RationalOperator,
 };
-use quire_contract_codegen::oracle::operator_catalog::IntegerOperator;
+use filament_contract_codegen::oracle::operator_catalog::IntegerOperator;
 use quire_contract_model::{
     CheckedNodeId, CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
     CheckedPackageV2ReadResult,
@@ -55,7 +55,7 @@ fn fixture_model_document() -> Value {
         "package": {"identity": FIXTURE_MODEL, "version": "1"},
         "constructs": [{
             "kind": {"module": FIXTURE_MODEL, "name": "entity"},
-            "construct": {"meaning": "quire.meaning.model.object-type/v1"},
+            "construct": {"meaning": "filament.meaning.model.object-type/v1"},
         }],
         "types": [{
             "identity": FIXTURE_OBJECT, "displayName": "Account",
@@ -223,7 +223,7 @@ pub fn reference(digest: &str) -> Value {
 /// Contract IR (FR-208 `DeclarationTagRules`/`DeclarationOccurrenceRule`)
 /// forbids `declaration` on `expression`/`relation`/`state`/`temporal`/
 /// `correspondence` nodes and on `value`/`enum_value` nodes (and, measured
-/// against the reader, on `value`/`parameter` nodes, which QSL emits with no
+/// against the reader, on `value`/`parameter` nodes, which FSL emits with no
 /// declaration), and otherwise
 /// requires it exactly when the node carries a `declaration`-role occurrence
 /// — which every node built by this module does except `value`/`parameter`
@@ -247,7 +247,7 @@ fn declaration_for(tag: &str, form: &str, label: &str) -> Option<Value> {
 /// Contract IR (FR-038-AC-17) requires `application.operation`
 /// and `application.result_type` as members; Contract IR's `validate_operations`
 /// checks `operation` against the checked-operation catalog
-/// `quire-verification-contracts` publishes, so `operation` must name a real catalogued identity with a conformant
+/// `filament-verification-contracts` publishes, so `operation` must name a real catalogued identity with a conformant
 /// `operator`/`laws`/`mode`/`member`, not an opaque placeholder. This crate's
 /// own generators still classify a body by `term`/`operator`/`arguments`
 /// (never by `operation`), but for an exact-scalar claim the *confirmation*
@@ -258,7 +258,7 @@ fn declaration_for(tag: &str, form: &str, label: &str) -> Option<Value> {
 /// picks a catalogued `operation` that matches its own descriptor. (A
 /// mismatched descriptor against one of these same catalogued nodes --
 /// e.g. an `IntegerOperator::Add` request item against node 1004's
-/// catalogued `quire.op.integer.mul` -- is exercised directly by the
+/// catalogued `filament.op.integer.mul` -- is exercised directly by the
 /// generation tests, not by a corpus node here.) `result_type` names the
 /// caller's own declared node type for this expression, a node every
 /// caller of this helper has already registered.
@@ -394,7 +394,7 @@ pub fn artifact_ref(identity: &str) -> Value {
 }
 
 /// The catalogued `role` law definition named `identity`, read from the operation catalog's home
-/// (`quire-verification-contracts`), which `validate_operations` requires
+/// (`filament-verification-contracts`), which `validate_operations` requires
 /// `operation.laws[].definition` to equal exactly.
 pub fn catalog_definition(role: &str, identity: &str) -> Value {
     let catalog: Value = serde_json::from_str(
@@ -417,12 +417,12 @@ pub fn integer_division_definition(profile: DivisionProfile) -> Value {
 
 /// The catalog's `ieee_profile` law definition.
 pub fn ieee_profile_definition() -> Value {
-    catalog_definition("ieee_profile", "quire.value.ieee754-2019-default/v1")
+    catalog_definition("ieee_profile", "filament.value.ieee754-2019-default/v1")
 }
 
 /// The catalog's `text_profile` law definition.
 pub fn text_profile_definition() -> Value {
-    catalog_definition("text_profile", "quire.value.text.unicode-17.0.0/v1")
+    catalog_definition("text_profile", "filament.value.text.unicode-17.0.0/v1")
 }
 
 fn aggregate() -> Value {
@@ -538,7 +538,7 @@ impl PackageBuilder {
         self
     }
 
-    /// Give source-authored scalar expressions the QSL occurrence role used by
+    /// Give source-authored scalar expressions the FSL occurrence role used by
     /// FR-049 result selection. Both graph and source-map occurrences remain
     /// aligned before the public checked reader admits this fixture.
     pub fn expression_occurrences(&mut self) -> &mut Self {
@@ -631,7 +631,7 @@ impl PackageBuilder {
             .expect("nodes");
         let mut node = json!({
             "node_id": node_ref(digest),
-            "schema_version": "quire.checked-semantic-graph/v2",
+            "schema_version": "filament.checked-semantic-graph/v2",
             "node_tag": tag,
             "semantic_form": form,
             "semantic_type": node_ref(semantic_type),
@@ -1217,7 +1217,7 @@ impl PackageBuilder {
 
 fn evidence() -> CheckedPackageEvidence {
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     let document = fixture_model_document();
     let bytes = serde_json::to_vec(&document).expect("model document");
     evidence
@@ -1588,7 +1588,7 @@ pub const V_FLOAT64: u32 = 106;
 pub const V_TEXT: u32 = 107;
 pub const V_QUANTITY: u32 = 108;
 /// A value/literal node whose semantic type is an `integer_range` `bounded_domain` over the
-/// integer scalar type: what a QSL parameter typed `Int[0, 9]` references. It is an Integer
+/// integer scalar type: what a FSL parameter typed `Int[0, 9]` references. It is an Integer
 /// operand (IR-297).
 pub const V_BOUNDED_PARAM: u32 = 109;
 /// A value whose semantic type is another value node, so neither a scalar type nor a
@@ -1660,7 +1660,7 @@ pub const UNTYPED_OPERAND: u32 = 2031;
 /// generated (IR-297), so it is requested by its own test and is in no golden item list.
 pub const BOUNDED_OPERAND: u32 = 2034;
 /// A rational division over two integer-typed *reference* operands: IR
-/// admits it (`quire.op.rational.div`'s catalogued operand family,
+/// admits it (`filament.op.rational.div`'s catalogued operand family,
 /// `rational_promotable`, is `{integer, rational}`), but CG's own
 /// `Shape::of` requires `[Rational, Rational]`, so it is refused through
 /// the `reference` arm of `check_operand`, not the `literal` arm
@@ -1710,8 +1710,8 @@ pub struct Expression {
 
 /// The six `TextAdmission` codes ([`TEXT_ADMISSIONS`]): Contract IR refuses each
 /// `IllTyped`/`OperatorIneligible` at admission today, so they are outside [`corpus`] (one such
-/// node refuses the whole package). `quire.op.numeric.convert` over a text operand: no
-/// catalogued `convert` identity takes `text`, and QSL lowers no text admission. Unblocked by a
+/// node refuses the whole package). `filament.op.numeric.convert` over a text operand: no
+/// catalogued `convert` identity takes `text`, and FSL lowers no text admission. Unblocked by a
 /// catalogued text-admission operation (a spec change) or by dropping the operation.
 /// `tc_024_text_admission_corpus_is_refused_by_ir_today` pins the exact refusal of each;
 /// FR-014-AC-2's text-admission case has no generated-crate evidence until then.
@@ -2245,7 +2245,7 @@ fn float_type_for_rounding(form: &str, rounding: &str) -> String {
 fn integer_pair_for_operand(code: u32, operand_ref: &str) -> Value {
     application(
         "binary",
-        op("quire.op.integer.add"),
+        op("filament.op.integer.add"),
         &key(T_INTEGER),
         vec![
             reference(operand_ref),
@@ -2284,34 +2284,38 @@ fn corpus_operation(expr: &Expression) -> (&'static str, Value) {
         Op::Boolean { operator, .. } => (
             expr.operator,
             op(match operator {
-                BooleanOperator::And => "quire.op.boolean.and",
-                BooleanOperator::Or => "quire.op.boolean.or",
-                BooleanOperator::Not => "quire.op.boolean.not",
-                BooleanOperator::Implies => "quire.op.boolean.implies",
+                BooleanOperator::And => "filament.op.boolean.and",
+                BooleanOperator::Or => "filament.op.boolean.or",
+                BooleanOperator::Not => "filament.op.boolean.not",
+                BooleanOperator::Implies => "filament.op.boolean.implies",
             }),
         ),
         Op::Equality { operator, operands } => (
             expr.operator,
             op(match (operands, operator) {
-                (EqualityOperandKind::Boolean, EqualityOperator::Equal) => "quire.op.boolean.eq",
-                (EqualityOperandKind::Boolean, EqualityOperator::NotEqual) => "quire.op.boolean.ne",
-                (EqualityOperandKind::Integer, EqualityOperator::Equal) => "quire.op.integer.eq",
-                (EqualityOperandKind::Integer, EqualityOperator::NotEqual) => "quire.op.integer.ne",
+                (EqualityOperandKind::Boolean, EqualityOperator::Equal) => "filament.op.boolean.eq",
+                (EqualityOperandKind::Boolean, EqualityOperator::NotEqual) => {
+                    "filament.op.boolean.ne"
+                }
+                (EqualityOperandKind::Integer, EqualityOperator::Equal) => "filament.op.integer.eq",
+                (EqualityOperandKind::Integer, EqualityOperator::NotEqual) => {
+                    "filament.op.integer.ne"
+                }
             }),
         ),
         Op::IntegerArithmetic { operator, .. } => {
             let identity = match operator {
-                IntegerOperator::Add => "quire.op.integer.add",
-                IntegerOperator::Subtract => "quire.op.integer.sub",
-                IntegerOperator::Multiply => "quire.op.integer.mul",
-                IntegerOperator::Negate => "quire.op.integer.negate",
+                IntegerOperator::Add => "filament.op.integer.add",
+                IntegerOperator::Subtract => "filament.op.integer.sub",
+                IntegerOperator::Multiply => "filament.op.integer.mul",
+                IntegerOperator::Negate => "filament.op.integer.negate",
             };
             (expr.operator, op(identity))
         }
         Op::IntegerDivision { profile, .. } => (
             expr.operator,
             op_full(
-                "quire.op.integer.div",
+                "filament.op.integer.div",
                 vec![law(
                     "integer_division",
                     integer_division_definition(*profile),
@@ -2320,20 +2324,20 @@ fn corpus_operation(expr: &Expression) -> (&'static str, Value) {
                 None,
             ),
         ),
-        Op::IntegerModulo { .. } => (expr.operator, op("quire.op.integer.mod")),
+        Op::IntegerModulo { .. } => (expr.operator, op("filament.op.integer.mod")),
         Op::RationalArithmetic { operator, .. } => {
             let identity = match operator {
-                RationalOperator::Add => "quire.op.rational.add",
-                RationalOperator::Subtract => "quire.op.rational.sub",
-                RationalOperator::Multiply => "quire.op.rational.mul",
+                RationalOperator::Add => "filament.op.rational.add",
+                RationalOperator::Subtract => "filament.op.rational.sub",
+                RationalOperator::Multiply => "filament.op.rational.mul",
                 // `rational.div`'s operands are `rational_promotable`
                 // (integer or rational), so it fits an integer/integer
                 // pair too -- there is no separate catalogued "integer
                 // division to a rational result" identity.
                 RationalOperator::Divide | RationalOperator::IntegerDivide => {
-                    "quire.op.rational.div"
+                    "filament.op.rational.div"
                 }
-                RationalOperator::Negate => "quire.op.rational.negate",
+                RationalOperator::Negate => "filament.op.rational.negate",
             };
             (expr.operator, op(identity))
         }
@@ -2348,18 +2352,18 @@ fn corpus_operation(expr: &Expression) -> (&'static str, Value) {
             };
             let suffix = ordering_suffix(*operator);
             let identity: &'static str = match (family, suffix) {
-                ("integer", "lt") => "quire.op.integer.lt",
-                ("integer", "le") => "quire.op.integer.le",
-                ("integer", "gt") => "quire.op.integer.gt",
-                ("integer", "ge") => "quire.op.integer.ge",
-                ("rational", "lt") => "quire.op.rational.lt",
-                ("rational", "le") => "quire.op.rational.le",
-                ("rational", "gt") => "quire.op.rational.gt",
-                ("rational", "ge") => "quire.op.rational.ge",
-                ("decimal", "lt") => "quire.op.decimal.lt",
-                ("decimal", "le") => "quire.op.decimal.le",
-                ("decimal", "gt") => "quire.op.decimal.gt",
-                ("decimal", "ge") => "quire.op.decimal.ge",
+                ("integer", "lt") => "filament.op.integer.lt",
+                ("integer", "le") => "filament.op.integer.le",
+                ("integer", "gt") => "filament.op.integer.gt",
+                ("integer", "ge") => "filament.op.integer.ge",
+                ("rational", "lt") => "filament.op.rational.lt",
+                ("rational", "le") => "filament.op.rational.le",
+                ("rational", "gt") => "filament.op.rational.gt",
+                ("rational", "ge") => "filament.op.rational.ge",
+                ("decimal", "lt") => "filament.op.decimal.lt",
+                ("decimal", "le") => "filament.op.decimal.le",
+                ("decimal", "gt") => "filament.op.decimal.gt",
+                ("decimal", "ge") => "filament.op.decimal.ge",
                 _ => unreachable!("every (family, suffix) pair is covered above"),
             };
             (expr.operator, op(identity))
@@ -2368,7 +2372,7 @@ fn corpus_operation(expr: &Expression) -> (&'static str, Value) {
             DecimalOperator::Add => (
                 expr.operator,
                 op_full(
-                    "quire.op.decimal.add",
+                    "filament.op.decimal.add",
                     vec![],
                     Some(mode_kv("rounding", target.rounding().as_str())),
                     None,
@@ -2377,7 +2381,7 @@ fn corpus_operation(expr: &Expression) -> (&'static str, Value) {
             DecimalOperator::Subtract => (
                 expr.operator,
                 op_full(
-                    "quire.op.decimal.sub",
+                    "filament.op.decimal.sub",
                     vec![],
                     Some(mode_kv("rounding", target.rounding().as_str())),
                     None,
@@ -2386,7 +2390,7 @@ fn corpus_operation(expr: &Expression) -> (&'static str, Value) {
             DecimalOperator::Multiply => (
                 expr.operator,
                 op_full(
-                    "quire.op.decimal.mul",
+                    "filament.op.decimal.mul",
                     vec![],
                     Some(mode_kv("rounding", target.rounding().as_str())),
                     None,
@@ -2395,17 +2399,17 @@ fn corpus_operation(expr: &Expression) -> (&'static str, Value) {
             DecimalOperator::Divide => (
                 expr.operator,
                 op_full(
-                    "quire.op.decimal.div",
+                    "filament.op.decimal.div",
                     vec![],
                     Some(mode_kv("rounding", target.rounding().as_str())),
                     None,
                 ),
             ),
-            DecimalOperator::Negate => (expr.operator, op("quire.op.decimal.negate")),
+            DecimalOperator::Negate => (expr.operator, op("filament.op.decimal.negate")),
             DecimalOperator::Round => (
                 expr.operator,
                 op_full(
-                    "quire.op.numeric.convert_rounding",
+                    "filament.op.numeric.convert_rounding",
                     vec![],
                     Some(mode_kv("rounding", target.rounding().as_str())),
                     Some(member_kind("type_argument")),
@@ -2418,37 +2422,41 @@ fn corpus_operation(expr: &Expression) -> (&'static str, Value) {
             rounding,
         } => {
             let identity = match (width, operator) {
-                (IeeeWidth::Binary32, IeeeArithmeticOperator::Add) => "quire.op.ieee.float32.add",
+                (IeeeWidth::Binary32, IeeeArithmeticOperator::Add) => {
+                    "filament.op.ieee.float32.add"
+                }
                 (IeeeWidth::Binary32, IeeeArithmeticOperator::Subtract) => {
-                    "quire.op.ieee.float32.sub"
+                    "filament.op.ieee.float32.sub"
                 }
                 (IeeeWidth::Binary32, IeeeArithmeticOperator::Multiply) => {
-                    "quire.op.ieee.float32.mul"
+                    "filament.op.ieee.float32.mul"
                 }
                 (IeeeWidth::Binary32, IeeeArithmeticOperator::Divide) => {
-                    "quire.op.ieee.float32.div"
+                    "filament.op.ieee.float32.div"
                 }
-                (IeeeWidth::Binary64, IeeeArithmeticOperator::Add) => "quire.op.ieee.float64.add",
+                (IeeeWidth::Binary64, IeeeArithmeticOperator::Add) => {
+                    "filament.op.ieee.float64.add"
+                }
                 (IeeeWidth::Binary64, IeeeArithmeticOperator::Subtract) => {
-                    "quire.op.ieee.float64.sub"
+                    "filament.op.ieee.float64.sub"
                 }
                 (IeeeWidth::Binary64, IeeeArithmeticOperator::Multiply) => {
-                    "quire.op.ieee.float64.mul"
+                    "filament.op.ieee.float64.mul"
                 }
                 (IeeeWidth::Binary64, IeeeArithmeticOperator::Divide) => {
-                    "quire.op.ieee.float64.div"
+                    "filament.op.ieee.float64.div"
                 }
                 (IeeeWidth::Binary32, IeeeArithmeticOperator::SquareRoot) => {
-                    "quire.op.ieee.float32.sqrt"
+                    "filament.op.ieee.float32.sqrt"
                 }
                 (IeeeWidth::Binary64, IeeeArithmeticOperator::SquareRoot) => {
-                    "quire.op.ieee.float64.sqrt"
+                    "filament.op.ieee.float64.sqrt"
                 }
                 (IeeeWidth::Binary32, IeeeArithmeticOperator::FusedMultiplyAdd) => {
-                    "quire.op.ieee.float32.fma"
+                    "filament.op.ieee.float32.fma"
                 }
                 (IeeeWidth::Binary64, IeeeArithmeticOperator::FusedMultiplyAdd) => {
-                    "quire.op.ieee.float64.fma"
+                    "filament.op.ieee.float64.fma"
                 }
             };
             // `sqrt` and `fma` are catalogued `call` operators (FR-014-AC-72).
@@ -2470,9 +2478,9 @@ fn corpus_operation(expr: &Expression) -> (&'static str, Value) {
         }
         Op::IeeeComparison { comparison, .. } => {
             let identity = match comparison {
-                IeeeComparison::NumericEqual => "quire.op.ieee.numeric_equal",
-                IeeeComparison::TotalOrder => "quire.op.ieee.total_order",
-                IeeeComparison::BitIdentical => "quire.op.ieee.bit_identical",
+                IeeeComparison::NumericEqual => "filament.op.ieee.numeric_equal",
+                IeeeComparison::TotalOrder => "filament.op.ieee.total_order",
+                IeeeComparison::BitIdentical => "filament.op.ieee.bit_identical",
             };
             (
                 // Overrides `expr.operator` ("binary" per `corpus()`'s own
@@ -2498,7 +2506,7 @@ fn corpus_operation(expr: &Expression) -> (&'static str, Value) {
             (IeeeWidth::Binary64, IeeeWidth::Binary32) => (
                 expr.operator,
                 op_full(
-                    "quire.op.ieee.to_float32",
+                    "filament.op.ieee.to_float32",
                     vec![law("ieee_profile", ieee_profile_definition())],
                     Some(mode_kv("rounding", rounding.as_str())),
                     Some(member_kind("type_argument")),
@@ -2507,7 +2515,7 @@ fn corpus_operation(expr: &Expression) -> (&'static str, Value) {
             (IeeeWidth::Binary32, IeeeWidth::Binary64) => (
                 expr.operator,
                 op_full(
-                    "quire.op.ieee.to_float64",
+                    "filament.op.ieee.to_float64",
                     vec![law("ieee_profile", ieee_profile_definition())],
                     None,
                     Some(member_kind("type_argument")),
@@ -2524,7 +2532,7 @@ fn corpus_operation(expr: &Expression) -> (&'static str, Value) {
         Op::TextAdmission { .. } => (
             expr.operator,
             op_full(
-                "quire.op.numeric.convert",
+                "filament.op.numeric.convert",
                 vec![],
                 None,
                 Some(member_kind("type_argument")),
@@ -2548,7 +2556,7 @@ fn corpus_operation(expr: &Expression) -> (&'static str, Value) {
         Op::QuantityConversion => (
             expr.operator,
             op_full(
-                "quire.op.quantity.convert",
+                "filament.op.quantity.convert",
                 vec![],
                 Some(mode_kv("rounding", "exact")),
                 Some(member_kind("type_argument")),
@@ -2556,11 +2564,11 @@ fn corpus_operation(expr: &Expression) -> (&'static str, Value) {
         ),
         Op::QuantityArithmetic { operator } => {
             let identity = match operator {
-                QuantityOperator::Add => "quire.op.quantity.add",
-                QuantityOperator::Subtract => "quire.op.quantity.sub",
-                QuantityOperator::Multiply => "quire.op.quantity.mul",
-                QuantityOperator::Divide => "quire.op.quantity.div",
-                QuantityOperator::Power => "quire.op.quantity.pow",
+                QuantityOperator::Add => "filament.op.quantity.add",
+                QuantityOperator::Subtract => "filament.op.quantity.sub",
+                QuantityOperator::Multiply => "filament.op.quantity.mul",
+                QuantityOperator::Divide => "filament.op.quantity.div",
+                QuantityOperator::Power => "filament.op.quantity.pow",
             };
             (expr.operator, op(identity))
         }
@@ -2582,30 +2590,30 @@ fn ordering_suffix(operator: OrderingOperator) -> &'static str {
     }
 }
 
-/// `quire.op.<family>.<suffix>` for one of the catalog's six comparison
+/// `filament.op.<family>.<suffix>` for one of the catalog's six comparison
 /// identities per family (`eq`/`ne`/`lt`/`le`/`gt`/`ge`), matching
 /// [`ComparisonOperator`]'s six variants in the same order used by
 /// `TEXT_COMPARISONS`/`ENUM_COMPARISONS`/`QUANTITY_COMPARISONS`.
 fn text_family_identity(family: &str, operator: ComparisonOperator) -> &'static str {
     match (family, operator) {
-        ("text", ComparisonOperator::Equal) => "quire.op.text.eq",
-        ("text", ComparisonOperator::NotEqual) => "quire.op.text.ne",
-        ("text", ComparisonOperator::Less) => "quire.op.text.lt",
-        ("text", ComparisonOperator::LessOrEqual) => "quire.op.text.le",
-        ("text", ComparisonOperator::Greater) => "quire.op.text.gt",
-        ("text", ComparisonOperator::GreaterOrEqual) => "quire.op.text.ge",
-        ("enum", ComparisonOperator::Equal) => "quire.op.enum.eq",
-        ("enum", ComparisonOperator::NotEqual) => "quire.op.enum.ne",
-        ("enum", ComparisonOperator::Less) => "quire.op.enum.lt",
-        ("enum", ComparisonOperator::LessOrEqual) => "quire.op.enum.le",
-        ("enum", ComparisonOperator::Greater) => "quire.op.enum.gt",
-        ("enum", ComparisonOperator::GreaterOrEqual) => "quire.op.enum.ge",
-        ("quantity", ComparisonOperator::Equal) => "quire.op.quantity.eq",
-        ("quantity", ComparisonOperator::NotEqual) => "quire.op.quantity.ne",
-        ("quantity", ComparisonOperator::Less) => "quire.op.quantity.lt",
-        ("quantity", ComparisonOperator::LessOrEqual) => "quire.op.quantity.le",
-        ("quantity", ComparisonOperator::Greater) => "quire.op.quantity.gt",
-        ("quantity", ComparisonOperator::GreaterOrEqual) => "quire.op.quantity.ge",
+        ("text", ComparisonOperator::Equal) => "filament.op.text.eq",
+        ("text", ComparisonOperator::NotEqual) => "filament.op.text.ne",
+        ("text", ComparisonOperator::Less) => "filament.op.text.lt",
+        ("text", ComparisonOperator::LessOrEqual) => "filament.op.text.le",
+        ("text", ComparisonOperator::Greater) => "filament.op.text.gt",
+        ("text", ComparisonOperator::GreaterOrEqual) => "filament.op.text.ge",
+        ("enum", ComparisonOperator::Equal) => "filament.op.enum.eq",
+        ("enum", ComparisonOperator::NotEqual) => "filament.op.enum.ne",
+        ("enum", ComparisonOperator::Less) => "filament.op.enum.lt",
+        ("enum", ComparisonOperator::LessOrEqual) => "filament.op.enum.le",
+        ("enum", ComparisonOperator::Greater) => "filament.op.enum.gt",
+        ("enum", ComparisonOperator::GreaterOrEqual) => "filament.op.enum.ge",
+        ("quantity", ComparisonOperator::Equal) => "filament.op.quantity.eq",
+        ("quantity", ComparisonOperator::NotEqual) => "filament.op.quantity.ne",
+        ("quantity", ComparisonOperator::Less) => "filament.op.quantity.lt",
+        ("quantity", ComparisonOperator::LessOrEqual) => "filament.op.quantity.le",
+        ("quantity", ComparisonOperator::Greater) => "filament.op.quantity.gt",
+        ("quantity", ComparisonOperator::GreaterOrEqual) => "filament.op.quantity.ge",
         (family, operator) => panic!("no catalog identity for {family} {operator:?}"),
     }
 }
@@ -2785,7 +2793,7 @@ pub fn missing_rounding_package() -> PackageBuilder {
         application(
             "binary",
             op_full(
-                "quire.op.ieee.float32.add",
+                "filament.op.ieee.float32.add",
                 vec![law("ieee_profile", ieee_profile_definition())],
                 Some(mode_kv("rounding", "nearest-even")),
                 None,
@@ -3012,7 +3020,7 @@ fn corpus_package_with_expression_operand() -> PackageBuilder {
             application(
                 "convert",
                 op_full(
-                    "quire.op.quantity.convert",
+                    "filament.op.quantity.convert",
                     vec![],
                     Some(mode_kv("rounding", "exact")),
                     Some(type_argument_member(&target)),
@@ -3030,9 +3038,9 @@ fn corpus_package_with_expression_operand() -> PackageBuilder {
         &unit_type(),
         application(
             "binary",
-            op("quire.op.quantity.add"),
+            op("filament.op.quantity.add"),
             &unit_type(),
-            // A deliberate negative fixture QSL never emits (it builds no quantity literal).
+            // A deliberate negative fixture FSL never emits (it builds no quantity literal).
             // A quantity literal is typed by its unit: IR resolves a literal operand
             // through `literal.type`, and `quantity.add` takes a quantity on both sides.
             vec![
@@ -3063,7 +3071,7 @@ fn corpus_package_with_expression_operand() -> PackageBuilder {
         &integer_type,
         application(
             "binary",
-            op("quire.op.integer.add"),
+            op("filament.op.integer.add"),
             &integer_type,
             // An operand that is neither a literal nor a reference. The V2 reader's flat
             // wire refuses an application nested in `body.arguments[*]` as `malformed_wire`
@@ -3096,7 +3104,7 @@ fn corpus_package_with_expression_operand() -> PackageBuilder {
         &integer_type,
         application(
             "binary",
-            op("quire.op.integer.add"),
+            op("filament.op.integer.add"),
             &integer_type,
             vec![
                 reference(&untyped_operand_anchor),
@@ -3116,7 +3124,7 @@ fn corpus_package_with_expression_operand() -> PackageBuilder {
         &integer_type,
         application(
             "binary",
-            op("quire.op.integer.add"),
+            op("filament.op.integer.add"),
             &integer_type,
             vec![
                 reference(&bounded_operand_anchor),
@@ -3126,13 +3134,13 @@ fn corpus_package_with_expression_operand() -> PackageBuilder {
         &[INT],
     );
     let boolean = key(T_BOOLEAN);
-    let clause_profile = artifact_ref("quire.temporal.event-position.false-extension/v1");
+    let clause_profile = artifact_ref("filament.temporal.event-position.false-extension/v1");
     builder.select_profile("temporal_profile", clause_profile.clone());
     // The formula is registered by the chain below, ahead of the clause that names it.
     let clause_formula = {
         let body = application(
             "temporal_formula",
-            op("quire.op.temporal.true"),
+            op("filament.op.temporal.true"),
             &boolean,
             Vec::new(),
         );
@@ -3158,7 +3166,7 @@ fn corpus_package_with_expression_operand() -> PackageBuilder {
             &boolean,
             application(
                 "unary",
-                op("quire.op.boolean.not"),
+                op("filament.op.boolean.not"),
                 &boolean,
                 vec![literal("boolean", "true")],
             ),
@@ -3174,7 +3182,7 @@ fn corpus_package_with_expression_operand() -> PackageBuilder {
         .code(STATE, "state", "snapshot", &boolean, aggregate())
         // IR admits a `temporal_clause` only as a `temporal`-operator application over a
         // declared `parameter` with one `temporal_profile` law and a `temporal` formula argument
-        // (the QSpec temporal-clause rule), so this node is that minimal clause rather than a
+        // (the FSpec temporal-clause rule), so this node is that minimal clause rather than a
         // `boolean.not` stand-in. CG refuses it as an unsupported `temporal` family; IR checks
         // the admitted closure in node-id order, which puts this clause before its formula.
         .application_code_with(
@@ -3185,7 +3193,7 @@ fn corpus_package_with_expression_operand() -> PackageBuilder {
             application(
                 "temporal",
                 op_full(
-                    "quire.op.temporal.clause",
+                    "filament.op.temporal.clause",
                     vec![law("temporal_profile", clause_profile)],
                     None,
                     None,
@@ -3217,7 +3225,7 @@ fn corpus_package_with_expression_operand() -> PackageBuilder {
         "binary",
         &integer_type,
         application(
-            // `quire.op.integer.add`'s two operands both require the
+            // `filament.op.integer.add`'s two operands both require the
             // `integer` family (the catalog's own entry, not the broader
             // `exact_numeric` group); `FUNCTION` resolves to the catalog's
             // own `function` family (its `node_tag` is `function`, matched
@@ -3226,12 +3234,12 @@ fn corpus_package_with_expression_operand() -> PackageBuilder {
             // `IllTyped`/`OperatorIneligible` at admission before CG's own
             // upstream-blocked check (which runs at generation time, over
             // IR's already-lowered graph) is ever reached.
-            // `quire.op.function.call` is the one catalog identity built for
+            // `filament.op.function.call` is the one catalog identity built for
             // exactly this shape: its first operand's family is `function`
             // outright and its `rest` accepts `any_term`, so `FUNCTION` and
             // a plain integer reference both admit unchanged.
             "call",
-            op("quire.op.function.call"),
+            op("filament.op.function.call"),
             &integer_type,
             // `FUNCTION` is itself an application-bodied node built above in
             // this same chain, so its real digest is already registered;
@@ -3256,7 +3264,7 @@ fn corpus_package_with_expression_operand() -> PackageBuilder {
         &integer_type,
         application(
             "unary",
-            op("quire.op.integer.negate"),
+            op("filament.op.integer.negate"),
             &integer_type,
             vec![reference(&wrong_body_anchor)],
         ),
@@ -3273,7 +3281,7 @@ fn corpus_package_with_expression_operand() -> PackageBuilder {
         &integer_type,
         application(
             "binary",
-            op("quire.op.integer.add"),
+            op("filament.op.integer.add"),
             &integer_type,
             // Contract IR resolves a literal operand's family through `literal.type`, so a
             // literal typed by `T_DECIMAL` would be `OperatorIneligible` at admission. It does
@@ -3281,7 +3289,7 @@ fn corpus_package_with_expression_operand() -> PackageBuilder {
             // integer type but carrying the `decimal` value kind admits, while CG's
             // `check_operand` classifies it by its own `value_kind` and refuses the same
             // `OperandTypeMismatch { position: 1, expected: Integer, found: Some("decimal") }`.
-            // A deliberate negative fixture: the type and `value_kind` disagree, and QSL builds no
+            // A deliberate negative fixture: the type and `value_kind` disagree, and FSL builds no
             // decimal literal, so it never emits this shape.
             vec![
                 reference(&wrong_operand_anchor),
@@ -3306,10 +3314,10 @@ fn corpus_package_with_expression_operand() -> PackageBuilder {
         &key(T_RATIONAL),
         application(
             "binary",
-            op("quire.op.rational.div"),
+            op("filament.op.rational.div"),
             &key(T_RATIONAL),
             // First operand is a `reference` to an integer-family node:
-            // `quire.op.rational.div`'s catalogued operand family is
+            // `filament.op.rational.div`'s catalogued operand family is
             // `rational_promotable` (`{integer, rational}`, see the
             // catalog's own `groups` table), so an integer-typed reference
             // admits at IR -- unlike `WRONG_OPERAND` above, this exercises
@@ -3327,7 +3335,7 @@ fn corpus_package_with_expression_operand() -> PackageBuilder {
             // This is the same shape a real catalog family being coarser
             // than CG's own `ScalarForm` produces in production: e.g. two
             // integer-typed reference operands requested against
-            // `quire.op.rational.div` under a `Rational` descriptor.
+            // `filament.op.rational.div` under a `Rational` descriptor.
             vec![
                 reference(&wrong_operand_reference_anchor),
                 literal("integer", "2032"),
@@ -3377,7 +3385,7 @@ fn corpus_package_with_expression_operand() -> PackageBuilder {
     // `select_profile`'s own doc) -- any well-formed artifact ref the lock
     // selects under that role admits -- so both laws are locally chosen
     // well-formed values, distinct by construction.
-    let temporal_profile = artifact_ref("quire.temporal.event-position.false-extension/v1");
+    let temporal_profile = artifact_ref("filament.temporal.event-position.false-extension/v1");
     builder.select_profile("temporal_profile", temporal_profile.clone());
     builder.application_code(
         CLAIM,
@@ -3387,7 +3395,7 @@ fn corpus_package_with_expression_operand() -> PackageBuilder {
         application(
             "claim",
             op_full(
-                "quire.op.claim.clause",
+                "filament.op.claim.clause",
                 vec![law("temporal_profile", temporal_profile)],
                 None,
                 Some(member_kind("profile_operator")),
@@ -3396,7 +3404,7 @@ fn corpus_package_with_expression_operand() -> PackageBuilder {
             Vec::new(),
         ),
     );
-    let temporal_profile_alt = artifact_ref("quire.temporal.event-position.true-extension/v1");
+    let temporal_profile_alt = artifact_ref("filament.temporal.event-position.true-extension/v1");
     builder.select_profile("temporal_profile", temporal_profile_alt.clone());
     builder.application_code(
         CLAIM_ALT,
@@ -3406,7 +3414,7 @@ fn corpus_package_with_expression_operand() -> PackageBuilder {
         application(
             "claim",
             op_full(
-                "quire.op.claim.clause",
+                "filament.op.claim.clause",
                 vec![law("temporal_profile", temporal_profile_alt)],
                 None,
                 Some(member_kind("profile_operator")),
@@ -3501,7 +3509,7 @@ pub fn mode_mismatch_package() -> PackageBuilder {
         application(
             "binary",
             op_full(
-                "quire.op.decimal.add",
+                "filament.op.decimal.add",
                 vec![],
                 Some(mode_kv("rounding", "toward-zero")),
                 None,
@@ -3514,7 +3522,7 @@ pub fn mode_mismatch_package() -> PackageBuilder {
     builder
 }
 
-/// The QSL parameter `x: Int[0, 9]` of [`bounded_increment_package`].
+/// The FSL parameter `x: Int[0, 9]` of [`bounded_increment_package`].
 pub const V_PARAM_X: u32 = 111;
 /// The second bounded operand for [`BOUNDED_BINARY_SUBTRACTION`].
 pub const V_PARAM_SUBTRAHEND: u32 = 121;
@@ -3527,7 +3535,7 @@ pub const BOUNDED_DECREMENT: u32 = 2036;
 /// `x - y` over independently bounded `Int[0, 9]` operands.
 pub const BOUNDED_BINARY_SUBTRACTION: u32 = 2037;
 
-/// A package holding only `x + 1` over `Int[0, 9]` in QSL's shape: `x` is typed by an
+/// A package holding only `x + 1` over `Int[0, 9]` in FSL's shape: `x` is typed by an
 /// `integer_range` `bounded_domain` over Integer whose members are `min`/`max` bindings.
 pub fn bounded_increment_package() -> PackageBuilder {
     increment_package_over(Bound::Integer(0, 9))
@@ -3552,7 +3560,7 @@ pub fn increment_package_over(bound: Bound) -> PackageBuilder {
         &bound_key,
         application(
             "binary",
-            op("quire.op.integer.add"),
+            op("filament.op.integer.add"),
             &bound_key,
             vec![reference(&key(V_PARAM_X)), literal("integer", "1")],
         ),
@@ -3580,7 +3588,7 @@ pub fn bounded_decrement_package() -> PackageBuilder {
         &bound_key,
         application(
             "binary",
-            op("quire.op.integer.sub"),
+            op("filament.op.integer.sub"),
             &bound_key,
             vec![reference(&key(V_PARAM_X)), literal("integer", "1")],
         ),
@@ -3617,7 +3625,7 @@ pub fn bounded_binary_subtraction_package() -> PackageBuilder {
         &key(T_INTEGER),
         application(
             "binary",
-            op("quire.op.integer.sub"),
+            op("filament.op.integer.sub"),
             &key(T_INTEGER),
             vec![reference(&minuend_key), reference(&subtrahend_key)],
         ),
@@ -3691,7 +3699,7 @@ pub fn source_backed_byte_chain(count: u32) -> (PackageBuilder, String, SourceTo
             &bound,
             application(
                 "binary",
-                op("quire.op.integer.add"),
+                op("filament.op.integer.add"),
                 &bound,
                 vec![reference(&predecessor_key), reference(&predecessor_key)],
             ),
@@ -3880,7 +3888,12 @@ fn two_parameter_wire() -> PackageBuilder {
         literal("integer", "3"),
     );
     let sum = |operands: Vec<Value>, result_type: &str| {
-        application("binary", op("quire.op.integer.add"), result_type, operands)
+        application(
+            "binary",
+            op("filament.op.integer.add"),
+            result_type,
+            operands,
+        )
     };
     let param = |code| reference(&key(code));
     for (code, operands, result_type) in [
@@ -3947,9 +3960,12 @@ fn two_parameter_wire() -> PackageBuilder {
             "binary",
             result_type,
             match code {
-                BOUNDED_PRODUCT => {
-                    application("binary", op("quire.op.integer.mul"), result_type, operands)
-                }
+                BOUNDED_PRODUCT => application(
+                    "binary",
+                    op("filament.op.integer.mul"),
+                    result_type,
+                    operands,
+                ),
                 _ => sum(operands, result_type),
             },
             &[],
@@ -3962,7 +3978,7 @@ fn two_parameter_wire() -> PackageBuilder {
         &negated,
         application(
             "unary",
-            op("quire.op.integer.negate"),
+            op("filament.op.integer.negate"),
             &negated,
             vec![param(V_PARAM_E)],
         ),
@@ -3995,7 +4011,7 @@ fn two_parameter_wire() -> PackageBuilder {
     builder
 }
 
-/// The body QSL emits for a parameter's `value` node (form `parameter`): an `aggregate` of its
+/// The body FSL emits for a parameter's `value` node (form `parameter`): an `aggregate` of its
 /// `name` (a `text` literal) and its `level` (an `integer` literal) as `binding` members. It is
 /// not a literal, so a reference to it is an operand, never a constant.
 pub fn parameter_body(name: &str, level: u32) -> Value {
@@ -4008,90 +4024,90 @@ pub fn parameter_body(name: &str, level: u32) -> Value {
     })
 }
 
-/// QSL's parameter `x: Int[0, 9]`, typed by an `integer_range` `bounded_domain`.
-pub const QSL_PARAM_X: u32 = 130;
-/// QSL's parameter `y: Int[10, 20]`.
-pub const QSL_PARAM_Y: u32 = 131;
-/// QSL's parameter `z: Int[0, 9]`: the same bound as `x` (bounds are content-addressed).
-pub const QSL_PARAM_Z: u32 = 132;
+/// FSL's parameter `x: Int[0, 9]`, typed by an `integer_range` `bounded_domain`.
+pub const FSL_PARAM_X: u32 = 130;
+/// FSL's parameter `y: Int[10, 20]`.
+pub const FSL_PARAM_Y: u32 = 131;
+/// FSL's parameter `z: Int[0, 9]`: the same bound as `x` (bounds are content-addressed).
+pub const FSL_PARAM_Z: u32 = 132;
 /// A parameter `p` typed by the plain Integer scalar type.
-pub const QSL_PARAM_PLAIN: u32 = 133;
+pub const FSL_PARAM_PLAIN: u32 = 133;
 /// `q`: an actual parameter typed by the plain Integer scalar type. Its
 /// aggregate parameter body has no artificial bound dependency.
-pub const QSL_PARAM_REACHING: u32 = 139;
+pub const FSL_PARAM_REACHING: u32 = 139;
 /// Parameters `u`, `v`, `w: Int[10, 20]`: an expression node's id is the digest of its content,
 /// so each further `x + y`-shaped node sums `x` with its own parameter to stay a distinct node.
-pub const QSL_PARAM_U: u32 = 136;
-pub const QSL_PARAM_V: u32 = 137;
-pub const QSL_PARAM_W: u32 = 138;
-/// The `value` node QSL emits for the literal `1`: form `literal`, a `literal` body, typed by the
+pub const FSL_PARAM_U: u32 = 136;
+pub const FSL_PARAM_V: u32 = 137;
+pub const FSL_PARAM_W: u32 = 138;
+/// The `value` node FSL emits for the literal `1`: form `literal`, a `literal` body, typed by the
 /// plain Integer scalar type.
-pub const QSL_LITERAL_ONE: u32 = 134;
+pub const FSL_LITERAL_ONE: u32 = 134;
 /// An unbounded Integer parameter with an aggregate body: a reference to it
 /// is not a constant.
-pub const QSL_NOT_LITERAL: u32 = 135;
+pub const FSL_NOT_LITERAL: u32 = 135;
 /// `x + 1` (`function inc(x: Int[0, 9]): Int[0, 10] { x + 1 }`): the literal is a reference to
-/// [`QSL_LITERAL_ONE`] and the node's own result type is the plain Integer type.
-pub const QSL_INC: u32 = 2070;
-/// The narrowing conversion of [`QSL_INC`] to `Int[0, 10]`.
-pub const QSL_INC_NARROW: u32 = 2071;
+/// [`FSL_LITERAL_ONE`] and the node's own result type is the plain Integer type.
+pub const FSL_INC: u32 = 2070;
+/// The narrowing conversion of [`FSL_INC`] to `Int[0, 10]`.
+pub const FSL_INC_NARROW: u32 = 2071;
 /// `x + y` (`function add(x: Int[0, 9], y: Int[10, 20]): Int[10, 29] { x + y }`).
-pub const QSL_ADD: u32 = 2072;
-/// The narrowing conversion of [`QSL_ADD`] to `Int[10, 29]`.
-pub const QSL_ADD_NARROW: u32 = 2073;
+pub const FSL_ADD: u32 = 2072;
+/// The narrowing conversion of [`FSL_ADD`] to `Int[10, 29]`.
+pub const FSL_ADD_NARROW: u32 = 2073;
 /// `-z` (`function negate(z: Int[0, 9]): Int[-9, 0] { -z }`).
-pub const QSL_NEGATE: u32 = 2074;
-/// The narrowing conversion of [`QSL_NEGATE`] to `Int[-9, 0]`.
-pub const QSL_NEGATE_NARROW: u32 = 2075;
+pub const FSL_NEGATE: u32 = 2074;
+/// The narrowing conversion of [`FSL_NEGATE`] to `Int[-9, 0]`.
+pub const FSL_NEGATE_NARROW: u32 = 2075;
 /// `x + p` narrowed to `Int[0, 29]`: `p` is a plain-Integer parameter.
-pub const QSL_PLAIN_OPERAND: u32 = 2076;
-/// The narrowing conversion of [`QSL_PLAIN_OPERAND`].
-pub const QSL_PLAIN_OPERAND_NARROW: u32 = 2077;
+pub const FSL_PLAIN_OPERAND: u32 = 2076;
+/// The narrowing conversion of [`FSL_PLAIN_OPERAND`].
+pub const FSL_PLAIN_OPERAND_NARROW: u32 = 2077;
 /// `q + q` narrowed to `Int[0, 29]`: no operand owns a bound, and the narrowing bounds the result.
 /// IR may refuse the unbounded parameter before CG inspects the narrowing;
 /// CG retains the typed `RequiresBound` refusal in either case.
-pub const QSL_PLAIN_PAIR: u32 = 2087;
-/// The narrowing conversion of [`QSL_PLAIN_PAIR`].
-pub const QSL_PLAIN_PAIR_NARROW: u32 = 2088;
-/// `x + n` narrowed to `Int[0, 29]`, where `n` is [`QSL_NOT_LITERAL`].
-pub const QSL_NOT_LITERAL_OPERAND: u32 = 2078;
-/// The narrowing conversion of [`QSL_NOT_LITERAL_OPERAND`].
-pub const QSL_NOT_LITERAL_OPERAND_NARROW: u32 = 2079;
+pub const FSL_PLAIN_PAIR: u32 = 2087;
+/// The narrowing conversion of [`FSL_PLAIN_PAIR`].
+pub const FSL_PLAIN_PAIR_NARROW: u32 = 2088;
+/// `x + n` narrowed to `Int[0, 29]`, where `n` is [`FSL_NOT_LITERAL`].
+pub const FSL_NOT_LITERAL_OPERAND: u32 = 2078;
+/// The narrowing conversion of [`FSL_NOT_LITERAL_OPERAND`].
+pub const FSL_NOT_LITERAL_OPERAND_NARROW: u32 = 2079;
 /// `x + u` consumed by two narrowing conversions, to `Int[10, 29]` and to `Int[0, 40]`.
-pub const QSL_TWICE_NARROWED: u32 = 2080;
-/// The narrowing conversion of [`QSL_TWICE_NARROWED`] to `Int[10, 29]`.
-pub const QSL_TWICE_NARROWED_FIRST: u32 = 2081;
-/// The narrowing conversion of [`QSL_TWICE_NARROWED`] to `Int[0, 40]`.
-pub const QSL_TWICE_NARROWED_SECOND: u32 = 2082;
+pub const FSL_TWICE_NARROWED: u32 = 2080;
+/// The narrowing conversion of [`FSL_TWICE_NARROWED`] to `Int[10, 29]`.
+pub const FSL_TWICE_NARROWED_FIRST: u32 = 2081;
+/// The narrowing conversion of [`FSL_TWICE_NARROWED`] to `Int[0, 40]`.
+pub const FSL_TWICE_NARROWED_SECOND: u32 = 2082;
 /// `x + v` narrowed to a `text_bounds` bound over Integer.
-pub const QSL_WRONG_FORM_NARROWED: u32 = 2083;
-/// The narrowing conversion of [`QSL_WRONG_FORM_NARROWED`].
-pub const QSL_WRONG_FORM_NARROW: u32 = 2084;
+pub const FSL_WRONG_FORM_NARROWED: u32 = 2083;
+/// The narrowing conversion of [`FSL_WRONG_FORM_NARROWED`].
+pub const FSL_WRONG_FORM_NARROW: u32 = 2084;
 /// `x + w` narrowed to an `integer_range` over Rational rather than Integer.
-pub const QSL_WRONG_BASE_NARROWED: u32 = 2085;
-/// The narrowing conversion of [`QSL_WRONG_BASE_NARROWED`].
-pub const QSL_WRONG_BASE_NARROW: u32 = 2086;
-/// `value` nodes of form `literal` typed by the plain Integer type, in QSL's shape for a literal
+pub const FSL_WRONG_BASE_NARROWED: u32 = 2085;
+/// The narrowing conversion of [`FSL_WRONG_BASE_NARROWED`].
+pub const FSL_WRONG_BASE_NARROW: u32 = 2086;
+/// `value` nodes of form `literal` typed by the plain Integer type, in FSL's shape for a literal
 /// operand: the integer literals `100`, `10^23` and `2`, and the text literal `"a"`.
-pub const QSL_LITERAL_HUNDRED: u32 = 140;
-pub const QSL_LITERAL_HUGE: u32 = 141;
-pub const QSL_LITERAL_TEXT: u32 = 142;
-pub const QSL_LITERAL_TWO: u32 = 143;
+pub const FSL_LITERAL_HUNDRED: u32 = 140;
+pub const FSL_LITERAL_HUGE: u32 = 141;
+pub const FSL_LITERAL_TEXT: u32 = 142;
+pub const FSL_LITERAL_TWO: u32 = 143;
 /// `x + 100` narrowed to `Int[0, 10]`: no `x` in `[0, 9]` gives a result inside the bound.
-pub const QSL_PLUS_HUNDRED: u32 = 2089;
-pub const QSL_PLUS_HUNDRED_NARROW: u32 = 2090;
+pub const FSL_PLUS_HUNDRED: u32 = 2089;
+pub const FSL_PLUS_HUNDRED_NARROW: u32 = 2090;
 /// `x + 10^23` narrowed to `Int[0, 10]`: the literal does not fit `i64`.
-pub const QSL_PLUS_HUGE: u32 = 2091;
-pub const QSL_PLUS_HUGE_NARROW: u32 = 2092;
+pub const FSL_PLUS_HUGE: u32 = 2091;
+pub const FSL_PLUS_HUGE_NARROW: u32 = 2092;
 /// `x + "a"` narrowed to `Int[0, 10]`, with the text literal in an Integer-typed `value` node.
-pub const QSL_PLUS_TEXT: u32 = 2093;
-pub const QSL_PLUS_TEXT_NARROW: u32 = 2094;
-/// `x + 2`, narrowed to `Int[0, 11]` and also an operand of [`QSL_SHARED_OUTER`].
-pub const QSL_SHARED: u32 = 2095;
-pub const QSL_SHARED_NARROW: u32 = 2096;
-/// `(x + 2) + x`, plain-Integer-typed and not narrowed: a consumer of [`QSL_SHARED`] that is not a
+pub const FSL_PLUS_TEXT: u32 = 2093;
+pub const FSL_PLUS_TEXT_NARROW: u32 = 2094;
+/// `x + 2`, narrowed to `Int[0, 11]` and also an operand of [`FSL_SHARED_OUTER`].
+pub const FSL_SHARED: u32 = 2095;
+pub const FSL_SHARED_NARROW: u32 = 2096;
+/// `(x + 2) + x`, plain-Integer-typed and not narrowed: a consumer of [`FSL_SHARED`] that is not a
 /// narrowing conversion.
-pub const QSL_SHARED_OUTER: u32 = 2097;
+pub const FSL_SHARED_OUTER: u32 = 2097;
 
 /// An `integer_range` over Rational: the right form over another base type.
 pub fn wrong_base_bound() -> Bound {
@@ -4103,9 +4119,9 @@ pub fn wrong_base_bound() -> Bound {
     }
 }
 
-/// [`corpus_package`] plus integer nodes in the shape QSL emits into a checked package for
+/// [`corpus_package`] plus integer nodes in the shape FSL emits into a checked package for
 /// `function inc using v(x: Int[0, 9]): Int[0, 10] pure { x + 1 }` and its siblings `add` and
-/// `negate` (read from QSL's emitted package, not copied from it):
+/// `negate` (read from FSL's emitted package, not copied from it):
 ///
 /// - a parameter is a `value` node of form `parameter` whose body is [`parameter_body`] and whose
 ///   type is its `bounded_domain`;
@@ -4113,37 +4129,37 @@ pub fn wrong_base_bound() -> Bound {
 ///   the literal and whose type is the plain Integer scalar type;
 /// - the arithmetic node's own result type is the plain Integer scalar type, and the declared
 ///   bounded result is the type of a `conversion` node that consumes it: a `convert`
-///   application with the identity `quire.op.numeric.narrow`, its `type_argument` member naming
+///   application with the identity `filament.op.numeric.narrow`, its `type_argument` member naming
 ///   the bound, and one argument, a reference to the arithmetic node.
-pub fn qsl_shaped_package() -> PackageBuilder {
-    let mut builder = qsl_shaped_wire();
-    builder.omit_code(QSL_WRONG_FORM_NARROWED);
-    builder.omit_code(QSL_WRONG_FORM_NARROW);
+pub fn fsl_shaped_package() -> PackageBuilder {
+    let mut builder = fsl_shaped_wire();
+    builder.omit_code(FSL_WRONG_FORM_NARROWED);
+    builder.omit_code(FSL_WRONG_FORM_NARROW);
     remove_wrong_form_bound(&mut builder);
     builder
 }
 
 /// Reader-negative wrong-form narrowing, isolated from valid narrowing controls.
-pub fn qsl_wrong_form_package() -> PackageBuilder {
-    qsl_shaped_wire().focused(&[
-        code_id(QSL_WRONG_FORM_NARROWED),
-        code_id(QSL_WRONG_FORM_NARROW),
+pub fn fsl_wrong_form_package() -> PackageBuilder {
+    fsl_shaped_wire().focused(&[
+        code_id(FSL_WRONG_FORM_NARROWED),
+        code_id(FSL_WRONG_FORM_NARROW),
     ])
 }
 
-fn qsl_shaped_wire() -> PackageBuilder {
+fn fsl_shaped_wire() -> PackageBuilder {
     let mut builder = corpus_package_for_codes(&[T_INTEGER, T_TEXT, T_RATIONAL, T_DECIMAL]);
     let integer_type = key(T_INTEGER);
     let x_bound = builder.bound(&Bound::Integer(0, 9));
     let y_bound = builder.bound(&Bound::Integer(10, 20));
     for (code, name, level, typing) in [
-        (QSL_PARAM_X, "x", 0, &x_bound),
-        (QSL_PARAM_Y, "y", 1, &y_bound),
-        (QSL_PARAM_Z, "z", 0, &x_bound),
-        (QSL_PARAM_PLAIN, "p", 1, &integer_type),
-        (QSL_PARAM_U, "u", 1, &y_bound),
-        (QSL_PARAM_V, "v", 1, &y_bound),
-        (QSL_PARAM_W, "w", 1, &y_bound),
+        (FSL_PARAM_X, "x", 0, &x_bound),
+        (FSL_PARAM_Y, "y", 1, &y_bound),
+        (FSL_PARAM_Z, "z", 0, &x_bound),
+        (FSL_PARAM_PLAIN, "p", 1, &integer_type),
+        (FSL_PARAM_U, "u", 1, &y_bound),
+        (FSL_PARAM_V, "v", 1, &y_bound),
+        (FSL_PARAM_W, "w", 1, &y_bound),
     ] {
         builder.code(
             code,
@@ -4154,34 +4170,34 @@ fn qsl_shaped_wire() -> PackageBuilder {
         );
     }
     builder.code(
-        QSL_PARAM_REACHING,
+        FSL_PARAM_REACHING,
         "value",
         "parameter",
         &integer_type,
         parameter_body("q", 0),
     );
     builder.code(
-        QSL_LITERAL_ONE,
+        FSL_LITERAL_ONE,
         "value",
         "literal",
         &integer_type,
         literal("integer", "1"),
     );
     builder.code(
-        QSL_NOT_LITERAL,
+        FSL_NOT_LITERAL,
         "value",
         "parameter",
         &integer_type,
         parameter_body("n", 1),
     );
     for (code, value) in [
-        (QSL_LITERAL_HUNDRED, literal("integer", "100")),
+        (FSL_LITERAL_HUNDRED, literal("integer", "100")),
         (
-            QSL_LITERAL_HUGE,
+            FSL_LITERAL_HUGE,
             literal("integer", "100000000000000000000000"),
         ),
-        (QSL_LITERAL_TEXT, literal("text", "a")),
-        (QSL_LITERAL_TWO, literal("integer", "2")),
+        (FSL_LITERAL_TEXT, literal("text", "a")),
+        (FSL_LITERAL_TWO, literal("integer", "2")),
     ] {
         builder.code(code, "value", "literal", &integer_type, value);
     }
@@ -4189,79 +4205,79 @@ fn qsl_shaped_wire() -> PackageBuilder {
     let sum = |left: u32, right: u32| {
         application(
             "binary",
-            op("quire.op.integer.add"),
+            op("filament.op.integer.add"),
             &integer_type,
             vec![param(left), param(right)],
         )
     };
     for (code, body, narrowed) in [
         (
-            QSL_INC,
-            sum(QSL_PARAM_X, QSL_LITERAL_ONE),
-            vec![(QSL_INC_NARROW, Bound::Integer(0, 10))],
+            FSL_INC,
+            sum(FSL_PARAM_X, FSL_LITERAL_ONE),
+            vec![(FSL_INC_NARROW, Bound::Integer(0, 10))],
         ),
         (
-            QSL_ADD,
-            sum(QSL_PARAM_X, QSL_PARAM_Y),
-            vec![(QSL_ADD_NARROW, Bound::Integer(10, 29))],
+            FSL_ADD,
+            sum(FSL_PARAM_X, FSL_PARAM_Y),
+            vec![(FSL_ADD_NARROW, Bound::Integer(10, 29))],
         ),
         (
-            QSL_NEGATE,
+            FSL_NEGATE,
             application(
                 "unary",
-                op("quire.op.integer.negate"),
+                op("filament.op.integer.negate"),
                 &integer_type,
-                vec![param(QSL_PARAM_Z)],
+                vec![param(FSL_PARAM_Z)],
             ),
-            vec![(QSL_NEGATE_NARROW, Bound::Integer(-9, 0))],
+            vec![(FSL_NEGATE_NARROW, Bound::Integer(-9, 0))],
         ),
         (
-            QSL_PLAIN_OPERAND,
-            sum(QSL_PARAM_X, QSL_PARAM_PLAIN),
-            vec![(QSL_PLAIN_OPERAND_NARROW, Bound::Integer(0, 29))],
+            FSL_PLAIN_OPERAND,
+            sum(FSL_PARAM_X, FSL_PARAM_PLAIN),
+            vec![(FSL_PLAIN_OPERAND_NARROW, Bound::Integer(0, 29))],
         ),
         (
-            QSL_PLAIN_PAIR,
-            sum(QSL_PARAM_REACHING, QSL_PARAM_REACHING),
-            vec![(QSL_PLAIN_PAIR_NARROW, Bound::Integer(0, 29))],
+            FSL_PLAIN_PAIR,
+            sum(FSL_PARAM_REACHING, FSL_PARAM_REACHING),
+            vec![(FSL_PLAIN_PAIR_NARROW, Bound::Integer(0, 29))],
         ),
         (
-            QSL_NOT_LITERAL_OPERAND,
-            sum(QSL_PARAM_X, QSL_NOT_LITERAL),
-            vec![(QSL_NOT_LITERAL_OPERAND_NARROW, Bound::Integer(0, 29))],
+            FSL_NOT_LITERAL_OPERAND,
+            sum(FSL_PARAM_X, FSL_NOT_LITERAL),
+            vec![(FSL_NOT_LITERAL_OPERAND_NARROW, Bound::Integer(0, 29))],
         ),
         (
-            QSL_TWICE_NARROWED,
-            sum(QSL_PARAM_X, QSL_PARAM_U),
+            FSL_TWICE_NARROWED,
+            sum(FSL_PARAM_X, FSL_PARAM_U),
             vec![
-                (QSL_TWICE_NARROWED_FIRST, Bound::Integer(10, 29)),
-                (QSL_TWICE_NARROWED_SECOND, Bound::Integer(0, 40)),
+                (FSL_TWICE_NARROWED_FIRST, Bound::Integer(10, 29)),
+                (FSL_TWICE_NARROWED_SECOND, Bound::Integer(0, 40)),
             ],
         ),
         (
-            QSL_WRONG_FORM_NARROWED,
-            sum(QSL_PARAM_X, QSL_PARAM_V),
-            vec![(QSL_WRONG_FORM_NARROW, wrong_form_bound())],
+            FSL_WRONG_FORM_NARROWED,
+            sum(FSL_PARAM_X, FSL_PARAM_V),
+            vec![(FSL_WRONG_FORM_NARROW, wrong_form_bound())],
         ),
         (
-            QSL_PLUS_HUNDRED,
-            sum(QSL_PARAM_X, QSL_LITERAL_HUNDRED),
-            vec![(QSL_PLUS_HUNDRED_NARROW, Bound::Integer(0, 10))],
+            FSL_PLUS_HUNDRED,
+            sum(FSL_PARAM_X, FSL_LITERAL_HUNDRED),
+            vec![(FSL_PLUS_HUNDRED_NARROW, Bound::Integer(0, 10))],
         ),
         (
-            QSL_PLUS_HUGE,
-            sum(QSL_PARAM_X, QSL_LITERAL_HUGE),
-            vec![(QSL_PLUS_HUGE_NARROW, Bound::Integer(0, 10))],
+            FSL_PLUS_HUGE,
+            sum(FSL_PARAM_X, FSL_LITERAL_HUGE),
+            vec![(FSL_PLUS_HUGE_NARROW, Bound::Integer(0, 10))],
         ),
         (
-            QSL_PLUS_TEXT,
-            sum(QSL_PARAM_X, QSL_LITERAL_TEXT),
-            vec![(QSL_PLUS_TEXT_NARROW, Bound::Integer(0, 10))],
+            FSL_PLUS_TEXT,
+            sum(FSL_PARAM_X, FSL_LITERAL_TEXT),
+            vec![(FSL_PLUS_TEXT_NARROW, Bound::Integer(0, 10))],
         ),
         (
-            QSL_SHARED,
-            sum(QSL_PARAM_X, QSL_LITERAL_TWO),
-            vec![(QSL_SHARED_NARROW, Bound::Integer(0, 11))],
+            FSL_SHARED,
+            sum(FSL_PARAM_X, FSL_LITERAL_TWO),
+            vec![(FSL_SHARED_NARROW, Bound::Integer(0, 11))],
         ),
     ] {
         let form = body["operator"].as_str().expect("operator").to_owned();
@@ -4272,17 +4288,17 @@ fn qsl_shaped_wire() -> PackageBuilder {
             builder.narrow(narrow, &operand, &target);
         }
     }
-    let shared = fixture_label(&code_id(QSL_SHARED)).to_owned();
+    let shared = fixture_label(&code_id(FSL_SHARED)).to_owned();
     builder.application_bounded(
-        QSL_SHARED_OUTER,
+        FSL_SHARED_OUTER,
         "expression",
         "binary",
         &integer_type,
         application(
             "binary",
-            op("quire.op.integer.add"),
+            op("filament.op.integer.add"),
             &integer_type,
-            vec![reference(&shared), reference(&key(QSL_PARAM_X))],
+            vec![reference(&shared), reference(&key(FSL_PARAM_X))],
         ),
         &[],
     );
@@ -4291,9 +4307,9 @@ fn qsl_shaped_wire() -> PackageBuilder {
 
 /// Keep the malformed Integer-range-over-Rational narrowing outside the admitted corpus.
 /// The base wire is resolved first, so its deliberate invalid shape is the first reader refusal.
-pub fn qsl_wrong_base_package() -> PackageBuilder {
+pub fn fsl_wrong_base_package() -> PackageBuilder {
     let rekey::ResolvedWire { wire, ids, outcome } =
-        qsl_shaped_package().resolved_wire(CheckedPackageReadLimits::bounded());
+        fsl_shaped_package().resolved_wire(CheckedPackageReadLimits::bounded());
     assert!(matches!(outcome, CheckedPackageV2ReadResult::Admitted(_)));
     let mut builder = PackageBuilder {
         value: wire,
@@ -4302,16 +4318,16 @@ pub fn qsl_wrong_base_package() -> PackageBuilder {
     };
     let integer = fixture_label(&ids.resolve(&code_id(T_INTEGER))).to_owned();
     let rational = fixture_label(&ids.resolve(&code_id(T_RATIONAL))).to_owned();
-    let operand_x = fixture_label(&ids.resolve(&code_id(QSL_PARAM_X))).to_owned();
-    let operand_w = fixture_label(&ids.resolve(&code_id(QSL_PARAM_W))).to_owned();
+    let operand_x = fixture_label(&ids.resolve(&code_id(FSL_PARAM_X))).to_owned();
+    let operand_w = fixture_label(&ids.resolve(&code_id(FSL_PARAM_W))).to_owned();
     builder.application_bounded(
-        QSL_WRONG_BASE_NARROWED,
+        FSL_WRONG_BASE_NARROWED,
         "expression",
         "binary",
         &integer,
         application(
             "binary",
-            op("quire.op.integer.add"),
+            op("filament.op.integer.add"),
             &integer,
             vec![reference(&operand_x), reference(&operand_w)],
         ),
@@ -4331,8 +4347,8 @@ pub fn qsl_wrong_base_package() -> PackageBuilder {
         &foreign,
     );
     builder.narrow(
-        QSL_WRONG_BASE_NARROW,
-        &fixture_label(&code_id(QSL_WRONG_BASE_NARROWED)),
+        FSL_WRONG_BASE_NARROW,
+        &fixture_label(&code_id(FSL_WRONG_BASE_NARROWED)),
         &bound_digest,
     );
     builder
@@ -4340,12 +4356,12 @@ pub fn qsl_wrong_base_package() -> PackageBuilder {
 
 impl PackageBuilder {
     /// A narrowing `conversion` of the node `operand` to the `bounded_domain` `target`, typed by
-    /// `target`, in QSL's shape.
+    /// `target`, in FSL's shape.
     pub fn narrow(&mut self, code: u32, operand: &str, target: &str) -> &mut Self {
         let body = application(
             "convert",
             op_full(
-                "quire.op.numeric.narrow",
+                "filament.op.numeric.narrow",
                 Vec::new(),
                 None,
                 Some(type_argument_member(target)),
@@ -4434,7 +4450,7 @@ pub fn conversion_operand_package() -> PackageBuilder {
         &key(T_BOOLEAN),
         application(
             "binary",
-            op("quire.op.quantity.eq"),
+            op("filament.op.quantity.eq"),
             &key(T_BOOLEAN),
             vec![reference(&conversion), reference(&key(V_QUANTITY))],
         ),
@@ -4492,7 +4508,7 @@ pub fn conversion_operand_package() -> PackageBuilder {
         &key(T_INTEGER),
         application(
             "call",
-            op("quire.op.function.call"),
+            op("filament.op.function.call"),
             &key(T_INTEGER),
             vec![
                 reference(&function),
@@ -4523,7 +4539,7 @@ pub fn conversion_operand_package() -> PackageBuilder {
         &unit_type(),
         application(
             "call",
-            op("quire.op.function.call"),
+            op("filament.op.function.call"),
             &unit_type(),
             vec![reference(&converting)],
         ),
@@ -4546,7 +4562,7 @@ pub fn conversion_operand_package() -> PackageBuilder {
         &key(T_INTEGER),
         application(
             "call",
-            op("quire.op.function.call"),
+            op("filament.op.function.call"),
             &key(T_INTEGER),
             vec![
                 reference(&reference_function),
@@ -4592,7 +4608,7 @@ pub fn derivation_package_with(extra_codes: &[u32]) -> PackageBuilder {
         application(
             "binary",
             op_full(
-                "quire.op.integer.rem",
+                "filament.op.integer.rem",
                 vec![law(
                     "integer_division",
                     integer_division_definition(DivisionProfile::Truncating),
@@ -4614,7 +4630,7 @@ pub fn derivation_package_with(extra_codes: &[u32]) -> PackageBuilder {
         &key(T_BOOLEAN),
         application(
             "binary",
-            op("quire.op.integer.eq"),
+            op("filament.op.integer.eq"),
             &key(T_BOOLEAN),
             vec![reference(&eq_operand), literal("integer", "2")],
         ),
@@ -4627,7 +4643,7 @@ pub fn derivation_package_with(extra_codes: &[u32]) -> PackageBuilder {
         &key(T_BOOLEAN),
         application(
             "binary",
-            op("quire.op.integer.ne"),
+            op("filament.op.integer.ne"),
             &key(T_BOOLEAN),
             vec![reference(&eq_operand), literal("integer", "2")],
         ),
@@ -4640,7 +4656,7 @@ pub fn derivation_package_with(extra_codes: &[u32]) -> PackageBuilder {
         &key(T_BOOLEAN),
         application(
             "binary",
-            op("quire.op.integer.gt"),
+            op("filament.op.integer.gt"),
             &key(T_BOOLEAN),
             vec![reference(&eq_operand), literal("integer", "2")],
         ),
@@ -4649,37 +4665,37 @@ pub fn derivation_package_with(extra_codes: &[u32]) -> PackageBuilder {
     for (code, identity, operator, operands) in [
         (
             DERIVE_BOOLEAN_AND,
-            "quire.op.boolean.and",
+            "filament.op.boolean.and",
             "binary",
             vec![literal("boolean", "true"), literal("boolean", "false")],
         ),
         (
             DERIVE_BOOLEAN_OR,
-            "quire.op.boolean.or",
+            "filament.op.boolean.or",
             "binary",
             vec![literal("boolean", "true"), literal("boolean", "false")],
         ),
         (
             DERIVE_BOOLEAN_NOT,
-            "quire.op.boolean.not",
+            "filament.op.boolean.not",
             "unary",
             vec![literal("boolean", "true")],
         ),
         (
             DERIVE_BOOLEAN_IMPLIES,
-            "quire.op.boolean.implies",
+            "filament.op.boolean.implies",
             "binary",
             vec![literal("boolean", "true"), literal("boolean", "false")],
         ),
         (
             DERIVE_BOOLEAN_EQ,
-            "quire.op.boolean.eq",
+            "filament.op.boolean.eq",
             "binary",
             vec![literal("boolean", "true"), literal("boolean", "false")],
         ),
         (
             DERIVE_BOOLEAN_NE,
-            "quire.op.boolean.ne",
+            "filament.op.boolean.ne",
             "binary",
             vec![literal("boolean", "true"), literal("boolean", "false")],
         ),
@@ -4694,9 +4710,9 @@ pub fn derivation_package_with(extra_codes: &[u32]) -> PackageBuilder {
         );
     }
     for (code, identity) in [
-        (DERIVE_BOOLEAN_SHORT_CIRCUIT, "quire.op.boolean.implies"),
-        (DERIVE_BOOLEAN_LAZY_AND, "quire.op.boolean.and"),
-        (DERIVE_BOOLEAN_LAZY_OR, "quire.op.boolean.or"),
+        (DERIVE_BOOLEAN_SHORT_CIRCUIT, "filament.op.boolean.implies"),
+        (DERIVE_BOOLEAN_LAZY_AND, "filament.op.boolean.and"),
+        (DERIVE_BOOLEAN_LAZY_OR, "filament.op.boolean.or"),
     ] {
         builder.application_bounded(
             code,
@@ -4726,7 +4742,7 @@ pub fn derivation_package_with(extra_codes: &[u32]) -> PackageBuilder {
         &key(T_RATIONAL),
         application(
             "binary",
-            op("quire.op.rational.div"),
+            op("filament.op.rational.div"),
             &key(T_RATIONAL),
             vec![reference(&integer_operand), reference(&rational_operand)],
         ),
@@ -4741,7 +4757,7 @@ pub fn derivation_package_with(extra_codes: &[u32]) -> PackageBuilder {
         application(
             "convert",
             op_full(
-                "quire.op.numeric.convert",
+                "filament.op.numeric.convert",
                 vec![],
                 None,
                 Some(type_argument_member(&key(T_INTEGER))),
@@ -5058,7 +5074,7 @@ mod fixture_identity_tests {
             &key(T_INTEGER),
             application(
                 "binary",
-                op("quire.op.integer.add"),
+                op("filament.op.integer.add"),
                 &key(T_INTEGER),
                 vec![reference(&key(V_PARAM_X)), literal("integer", "1")],
             ),
@@ -5071,7 +5087,7 @@ mod fixture_identity_tests {
             &key(T_INTEGER),
             application(
                 "binary",
-                op("quire.op.integer.add"),
+                op("filament.op.integer.add"),
                 &key(T_INTEGER),
                 vec![reference(&key(BOUNDED_INCREMENT)), literal("integer", "2")],
             ),
@@ -5183,7 +5199,7 @@ pub fn compound_quantity_package() -> PackageBuilder {
         application(
             "convert",
             op_full(
-                "quire.op.quantity.convert",
+                "filament.op.quantity.convert",
                 vec![],
                 Some(mode_kv("rounding", "exact")),
                 Some(type_argument_member(&compound)),
@@ -5209,7 +5225,7 @@ pub fn compound_quantity_package() -> PackageBuilder {
         application(
             "convert",
             op_full(
-                "quire.op.quantity.convert",
+                "filament.op.quantity.convert",
                 vec![],
                 Some(mode_kv("rounding", "exact")),
                 Some(type_argument_member(&unit_type())),
@@ -5226,7 +5242,7 @@ pub fn compound_quantity_package() -> PackageBuilder {
         &compound,
         application(
             "binary",
-            op("quire.op.quantity.pow"),
+            op("filament.op.quantity.pow"),
             &compound,
             vec![reference(&key(V_QUANTITY)), literal("integer", "2")],
         ),
@@ -5239,7 +5255,7 @@ pub fn compound_quantity_package() -> PackageBuilder {
         &compound,
         application(
             "binary",
-            op("quire.op.quantity.mul"),
+            op("filament.op.quantity.mul"),
             &compound,
             vec![reference(&source), reference(&key(V_QUANTITY))],
         ),
@@ -5252,7 +5268,7 @@ pub fn compound_quantity_package() -> PackageBuilder {
         &compound,
         application(
             "binary",
-            op("quire.op.quantity.mul"),
+            op("filament.op.quantity.mul"),
             &compound,
             vec![reference(&key(V_QUANTITY)), reference(&key(V_QUANTITY))],
         ),
@@ -5278,7 +5294,7 @@ pub fn bare_compound_quantity_parameter_package() -> PackageBuilder {
         &key(9901),
         application(
             "binary",
-            op("quire.op.quantity.mul"),
+            op("filament.op.quantity.mul"),
             &key(9901),
             vec![reference(&key(9908)), reference(&key(V_QUANTITY))],
         ),
@@ -5287,7 +5303,7 @@ pub fn bare_compound_quantity_parameter_package() -> PackageBuilder {
     builder.focused(&[code_id(9909)])
 }
 
-/// Admit one carried target directly from the published QSpec carrier nodes.
+/// Admit one carried target directly from the published FSpec carrier nodes.
 pub fn carried_quantity_package(vectors: &Value, target: &str, code: u32) -> PackageBuilder {
     fn import(
         builder: &mut PackageBuilder,
@@ -5380,7 +5396,7 @@ pub fn carried_quantity_package(vectors: &Value, target: &str, code: u32) -> Pac
         application(
             "convert",
             op_full(
-                "quire.op.quantity.convert",
+                "filament.op.quantity.convert",
                 vec![],
                 Some(mode_kv(
                     "rounding",

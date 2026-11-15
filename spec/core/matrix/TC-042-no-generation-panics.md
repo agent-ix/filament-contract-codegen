@@ -3,7 +3,7 @@ id: TC-042
 title: "Verify no panic on a generation or analysis path"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/NFR-005
+  - target: ix://agent-ix/filament-contract-codegen/NFR-005
     type: verifies
 ---
 # TC-042: Verify no panic on a generation or analysis path

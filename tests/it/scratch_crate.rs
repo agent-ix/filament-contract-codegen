@@ -1,7 +1,7 @@
 //! Scratch crates the tests compile generated code in.
 //!
 //! Every such crate names the runtime with the spelling an emitted manifest carries
-//! (`quire_contract_codegen::RUNTIME_DEPENDENCY_SOURCE`, one place) and is seeded with this
+//! (`filament_contract_codegen::RUNTIME_DEPENDENCY_SOURCE`, one place) and is seeded with this
 //! repository's own `Cargo.lock`, so the runtime it compiles against is the commit CG's lock
 //! records and not whatever `main` the machine's shared git cache last fetched.
 
@@ -15,7 +15,7 @@ use std::{
     thread::ThreadId,
 };
 
-use quire_contract_codegen::RUNTIME_DEPENDENCY_SOURCE;
+use filament_contract_codegen::RUNTIME_DEPENDENCY_SOURCE;
 
 static AGREEMENT_BUILD: Mutex<()> = Mutex::new(());
 
@@ -33,17 +33,19 @@ pub(crate) fn lock_agreement_build() -> MutexGuard<'static, ()> {
     AGREEMENT_BUILD.lock().expect("agreement build lock")
 }
 
-/// The `quire-contract-runtime` dependency line of a scratch manifest, with `features`.
+/// The `filament-contract-runtime` dependency line of a scratch manifest, with `features`.
 pub(crate) fn runtime_dependency(features: &[&str]) -> String {
     if features.is_empty() {
-        return format!("quire-contract-runtime = {{ {RUNTIME_DEPENDENCY_SOURCE} }}");
+        return format!("filament-contract-runtime = {{ {RUNTIME_DEPENDENCY_SOURCE} }}");
     }
     let features = features
         .iter()
         .map(|feature| format!("\"{feature}\""))
         .collect::<Vec<_>>()
         .join(", ");
-    format!("quire-contract-runtime = {{ {RUNTIME_DEPENDENCY_SOURCE}, features = [{features}] }}")
+    format!(
+        "filament-contract-runtime = {{ {RUNTIME_DEPENDENCY_SOURCE}, features = [{features}] }}"
+    )
 }
 
 /// Copies this repository's `Cargo.lock` beside the manifest in `directory`.
@@ -178,7 +180,7 @@ mod tests {
 
     #[test]
     fn scratch_directory_lives_under_target_tmpdir() {
-        let scratch = super::TemporaryDirectory::new("quire-bound-populations-location");
+        let scratch = super::TemporaryDirectory::new("filament-bound-populations-location");
         assert!(
             scratch.path.starts_with(env!("CARGO_TARGET_TMPDIR")),
             "{} is outside the target directory",
@@ -190,11 +192,11 @@ mod tests {
     #[test]
     fn scratch_directory_reclaims_leftover_from_dead_run() {
         let base = std::path::Path::new(env!("CARGO_TARGET_TMPDIR"));
-        let leftover = base.join("quire-bound-populations-reclaim");
+        let leftover = base.join("filament-bound-populations-reclaim");
         std::fs::create_dir_all(leftover.join("target")).unwrap();
         std::fs::write(leftover.join("target/stale"), "x").unwrap();
         let scratch =
-            super::TemporaryDirectory::in_directory(base, "quire-bound-populations-reclaim");
+            super::TemporaryDirectory::in_directory(base, "filament-bound-populations-reclaim");
         assert_eq!(scratch.path, leftover);
         assert!(!leftover.join("target/stale").exists());
         assert!(leftover.join("src").is_dir());
@@ -203,8 +205,9 @@ mod tests {
     #[test]
     fn scratch_directory_is_locked_while_live() {
         let base = std::path::Path::new(env!("CARGO_TARGET_TMPDIR"));
-        let scratch = super::TemporaryDirectory::in_directory(base, "quire-bound-populations-live");
-        let probe = std::fs::File::open(base.join("quire-bound-populations-live.lock")).unwrap();
+        let scratch =
+            super::TemporaryDirectory::in_directory(base, "filament-bound-populations-live");
+        let probe = std::fs::File::open(base.join("filament-bound-populations-live.lock")).unwrap();
         assert!(matches!(
             probe.try_lock(),
             Err(std::fs::TryLockError::WouldBlock)
@@ -224,7 +227,7 @@ mod tests {
 
     #[test]
     fn dropping_the_directory_removes_it() {
-        let scratch = super::TemporaryDirectory::new("quire-scratch-drop");
+        let scratch = super::TemporaryDirectory::new("filament-scratch-drop");
         let path = scratch.path.clone();
         assert!(path.is_dir());
         drop(scratch);
@@ -234,14 +237,14 @@ mod tests {
     #[test]
     fn a_waiting_thread_proceeds_after_the_holder_drops() {
         let base = std::path::Path::new(env!("CARGO_TARGET_TMPDIR"));
-        let holder = super::TemporaryDirectory::in_directory(base, "quire-scratch-wait");
+        let holder = super::TemporaryDirectory::in_directory(base, "filament-scratch-wait");
         let marker = holder.path.join("holder");
         std::fs::write(&marker, "x").unwrap();
         let (sender, receiver) = std::sync::mpsc::channel();
         let waiter = std::thread::spawn(move || {
             let scratch = super::TemporaryDirectory::in_directory(
                 std::path::Path::new(env!("CARGO_TARGET_TMPDIR")),
-                "quire-scratch-wait",
+                "filament-scratch-wait",
             );
             sender.send(scratch.path.join("holder").exists()).unwrap();
         });
@@ -263,17 +266,17 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "scratch prefix `quire-scratch-reentrant` is already held")]
+    #[should_panic(expected = "scratch prefix `filament-scratch-reentrant` is already held")]
     fn reacquiring_a_held_prefix_on_one_thread_panics_naming_it() {
-        let _first = super::TemporaryDirectory::new("quire-scratch-reentrant");
-        let _second = super::TemporaryDirectory::new("quire-scratch-reentrant");
+        let _first = super::TemporaryDirectory::new("filament-scratch-reentrant");
+        let _second = super::TemporaryDirectory::new("filament-scratch-reentrant");
     }
 
-    /// The `source` of the `quire-contract-runtime` entry in `lock`.
+    /// The `source` of the `filament-contract-runtime` entry in `lock`.
     fn locked_runtime_source(lock: &str) -> String {
         let block = lock
             .split("[[package]]")
-            .find(|block| block.contains("name = \"quire-contract-runtime\""))
+            .find(|block| block.contains("name = \"filament-contract-runtime\""))
             .expect("CG's lock names the runtime");
         block
             .lines()
@@ -312,7 +315,7 @@ mod tests {
             .as_array()
             .unwrap()
             .iter()
-            .find(|package| package["name"] == "quire-contract-runtime")
+            .find(|package| package["name"] == "filament-contract-runtime")
             .expect("the scratch crate depends on the runtime")["source"]
             .as_str()
             .unwrap()

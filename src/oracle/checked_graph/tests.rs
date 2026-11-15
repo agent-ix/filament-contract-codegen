@@ -20,15 +20,15 @@ use std::{fs, path::PathBuf, ptr};
 mod checked_package_evidence;
 
 fn published_package(fixture: &str) -> CheckedPackageV2 {
-    let root = PathBuf::from(std::env::var_os("QSPEC_DIR").expect("published QSpec checkout"))
+    let root = PathBuf::from(std::env::var_os("FSPEC_DIR").expect("published FSpec checkout"))
         .join("proposals/checked-package-v2");
     let bytes = fs::read(root.join("fixtures").join(fixture)).expect("published fixture bytes");
     // Preserve the published document while canonicalizing its JSON encoding.
     let document: serde_json::Value = serde_json::from_slice(&bytes).expect("published JSON");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     checked_package_evidence::retain_selected_document(
-        std::path::Path::new(&std::env::var_os("QSPEC_DIR").expect("published QSpec checkout")),
+        std::path::Path::new(&std::env::var_os("FSPEC_DIR").expect("published FSpec checkout")),
         fixture,
         &mut evidence,
     );

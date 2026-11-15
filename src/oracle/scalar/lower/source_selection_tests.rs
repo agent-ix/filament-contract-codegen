@@ -52,16 +52,16 @@ fn admitted_source(source: &str) -> CheckedPackageV2 {
         StageLimits::default(),
         ReplayLimits::default(),
     )
-    .expect("QSL compiles genuine scalar source");
+    .expect("FSL compiles genuine scalar source");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     match CheckedPackageV2::read(
         compiled.bytes(),
         CheckedPackageReadLimits::bounded(),
         &evidence,
     ) {
         CheckedPackageV2ReadResult::Admitted(package) => *package,
-        other => panic!("IR must admit QSL output: {other:?}"),
+        other => panic!("IR must admit FSL output: {other:?}"),
     }
 }
 
@@ -104,7 +104,7 @@ fn admitted_case(
 ) {
     let mut source = String::from(
         "language \"ix:native\" edition \"1-draft\";\n\
-             profile v = \"quire.value.complete/v1\";\n",
+             profile v = \"filament.value.complete/v1\";\n",
     );
     for index in 0..requests {
         source.push_str(&format!(
@@ -123,7 +123,7 @@ fn admitted_case(
         .resolved_graph()
         .nodes
         .iter()
-        .filter(|node| application_identity(node) == Some("quire.op.integer.add"))
+        .filter(|node| application_identity(node) == Some("filament.op.integer.add"))
         .collect::<Vec<_>>();
     assert_eq!(applications.len(), requests);
     let mut positions = Vec::new();
@@ -133,7 +133,7 @@ fn admitted_case(
             .nodes
             .iter()
             .filter(|node| {
-                application_identity(node) == Some("quire.op.numeric.narrow")
+                application_identity(node) == Some("filament.op.numeric.narrow")
                     && first_reference(node) == Some(&application.node_id)
             })
             .collect::<Vec<_>>();
@@ -160,7 +160,7 @@ fn admitted_case(
                             && declaration.qualified_name[0].as_ref() == format!("extra{index}")
                     })
                 })
-                .expect("unrelated QSL function")
+                .expect("unrelated FSL function")
                 .node_id
                 .clone(),
         });
@@ -196,7 +196,7 @@ fn ir_1299_selected_scalar_key_uses_the_admitted_occurrence_frame() {
                     && declaration.qualified_name[0].as_ref() == "f1"
             })
         })
-        .expect("QSL middle function")
+        .expect("FSL middle function")
         .node_id
         .clone();
     let positions = vec![
@@ -238,12 +238,12 @@ fn ir_1299_selected_scalar_key_uses_the_admitted_occurrence_frame() {
         );
         assert!(
             selected_scalar_key(&admitted, &items, request_index, node_id, selection).is_some(),
-            "QSL-selected application remains valid after independent sibling omission: {node_id:?}"
+            "FSL-selected application remains valid after independent sibling omission: {node_id:?}"
         );
     }
     let (generated, indexes) =
         generate_contract_scalar_oracles(&checked, &admitted, &positions, &[0, 2])
-            .expect("two selected QSL scalar siblings generate");
+            .expect("two selected FSL scalar siblings generate");
     assert_eq!(indexes.len(), 2);
     for index in indexes {
         assert!(matches!(

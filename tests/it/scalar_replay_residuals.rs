@@ -3,9 +3,9 @@
 
 use super::scalar_playback::{replay_fixture, transcript};
 use super::scalar_replay_binding::{context, observe, plan};
+use filament_contract_codegen::{ScalarBuildError, ScalarSentRequest};
 use ix_trace_rs::trace;
 use qsl_replay::{NativeOutcome, OperatorParityResult};
-use quire_contract_codegen::{ScalarBuildError, ScalarSentRequest};
 use quire_contract_model::{CheckedOccurrenceRole, CheckedScalarOperandChild};
 use quire_exact::Integer;
 
@@ -14,7 +14,7 @@ use quire_exact::Integer;
 fn each_integer_operator_and_literal_keep_the_public_reader_body_and_real_route() {
     let cases = [
         (
-            "quire.op.integer.add",
+            "filament.op.integer.add",
             "x: Int[0, 9], y: Int[0, 9]",
             "Int[0, 18]",
             "x + y",
@@ -22,7 +22,7 @@ fn each_integer_operator_and_literal_keep_the_public_reader_body_and_real_route(
             9_i64,
         ),
         (
-            "quire.op.integer.sub",
+            "filament.op.integer.sub",
             "x: Int[0, 9], y: Int[0, 9]",
             "Int[-9, 9]",
             "x - y",
@@ -30,7 +30,7 @@ fn each_integer_operator_and_literal_keep_the_public_reader_body_and_real_route(
             5,
         ),
         (
-            "quire.op.integer.mul",
+            "filament.op.integer.mul",
             "x: Int[0, 9], y: Int[0, 9]",
             "Int[0, 81]",
             "x * y",
@@ -38,7 +38,7 @@ fn each_integer_operator_and_literal_keep_the_public_reader_body_and_real_route(
             14,
         ),
         (
-            "quire.op.integer.negate",
+            "filament.op.integer.negate",
             "x: Int[0, 9]",
             "Int[-9, 0]",
             "-x",
@@ -46,7 +46,7 @@ fn each_integer_operator_and_literal_keep_the_public_reader_body_and_real_route(
             -3,
         ),
         (
-            "quire.op.integer.add",
+            "filament.op.integer.add",
             "x: Int[0, 9]",
             "Int[3, 12]",
             "x + 3",
@@ -101,12 +101,12 @@ fn each_integer_operator_and_literal_keep_the_public_reader_body_and_real_route(
         let report = qsl_replay::replay_operator_parity(wire, claim, limits);
         assert!(
             matches!(report.result(), OperatorParityResult::Agrees { .. }),
-            "genuine QSL route: {:?}",
+            "genuine FSL route: {:?}",
             report.result()
         );
         assert!(matches!(
             completed.settlement(&sent, Some(&report)).unwrap(),
-            quire_contract_codegen::ScalarSettlement::Parity(result) if std::ptr::eq(result, report.result())
+            filament_contract_codegen::ScalarSettlement::Parity(result) if std::ptr::eq(result, report.result())
         ));
     }
 }
@@ -115,13 +115,13 @@ fn each_integer_operator_and_literal_keep_the_public_reader_body_and_real_route(
 #[test]
 fn source_span_changes_preserve_identity_but_native_results_remain_independently_bound() {
     let first = replay_fixture(
-        "quire.op.integer.add",
+        "filament.op.integer.add",
         "x: Int[0, 9]",
         "Int[0, 18]",
         "x + x",
     );
     let shifted = replay_fixture(
-        "quire.op.integer.add",
+        "filament.op.integer.add",
         "x: Int[0, 9]",
         "Int[0, 18]",
         "\n   x + x",
@@ -181,7 +181,7 @@ fn source_span_changes_preserve_identity_but_native_results_remain_independently
 #[test]
 fn missing_retained_operands_and_changed_occurrences_refuse_before_replay() {
     let fixture = replay_fixture(
-        "quire.op.integer.add",
+        "filament.op.integer.add",
         "x: Int[0, 9]",
         "Int[0, 18]",
         "x + x",

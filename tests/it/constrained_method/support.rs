@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Authentic QSL emission, public IR admission, then the constrained family.
+//! Authentic FSL emission, public IR admission, then the constrained family.
 
+use filament_contract_codegen::*;
 use qsl_replay::{
     call_site, ClauseName, DependencyInput, Identifier, SnapshotValue, SourceIdentity,
 };
-use quire_contract_codegen::*;
 use quire_contract_model::{
     CheckedNodeId, CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
     CheckedPackageV2ReadResult, CheckedTerm, StateClauseKind,
@@ -24,19 +24,19 @@ pub(super) fn document() -> Value {
         let owner = format!("{OBJECT}/{name}");
         let mut value = json!({"identity":owner,"name":name,"params":[slot(&owner,parameter,ty)],"pre":[],"post":[],"origin":origin(),"frame":{"modifies":[format!("{OBJECT}/n"),format!("{OBJECT}/flag"),format!("{OBJECT}/aux")],"creates":[],"deletes":[]}});
         if result {
-            value["returns"] = json!({"typeRef":"ix://quire/native/Boolean","nullable":false,"multiplicity":{"lower":1,"upper":1,"ordered":false,"unique":true}});
+            value["returns"] = json!({"typeRef":"ix://filament/native/Boolean","nullable":false,"multiplicity":{"lower":1,"upper":1,"ordered":false,"unique":true}});
         }
         value
     };
     json!({"contractVersion":"2.0.0","canonicalization":{"algorithm":"rfc8785-v1"},"source":{"identity":"ix://cg/constrained/spec","version":"1.0.0","dialect":"spec-bundle"},"package":{"identity":MODEL,"version":"1.0.0","mappingVersions":[],"profileVersions":[]},"constructs":[
-        {"kind":{"module":MODEL,"name":"entity"},"moduleVersion":"1.0.0","construct":{"identity":"none","shape":"record","members":{},"meaning":"quire.meaning.model.object-type/v1"}},
-        {"kind":{"module":MODEL,"name":"population"},"moduleVersion":"1.0.0","construct":{"identity":"none","shape":"record","members":{},"meaning":"quire.meaning.model.population/v1"}},
-        {"kind":{"module":MODEL,"name":"value_type"},"moduleVersion":"1.0.0","construct":{"identity":"none","shape":"record","members":{},"meaning":"quire.meaning.model.value-type/v1"}}
+        {"kind":{"module":MODEL,"name":"entity"},"moduleVersion":"1.0.0","construct":{"identity":"none","shape":"record","members":{},"meaning":"filament.meaning.model.object-type/v1"}},
+        {"kind":{"module":MODEL,"name":"population"},"moduleVersion":"1.0.0","construct":{"identity":"none","shape":"record","members":{},"meaning":"filament.meaning.model.population/v1"}},
+        {"kind":{"module":MODEL,"name":"value_type"},"moduleVersion":"1.0.0","construct":{"identity":"none","shape":"record","members":{},"meaning":"filament.meaning.model.value-type/v1"}}
     ],"occurrences":[],"extensions":[],"types":[
         {"identity":SMALL,"displayName":"Small","kind":{"module":MODEL,"name":"value_type"},"roles":[],"origin":origin(),"extensions":[],"unknownPolicy":"reject","scalar":"integer","constraints":[
-            {"identity":format!("{SMALL}/min"),"keyword":"min","operands":{"value":"0"},"appliesTo":"ix://quire/native/Integer","diagnosticCode":"small.minimum","origin":origin()},
-            {"identity":format!("{SMALL}/max"),"keyword":"max","operands":{"value":"3"},"appliesTo":"ix://quire/native/Integer","diagnosticCode":"small.maximum","origin":origin()}]},
-        {"identity":OBJECT,"displayName":"Node","kind":{"module":MODEL,"name":"entity"},"roles":[],"origin":origin(),"constraints":[],"extensions":[],"unknownPolicy":"reject","supertypes":[],"fields":[slot(OBJECT,"n",SMALL),slot(OBJECT,"flag","ix://quire/native/Boolean"),slot(OBJECT,"aux",SMALL)],"operations":[op("nudge","delta",SMALL,false),op("idle","enabled","ix://quire/native/Boolean",true)]}
+            {"identity":format!("{SMALL}/min"),"keyword":"min","operands":{"value":"0"},"appliesTo":"ix://filament/native/Integer","diagnosticCode":"small.minimum","origin":origin()},
+            {"identity":format!("{SMALL}/max"),"keyword":"max","operands":{"value":"3"},"appliesTo":"ix://filament/native/Integer","diagnosticCode":"small.maximum","origin":origin()}]},
+        {"identity":OBJECT,"displayName":"Node","kind":{"module":MODEL,"name":"entity"},"roles":[],"origin":origin(),"constraints":[],"extensions":[],"unknownPolicy":"reject","supertypes":[],"fields":[slot(OBJECT,"n",SMALL),slot(OBJECT,"flag","ix://filament/native/Boolean"),slot(OBJECT,"aux",SMALL)],"operations":[op("nudge","delta",SMALL,false),op("idle","enabled","ix://filament/native/Boolean",true)]}
     ],"populations":[{"identity":format!("ix://{MODEL}/nodes"),"displayName":"nodes","kind":{"module":MODEL,"name":"population"},"members":[OBJECT],"extent":"closed","origin":origin()}]})
 }
 
@@ -51,7 +51,7 @@ pub(super) struct Fixture {
 }
 pub(super) fn fixture(doc: &Value, name: &str, safety: &str, constraints: &[&str]) -> Fixture {
     let bytes = quire_canonical::to_vec(doc, quire_canonical::Limits::new(1 << 20)).unwrap();
-    let mut source=format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.model.complete/v1\";\nmodel M = \"{MODEL}\";\ninvariant Safe using v on M::Node at current {{ {safety} }}\n");
+    let mut source=format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.model.complete/v1\";\nmodel M = \"{MODEL}\";\ninvariant Safe using v on M::Node at current {{ {safety} }}\n");
     for (index, body) in constraints.iter().enumerate() {
         source.push_str(&format!(
             "constraint Limit{index} using v on M::Node at current {{ {body} }}\n"
@@ -69,9 +69,9 @@ pub(super) fn fixture_source(bytes: Vec<u8>, name: &str, source: String) -> Fixt
         &DependencyInput::default(),
         &ClauseName(Identifier::new("Safe").unwrap()),
     )
-    .expect("authentic QSL clause emission");
+    .expect("authentic FSL clause emission");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     evidence
         .insert_domain_package_document(MODEL, bytes.clone())
         .unwrap();
@@ -235,7 +235,7 @@ pub(super) fn owner_evaluation(
         ),
     ]);
     let snapshot = json!({
-        "format":"quire.state.snapshot/v1",
+        "format":"filament.state.snapshot/v1",
         "identity":{"authority":"agent-ix","identity":"constrained-current","revision_namespace":"git","revision":"fixture"},
         "observation":"current","model":{"identity":MODEL},
         "anchor":{"kind":"handler","name":"control"},

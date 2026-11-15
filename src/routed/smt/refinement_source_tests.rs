@@ -42,8 +42,8 @@ fn model_with_fields(package: &str, operations: &[&str], field_count: usize) -> 
     let object = key(package, "Object");
     let population = key(package, "objects");
     let constructs: Vec<_> = [
-        ("object_type", "quire.meaning.model.object-type/v1"),
-        ("population", "quire.meaning.model.population/v1"),
+        ("object_type", "filament.meaning.model.object-type/v1"),
+        ("population", "filament.meaning.model.population/v1"),
     ]
     .into_iter()
     .map(|(name, meaning)| {
@@ -61,7 +61,7 @@ fn model_with_fields(package: &str, operations: &[&str], field_count: usize) -> 
             let field = key(package, &format!("Object/flag{field_index}"));
             json!({
                 "identity": identity, "name": name, "params": [], "pre": [], "post": [],
-                "origin": {"source": {"sourceIdentity": key(package, "spec"), "path": "spec.qspec",
+                "origin": {"source": {"sourceIdentity": key(package, "spec"), "path": "spec.fspec",
                     "startLine": 1, "startColumn": 1}},
                 "frame": {"modifies": [], "modifies_receiver": [field],
                     "creates": [], "deletes": []}
@@ -73,7 +73,7 @@ fn model_with_fields(package: &str, operations: &[&str], field_count: usize) -> 
             let name = format!("flag{index}");
             let identity = key(package, &format!("Object/{name}"));
             json!({"identity": identity, "name": name,
-                "typeRef": "ix://quire/native/Boolean", "presence": "required",
+                "typeRef": "ix://filament/native/Boolean", "presence": "required",
                 "nullable": false, "defaultKind": "none",
                 "multiplicity": {"lower": 1, "upper": 1, "ordered": false, "unique": true},
                 "origin": origin(&identity)})
@@ -111,7 +111,7 @@ fn initial_with_fields(
         .map(|index| (format!("flag{index}"), json!({"boolean": false})))
         .collect();
     let snapshot = json!({
-        "format": "quire.state.snapshot/v1",
+        "format": "filament.state.snapshot/v1",
         "identity": {"authority": "test", "identity": name,
             "revision_namespace": "fixture", "revision": "fixture:1"},
         "observation": "current",
@@ -149,7 +149,7 @@ fn authored_unit(row_count: usize, reverse: bool) -> String {
         .join(" ");
     format!(
         "language \"ix:native\" edition \"1-draft\";\n\
-         profile inf = \"quire.temporal.infinite-trace/v1\";\n\
+         profile inf = \"filament.temporal.infinite-trace/v1\";\n\
          model Abstract = \"{ABSTRACT}\";\n\
          model Concrete = \"{CONCRETE}\";\n\
          refinement SevenRows using inf abstract Abstract concrete Concrete {{\n\
@@ -271,7 +271,7 @@ fn source_records_with_rows(row_count: usize, reverse: bool) -> (Vec<Expected>, 
                     row: u64::try_from(row).expect("seven rows fit u64"),
                 },
             };
-            let query = encode_refinement_query(request, kind).expect("QSL canonical query");
+            let query = encode_refinement_query(request, kind).expect("FSL canonical query");
             let execution = run_solver_query(
                 QuerySelection {
                     product: (),
@@ -450,10 +450,10 @@ fn production_refinement_preserves_encoding_refusal_and_cancellation() {
 /// Real cvc5 proofs cross the public request adapter without a copied certificate.
 #[trace("TC-059", "FR-045-AC-4", "FR-045-AC-5")]
 #[test]
-fn production_refinement_live_solver_handoff_reaches_qsl_checker() {
+fn production_refinement_live_solver_handoff_reaches_fsl_checker() {
     use crate::routed::smt::refinement_driver::prepare_refinement;
-    let executable = std::env::var_os("QUIRE_CVC5_BIN")
-        .expect("live refinement qualification requires QUIRE_CVC5_BIN");
+    let executable = std::env::var_os("FILAMENT_CVC5_BIN")
+        .expect("live refinement qualification requires FILAMENT_CVC5_BIN");
     with_source_request(7, false, true, false, |request| {
         let cancel = Cancel::new();
         let prepared = prepare_refinement(request, &cancel).expect("matched queries encode");
@@ -474,7 +474,7 @@ fn production_refinement_live_solver_handoff_reaches_qsl_checker() {
             )
             .expect("direct bounded solver invocations");
         assert_eq!(execution.records().len(), 8);
-        if let Some(directory) = std::env::var_os("QUIRE_SMT_EVIDENCE_DIR") {
+        if let Some(directory) = std::env::var_os("FILAMENT_SMT_EVIDENCE_DIR") {
             let directory = std::path::Path::new(&directory);
             std::fs::create_dir_all(directory).expect("external evidence directory");
             for record in execution.records() {
@@ -534,7 +534,7 @@ fn production_refinement_live_solver_handoff_reaches_qsl_checker() {
         let limits = qsl_replay::CertificateCheckLimits::default();
         let certificate = request
             .assemble_smt_certificate(&handoff, &limits, &cancel)
-            .expect("public QSL assembly");
+            .expect("public FSL assembly");
         assert_eq!(certificate.steps.len(), 7);
         for (record, part) in execution
             .records()
@@ -546,7 +546,7 @@ fn production_refinement_live_solver_handoff_reaches_qsl_checker() {
         }
         let checked = request
             .check_smt_proof(&certificate, &limits, &cancel)
-            .expect("QSL native proof reader completes on real emitted Alethe");
+            .expect("FSL native proof reader completes on real emitted Alethe");
         assert!(
             matches!(
                 checked,
@@ -609,7 +609,7 @@ fn production_refinement_source_permutation_preserves_named_query_associations()
             let authoritative = std::iter::once(RefinementQueryKind::Initial)
                 .chain((0..7).map(|row| RefinementQueryKind::Step { row }))
                 .map(|kind| {
-                    encode_refinement_query(request, kind).expect("authoritative QSL query")
+                    encode_refinement_query(request, kind).expect("authoritative FSL query")
                 })
                 .collect::<Vec<_>>();
             let cancel = Cancel::new();
@@ -662,7 +662,7 @@ fn production_refinement_source_permutation_preserves_named_query_associations()
             }
             assert!(
                 execution.handoff().is_ok(),
-                "framing/association only, no QSL proof credit"
+                "framing/association only, no FSL proof credit"
             );
             retained
         })
@@ -698,7 +698,7 @@ fn production_refinement_source_permutation_preserves_named_query_associations()
         for right in left + 1..8 {
             assert_ne!(
                 first[left].1, first[right].1,
-                "named rows have distinct QSL queries"
+                "named rows have distinct FSL queries"
             );
         }
     }

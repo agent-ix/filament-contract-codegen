@@ -1,8 +1,8 @@
 //! QSL-1336 negative controls for selected frame claims. These are kept outside the
 //! `kani_obligations` filter because they document an unresolved producer defect, not a Kani proof.
 
+use filament_contract_codegen::{FrameReplayError, StateFrameProperty};
 use ix_trace_rs::trace;
-use quire_contract_codegen::{FrameReplayError, StateFrameProperty};
 
 use super::kani_obligations_state_frame::{
     frame_harness,

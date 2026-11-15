@@ -1,6 +1,6 @@
 //! Structural obligation identities for function and frame replay.
 //!
-//! QSL supplies the node and occurrence ordinal. Kind and argument domains remain separate
+//! FSL supplies the node and occurrence ordinal. Kind and argument domains remain separate
 //! claim facts checked before replay; they do not enter the identity.
 
 use std::fmt;
@@ -158,7 +158,7 @@ pub(crate) fn contract_arguments(
     }
 }
 
-/// The producer-issued structural obligation identity for QSL's selected claim.
+/// The producer-issued structural obligation identity for FSL's selected claim.
 ///
 /// A frame has no parameters, so its `function` is the frame node, its `declaration` is the
 /// frame's own occurrence and its `arguments` are empty ([`frame_identity`]).
@@ -183,7 +183,7 @@ pub(crate) fn frame_kind(property: &StateFrameProperty) -> Option<ObligationKind
     }
 }
 
-/// The frame obligation of the operation `site` names, issued by QSL's selected operation site.
+/// The frame obligation of the operation `site` names, issued by FSL's selected operation site.
 ///
 pub(crate) fn frame_identity(
     site: &OperationSite,

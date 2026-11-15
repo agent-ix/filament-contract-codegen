@@ -13,7 +13,7 @@ use crate::kani::output::report::KaniReportRefusal;
 /// Stem of the report file Kani exports into the request's target directory. Each launch adds
 /// this process's id and a process-wide counter, so the name is unique to one launch among every
 /// run sharing the directory, in this process and in others running at the same time.
-const REPORT_FILE_STEM: &str = "quire-kani-report";
+const REPORT_FILE_STEM: &str = "filament-kani-report";
 
 static REPORT_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 

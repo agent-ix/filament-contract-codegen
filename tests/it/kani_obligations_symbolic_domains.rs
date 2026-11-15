@@ -1,10 +1,20 @@
 //! Source-backed symbolic collection and graph obligation fixtures.
 //!
-//! QSL emits every admitted package through its public `call_site` facade from
+//! FSL emits every admitted package through its public `call_site` facade from
 //! native source and a test-authored domain model document. No Contract IR
 //! package wire is constructed in this module.
 
 use crate::scratch_crate::{runtime_dependency, write_manifest, TemporaryDirectory};
+use filament_contract_codegen::{
+    classify_kani_run, execute_kani_obligation, negotiate_kani_obligations, run_terminal_value,
+    select_counterexample, settle_v2_collection_precondition_falsification,
+    CollectionElementIdentity, CollectionKindIdentity, CollectionPredicateIdentity,
+    InvalidObligationItem, KaniCollectionObligationHarness, KaniExecutableHarness,
+    KaniExecutionRequest, KaniInstallation, KaniObligationOutcome, KaniObligationRequest,
+    KaniRunOutcome, KaniV2ClauseObligationHarness, ObligationDisposition, ObligationItem,
+    ProofCeilings, ProofDependencyKind, ProofDependencyRequest, ProofDependencyState,
+    ProofReadiness, UnsupportedObligation,
+};
 use ix_trace_rs::trace;
 use qsl_replay::{
     call_site, evaluate_clause, object_reference_witness, replay, write_object_environment,
@@ -14,16 +24,6 @@ use qsl_replay::{
     ModelNormalizationLimits, ObligationIdentity, ObservationLimits, QualifiedName, ReplayLimits,
     ReplayRequestWire, ReplayResult, ReplaySource, RequestTargetWire, ScalarLimits, SelectedObject,
     SnapshotValue, SourceIdentity, SpineLimits, StateEnvironment, WitnessValue,
-};
-use quire_contract_codegen::{
-    classify_kani_run, execute_kani_obligation, negotiate_kani_obligations, run_terminal_value,
-    select_counterexample, settle_v2_collection_precondition_falsification,
-    CollectionElementIdentity, CollectionKindIdentity, CollectionPredicateIdentity,
-    InvalidObligationItem, KaniCollectionObligationHarness, KaniExecutableHarness,
-    KaniExecutionRequest, KaniInstallation, KaniObligationOutcome, KaniObligationRequest,
-    KaniRunOutcome, KaniV2ClauseObligationHarness, ObligationDisposition, ObligationItem,
-    ProofCeilings, ProofDependencyKind, ProofDependencyRequest, ProofDependencyState,
-    ProofReadiness, UnsupportedObligation,
 };
 use quire_contract_model::{
     CheckedMemberType, CheckedModelObjectFields, CheckedNodeId, CheckedNodePathSegment,
@@ -140,15 +140,15 @@ pub(crate) fn model_document() -> Value {
             {"kind": {"module": "ir268.test/domain", "name": "entity"},
              "moduleVersion": "1.0.0",
              "construct": {"identity": "none", "shape": "record", "members": {},
-                            "meaning": "quire.meaning.model.object-type/v1"}},
+                            "meaning": "filament.meaning.model.object-type/v1"}},
             {"kind": {"module": "ir268.test/domain", "name": "value_type"},
              "moduleVersion": "1.0.0",
              "construct": {"identity": "none", "shape": "record", "members": {},
-                            "meaning": "quire.meaning.model.value-type/v1"}},
+                            "meaning": "filament.meaning.model.value-type/v1"}},
             {"kind": {"module": "ir268.test/domain", "name": "population"},
              "moduleVersion": "1.0.0",
              "construct": {"identity": "none", "shape": "record", "members": {},
-                            "meaning": "quire.meaning.model.population/v1"}}
+                            "meaning": "filament.meaning.model.population/v1"}}
         ],
         "occurrences": [], "extensions": [],
         "types": [
@@ -168,7 +168,7 @@ pub(crate) fn model_document() -> Value {
                     {
                         "identity": "ix://ir268.test/domain/SmallInt/min",
                         "keyword": "min", "operands": {"value": "0"},
-                        "appliesTo": "ix://quire/native/Integer", "diagnosticCode": "ir268.minimum",
+                        "appliesTo": "ix://filament/native/Integer", "diagnosticCode": "ir268.minimum",
                         "origin": {"generated": {
                             "generatorIdentity": SOURCE_ID,
                             "generatorVersion": "1.0.0",
@@ -178,7 +178,7 @@ pub(crate) fn model_document() -> Value {
                     {
                         "identity": "ix://ir268.test/domain/SmallInt/max",
                         "keyword": "max", "operands": {"value": "3"},
-                        "appliesTo": "ix://quire/native/Integer", "diagnosticCode": "ir268.maximum",
+                        "appliesTo": "ix://filament/native/Integer", "diagnosticCode": "ir268.maximum",
                         "origin": {"generated": {
                             "generatorIdentity": SOURCE_ID,
                             "generatorVersion": "1.0.0",
@@ -201,7 +201,7 @@ pub(crate) fn model_document() -> Value {
                 "unknownPolicy": "reject", "supertypes": [],
                 "fields": [
                     field("items", SMALL_ID, 0, 3, true, false, false, "required"),
-                    field("flags", "ix://quire/native/Boolean", 0, 2, true, false, false, "required"),
+                    field("flags", "ix://filament/native/Boolean", 0, 2, true, false, false, "required"),
                     field("next", NODE_ID, 1, 1, false, true, false, "required"),
                     field("maybe", NODE_ID, 1, 1, false, true, false, "optional"),
                     field("many", NODE_ID, 0, 2, true, false, false, "required")
@@ -245,7 +245,7 @@ fn model_document_with_step() -> Value {
         "post": [],
         "origin": {"source": {
             "sourceIdentity": SOURCE_ID,
-            "path": "spec.qspec",
+            "path": "spec.fspec",
             "startLine": 1,
             "startColumn": 1
         }},
@@ -258,11 +258,11 @@ fn model_document_with_step() -> Value {
     document
 }
 
-// `deref(input)` is object navigation, admitted under QSL's model layer.
+// `deref(input)` is object navigation, admitted under FSL's model layer.
 fn source_unit_with_body(body: &str) -> String {
     format!(
         "language \"ix:native\" edition \"1-draft\";\n\
-         profile v = \"quire.model.complete/v1\";\n\
+         profile v = \"filament.model.complete/v1\";\n\
          model M = \"ir268.test/domain\";\n\
          predicate inspect using v (input: M::Node): Boolean {{ {body} }}\n"
     )
@@ -271,7 +271,7 @@ fn source_unit_with_body(body: &str) -> String {
 fn source_unit_with_clause(declaration: &str, body: &str) -> String {
     format!(
         "language \"ix:native\" edition \"1-draft\";\n\
-         profile v = \"quire.model.complete/v1\";\n\
+         profile v = \"filament.model.complete/v1\";\n\
          model M = \"ir268.test/domain\";\n\
          {declaration} {{ {body} }}\n"
     )
@@ -295,7 +295,7 @@ fn emitted() -> Emitted {
 
 fn emitted_from_document_and_body(document: Value, body: &str) -> Emitted {
     try_emitted_from_document_and_body(document, body)
-        .unwrap_or_else(|error| panic!("QSL/IR admits the source-authored fixture: {error}"))
+        .unwrap_or_else(|error| panic!("FSL/IR admits the source-authored fixture: {error}"))
 }
 
 fn collection_identity(
@@ -303,7 +303,7 @@ fn collection_identity(
     operation: &str,
     subject_path: &str,
     unwind: u32,
-) -> quire_contract_codegen::CollectionObligationIdentity {
+) -> filament_contract_codegen::CollectionObligationIdentity {
     let function_id = fixture
         .package
         .resolved_graph()
@@ -434,7 +434,7 @@ fn collection_harness_with_ceilings(
 
 /// The symbolic collection harness source, for the cover-last guard (FR-015-AC-58).
 pub(crate) fn guard_sources() -> Vec<(&'static str, String)> {
-    let harness = collection_harness(&emitted(), "quire.op.collection.forall");
+    let harness = collection_harness(&emitted(), "filament.op.collection.forall");
     vec![("symbolic collection", harness.rust.contents)]
 }
 
@@ -482,12 +482,12 @@ fn collection_item_outcome(
     .expect("valid collection request")
 }
 
-/// QSL-admitted collection claims still emit a symbolic V2 harness after finite corpus retirement.
+/// FSL-admitted collection claims still emit a symbolic V2 harness after finite corpus retirement.
 #[trace("FR-015-AC-110", "TC-023", "TC-025")]
 #[test]
 fn collection_claim_uses_the_v2_symbolic_harness_without_a_finite_corpus_request() {
     let fixture = emitted();
-    let outcome = collection_item_outcome(&fixture, "quire.op.collection.forall", 8);
+    let outcome = collection_item_outcome(&fixture, "filament.op.collection.forall", 8);
     let KaniObligationOutcome::Emitted {
         records,
         collection_harnesses,
@@ -514,7 +514,7 @@ fn collection_claim_uses_the_v2_symbolic_harness_without_a_finite_corpus_request
 }
 
 fn write_collection_scratch(harness: &KaniCollectionObligationHarness) -> TemporaryDirectory {
-    let scratch = TemporaryDirectory::new("quire-kani-symbolic-domains-collection");
+    let scratch = TemporaryDirectory::new("filament-kani-symbolic-domains-collection");
     let directory = &scratch.path;
     fs::write(directory.join("src/lib.rs"), &harness.rust.contents)
         .expect("write the generated artifact byte for byte");
@@ -537,7 +537,7 @@ fn run_collection_kani(
     installation: &KaniInstallation,
     harness: &KaniCollectionObligationHarness,
     label: &str,
-) -> quire_contract_codegen::KaniExecutionEvidence {
+) -> filament_contract_codegen::KaniExecutionEvidence {
     let scratch = write_collection_scratch(harness);
     let crate_directory = &scratch.path;
     let cancel = quire_exact::Cancel::new();
@@ -623,7 +623,7 @@ fn replay_collection_function(
         &DependencyInput::default(),
         &selection,
     )
-    .expect("the exact source function remains callable by QSL");
+    .expect("the exact source function remains callable by FSL");
 
     let model = EnvironmentModel {
         identity: "ir268.test/domain".to_owned(),
@@ -687,7 +687,7 @@ fn replay_collection_function(
             }],
         }],
     )
-    .expect("QSL writes the environment through its authoritative builder");
+    .expect("FSL writes the environment through its authoritative builder");
 
     let request = ReplayRequestWire {
         package: qsl_replay::ReplayPackage::read(&site.package, u64::MAX).unwrap(),
@@ -716,7 +716,7 @@ fn replay_collection_function(
             environment.provision_document(),
         ],
     };
-    replay(request, ReplayLimits::default()).expect("QSL admits and executes the native replay")
+    replay(request, ReplayLimits::default()).expect("FSL admits and executes the native replay")
 }
 
 fn assert_native_collection_result(
@@ -824,7 +824,7 @@ fn admit_emitted(
     function_key: quire_exact::NodeKey,
 ) -> Result<Emitted, String> {
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     evidence
         .insert_domain_package_document("ir268.test/domain", document_bytes.clone())
         .expect("the exact selected model document is admitted as evidence");
@@ -836,7 +836,7 @@ fn admit_emitted(
         CheckedPackageV2ReadResult::Admitted(package) => *package,
         other => {
             return Err(format!(
-                "QSL's emitted symbolic fixture is not admitted: {other:?}"
+                "FSL's emitted symbolic fixture is not admitted: {other:?}"
             ))
         }
     };
@@ -891,9 +891,9 @@ fn admitted_state_clause_collection_preserves_order_and_uniqueness() {
                 .structural_key(&node.node_id)
                 .is_some_and(|key| node_key_matches(key, fixture.function_key.view()))
         })
-        .expect("selected QSL clause");
+        .expect("selected FSL clause");
     assert_eq!(clause.semantic_form.as_ref(), "state_clause");
-    let harness = collection_harness(&fixture, "quire.op.collection.forall");
+    let harness = collection_harness(&fixture, "filament.op.collection.forall");
     assert_eq!(harness.identity.function_id, clause.node_id);
     assert_eq!(harness.identity.field_name, "items");
     assert_eq!(
@@ -933,7 +933,7 @@ fn admitted_state_clause_sequence_uses_its_full_symbolic_domain() {
         "forall(item in self.items: item >= 0)",
     )
     .expect("admitted Sequence clause");
-    let harness = collection_harness(&fixture, "quire.op.collection.forall");
+    let harness = collection_harness(&fixture, "filament.op.collection.forall");
     assert_eq!(
         harness.identity.collection_kind,
         CollectionKindIdentity::Sequence
@@ -977,7 +977,7 @@ fn negated_state_clause_quantifier_is_not_an_independent_collection_claim() {
         records,
         collection_harnesses,
         ..
-    } = collection_item_outcome(&fixture, "quire.op.collection.forall", 8)
+    } = collection_item_outcome(&fixture, "filament.op.collection.forall", 8)
     else {
         panic!("nested quantifier settles per item");
     };
@@ -985,7 +985,8 @@ fn negated_state_clause_quantifier_is_not_an_independent_collection_claim() {
         records[0].disposition,
         ObligationDisposition::Unsupported {
             reason: UnsupportedObligation::CollectionClaimNotRendered {
-                reason: quire_contract_codegen::CollectionUnsupportedReason::UnsupportedClaimShape,
+                reason:
+                    filament_contract_codegen::CollectionUnsupportedReason::UnsupportedClaimShape,
                 ..
             }
         }
@@ -1020,7 +1021,7 @@ fn operation_and_constraint_clauses_do_not_get_standalone_collection_proofs() {
             records,
             collection_harnesses,
             ..
-        } = collection_item_outcome(&fixture, "quire.op.collection.forall", 8)
+        } = collection_item_outcome(&fixture, "filament.op.collection.forall", 8)
         else {
             panic!("{declaration} settles per item");
         };
@@ -1029,7 +1030,7 @@ fn operation_and_constraint_clauses_do_not_get_standalone_collection_proofs() {
             ObligationDisposition::Unsupported {
                 reason: UnsupportedObligation::CollectionClaimNotRendered {
                     reason:
-                        quire_contract_codegen::CollectionUnsupportedReason::UnsupportedClaimShape,
+                        filament_contract_codegen::CollectionUnsupportedReason::UnsupportedClaimShape,
                     ..
                 }
             }
@@ -1040,7 +1041,7 @@ fn operation_and_constraint_clauses_do_not_get_standalone_collection_proofs() {
 
 #[trace("FR-015-AC-96", "TC-025")]
 #[test]
-fn qsl_emits_and_ir_admits_the_authored_collection_and_reference_shapes() {
+fn fsl_emits_and_ir_admits_the_authored_collection_and_reference_shapes() {
     let fixture = emitted();
     assert!(!fixture.package.name().is_empty());
     let forall = fixture
@@ -1048,15 +1049,15 @@ fn qsl_emits_and_ir_admits_the_authored_collection_and_reference_shapes() {
         .resolved_graph()
         .nodes
         .iter()
-        .find(|node| application_identity(node) == Some("quire.op.collection.forall"))
-        .expect("QSL lowered the source forall to its catalogued operation");
+        .find(|node| application_identity(node) == Some("filament.op.collection.forall"))
+        .expect("FSL lowered the source forall to its catalogued operation");
     let exists = fixture
         .package
         .resolved_graph()
         .nodes
         .iter()
-        .find(|node| application_identity(node) == Some("quire.op.collection.exists"))
-        .expect("QSL lowered the source exists to its catalogued operation");
+        .find(|node| application_identity(node) == Some("filament.op.collection.exists"))
+        .expect("FSL lowered the source exists to its catalogued operation");
     let collection_id = argument_target(forall, 0).expect("forall collection operand identity");
     let collection_node = fixture
         .package
@@ -1101,7 +1102,7 @@ fn qsl_emits_and_ir_admits_the_authored_collection_and_reference_shapes() {
     else {
         panic!("forall operand is a model-field projection");
     };
-    assert_eq!(projection.identity(), Some("quire.op.record.project"));
+    assert_eq!(projection.identity(), Some("filament.op.record.project"));
     let (declaration, name) = projection
         .projection_field()
         .expect("authenticated operation view")
@@ -1162,7 +1163,7 @@ fn qsl_emits_and_ir_admits_the_authored_collection_and_reference_shapes() {
                 .structural_key(&node.node_id)
                 .is_some_and(|key| node_key_matches(key, fixture.function_key.view()))
         })
-        .expect("QSL FunctionSite identity names an admitted function node");
+        .expect("FSL FunctionSite identity names an admitted function node");
     let Some(CheckedTerm::Reference { target }) = named_member(function, "body") else {
         panic!("the admitted function body has a target identity");
     };
@@ -1253,8 +1254,8 @@ fn negotiation_renders_the_selected_sequence_claims_deterministically() {
         .node_id
         .clone();
     for (operation, assertion) in [
-        ("quire.op.collection.forall", "item >= 0"),
-        ("quire.op.collection.exists", "item == 2"),
+        ("filament.op.collection.forall", "item >= 0"),
+        ("filament.op.collection.exists", "item == 2"),
     ] {
         let quantifier = fixture
             .package
@@ -1262,7 +1263,7 @@ fn negotiation_renders_the_selected_sequence_claims_deterministically() {
             .nodes
             .iter()
             .find(|node| application_identity(node) == Some(operation))
-            .expect("the selected QSL quantifier exists")
+            .expect("the selected FSL quantifier exists")
             .node_id
             .clone();
         let item = ObligationItem::CollectionClaim {
@@ -1344,7 +1345,7 @@ fn negotiation_renders_the_selected_sequence_claims_deterministically() {
         assert_eq!(harness.identity.subject_path, "crate::unused");
         assert_eq!(
             harness.identity.solver,
-            quire_contract_codegen::KaniSolver::Cadical
+            filament_contract_codegen::KaniSolver::Cadical
         );
         assert_eq!(harness.identity.unwind, 8);
         assert_eq!(harness.identity.field_name, "items");
@@ -1513,7 +1514,7 @@ fn collection_claims_nested_under_not_or_disjunction_are_refused() {
         "forall(item in deref(input).items: item >= 0) or exists(item in deref(input).items: item = 2)",
     ] {
         let fixture = emitted_from_document_and_body(model_document(), body);
-        let outcome = collection_item_outcome(&fixture, "quire.op.collection.forall", 8);
+        let outcome = collection_item_outcome(&fixture, "filament.op.collection.forall", 8);
         let KaniObligationOutcome::Emitted {
             records,
             collection_harnesses,
@@ -1526,7 +1527,7 @@ fn collection_claims_nested_under_not_or_disjunction_are_refused() {
             records[0].disposition,
             ObligationDisposition::Unsupported {
                 reason: UnsupportedObligation::CollectionClaimNotRendered {
-                    reason: quire_contract_codegen::CollectionUnsupportedReason::UnsupportedClaimShape,
+                    reason: filament_contract_codegen::CollectionUnsupportedReason::UnsupportedClaimShape,
                     ..
                 }
             }
@@ -1539,7 +1540,7 @@ fn collection_claims_nested_under_not_or_disjunction_are_refused() {
 #[test]
 fn collection_unwind_must_cover_maximum_length_and_loop_exit() {
     let fixture = emitted();
-    let outcome = collection_item_outcome(&fixture, "quire.op.collection.forall", 3);
+    let outcome = collection_item_outcome(&fixture, "filament.op.collection.forall", 3);
     let KaniObligationOutcome::Emitted {
         records,
         collection_harnesses,
@@ -1552,7 +1553,7 @@ fn collection_unwind_must_cover_maximum_length_and_loop_exit() {
         records[0].disposition,
         ObligationDisposition::Unsupported {
             reason: UnsupportedObligation::CollectionClaimNotRendered {
-                reason: quire_contract_codegen::CollectionUnsupportedReason::UnwindBelowCollectionBound {
+                reason: filament_contract_codegen::CollectionUnsupportedReason::UnwindBelowCollectionBound {
                     required: 4,
                     supplied: 3,
                 },
@@ -1570,7 +1571,7 @@ fn out_of_range_integer_literal_is_rendered_as_a_falsifiable_claim() {
         model_document(),
         "forall(item in deref(input).items: item >= 4)",
     );
-    let outcome = collection_item_outcome(&fixture, "quire.op.collection.forall", 4);
+    let outcome = collection_item_outcome(&fixture, "filament.op.collection.forall", 4);
     let KaniObligationOutcome::Emitted {
         records,
         collection_harnesses,
@@ -1616,7 +1617,7 @@ fn boolean_sequence_uses_symbolic_slots_for_both_boolean_values() {
         .resolved_graph()
         .nodes
         .iter()
-        .find(|node| application_identity(node) == Some("quire.op.collection.forall"))
+        .find(|node| application_identity(node) == Some("filament.op.collection.forall"))
         .unwrap()
         .node_id
         .clone();
@@ -1685,7 +1686,7 @@ fn nonzero_sequence_bounds_are_inclusive_in_the_symbolic_domain() {
 
     let fixture =
         emitted_from_document_and_body(document, "forall(item in deref(input).items: item >= 1)");
-    let harness = collection_harness(&fixture, "quire.op.collection.forall");
+    let harness = collection_harness(&fixture, "filament.op.collection.forall");
     assert_eq!(harness.identity.minimum_length, 1);
     assert_eq!(harness.identity.maximum_length, 3);
     assert_eq!(
@@ -1715,7 +1716,7 @@ fn collection_identity_tracks_domains_claim_subject_and_unwind() {
     let base_document = model_document();
     let base_body = "forall(item in deref(input).items: item >= 0)";
     let base = emitted_from_document_and_body(base_document.clone(), base_body);
-    let identity = collection_identity(&base, "quire.op.collection.forall", "crate::subject", 8);
+    let identity = collection_identity(&base, "filament.op.collection.forall", "crate::subject", 8);
 
     let mut cardinality_document = base_document.clone();
     let field = cardinality_document["types"][1]["fields"]
@@ -1730,7 +1731,7 @@ fn collection_identity_tracks_domains_claim_subject_and_unwind() {
         identity,
         collection_identity(
             &cardinality,
-            "quire.op.collection.forall",
+            "filament.op.collection.forall",
             "crate::subject",
             8,
         )
@@ -1747,7 +1748,12 @@ fn collection_identity_tracks_domains_claim_subject_and_unwind() {
     let element = emitted_from_document_and_body(element_document, base_body);
     assert_ne!(
         identity,
-        collection_identity(&element, "quire.op.collection.forall", "crate::subject", 8,)
+        collection_identity(
+            &element,
+            "filament.op.collection.forall",
+            "crate::subject",
+            8,
+        )
     );
 
     let claim = emitted_from_document_and_body(
@@ -1756,20 +1762,20 @@ fn collection_identity_tracks_domains_claim_subject_and_unwind() {
     );
     assert_ne!(
         identity,
-        collection_identity(&claim, "quire.op.collection.forall", "crate::subject", 8,)
+        collection_identity(&claim, "filament.op.collection.forall", "crate::subject", 8,)
     );
     assert_ne!(
         identity,
         collection_identity(
             &base,
-            "quire.op.collection.forall",
+            "filament.op.collection.forall",
             "crate::other_subject",
             8,
         )
     );
     assert_ne!(
         identity,
-        collection_identity(&base, "quire.op.collection.forall", "crate::subject", 9,)
+        collection_identity(&base, "filament.op.collection.forall", "crate::subject", 9,)
     );
 }
 
@@ -1785,7 +1791,7 @@ fn collection_run_evidence_preserves_every_ordered_identity_option() {
     );
     let harness = collection_harness_with_ceilings(
         &fixture,
-        "quire.op.collection.forall",
+        "filament.op.collection.forall",
         ProofCeilings {
             memory_bytes: std::num::NonZeroU64::new(128 * 1024 * 1024).unwrap(),
             wall_clock: Duration::from_secs(10),
@@ -1892,7 +1898,7 @@ fn precondition_fixture_with_model(document: Value, body: &str) -> Emitted {
         "pre CollectionReady using v on M::Node::step",
         body,
     )
-    .expect("QSL emits and IR admits the authored precondition")
+    .expect("FSL emits and IR admits the authored precondition")
 }
 
 fn precondition_collection_outcome(
@@ -1966,7 +1972,7 @@ fn native_collection_precondition(
     });
     let model_digest = Sha256::digest(&fixture.model_bytes);
     let snapshot = json!({
-        "format": "quire.state.snapshot/v1",
+        "format": "filament.state.snapshot/v1",
         "identity": {"authority": "agent-ix", "identity": "ix://ir268.test/collection/prestate", "revision_namespace": "git", "revision": "fixture"},
         "observation": "pre",
         "model": {"identity": "ir268.test/domain", "version": "1.0.0", "digest": format!("sha256-jcs:{model_digest:x}")},
@@ -2083,7 +2089,7 @@ fn assert_collection_precondition_equivalence(fixture: &Emitted, cases: &[([i64;
                     .extension()
                     .is_some_and(|extension| extension == "rlib")
         })
-        .expect("locked quire-exact library");
+        .expect("locked filament-exact library");
     let compile = Command::new("rustc")
         .args(["--edition=2021", "-o"])
         .arg(&executable)
@@ -2248,11 +2254,11 @@ fn collection_totality_playback_binds_the_generated_assertion_in_the_default_lan
         harness.identity.module_symbol.as_str(),
         harness.identity.harness_symbol.as_str(),
     );
-    let limits = quire_contract_codegen::WitnessDecodeLimits {
+    let limits = filament_contract_codegen::WitnessDecodeLimits {
         bytes: 4096,
         values: 7,
     };
-    let playback = quire_contract_codegen::parse_assertion_playback(
+    let playback = filament_contract_codegen::parse_assertion_playback(
         &transcript,
         harness.identity.harness_symbol.as_str(),
         harness.identity.module_symbol.as_str(),
@@ -2275,13 +2281,13 @@ fn collection_totality_playback_binds_the_generated_assertion_in_the_default_lan
     );
     assert!(matches!(
         settlement,
-        quire_contract_codegen::ReplaySettlement::CgDefect
+        filament_contract_codegen::ReplaySettlement::CgDefect
     ));
     let changed = transcript.replace(
         "the selected precondition completes a Boolean",
         "a different assertion",
     );
-    let playback = quire_contract_codegen::parse_assertion_playback(
+    let playback = filament_contract_codegen::parse_assertion_playback(
         &changed,
         harness.identity.harness_symbol.as_str(),
         harness.identity.module_symbol.as_str(),
@@ -2293,8 +2299,8 @@ fn collection_totality_playback_binds_the_generated_assertion_in_the_default_lan
         .expect_err("a different assertion is no totality witness");
     assert_eq!(error.code, "cg_witness_assertion_mismatch");
     assert!(matches!(
-        quire_contract_codegen::ReplaySettlement::from(&error),
-        quire_contract_codegen::ReplaySettlement::CgDefect
+        filament_contract_codegen::ReplaySettlement::from(&error),
+        filament_contract_codegen::ReplaySettlement::CgDefect
     ));
 }
 
@@ -2375,7 +2381,7 @@ fn precondition_collection_source_is_admitted() {
         .resolved_graph()
         .nodes
         .iter()
-        .find(|node| application_identity(node) == Some("quire.op.collection.forall"))
+        .find(|node| application_identity(node) == Some("filament.op.collection.forall"))
         .unwrap()
         .node_id
         .clone();
@@ -2427,7 +2433,7 @@ fn precondition_collection_source_controls_quantifier_element_and_census() {
             .unwrap()
             .collection
             .quantifier_operation,
-        "quire.op.collection.exists"
+        "filament.op.collection.exists"
     );
 
     let boolean = precondition_fixture_with_model(
@@ -2506,7 +2512,7 @@ fn precondition_collection_source_refusals_emit_no_harness() {
     assert!(v2_clause_harnesses.is_empty() && collection_harnesses.is_empty());
     assert!(matches!(&records[0].disposition, ObligationDisposition::Unsupported {
         reason: UnsupportedObligation::CollectionClaimNotRendered {
-            reason: quire_contract_codegen::CollectionUnsupportedReason::UnwindBelowCollectionBound { .. }, ..
+            reason: filament_contract_codegen::CollectionUnsupportedReason::UnwindBelowCollectionBound { .. }, ..
         }
     }));
 
@@ -2632,7 +2638,8 @@ fn precondition_collection_source_refusals_emit_no_harness() {
         &records[0].disposition,
         ObligationDisposition::Unsupported {
             reason: UnsupportedObligation::CollectionClaimNotRendered {
-                reason: quire_contract_codegen::CollectionUnsupportedReason::UnsupportedFieldType,
+                reason:
+                    filament_contract_codegen::CollectionUnsupportedReason::UnsupportedFieldType,
                 ..
             }
         }
@@ -2662,8 +2669,8 @@ fn real_kani_collection_precondition_distinguishes_totality_from_satisfiability(
         write_manifest(
             &scratch.path,
             &format!(
-                "[package]\nname = \"generated-kani-precondition\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nquire-exact = {{ {} }}\n\n[workspace]\n",
-                runtime_dependency(&["exact"]), quire_contract_codegen::EXACT_DEPENDENCY_SOURCE
+                "[package]\nname = \"generated-kani-precondition\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nfilament-exact = {{ {} }}\n\n[workspace]\n",
+                runtime_dependency(&["exact"]), filament_contract_codegen::EXACT_DEPENDENCY_SOURCE
             ),
         );
         fs::write(
@@ -2689,8 +2696,9 @@ fn real_kani_collection_precondition_distinguishes_totality_from_satisfiability(
     );
     assert_eq!(healthy.outcome, KaniRunOutcome::Verified, "{healthy:?}");
     assert!(healthy.checks.iter().any(|check| {
-        check.status == quire_contract_codegen::KaniCheckStatus::Success
-            && check.class == quire_contract_codegen::KaniCheckClass::from("assertion".to_owned())
+        check.status == filament_contract_codegen::KaniCheckStatus::Success
+            && check.class
+                == filament_contract_codegen::KaniCheckClass::from("assertion".to_owned())
     }));
 
     let impossible = run(
@@ -2718,8 +2726,8 @@ fn real_kani_collection_precondition_distinguishes_totality_from_satisfiability(
         write_manifest(
             &scratch.path,
             &format!(
-                "[package]\nname = \"generated-kani-precondition-mutant\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nquire-exact = {{ {} }}\n\n[workspace]\n",
-                runtime_dependency(&["exact"]), quire_contract_codegen::EXACT_DEPENDENCY_SOURCE
+                "[package]\nname = \"generated-kani-precondition-mutant\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nfilament-exact = {{ {} }}\n\n[workspace]\n",
+                runtime_dependency(&["exact"]), filament_contract_codegen::EXACT_DEPENDENCY_SOURCE
             ),
         );
         fs::write(
@@ -2750,13 +2758,13 @@ fn real_kani_collection_precondition_distinguishes_totality_from_satisfiability(
             output.status.success(),
             Some(&report),
             select_counterexample(&transcript, None),
-            Some(quire_contract_codegen::ObligationKind::Precondition),
+            Some(filament_contract_codegen::ObligationKind::Precondition),
         )
         .unwrap_or_else(|refusal| panic!("{variant}: Kani refused the report: {refusal:?}"));
         let KaniRunOutcome::Falsified { counterexample } = &classified.outcome else {
             panic!("{variant}: mutated oracle must falsify totality: {classified:?}\n{transcript}");
         };
-        let playback = quire_contract_codegen::parse_assertion_playback(
+        let playback = filament_contract_codegen::parse_assertion_playback(
             counterexample,
             "collection precondition",
             variant,
@@ -2767,7 +2775,7 @@ fn real_kani_collection_precondition_distinguishes_totality_from_satisfiability(
         let (decoded, settlement) = settle_v2_collection_precondition_falsification(
             &harness,
             &playback,
-            quire_contract_codegen::WitnessDecodeLimits {
+            filament_contract_codegen::WitnessDecodeLimits {
                 bytes: 64 * 1024,
                 values: 7,
             },
@@ -2806,7 +2814,7 @@ fn real_kani_collection_precondition_distinguishes_totality_from_satisfiability(
             1,
         );
         assert_ne!(wrong_assertion, counterexample.as_str());
-        let wrong_playback = quire_contract_codegen::parse_assertion_playback(
+        let wrong_playback = filament_contract_codegen::parse_assertion_playback(
             &wrong_assertion,
             "collection precondition",
             variant,
@@ -2817,7 +2825,7 @@ fn real_kani_collection_precondition_distinguishes_totality_from_satisfiability(
         let decode_error = settle_v2_collection_precondition_falsification(
             &harness,
             &wrong_playback,
-            quire_contract_codegen::WitnessDecodeLimits {
+            filament_contract_codegen::WitnessDecodeLimits {
                 bytes: 64 * 1024,
                 values: 7,
             },
@@ -2856,7 +2864,7 @@ fn unsupported_set_form_precedes_unique_capacity_refusal() {
         records,
         collection_harnesses,
         ..
-    } = collection_item_outcome(&fixture, "quire.op.collection.forall", 8)
+    } = collection_item_outcome(&fixture, "filament.op.collection.forall", 8)
     else {
         panic!("unsupported form settles per item");
     };
@@ -2864,7 +2872,8 @@ fn unsupported_set_form_precedes_unique_capacity_refusal() {
         records[0].disposition,
         ObligationDisposition::Unsupported {
             reason: UnsupportedObligation::CollectionClaimNotRendered {
-                reason: quire_contract_codegen::CollectionUnsupportedReason::UnsupportedFieldType,
+                reason:
+                    filament_contract_codegen::CollectionUnsupportedReason::UnsupportedFieldType,
                 ..
             }
         }
@@ -2893,7 +2902,7 @@ fn nonunique_boolean_sequence_keeps_maximum_above_unique_capacity() {
         document,
         "forall(flag in deref(input).flags: flag != false)",
     );
-    let harness = collection_harness(&fixture, "quire.op.collection.forall");
+    let harness = collection_harness(&fixture, "filament.op.collection.forall");
     assert_eq!(
         harness.identity.collection_kind,
         CollectionKindIdentity::Sequence
@@ -2921,7 +2930,7 @@ fn admitted_full_width_integer_ordered_set_retains_its_domain() {
 
     let fixture =
         emitted_from_document_and_body(document, "forall(item in deref(input).items: item >= 0)");
-    let harness = collection_harness(&fixture, "quire.op.collection.forall");
+    let harness = collection_harness(&fixture, "filament.op.collection.forall");
     assert_eq!(
         harness.identity.collection_kind,
         CollectionKindIdentity::OrderedSet
@@ -2968,7 +2977,7 @@ fn admitted_unrepresentable_element_endpoint_precedes_unique_capacity() {
         records,
         collection_harnesses,
         ..
-    } = collection_item_outcome(&fixture, "quire.op.collection.forall", 8)
+    } = collection_item_outcome(&fixture, "filament.op.collection.forall", 8)
     else {
         panic!("the unrepresentable endpoint settles per item");
     };
@@ -2977,7 +2986,7 @@ fn admitted_unrepresentable_element_endpoint_precedes_unique_capacity() {
         ObligationDisposition::Unsupported {
             reason: UnsupportedObligation::CollectionClaimNotRendered {
                 reason:
-                    quire_contract_codegen::CollectionUnsupportedReason::DomainNotRepresentableInI64,
+                    filament_contract_codegen::CollectionUnsupportedReason::DomainNotRepresentableInI64,
                 ..
             }
         }
@@ -2992,7 +3001,7 @@ fn feasible_ordered_set_emits_symbolic_ordered_unique_slots() {
         ordered_set_document(),
         "forall(item in deref(input).items: item >= 0)",
     );
-    let harness = collection_harness(&fixture, "quire.op.collection.forall");
+    let harness = collection_harness(&fixture, "filament.op.collection.forall");
     assert_eq!(
         harness.identity.collection_kind,
         CollectionKindIdentity::OrderedSet
@@ -3025,7 +3034,7 @@ fn feasible_ordered_set_emits_symbolic_ordered_unique_slots() {
         model_document(),
         "forall(item in deref(input).items: item >= 0)",
     );
-    let sequence_harness = collection_harness(&sequence, "quire.op.collection.forall");
+    let sequence_harness = collection_harness(&sequence, "filament.op.collection.forall");
     assert_eq!(
         sequence_harness.identity.collection_kind,
         CollectionKindIdentity::Sequence
@@ -3058,7 +3067,7 @@ fn boolean_ordered_set_keeps_both_values_and_distinct_active_slots() {
         document,
         "forall(flag in deref(input).flags: flag != false)",
     );
-    let harness = collection_harness(&fixture, "quire.op.collection.forall");
+    let harness = collection_harness(&fixture, "filament.op.collection.forall");
     assert_eq!(
         harness.identity.collection_kind,
         CollectionKindIdentity::OrderedSet
@@ -3090,7 +3099,7 @@ fn integer_ordered_set_at_distinct_capacity_keeps_its_declared_maximum() {
     items["multiplicity"]["upper"] = json!(4);
     let fixture =
         emitted_from_document_and_body(document, "forall(item in deref(input).items: item >= 0)");
-    let harness = collection_harness(&fixture, "quire.op.collection.forall");
+    let harness = collection_harness(&fixture, "filament.op.collection.forall");
     assert_eq!(harness.identity.maximum_length, 4);
     assert!(harness
         .rust
@@ -3203,7 +3212,7 @@ fn assert_ordered_set_capacity_refusal(
         .resolved_graph()
         .nodes
         .iter()
-        .find(|node| application_identity(node) == Some("quire.op.collection.forall"))
+        .find(|node| application_identity(node) == Some("filament.op.collection.forall"))
         .unwrap()
         .node_id
         .clone();
@@ -3233,7 +3242,7 @@ fn assert_ordered_set_capacity_refusal(
         &records[0].disposition,
         ObligationDisposition::Unsupported {
             reason: UnsupportedObligation::CollectionClaimNotRendered {
-                reason: quire_contract_codegen::CollectionUnsupportedReason::UniqueElementCapacityExceeded {
+                reason: filament_contract_codegen::CollectionUnsupportedReason::UniqueElementCapacityExceeded {
                     capacity: actual_capacity,
                     declared_maximum: actual_maximum,
                 },
@@ -3270,7 +3279,7 @@ fn unsupported_collection_predicate_is_refused_without_harness() {
         .resolved_graph()
         .nodes
         .iter()
-        .find(|node| application_identity(node) == Some("quire.op.collection.forall"))
+        .find(|node| application_identity(node) == Some("filament.op.collection.forall"))
         .unwrap()
         .node_id
         .clone();
@@ -3299,7 +3308,8 @@ fn unsupported_collection_predicate_is_refused_without_harness() {
         records[0].disposition,
         ObligationDisposition::Unsupported {
             reason: UnsupportedObligation::CollectionClaimNotRendered {
-                reason: quire_contract_codegen::CollectionUnsupportedReason::UnsupportedClaimShape,
+                reason:
+                    filament_contract_codegen::CollectionUnsupportedReason::UnsupportedClaimShape,
                 ..
             }
         }
@@ -3330,7 +3340,7 @@ fn collection_domain_larger_than_the_request_memory_ceiling_is_refused_without_h
         .resolved_graph()
         .nodes
         .iter()
-        .find(|node| application_identity(node) == Some("quire.op.collection.forall"))
+        .find(|node| application_identity(node) == Some("filament.op.collection.forall"))
         .unwrap()
         .node_id
         .clone();
@@ -3362,7 +3372,7 @@ fn collection_domain_larger_than_the_request_memory_ceiling_is_refused_without_h
         records[0].disposition,
         ObligationDisposition::Unsupported {
             reason: UnsupportedObligation::CollectionClaimNotRendered {
-                reason: quire_contract_codegen::CollectionUnsupportedReason::SymbolicDomainExceedsMemoryCeiling {
+                reason: filament_contract_codegen::CollectionUnsupportedReason::SymbolicDomainExceedsMemoryCeiling {
                     minimum_required_bytes: 32,
                     ceiling_bytes: 31,
                 },
@@ -3399,7 +3409,7 @@ fn canonical_model_wire_rejects_cardinality_above_i64() {
 
 #[trace("FR-015-AC-97", "FR-015-AC-102", "TC-025")]
 #[test]
-fn qsl_admitted_collection_without_an_upper_bound_requires_bound_without_harness() {
+fn fsl_admitted_collection_without_an_upper_bound_requires_bound_without_harness() {
     let mut document = model_document();
     let node = document["types"]
         .as_array_mut()
@@ -3422,7 +3432,7 @@ fn qsl_admitted_collection_without_an_upper_bound_requires_bound_without_harness
         document,
         "forall(item in deref(input).items: item >= 0)",
     )
-    .expect("QSL admits an optional lower bound when the minimum is zero");
+    .expect("FSL admits an optional lower bound when the minimum is zero");
     assert!(matches!(
         fixture.fields.field("items").unwrap().member_type(),
         Some(CheckedMemberType::Collection { bounds: None, .. })
@@ -3446,14 +3456,14 @@ fn qsl_admitted_collection_without_an_upper_bound_requires_bound_without_harness
         .resolved_graph()
         .nodes
         .iter()
-        .find(|node| application_identity(node) == Some("quire.op.collection.forall"))
+        .find(|node| application_identity(node) == Some("filament.op.collection.forall"))
         .unwrap();
     let projected_type = fixture
         .package
         .resolved_graph()
         .nodes
         .iter()
-        .find(|node| application_identity(node) == Some("quire.op.record.project"))
+        .find(|node| application_identity(node) == Some("filament.op.record.project"))
         .unwrap()
         .semantic_type
         .clone();
@@ -3517,7 +3527,7 @@ fn unbounded_sequence_of_reference_elements_is_unsupported_not_requires_bound() 
             ..
         }) if matches!(element.as_ref(), CheckedMemberType::Reference(_))
     ));
-    let outcome = collection_item_outcome(&fixture, "quire.op.collection.forall", 8);
+    let outcome = collection_item_outcome(&fixture, "filament.op.collection.forall", 8);
     let KaniObligationOutcome::Emitted {
         records,
         collection_harnesses,
@@ -3530,7 +3540,8 @@ fn unbounded_sequence_of_reference_elements_is_unsupported_not_requires_bound() 
         records[0].disposition,
         ObligationDisposition::Unsupported {
             reason: UnsupportedObligation::CollectionClaimNotRendered {
-                reason: quire_contract_codegen::CollectionUnsupportedReason::UnsupportedFieldType,
+                reason:
+                    filament_contract_codegen::CollectionUnsupportedReason::UnsupportedFieldType,
                 ..
             }
         }
@@ -3540,7 +3551,7 @@ fn unbounded_sequence_of_reference_elements_is_unsupported_not_requires_bound() 
 
 #[trace("FR-015-AC-97", "TC-025")]
 #[test]
-fn qsl_rejects_a_missing_upper_bound_with_a_positive_minimum() {
+fn fsl_rejects_a_missing_upper_bound_with_a_positive_minimum() {
     let mut document = model_document();
     let node = document["types"]
         .as_array_mut()
@@ -3572,7 +3583,7 @@ fn qsl_rejects_a_missing_upper_bound_with_a_positive_minimum() {
 
 #[trace("FR-015-AC-97", "FR-015-AC-102", "TC-025")]
 #[test]
-fn finite_sequence_of_unbounded_integer_elements_requires_bound_when_qsl_admits_it() {
+fn finite_sequence_of_unbounded_integer_elements_requires_bound_when_fsl_admits_it() {
     let mut document = model_document();
     let node = document["types"]
         .as_array_mut()
@@ -3586,12 +3597,12 @@ fn finite_sequence_of_unbounded_integer_elements_requires_bound_when_qsl_admits_
         .iter_mut()
         .find(|field| field.get("name").and_then(Value::as_str) == Some("items"))
         .unwrap();
-    items["typeRef"] = json!("ix://quire/native/Integer");
+    items["typeRef"] = json!("ix://filament/native/Integer");
     let fixture = try_emitted_from_document_and_body(
         document,
         "forall(item in deref(input).items: item >= 0) and exists(item in deref(input).items: item = 2)",
     )
-    .unwrap_or_else(|error| panic!("QSL/IR unbounded element source route: {error}"));
+    .unwrap_or_else(|error| panic!("FSL/IR unbounded element source route: {error}"));
     assert!(matches!(
         fixture.fields.field("items").unwrap().member_type(),
         Some(CheckedMemberType::Collection {
@@ -3619,14 +3630,14 @@ fn finite_sequence_of_unbounded_integer_elements_requires_bound_when_qsl_admits_
         .resolved_graph()
         .nodes
         .iter()
-        .find(|node| application_identity(node) == Some("quire.op.collection.forall"))
+        .find(|node| application_identity(node) == Some("filament.op.collection.forall"))
         .unwrap();
     let projection = fixture
         .package
         .resolved_graph()
         .nodes
         .iter()
-        .find(|node| application_identity(node) == Some("quire.op.record.project"))
+        .find(|node| application_identity(node) == Some("filament.op.record.project"))
         .unwrap();
     let collection_type = fixture
         .package
@@ -3685,9 +3696,9 @@ fn finite_sequence_of_unbounded_integer_elements_requires_bound_when_qsl_admits_
 #[test]
 fn bounded_sequences_of_string_uuid_and_timestamp_require_element_bounds() {
     for (type_ref, expected, semantic_form) in [
-        ("ix://quire/native/String", "string", "string"),
-        ("ix://quire/native/UUID", "uuid", "uuid"),
-        ("ix://quire/native/Timestamp", "timestamp", "timestamp"),
+        ("ix://filament/native/String", "string", "string"),
+        ("ix://filament/native/UUID", "uuid", "uuid"),
+        ("ix://filament/native/Timestamp", "timestamp", "timestamp"),
     ] {
         let mut document = model_document();
         let node = document["types"]
@@ -3707,7 +3718,7 @@ fn bounded_sequences_of_string_uuid_and_timestamp_require_element_bounds() {
             document,
             "forall(item in deref(input).items: true)",
         )
-        .unwrap_or_else(|error| panic!("QSL admits Sequence<{expected}>: {error}"));
+        .unwrap_or_else(|error| panic!("FSL admits Sequence<{expected}>: {error}"));
         let CheckedMemberType::Collection { element, .. } = fixture
             .fields
             .field("items")
@@ -3723,7 +3734,7 @@ fn bounded_sequences_of_string_uuid_and_timestamp_require_element_bounds() {
                 | ("uuid", CheckedMemberType::Uuid)
                 | ("timestamp", CheckedMemberType::Timestamp)
         ));
-        let outcome = collection_item_outcome(&fixture, "quire.op.collection.forall", 4);
+        let outcome = collection_item_outcome(&fixture, "filament.op.collection.forall", 4);
         let KaniObligationOutcome::Emitted {
             records,
             collection_harnesses,
@@ -3785,7 +3796,7 @@ fn tc_025_real_kani_state_clause_collection_claim_and_mutant() {
         "forall(item in self.items: item >= 0)",
     )
     .expect("healthy clause is admitted");
-    let healthy_harness = collection_harness(&healthy, "quire.op.collection.forall");
+    let healthy_harness = collection_harness(&healthy, "filament.op.collection.forall");
     assert_eq!(
         run_collection_kani(&installation, &healthy_harness, "state-clause-healthy").outcome,
         KaniRunOutcome::Verified
@@ -3797,7 +3808,7 @@ fn tc_025_real_kani_state_clause_collection_claim_and_mutant() {
         "forall(item in self.items: item >= 1)",
     )
     .expect("mutated clause is admitted");
-    let mutant_harness = collection_harness(&mutant, "quire.op.collection.forall");
+    let mutant_harness = collection_harness(&mutant, "filament.op.collection.forall");
     assert_ne!(healthy_harness.identity, mutant_harness.identity);
     let evidence = run_collection_kani(&installation, &mutant_harness, "state-clause-mutant");
     let KaniRunOutcome::Falsified { counterexample } = evidence.outcome else {
@@ -3819,7 +3830,7 @@ fn tc_025_real_kani_collection_claim_verifies_and_mutated_claim_falsifies() {
         model_document(),
         "forall(item in deref(input).items: item >= 0)",
     );
-    let healthy_harness = qualified_collection_harness(&healthy, "quire.op.collection.forall");
+    let healthy_harness = qualified_collection_harness(&healthy, "filament.op.collection.forall");
     let healthy_evidence = run_collection_kani(&installation, &healthy_harness, "healthy");
     assert_eq!(healthy_evidence.outcome, KaniRunOutcome::Verified);
     assert_eq!(healthy_evidence.exit_code, Some(0));
@@ -3827,13 +3838,13 @@ fn tc_025_real_kani_collection_claim_verifies_and_mutated_claim_falsifies() {
     assert_eq!(healthy_evidence.solver, healthy_harness.identity.solver);
     assert_native_collection_result(&healthy, &[1, 2], CollectionKind::Sequence, true);
 
-    // This is a source-authored claim mutation, recompiled and admitted by QSL, then passed
+    // This is a source-authored claim mutation, recompiled and admitted by FSL, then passed
     // through the same generator. Its counterexample uses the selected field's in-domain 0.
     let mutated = emitted_from_document_and_body(
         model_document(),
         "forall(item in deref(input).items: item >= 1)",
     );
-    let mutated_harness = qualified_collection_harness(&mutated, "quire.op.collection.forall");
+    let mutated_harness = qualified_collection_harness(&mutated, "filament.op.collection.forall");
     assert_ne!(healthy_harness.identity, mutated_harness.identity);
     let mutated_evidence = run_collection_kani(&installation, &mutated_harness, "mutated");
     let KaniRunOutcome::Falsified { counterexample } = &mutated_evidence.outcome else {
@@ -3871,7 +3882,7 @@ fn tc_025_real_kani_ordered_set_claim_and_mutant_keep_distinct_active_values() {
         document.clone(),
         "forall(item in deref(input).items: item >= 0)",
     );
-    let healthy_harness = qualified_collection_harness(&healthy, "quire.op.collection.forall");
+    let healthy_harness = qualified_collection_harness(&healthy, "filament.op.collection.forall");
     assert_eq!(
         run_collection_kani(&installation, &healthy_harness, "ordered-set-healthy").outcome,
         KaniRunOutcome::Verified
@@ -3879,7 +3890,7 @@ fn tc_025_real_kani_ordered_set_claim_and_mutant_keep_distinct_active_values() {
     assert_native_collection_result(&healthy, &[0, 1], CollectionKind::OrderedSet, true);
     let mutant =
         emitted_from_document_and_body(document, "forall(item in deref(input).items: item >= 1)");
-    let mutant_harness = qualified_collection_harness(&mutant, "quire.op.collection.forall");
+    let mutant_harness = qualified_collection_harness(&mutant, "filament.op.collection.forall");
     let evidence = run_collection_kani(&installation, &mutant_harness, "ordered-set-mutant");
     let KaniRunOutcome::Falsified { counterexample } = evidence.outcome else {
         panic!("the ordered-set mutant must falsify: {evidence:?}");
@@ -3918,7 +3929,8 @@ fn tc_025_real_kani_ordered_set_uniqueness_changes_the_verdict() {
     flags["multiplicity"]["unique"] = json!(true);
     let claim = "exists(flag in deref(input).flags: flag != false)";
     let ordered_set = emitted_from_document_and_body(document.clone(), claim);
-    let ordered_harness = qualified_collection_harness(&ordered_set, "quire.op.collection.exists");
+    let ordered_harness =
+        qualified_collection_harness(&ordered_set, "filament.op.collection.exists");
     assert_eq!(
         ordered_harness.identity.collection_kind,
         CollectionKindIdentity::OrderedSet
@@ -3945,7 +3957,7 @@ fn tc_025_real_kani_ordered_set_uniqueness_changes_the_verdict() {
         .find(|field| field.get("name").and_then(Value::as_str) == Some("flags"))
         .unwrap()["multiplicity"]["unique"] = json!(false);
     let sequence = emitted_from_document_and_body(document, claim);
-    let sequence_harness = qualified_collection_harness(&sequence, "quire.op.collection.exists");
+    let sequence_harness = qualified_collection_harness(&sequence, "filament.op.collection.exists");
     assert_eq!(
         sequence_harness.identity.collection_kind,
         CollectionKindIdentity::Sequence
@@ -3989,7 +4001,7 @@ fn collection_negotiation_accounts_for_each_supported_or_refused_item() {
         .resolved_graph()
         .nodes
         .iter()
-        .find(|node| application_identity(node) == Some("quire.op.collection.forall"))
+        .find(|node| application_identity(node) == Some("filament.op.collection.forall"))
         .expect("the source forall exists")
         .node_id
         .clone();
@@ -4037,7 +4049,8 @@ fn collection_negotiation_accounts_for_each_supported_or_refused_item() {
         records[1].disposition,
         ObligationDisposition::Unsupported {
             reason: UnsupportedObligation::CollectionClaimNotRendered {
-                reason: quire_contract_codegen::CollectionUnsupportedReason::UnsupportedClaimShape,
+                reason:
+                    filament_contract_codegen::CollectionUnsupportedReason::UnsupportedClaimShape,
                 ..
             }
         }

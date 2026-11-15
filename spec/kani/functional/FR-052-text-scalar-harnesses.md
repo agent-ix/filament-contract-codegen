@@ -3,39 +3,39 @@ id: FR-052
 title: "Generate bounded text scalar comparison harnesses"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/StR-001
+  - target: ix://agent-ix/filament-contract-codegen/StR-001
     type: satisfies
-  - target: ix://agent-ix/quire-contract-codegen/FR-014
+  - target: ix://agent-ix/filament-contract-codegen/FR-014
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-015
+  - target: ix://agent-ix/filament-contract-codegen/FR-015
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-016
+  - target: ix://agent-ix/filament-contract-codegen/FR-016
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-017
+  - target: ix://agent-ix/filament-contract-codegen/FR-017
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-025
+  - target: ix://agent-ix/filament-contract-codegen/FR-025
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-028
+  - target: ix://agent-ix/filament-contract-codegen/FR-028
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-029
+  - target: ix://agent-ix/filament-contract-codegen/FR-029
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-039
+  - target: ix://agent-ix/filament-contract-codegen/FR-039
     type: depends_on
-  - target: ix://agent-ix/quire-contract-ir/FR-038
+  - target: ix://agent-ix/filament-contract-ir/FR-038
     type: references
-  - target: ix://agent-ix/quire-contract-codegen/FR-035
+  - target: ix://agent-ix/filament-contract-codegen/FR-035
     type: references
-  - target: ix://agent-ix/quire-contract-codegen/FR-046
+  - target: ix://agent-ix/filament-contract-codegen/FR-046
     type: references
-  - target: ix://agent-ix/quire-contract-codegen/FR-049
+  - target: ix://agent-ix/filament-contract-codegen/FR-049
     type: references
-  - target: ix://agent-ix/quire-contract-codegen/FR-050
+  - target: ix://agent-ix/filament-contract-codegen/FR-050
     type: references
-  - target: ix://agent-ix/quire-contract-codegen/FR-051
+  - target: ix://agent-ix/filament-contract-codegen/FR-051
     type: references
-  - target: ix://agent-ix/quire-specification/FR-196
+  - target: ix://agent-ix/filament-specification/FR-196
     type: references
-  - target: ix://agent-ix/quire-exact/FR-400
+  - target: ix://agent-ix/filament-exact/FR-400
     type: references
 ---
 # FR-052: Generate bounded text scalar comparison harnesses
@@ -43,7 +43,7 @@ relationships:
 ## Description
 
 When an admitted request selects a reader-admitted `text` scalar comparison
-(`quire.op.text.eq`, `.ne`, `.lt`, `.le`, `.gt`, `.ge`) over two parameters each
+(`filament.op.text.eq`, `.ne`, `.lt`, `.le`, `.gt`, `.ge`) over two parameters each
 typed by a `text_bounds` domain, and the planned prerequisite below is available,
 CG SHALL generate a bounded Kani harness that proves the generated text oracle of
 [FR-014](../../oracle/functional/FR-014-exact-scalar-oracles.md) agrees with an
@@ -57,14 +57,14 @@ Four prerequisites are named, and none is delivered. Every criterion that
 describes a supported harness is conditional on P1 and P2, and the criteria that
 involve a normalizing profile are also conditional on P3 and P4.
 
-- P1 (ticket IR-1445) is the quire-exact text carrier: a symbolic exact `Text`
+- P1 (ticket IR-1445) is the filament-exact text carrier: a symbolic exact `Text`
   operand and a native expression over it, with the tractability contract of the
   IR-1436 design review (D4): `Copy`, no allocation, no `chars().count()`, no SWAR
   and no iterator loop, counting and ordering as byte loops of at most the carrier
   capacity C. The carrier's capacity C and the recorded peak memory per capacity,
   within the K-DR memory budget its acceptance criteria name, are within IR-1445's
   scope. It also provides the loop-free length check the proof-path draw constraint
-  uses (AC-2), and a loop-free native comparison (quire-exact FR-404) in place of the owner's `compare_text`.
+  uses (AC-2), and a loop-free native comparison (filament-exact FR-404) in place of the owner's `compare_text`.
   P1's native comparison is host-callable ordinary code, one source for host and Kani builds and not `cfg(kani)`-only, which
   AC-12 needs for every profile (IR-1501 requires it only for normalization);
   IR-1445's acceptance carries this requirement.
@@ -73,7 +73,7 @@ involve a normalizing profile are also conditional on P3 and P4.
   harness built on today's API would run an admission per operand as setup. The
   harness construction is conditional on it.
 - P3 (ticket IR-1500) is the payload-byte bound P for `nfc`, `nfd`, `nfkc` and
-  `nfkd`, stated by quire-exact in [FR-400](ix://agent-ix/quire-exact/FR-400), whose
+  `nfkd`, stated by filament-exact in [FR-400](ix://agent-ix/filament-exact/FR-400), whose
   FR-400-AC-6 also records the attained payload length A that AC-12 to AC-14 use.
   Every normalizing-profile criterion is conditional on it.
 - P4 (ticket IR-1501) is a loop-free, allocation-free proof-path normalization for
@@ -107,11 +107,11 @@ operand bound itself and refuses defensively (AC-4).
 A comparison returns `Outcome<bool>`, takes no `TextType` and has no result bound.
 Only the two operands carry bounds.
 
-Three neighbours are outside this requirement. `quire.op.text.size` is refused by
+Three neighbours are outside this requirement. `filament.op.text.size` is refused by
 FR-014 as `OperationNotDerivable`, so no oracle exists to prove. Text admission
 (`admit_text` into a declared `TextType`) is a caller-ingress operation owned by
 [FR-035](../../oracle/functional/FR-035-caller-text-admission.md). CG's derivation
-does build a `TextAdmission` descriptor from a `quire.op.numeric.convert` node with
+does build a `TextAdmission` descriptor from a `filament.op.numeric.convert` node with
 a text result, and capability settlement routes it to the Text family, but Contract
 IR refuses such a node and its six test nodes (FR-035-AC-6). This row selects only
 the six comparisons, so such a node keeps its existing disposition and never gets a
@@ -133,9 +133,9 @@ P = `max`. For `unicode-scalars` retained equals payload and a scalar is at most
 four bytes, so P = 4 x `max` (checked arithmetic). For `nfc`, `nfd`, `nfkc` and
 `nfkd` the payload can differ in length from the retained sequence in either
 direction, and the bound on payload scalars per retained scalar comes from the
-pinned Unicode 17.0.0 tables. This requirement asserts no multiplier. Quire-exact
+pinned Unicode 17.0.0 tables. This requirement asserts no multiplier. Filament-exact
 states P for these four profiles with its derivation in
-[FR-400](ix://agent-ix/quire-exact/FR-400), a specification whose
+[FR-400](ix://agent-ix/filament-exact/FR-400), a specification whose
 `payload_byte_bound` is not yet delivered (P3, IR-1500); until it is delivered, they are `unsupported`.
 
 The domain is the whole admitted set. It is therefore supported only when P is not
@@ -144,7 +144,7 @@ prove a smaller domain, and generation never clips (AC-3).
 
 P is a support upper bound and is not always attained. The
 attained payload length A(profile, `max`) is the byte length of the longest
-payload that quire-exact's [FR-400](ix://agent-ix/quire-exact/FR-400) (criterion
+payload that filament-exact's [FR-400](ix://agent-ix/filament-exact/FR-400) (criterion
 FR-400-AC-6) constructs and the owner admits under that declared type. A is at
 most P. For `binary-utf8`, `unicode-scalars`, `nfd` and `nfkd`, A equals P. For
 `nfc` and `nfkc` and `max` of 1 or more, A is below P: the scalar factor of P is attained but not by
@@ -270,7 +270,7 @@ refuses with a typed cause, malformed entries retain typed decode causes, and no
 replay is attempted for these evidence failures.
 
 When submitting a validated parameter to public replay, CG SHALL construct one
-`qsl_replay::WitnessValue::Text` holding the payload's scalars per parameter. If the
+`fsl_replay::WitnessValue::Text` holding the payload's scalars per parameter. If the
 public route is unavailable the item is unsupported with no harness. CG introduces no
 transcript grammar or occurrence key.
 
@@ -284,9 +284,9 @@ are also conditional on P4 (IR-1501).
 
 | ID | Criteria | Verification |
 | --- | --- | --- |
-| FR-052-AC-1 | Each admitted `quire.op.text.eq`, `.ne`, `.lt`, `.le`, `.gt` and `.ge` node over two parameters typed by `text_bounds` selects a harness naming the operation identity, both operand forms and their bounds from the admitted node; the oracle is FR-014's and the expected side is an independent native expression, not a second call of the oracle. `quire.op.text.size` selects no harness and keeps FR-014's `OperationNotDerivable`. A text admission claim selects no harness here and stays FR-035's. A text literal operand is accounted `unsupported` naming `TextLiteralOperand` and the operand node, and an operand that is neither a parameter nor a literal is accounted `unsupported` naming FR-015's `OperandNotSupported` and the node, each with no harness. A `numeric.convert` node with a text result selects no harness and keeps its existing disposition. | Test |
-| FR-052-AC-2 | Each operand is drawn as a byte length in `0..=C` and C payload bytes, zero from the length on, valid UTF-8, and admitted by the declared `TextType` through the carrier's loop-free length check. Every admitted payload is reachable exactly once, including normal-form variants of one text, and an independent host enumeration of every byte string up to a stated small length, filtered by `std::str::from_utf8` and the host-side owner `TextType::admits` over the profile's retained sequence, matches the encoding. Clipping the length at `C - 1`, accepting an invalid UTF-8 prefix, accepting nonzero bytes past the length (two encodings for one text), admitting a payload the declared type refuses, rejecting a payload it admits, and swapping the scalar-count and byte-count length measures between `binary-utf8` and the other profiles (which needs a bound where the measures split, such as U+00E9, 2 bytes and 1 scalar, under `Text[0,1]`, admitted by the scalar measure and refused by the byte measure; under `Text[0,2]` with strings up to two bytes both measures admit every string and the mutant cannot fail) each fail the correspondence check (QSpec FR-196-AC-5). | Test |
-| FR-052-AC-3 | The payload-byte bound P is `max` for `binary-utf8`, 4 x `max` (checked arithmetic) for `unicode-scalars`, and the bound IR-1500 states (quire-exact FR-400, `payload_byte_bound`) for `nfc`, `nfd`, `nfkc` and `nfkd`. P is an upper bound, which may exceed every admitted payload length (AC-13). An operand with P not greater than C is supported. An operand with P greater than C, a `max` or product beyond the carrier's length width or `u64`, or a normalizing profile whose bound IR-1500 does not state, yields named `unsupported` retaining the declared `max`, the profile, P (or its absence) and C; generation never clips, narrows or substitutes a smaller domain. | Test |
+| FR-052-AC-1 | Each admitted `filament.op.text.eq`, `.ne`, `.lt`, `.le`, `.gt` and `.ge` node over two parameters typed by `text_bounds` selects a harness naming the operation identity, both operand forms and their bounds from the admitted node; the oracle is FR-014's and the expected side is an independent native expression, not a second call of the oracle. `filament.op.text.size` selects no harness and keeps FR-014's `OperationNotDerivable`. A text admission claim selects no harness here and stays FR-035's. A text literal operand is accounted `unsupported` naming `TextLiteralOperand` and the operand node, and an operand that is neither a parameter nor a literal is accounted `unsupported` naming FR-015's `OperandNotSupported` and the node, each with no harness. A `numeric.convert` node with a text result selects no harness and keeps its existing disposition. | Test |
+| FR-052-AC-2 | Each operand is drawn as a byte length in `0..=C` and C payload bytes, zero from the length on, valid UTF-8, and admitted by the declared `TextType` through the carrier's loop-free length check. Every admitted payload is reachable exactly once, including normal-form variants of one text, and an independent host enumeration of every byte string up to a stated small length, filtered by `std::str::from_utf8` and the host-side owner `TextType::admits` over the profile's retained sequence, matches the encoding. Clipping the length at `C - 1`, accepting an invalid UTF-8 prefix, accepting nonzero bytes past the length (two encodings for one text), admitting a payload the declared type refuses, rejecting a payload it admits, and swapping the scalar-count and byte-count length measures between `binary-utf8` and the other profiles (which needs a bound where the measures split, such as U+00E9, 2 bytes and 1 scalar, under `Text[0,1]`, admitted by the scalar measure and refused by the byte measure; under `Text[0,2]` with strings up to two bytes both measures admit every string and the mutant cannot fail) each fail the correspondence check (FSpec FR-196-AC-5). | Test |
+| FR-052-AC-3 | The payload-byte bound P is `max` for `binary-utf8`, 4 x `max` (checked arithmetic) for `unicode-scalars`, and the bound IR-1500 states (filament-exact FR-400, `payload_byte_bound`) for `nfc`, `nfd`, `nfkc` and `nfkd`. P is an upper bound, which may exceed every admitted payload length (AC-13). An operand with P not greater than C is supported. An operand with P greater than C, a `max` or product beyond the carrier's length width or `u64`, or a normalizing profile whose bound IR-1500 does not state, yields named `unsupported` retaining the declared `max`, the profile, P (or its absence) and C; generation never clips, narrows or substitutes a smaller domain. | Test |
 | FR-052-AC-4 | A text operand typed by no `text_bounds` (a plain `text`) yields source-associated `requires-bound` naming the operand's type node with no harness. A `text_bounds` that is unreadable yields named `unsupported` retaining its cause: a missing, duplicate or unlisted member (FR-014-AC-16), or a non-canonical or beyond-`u64` count, `min` above `max` or an unknown profile (each yields no bound from CG's own reader `read_text_bounds`, which returns no `TextType` for them). Operands whose profiles differ are refused with `DistinctTextProfiles` and no harness. No result bound is required, read or reported, because a comparison has none. | Test |
 | FR-052-AC-5 | For every operator the oracle and native expression agree on the typed outcome, ordered charges, the denied next charge and consumed counters, at zero, exact and short budgets at each charge point in the Behavior list that the profile reaches. The reference neither runs the generated oracle twice nor bridges through Runtime. Normalizing profiles compare the running `text.normalize-output` index across both operands. | Test |
 | FR-052-AC-6 | The reachable noncompletions are asserted as the agreed typed outcome and never assumed away: `Incomplete` at each charge point the profile reaches. The `DistinctTextProfiles` ill-typed result is refused at generation (AC-4) and is not a harness control. No `Undefined` or `Refused` control is drawn, because the owner produces none. No cause is relabelled and a stopped outcome is never proved completed. The generated harness contains no assumption that depends on the outcome (inspected, as FR-046-AC-4). | Test |
@@ -295,8 +295,8 @@ are also conditional on P4 (IR-1501).
 | FR-052-AC-9 | Each mutant below fails with actual solver playback of an in-domain input, caught by the listed operators over a control domain that contains its distinguishing point. (a) `eq` for `ne` (and the converse): `eq` and `ne`. (b) `lt` for `le`, `gt` for `ge` (and converses): the matching ordering operator, equal operands. (c) Operand swap: `lt`, `le`, `gt` and `ge` over distinct operands; `eq` and `ne` swaps are equivalent and are not claimed. (d) Normalization skipped: in a copy of the generated harness the operands' `TextType` is built with `unicode-scalars` instead of the declared `nfc`; all six operators over `e` followed by U+0301 and U+00E9, in both operand orders (normal forms equal, raw payloads unequal). A swap between `nfc` and `nfkc` is not claimed, since that pair gives the same result and charges. (e) Shortlex order instead of lexicographic order: the four ordering operators over `b` against `aa`. (f) UTF-16 code unit order instead of scalar order: the four ordering operators over U+FF61 against U+10000 under `unicode-scalars` or `binary-utf8` (and `nfc` or `nfd`, which leave both unchanged); not under `nfkc` or `nfkd`, where U+FF61 becomes U+3002 and the two orders agree. (g) A prefix compare that ignores a trailing scalar: all six operators over `a` against `ab`. (h) A dropped or reordered charge, including one `text.normalize-output` before a scalar: every operator, a normalizing profile and a nonempty operand for the normalize points. (i) A wrong charge amount, such as the byte sum taken from the left operand only or the emitted count reset for the right operand: every operator over two nonempty operands, the reset needing a normalizing profile. (j) A stopped outcome reported completed: every operator. | Test |
 | FR-052-AC-10 | Counterexample decoding validates every physical I64 entry of a text parameter (width, little-endian bytes, comment, order, schema role, byte and value-count limits), then the length, the zero padding, the UTF-8 prefix through `TextPayload::from_utf8` and the retained sequence's admission by the original `TextType`, before grouping. Grouping yields one `WitnessValue::Text` per parameter through the public replay route for that exact declaration. Missing, duplicate, foreign, role-swapped, domain-conflicting and malformed schemas or entries, a length above C, nonzero padding, invalid UTF-8 and a payload the type refuses are refused with typed causes and no replay. An unavailable replay capability is reported without claiming acceptance. | Test |
 | FR-052-AC-11 | Run evidence records the operation and source association, both operands' `text_bounds`, the payload-byte bound P, the attained length A, the boundary lengths L and L_b of AC-14 and the capacity C per operand, correspondence, ordered physical bindings and their logical grouping, subject and full ordered backend arguments, the unwind bound, Kani/Rust/CBMC/solver versions, target, dependency cohort including the carrier, limits, the observed peak memory, raw checks, cover and playback, exit and typed terminal outcome. No-run, refusal, cover failure, resource exhaustion and semantic falsification remain distinguishable; preparation alone earns no proof result. | Test |
-| FR-052-AC-12 | On the host, the carrier's host-callable native comparison (quire-exact FR-404) and the shipped `compare_text` agree for all six operators on the typed outcome, ordered charges, the denied next charge and consumed counters at zero, exact and short budgets, over the AC-2 enumeration and over the fixed long-payload family of AC-14 at the capacity boundaries. The case of a payload of C + 1 bytes asserts the carrier's encoding refusal, not agreement, since the native comparison cannot hold it. For `binary-utf8`, `unicode-scalars`, `nfd` and `nfkd`, a native comparison whose ordering loop stops at L - 1 (or earlier) fails the final-byte pair of the length-L payloads. For `nfc` and `nfkc` the retained sequence is shorter than L, so an ordering loop bounded at L - 1 never truncates and is not claimed; the mutant is a payload-side decode or normalize-input loop of the native comparison bounded at L - 1 (or earlier), which fails the final-byte pair of the length-L payloads under `eq` (the shipped result is false, the truncated loop reads equal prefixes). A native comparison whose charge is computed from a truncated length fails every length, and one whose ordering, charge sequence or outcome otherwise differs on any enumerated or boundary pair fails the check. The check ties the proof to the shipped oracle for the enumerated and boundary payloads, not for every payload up to C. | Test |
-| FR-052-AC-13 | The attained length A(profile, `max`) is computed on the host at the operand's declared `max` by the construction of quire-exact FR-400-AC-6, not read from a constant and not replaced by P. For `nfc` (respectively `nfkc`), c is the first, in scalar order, of the stable scalars (`nfc(c) = c`, respectively `nfkc(c) = c`) whose `NormalizationForm::apply` nfd (respectively nfkd) output has the most UTF-8 bytes; the payload is that output repeated `max` times, is admitted by the host `TextType::admits` under `Text[max, max]` of the profile, and A is its byte length. For `binary-utf8` the payload is `max` ASCII bytes, for `unicode-scalars` `max` four-byte scalars, and for `nfd` and `nfkd` `max` four-byte scalars that are their own normal form, each admitted under `Text[max, max]` of the profile. The check asserts that A is at most P for every profile; that A equals the independently computed P of AC-3 for the four profiles other than `nfc` and `nfkc`; that A is below P for `nfc` and `nfkc` at `max` of 1; and that, for `nfc` and `nfkc` only, A equals `max` times the independently enumerated maximum byte length of one stable scalar's decomposition. At `max` of 0 the payload is empty, A and P are 0 and no `below` is asserted. FR-400 constructs no payload of P bytes for `nfc` and `nfkc` and derives no byte supremum, and this criterion makes no claim that none exists. Support and refusal remain AC-3's: A makes no item supported or unsupported, no domain is narrowed, and a normalizing profile whose P4 normalization does not fit the request's ceilings stays `unsupported`. (a) The family is built at L = min(P, C) for `nfc` at `max` of 1, the unit extended to P bytes by appending one four-byte self-normal scalar: `TextType::admits` under `Text[1, 1]` refuses it (two retained scalars), failing the admission check. (b) The stability filter is dropped for `nfkc` at `max` of 1: c is U+FDFA, whose nfkd payload `Text[1, 1]` under `nfkc` refuses. (c) The decomposition is taken as nfkd for the `nfc` profile at `max` of 1: c is U+FDFA, which is stable under `nfc` and whose nfkd payload `Text[1, 1]` under `nfc` refuses. (d) The unit is not repeated `max` times, at `max` of 2 under `nfc`: the one-unit payload retains one scalar, below `min` 2, and is refused. (e) The unit is the first stable scalar with a multi-scalar decomposition instead of the longest, at `max` of 1 under `nfc`: U+00C0 (nfd of three bytes) is admitted but A fails the equality with `max` times the enumerated maximum. A tie broken by the last rather than the first scalar yields the same length and is not claimed. | Test |
+| FR-052-AC-12 | On the host, the carrier's host-callable native comparison (filament-exact FR-404) and the shipped `compare_text` agree for all six operators on the typed outcome, ordered charges, the denied next charge and consumed counters at zero, exact and short budgets, over the AC-2 enumeration and over the fixed long-payload family of AC-14 at the capacity boundaries. The case of a payload of C + 1 bytes asserts the carrier's encoding refusal, not agreement, since the native comparison cannot hold it. For `binary-utf8`, `unicode-scalars`, `nfd` and `nfkd`, a native comparison whose ordering loop stops at L - 1 (or earlier) fails the final-byte pair of the length-L payloads. For `nfc` and `nfkc` the retained sequence is shorter than L, so an ordering loop bounded at L - 1 never truncates and is not claimed; the mutant is a payload-side decode or normalize-input loop of the native comparison bounded at L - 1 (or earlier), which fails the final-byte pair of the length-L payloads under `eq` (the shipped result is false, the truncated loop reads equal prefixes). A native comparison whose charge is computed from a truncated length fails every length, and one whose ordering, charge sequence or outcome otherwise differs on any enumerated or boundary pair fails the check. The check ties the proof to the shipped oracle for the enumerated and boundary payloads, not for every payload up to C. | Test |
+| FR-052-AC-13 | The attained length A(profile, `max`) is computed on the host at the operand's declared `max` by the construction of filament-exact FR-400-AC-6, not read from a constant and not replaced by P. For `nfc` (respectively `nfkc`), c is the first, in scalar order, of the stable scalars (`nfc(c) = c`, respectively `nfkc(c) = c`) whose `NormalizationForm::apply` nfd (respectively nfkd) output has the most UTF-8 bytes; the payload is that output repeated `max` times, is admitted by the host `TextType::admits` under `Text[max, max]` of the profile, and A is its byte length. For `binary-utf8` the payload is `max` ASCII bytes, for `unicode-scalars` `max` four-byte scalars, and for `nfd` and `nfkd` `max` four-byte scalars that are their own normal form, each admitted under `Text[max, max]` of the profile. The check asserts that A is at most P for every profile; that A equals the independently computed P of AC-3 for the four profiles other than `nfc` and `nfkc`; that A is below P for `nfc` and `nfkc` at `max` of 1; and that, for `nfc` and `nfkc` only, A equals `max` times the independently enumerated maximum byte length of one stable scalar's decomposition. At `max` of 0 the payload is empty, A and P are 0 and no `below` is asserted. FR-400 constructs no payload of P bytes for `nfc` and `nfkc` and derives no byte supremum, and this criterion makes no claim that none exists. Support and refusal remain AC-3's: A makes no item supported or unsupported, no domain is narrowed, and a normalizing profile whose P4 normalization does not fit the request's ceilings stays `unsupported`. (a) The family is built at L = min(P, C) for `nfc` at `max` of 1, the unit extended to P bytes by appending one four-byte self-normal scalar: `TextType::admits` under `Text[1, 1]` refuses it (two retained scalars), failing the admission check. (b) The stability filter is dropped for `nfkc` at `max` of 1: c is U+FDFA, whose nfkd payload `Text[1, 1]` under `nfkc` refuses. (c) The decomposition is taken as nfkd for the `nfc` profile at `max` of 1: c is U+FDFA, which is stable under `nfc` and whose nfkd payload `Text[1, 1]` under `nfc` refuses. (d) The unit is not repeated `max` times, at `max` of 2 under `nfc`: the one-unit payload retains one scalar, below `min` 2, and is refused. (e) The unit is the first stable scalar with a multi-scalar decomposition instead of the longest, at `max` of 1 under `nfc`: U+00C0 (nfd of three bytes) is admitted but A fails the equality with `max` times the enumerated maximum. A tie broken by the last rather than the first scalar yields the same length and is not claimed. | Test |
 | FR-052-AC-14 | The AC-12 family is built for each supported profile at the operand's declared `max` and over the host family `TextType` `Text[0, max]` of the profile, which admits every payload below; A and the length-L payload of AC-13 are also admitted by `Text[max, max]`. It has two lengths. L is A of AC-13, and equals min(A, C) because AC-3 supports an item only when P is at most C and A is at most P. L_b is the length of the payload built from the length-L payload by replacing its final unit: for `binary-utf8` by dropping the final byte, for `unicode-scalars`, `nfd` and `nfkd` by a self-normal scalar of three bytes in place of the final four-byte scalar, and for `nfc` and `nfkc` by the decomposition of a stable scalar for the unit, chosen as the first in scalar order among the stable scalars with the longest decomposition shorter than the unit that has an admitted final-byte variant (another same-length decomposition differing from it only in the final byte, admitted by the family `TextType`). L_b is L - 1 for the four profiles whose A equals P, and for `nfc` and `nfkc` it is whatever length the construction gives (not necessarily L - 1, since an admitted payload of length L - 1 need not exist). Each of L and L_b has (i) a final-byte pair, differing only in the payload's final byte (a continuation byte of a multibyte last scalar, or a one-byte final scalar, never a lead byte), which the host search must find for every supported profile at L, and at L_b when L_b is greater than 0, or the check fails; (ii) a length pair, the length-L payload and the length-L_b payload, which share every byte before the final unit and differ in length; and (iii) a first-byte pair, differing only in the first byte (another ASCII byte for `binary-utf8`, another valid lead byte of an admitted self-normal scalar for `unicode-scalars`, `nfd` and `nfkd`), which the host search must find for `binary-utf8`, `unicode-scalars`, `nfd` and `nfkd` at L, and at L_b when L_b is greater than 0, or the check fails. A zero-length L_b (`binary-utf8` at `max` of 1, where L is 1 and L_b is the empty payload) is admitted by `Text[0, 1]` and carries only the length pair, with no final-byte or first-byte pair. For `nfc` and `nfkc` the first-byte search over the single-byte changes of the first byte, filtered by owner admission, may return none at L or at L_b; that absence is recorded for the item and is not a control. At `max` of 0 the family is the empty payload only: A is 0, there is no unit, no L_b and no pair. Every payload of every pair is admitted by the host `TextType::admits` over the profile's retained sequence, so none is claimed beyond P. (a) L_b built as L - 1 for `nfc` at `max` of 1 (an 11-byte payload): the host builds no admitted payload of that length, failing the admission check. (b) The family `TextType` taken as `Text[max, max]` for `binary-utf8` at `max` of 2: the 1-byte L_b payload is refused, failing the admission check. (c) The L_b unit taken as the first stable scalar with the longest shorter decomposition without the final-byte-variant condition, for `nfc` at `max` of 1: U+0CCB has no admitted final-byte variant, so the final-byte search at L_b finds none and the check fails. (d) A first-byte search that returns none for `unicode-scalars` at `max` of 1 fails the required first-byte pair. | Test |
 
 ## Dependencies
@@ -315,9 +315,9 @@ are also conditional on P4 (IR-1501).
 - [FR-046](./FR-046-rational-function-predicate-harnesses.md),
   [FR-049](./FR-049-enum-scalar-harnesses.md),
   [FR-050](./FR-050-quantity-scalar-harnesses.md),
-  [FR-051](./FR-051-decimal-scalar-harnesses.md) and QSpec FR-196 are the
+  [FR-051](./FR-051-decimal-scalar-harnesses.md) and FSpec FR-196 are the
   precedent and the finite-encoding obligation this row follows.
-- quire-exact [FR-400](ix://agent-ix/quire-exact/FR-400) (criteria FR-400-AC-2 and
+- filament-exact [FR-400](ix://agent-ix/filament-exact/FR-400) (criteria FR-400-AC-2 and
   FR-400-AC-6) owns the payload-byte bound P and the attained length A that AC-3,
   AC-12, AC-13 and AC-14 use; this row restates neither as a constant.
 - TC-030's Text scalar row owns today's `OperationNotRendered` settlement; this
@@ -334,8 +334,8 @@ generated-proof credit. All fourteen criteria remain planned and untagged until 
 delivered with the IR-269 text harness. P2 (IR-1499), P3 (IR-1500) and P4 (IR-1501) are likewise
 undelivered. AC-13, AC-14 and the attained-length wording of AC-12 are specified by IR-1506
 and, like every criterion here, are untagged. The public Text replay value exists in
-`qsl_replay`; the CG decoder grouping and the carrier's physical bindings do not.
+`fsl_replay`; the CG decoder grouping and the carrier's physical bindings do not.
 Oracle agreement under FR-014 is not Kani credit. No capacity C is known to verify
 within the request's ceilings (an open IR-1445 obligation), and the four
-normalizing profiles have a payload-byte bound stated in quire-exact FR-400 but not delivered (IR-1500) and no loop-free normalization (IR-1501); these are open
+normalizing profiles have a payload-byte bound stated in filament-exact FR-400 but not delivered (IR-1500) and no loop-free normalization (IR-1501); these are open
 obligations, not waived gaps.

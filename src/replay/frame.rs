@@ -1,12 +1,12 @@
 //! Native replay of a frame counterexample: a Kani falsification of an operation's frame is put
-//! before QSL's `replay_frame` as a request and an envelope built here.
+//! before FSL's `replay_frame` as a request and an envelope built here.
 //!
-//! The driver supplies its selected CG frame item and QSL's typed frame target. This adapter
+//! The driver supplies its selected CG frame item and FSL's typed frame target. This adapter
 //! compares their package, request, and complete occurrence association with the checked package
 //! and operation site that [`qsl_replay::call_site`] locates for the proved unit. The target is
 //! copied into the packet and request; the packet retains the selected frame occurrence.
 //!
-//! The obligation identity comes from QSL's selected producer claim. The witness is the real playback:
+//! The obligation identity comes from FSL's selected producer claim. The witness is the real playback:
 //! decoded against the harness's `state_fields` by the one decoder and rendered by the one adapter
 //! rendering function. The harness is tied to the replay by checks, not by the identity: the
 //! property is a frame over exactly the state fields, the scope names the operation, anchor and
@@ -45,7 +45,7 @@ use crate::{
 };
 
 /// Everything one frame replay needs beyond the proved unit. It names no obligation identity or
-/// witness transcript: the former must come from QSL, while the latter uses parsed playback.
+/// witness transcript: the former must come from FSL, while the latter uses parsed playback.
 #[derive(Clone, Debug)]
 pub struct FrameReplayInputs<'a> {
     /// The proving run's lock. A frame replay selects by the operation, so no function is named.
@@ -58,9 +58,9 @@ pub struct FrameReplayInputs<'a> {
     pub operation: OperationName,
     /// The independently selected admitted CG frame item.
     pub selected_item: SelectedFrameItem<'a>,
-    /// The driver's QSL target and its association to that item.
+    /// The driver's FSL target and its association to that item.
     pub selected_target: Option<SelectedFrameTarget>,
-    /// The `quire.state.invocation/v1` document.
+    /// The `filament.state.invocation/v1` document.
     pub invocation: DocumentRef,
     /// The change the counterexample claims.
     pub change: ClaimedChange,
@@ -83,10 +83,10 @@ pub struct SelectedFrameItem<'a> {
     pub occurrence: &'a OccurrenceKey,
 }
 
-/// A QSL frame target associated with one CG request position.
+/// A FSL frame target associated with one CG request position.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SelectedFrameTarget {
-    /// The exact QSL target, including its declaring owner.
+    /// The exact FSL target, including its declaring owner.
     pub operation: FrameOperation,
     /// The admitted CG package identity to which the target was attached.
     pub package_id: ContractSourceV1,
@@ -102,7 +102,7 @@ struct LocatedPackageIdentity {
     lock: CheckedPackageLockV2,
 }
 
-/// The selected target member that failed to bind to the selected CG item or QSL site.
+/// The selected target member that failed to bind to the selected CG item or FSL site.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum SelectedTargetMember {
     /// No target was supplied.
@@ -111,13 +111,13 @@ pub enum SelectedTargetMember {
     Package,
     /// The attached request position differs from the selected item.
     RequestIndex,
-    /// The selected occurrence differs from the located QSL frame occurrence.
+    /// The selected occurrence differs from the located FSL frame occurrence.
     ItemOccurrence,
     /// The attached occurrence differs from the selected item.
     TargetOccurrence,
-    /// The target's declaring object differs from QSL's declaring object.
+    /// The target's declaring object differs from FSL's declaring object.
     DeclaringOwner,
-    /// The target's operation differs from QSL's operation.
+    /// The target's operation differs from FSL's operation.
     Operation,
 }
 
@@ -181,7 +181,7 @@ pub enum ScopeMember {
     Frame,
 }
 
-/// A frame packet or request member that disagrees with QSL's selected claim.
+/// A frame packet or request member that disagrees with FSL's selected claim.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum FrameClaimMember {
     /// The request's obligation identity.
@@ -307,22 +307,22 @@ impl fmt::Display for PreStateFault {
 pub enum FrameReplayError {
     /// The original emitted package could not be retained for replay.
     RawPackage(quire_canonical::ReadError),
-    /// The selected frame target does not bind to the admitted CG item and located QSL site.
+    /// The selected frame target does not bind to the admitted CG item and located FSL site.
     SelectedTarget(SelectedTargetMember),
     /// The lock's dependency selections are not admitted.
     Dependencies(DependencyLockError),
-    /// QSL could not compile the unit or find the operation's frame in it.
+    /// FSL could not compile the unit or find the operation's frame in it.
     CallSite(Box<CallSiteRefusal>),
     /// A qualified name built from the operation's identifiers is not admitted.
     Name(EmptyQualifiedName),
     /// The harness text would change the witness transcript's field boundaries.
     Transcript(MalformedTranscript),
-    /// The envelope this adapter built is not one QSL admits.
+    /// The envelope this adapter built is not one FSL admits.
     Envelope(WitnessRefusal),
-    /// QSL refused the request or the envelope before settling a result. The persisted unranged
-    /// fields are context, not a claim that any one of them caused QSL's refusal.
+    /// FSL refused the request or the envelope before settling a result. The persisted unranged
+    /// fields are context, not a claim that any one of them caused FSL's refusal.
     Refused {
-        /// QSL's original refusal and catalog code.
+        /// FSL's original refusal and catalog code.
         refusal: Box<ReplayRefusal>,
         /// Fields the harness drew without an `i64` domain, with their persisted reasons.
         unranged: Vec<StateUnrangedField>,
@@ -360,10 +360,10 @@ pub enum FrameReplayError {
     },
     /// The frame obligation has no identity.
     Identity(ObligationIdentityError),
-    /// A request or packet member no longer names QSL's selected frame claim.
+    /// A request or packet member no longer names FSL's selected frame claim.
     ClaimMismatch(FrameClaimMember),
-    /// The harness's QSL `ObligationIdentity` (node, model and ordinal) differs from the identity
-    /// minted from QSL's selected operation site (FR-024-AC-73).
+    /// The harness's FSL `ObligationIdentity` (node, model and ordinal) differs from the identity
+    /// minted from FSL's selected operation site (FR-024-AC-73).
     ObligationIdentityMismatch,
 }
 
@@ -415,10 +415,10 @@ impl fmt::Display for FrameReplayError {
             ),
             Self::Identity(cause) => write!(f, "the frame obligation has no identity: {cause}"),
             Self::ClaimMismatch(member) => {
-                write!(f, "the {member} differs from QSL's selected frame claim")
+                write!(f, "the {member} differs from FSL's selected frame claim")
             }
             Self::ObligationIdentityMismatch => f.write_str(
-                "the harness's obligation identity differs from the one QSL's selected site mints",
+                "the harness's obligation identity differs from the one FSL's selected site mints",
             ),
         }
     }
@@ -427,7 +427,7 @@ impl fmt::Display for FrameReplayError {
 impl std::error::Error for FrameReplayError {}
 
 /// A frame replay failure, read as the settlement of a falsified run (FR-029): the failures this
-/// repository raised carry no QSL code and are defects, and the QSL refusals read by their walked
+/// repository raised carry no FSL code and are defects, and the FSL refusals read by their walked
 /// content.
 impl<'a> From<&'a FrameReplayError> for ReplaySettlement<'a> {
     fn from(error: &'a FrameReplayError) -> Self {
@@ -453,7 +453,7 @@ impl<'a> From<&'a FrameReplayError> for ReplaySettlement<'a> {
     }
 }
 
-/// A frame counterexample ready to replay: QSL's request and the packet the envelope is
+/// A frame counterexample ready to replay: FSL's request and the packet the envelope is
 /// reconstructed from.
 pub struct FrameReplay {
     /// The request supplying the package reference, byte provision and limits.
@@ -461,11 +461,11 @@ pub struct FrameReplay {
     /// The envelope's members. `clause_node` is the payload's frame node and `occurrence_key`
     /// its frame occurrence.
     pub packet: WitnessPacket<FrameCounterexample>,
-    /// QSL's independently selected claim, retained against later packet or request changes.
+    /// FSL's independently selected claim, retained against later packet or request changes.
     selected: SelectedFrameClaim,
     /// The caller's configured replay reader bound.
     replay_limits: ReplayLimits,
-    /// Persisted context for QSL refusals; an unranged field is not necessarily their cause.
+    /// Persisted context for FSL refusals; an unranged field is not necessarily their cause.
     unranged: Vec<StateUnrangedField>,
 }
 
@@ -531,7 +531,7 @@ fn decoded_state(
         .into_iter()
         .map(|(field, value)| {
             // Every binding above is an `i64`, so the decoder yields only integers; the Boolean
-            // arm handles QSL's Boolean witness encoding explicitly.
+            // arm handles FSL's Boolean witness encoding explicitly.
             let integer = match value {
                 WitnessValue::Integer(integer) => i64::try_from(integer).map_err(|_| {
                     FrameReplayError::Decode(DecodeFailure::new(
@@ -724,7 +724,7 @@ impl FrameReplay {
     /// the operation requested, its playback must decode against its state fields, and every
     /// decoded value must lie in its field's declared range, all before the unit is compiled. The
     /// parsed playback must fit both the requested bounds and the proving run's bounds; the
-    /// selected package, request, occurrence, and QSL target must agree before packet or request
+    /// selected package, request, occurrence, and FSL target must agree before packet or request
     /// construction. The call site's anchor and frame must then be the harness's, and the pre snapshot the
     /// invocation names must hold the decoded values. The obligation identity and the witness
     /// transcript are built here from the call site, the harness and the decoded playback.
@@ -732,7 +732,7 @@ impl FrameReplay {
     /// # Errors
     ///
     /// [`FrameReplayError`] when a check above fails, the lock's dependencies are not admitted,
-    /// QSL does not compile the unit or find the operation's frame, or the witness transcript is
+    /// FSL does not compile the unit or find the operation's frame, or the witness transcript is
     /// not admitted.
     pub fn new(inputs: FrameReplayInputs<'_>) -> Result<Self, FrameReplayError> {
         let FrameReplayInputs {
@@ -837,8 +837,8 @@ impl FrameReplay {
                 &documents,
             )
         };
-        // QSL admits the request's wire shape before the pre-state tie. The tie locates its
-        // documents by their declared identities; replay later performs QSL's document checks.
+        // FSL admits the request's wire shape before the pre-state tie. The tie locates its
+        // documents by their declared identities; replay later performs FSL's document checks.
         let unranged = harness.unranged.clone();
         ReplayRequest::decode(
             request(ReplaySource::Witness(witness.clone())),
@@ -878,8 +878,8 @@ impl FrameReplay {
     /// # Errors
     ///
     /// [`FrameReplayError::ClaimMismatch`] when a changed request or packet no longer carries
-    /// QSL's selected frame claim, [`FrameReplayError::Envelope`] when the packet is no admitted
-    /// envelope, and [`FrameReplayError::Refused`] when QSL refuses the request or envelope.
+    /// FSL's selected frame claim, [`FrameReplayError::Envelope`] when the packet is no admitted
+    /// envelope, and [`FrameReplayError::Refused`] when FSL refuses the request or envelope.
     pub fn replay(self) -> Result<FrameReplayResult, FrameReplayError> {
         let Self {
             wire,
@@ -950,7 +950,7 @@ mod tests {
     /// module once passed to `Witness::parse` is gone.
     #[trace("FR-024-AC-25", "FR-024-AC-29", "TC-035")]
     #[test]
-    fn tc_035_the_declared_domains_are_empty_and_the_header_names_qsl_345_once() {
+    fn tc_035_the_declared_domains_are_empty_and_the_header_names_fsl_345_once() {
         let source = include_str!("frame.rs");
         let (header, production) = source
             .split("#[cfg(test)]")

@@ -1,6 +1,6 @@
 //! FR-022: generation for items the driver has already settled and routed.
 //!
-//! FR-019 settles a disposition and names a backend kind; QSL `route` picks the backend. This
+//! FR-019 settles a disposition and names a backend kind; FSL `route` picks the backend. This
 //! module is the generation arm of that seam. It takes the routed backend and its kind as given
 //! and runs the kind's generation arm, dispatched through one exhaustive `match` over
 //! [`BackendKind`] with no catch-all. It takes no manifest, candidate set, extent or capability
@@ -58,7 +58,7 @@ pub struct RoutedGenerationItem {
     kind: BackendKind,
     /// The selection authenticated during scalar capability preflight.
     scalar_selection: Option<(ContractSourceV1, ContractDriverResultSelection)>,
-    /// The QSL requirement item's projection at this request index.
+    /// The FSL requirement item's projection at this request index.
     requirement: Option<RoutedRequirement>,
 }
 
@@ -119,7 +119,7 @@ impl RoutedGenerationItem {
         self
     }
 
-    /// Bind the QSL requirement item's projection for this request index.
+    /// Bind the FSL requirement item's projection for this request index.
     #[must_use]
     pub fn with_requirement(mut self, requirement: RoutedRequirement) -> Self {
         self.requirement = Some(requirement);
@@ -463,7 +463,7 @@ fn generate_routed_with_integer_policy(
                             continue;
                         };
                         let needs_view = match operation.identity() {
-                            Some("quire.op.state.clause" | "quire.op.record.project") => true,
+                            Some("filament.op.state.clause" | "filament.op.record.project") => true,
                             Some(identity) => {
                                 crate::oracle::scalar::derive::needs_authenticated_operation_view(
                                     identity,
@@ -566,7 +566,7 @@ fn generate_routed_with_integer_policy(
 
 /// Checks one routed Kani item's requirement and its keyed record against the authenticated
 /// selection, in the order FR-022 fixes. The selection was already authenticated against the
-/// admitted driver position; these checks compare the QSL projection with it.
+/// admitted driver position; these checks compare the FSL projection with it.
 fn check_requirement_record(
     item: &RoutedGenerationItem,
     records: &RequirementRecords,
@@ -963,7 +963,7 @@ fn settle_enum_items(
         else {
             continue;
         };
-        if !operation_identity.starts_with("quire.op.enum.") {
+        if !operation_identity.starts_with("filament.op.enum.") {
             continue;
         }
         let outcome = generate_enum_scalar_harness(&EnumScalarRequest {
@@ -1283,7 +1283,7 @@ mod tests {
                 native_integer_selection: None,
                 ceilings: crate::kani::test_support::proof_ceilings::proof_ceilings(),
                 node_id,
-                operation_identity: "quire.op.integer.add".to_owned(),
+                operation_identity: "filament.op.integer.add".to_owned(),
                 oracle_symbol: "oracle".to_owned(),
                 module_symbol: ModuleSymbol::try_from(module).expect("a module symbol"),
                 harness_symbol: HarnessSymbol::try_from(symbol).expect("a harness symbol"),

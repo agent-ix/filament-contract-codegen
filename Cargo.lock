@@ -1267,7 +1267,7 @@ dependencies = [
 [[package]]
 name = "qsl-cst"
 version = "0.1.0"
-source = "git+https://github.com/agent-ix/quire-spec-language?branch=main#434869e867ce840e9d64aefba67765998d468d80"
+source = "git+https://github.com/agent-ix/filament-spec-language?branch=main#434869e867ce840e9d64aefba67765998d468d80"
 dependencies = [
  "ix-trace-rs",
  "logos",
@@ -1279,7 +1279,7 @@ dependencies = [
 [[package]]
 name = "qsl-eval"
 version = "0.1.0"
-source = "git+https://github.com/agent-ix/quire-spec-language?branch=main#434869e867ce840e9d64aefba67765998d468d80"
+source = "git+https://github.com/agent-ix/filament-spec-language?branch=main#434869e867ce840e9d64aefba67765998d468d80"
 dependencies = [
  "ix-trace-rs",
  "qsl-foundation",
@@ -1298,7 +1298,7 @@ dependencies = [
 [[package]]
 name = "qsl-forms"
 version = "0.1.0"
-source = "git+https://github.com/agent-ix/quire-spec-language?branch=main#434869e867ce840e9d64aefba67765998d468d80"
+source = "git+https://github.com/agent-ix/filament-spec-language?branch=main#434869e867ce840e9d64aefba67765998d468d80"
 dependencies = [
  "ix-trace-rs",
  "qsl-cst",
@@ -1311,7 +1311,7 @@ dependencies = [
 [[package]]
 name = "qsl-foundation"
 version = "0.1.0"
-source = "git+https://github.com/agent-ix/quire-spec-language?branch=main#434869e867ce840e9d64aefba67765998d468d80"
+source = "git+https://github.com/agent-ix/filament-spec-language?branch=main#434869e867ce840e9d64aefba67765998d468d80"
 dependencies = [
  "hashbrown 0.17.1",
  "ix-trace-rs",
@@ -1325,7 +1325,7 @@ dependencies = [
 [[package]]
 name = "qsl-package"
 version = "0.1.0"
-source = "git+https://github.com/agent-ix/quire-spec-language?branch=main#434869e867ce840e9d64aefba67765998d468d80"
+source = "git+https://github.com/agent-ix/filament-spec-language?branch=main#434869e867ce840e9d64aefba67765998d468d80"
 dependencies = [
  "ix-trace-rs",
  "qsl-foundation",
@@ -1343,7 +1343,7 @@ dependencies = [
 [[package]]
 name = "qsl-replay"
 version = "0.1.0"
-source = "git+https://github.com/agent-ix/quire-spec-language?branch=main#434869e867ce840e9d64aefba67765998d468d80"
+source = "git+https://github.com/agent-ix/filament-spec-language?branch=main#434869e867ce840e9d64aefba67765998d468d80"
 dependencies = [
  "base64 0.22.1",
  "ix-trace-rs",
@@ -1370,7 +1370,7 @@ dependencies = [
 [[package]]
 name = "qsl-semantics"
 version = "0.1.0"
-source = "git+https://github.com/agent-ix/quire-spec-language?branch=main#434869e867ce840e9d64aefba67765998d468d80"
+source = "git+https://github.com/agent-ix/filament-spec-language?branch=main#434869e867ce840e9d64aefba67765998d468d80"
 dependencies = [
  "agent-ix-extraction-frontend",
  "agent-ix-semantic-ir",
@@ -1428,7 +1428,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "quire-contract-codegen"
+name = "filament-contract-codegen"
 version = "0.1.0"
 dependencies = [
  "ix-trace-rs",

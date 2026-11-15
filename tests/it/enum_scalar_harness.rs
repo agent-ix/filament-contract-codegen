@@ -1,11 +1,11 @@
-//! FR-049 enum scalar comparison harnesses over a genuine QSL source admitted through Contract IR.
+//! FR-049 enum scalar comparison harnesses over a genuine FSL source admitted through Contract IR.
 
-use ix_trace_rs::trace;
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     decode_enum_falsification, generate_enum_scalar_harness, parse_assertion_playback,
     EnumCapability, EnumScalarHarness, EnumScalarOutcome, EnumScalarRefusal, EnumScalarRequest,
     KaniRunOutcome,
 };
+use ix_trace_rs::trace;
 use quire_contract_model::{CheckedNodeId, CheckedPackageV2};
 
 use super::admitted_enum_equality::application;
@@ -14,7 +14,7 @@ use super::admitted_enum_fixture::compile;
 use super::routed_generation::{admitted_routing_input_with_context_roots, kani_parts, route};
 
 const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\n\
-profile v = \"quire.value.complete/v1\";\n\
+profile v = \"filament.value.complete/v1\";\n\
 ordered enum Level { LOW, MID, HIGH }\n\
 enum Color { RED, GREEN, BLUE }\n\
 function lt using v(a: Level, b: Level): Boolean pure { a < b }\n\
@@ -61,7 +61,7 @@ impl Corpus {
         &self,
         function: &str,
         with_context: bool,
-        ceilings: quire_contract_codegen::ProofCeilings,
+        ceilings: filament_contract_codegen::ProofCeilings,
     ) -> EnumScalarOutcome {
         generate_enum_scalar_harness(&EnumScalarRequest {
             source: &self.package,
@@ -75,12 +75,12 @@ impl Corpus {
         })
     }
 
-    /// The corpus case through the routed path: QSL, Contract IR, `generate_routed_admitted`.
+    /// The corpus case through the routed path: FSL, Contract IR, `generate_routed_admitted`.
     fn routed(
         &self,
         functions: &[&str],
         admitted: bool,
-    ) -> quire_contract_codegen::RoutedGeneration {
+    ) -> filament_contract_codegen::RoutedGeneration {
         self.routed_guarded(functions, admitted, None)
     }
 
@@ -91,7 +91,7 @@ impl Corpus {
         functions: &[&str],
         admitted: bool,
         guarded: Option<(usize, &str)>,
-    ) -> quire_contract_codegen::RoutedGeneration {
+    ) -> filament_contract_codegen::RoutedGeneration {
         let guard_node = guarded.map(|(_, parameter)| {
             self.package
                 .resolved_graph()
@@ -122,11 +122,11 @@ impl Corpus {
             .zip(input.positions.iter().filter(|position| {
                 matches!(
                     position,
-                    quire_contract_codegen::ContractRequestPosition::DriverItem { .. }
+                    filament_contract_codegen::ContractRequestPosition::DriverItem { .. }
                 )
             }))
             .map(|(item, position)| {
-                let quire_contract_codegen::ContractRequestPosition::DriverItem {
+                let filament_contract_codegen::ContractRequestPosition::DriverItem {
                     result_selection,
                     node_id,
                 } = position
@@ -143,7 +143,7 @@ impl Corpus {
                     })
                     .expect("the node has an expression occurrence")
                     .ordinal;
-                let occurrence = quire_contract_codegen::RequirementOccurrence {
+                let occurrence = filament_contract_codegen::RequirementOccurrence {
                     node_id: node_id.clone(),
                     role: quire_contract_model::CheckedOccurrenceRole::Expression,
                     ordinal,
@@ -161,8 +161,8 @@ impl Corpus {
                             })
                             .expect("the guard has an expression occurrence")
                             .ordinal;
-                        vec![quire_contract_codegen::RequirementGuard {
-                            occurrence: quire_contract_codegen::RequirementOccurrence {
+                        vec![filament_contract_codegen::RequirementGuard {
+                            occurrence: filament_contract_codegen::RequirementOccurrence {
                                 node_id: node.clone(),
                                 role: quire_contract_model::CheckedOccurrenceRole::Expression,
                                 ordinal,
@@ -183,14 +183,14 @@ impl Corpus {
                     .clone();
                 records.insert(
                     occurrence.clone(),
-                    quire_contract_codegen::RequirementRecordInput {
+                    filament_contract_codegen::RequirementRecordInput {
                         result_bound: result_bound.clone(),
                         conversion_context: None,
                         path_condition: path_condition.clone(),
                     },
                 );
                 item.with_scalar_selection(&input.package, result_selection.clone())
-                    .with_requirement(quire_contract_codegen::RoutedRequirement {
+                    .with_requirement(filament_contract_codegen::RoutedRequirement {
                         occurrence,
                         result_bound,
                         conversion_context: None,
@@ -198,9 +198,9 @@ impl Corpus {
                     })
             })
             .collect::<Vec<_>>();
-        let records = quire_contract_codegen::RequirementRecords::new(records);
-        let contexts = quire_contract_codegen::GenerationContexts {
-            kani: Some(quire_contract_codegen::KaniGenerationContext {
+        let records = filament_contract_codegen::RequirementRecords::new(records);
+        let contexts = filament_contract_codegen::GenerationContexts {
+            kani: Some(filament_contract_codegen::KaniGenerationContext {
                 ceilings: crate::common::proof_ceilings::proof_ceilings(),
                 subject_path: "crate::subject",
                 unwind: 1,
@@ -208,7 +208,7 @@ impl Corpus {
             }),
         };
         if admitted {
-            quire_contract_codegen::generate_routed_admitted(
+            filament_contract_codegen::generate_routed_admitted(
                 input.source,
                 &input.package,
                 &input.positions,
@@ -218,7 +218,7 @@ impl Corpus {
                 false,
             )
         } else {
-            quire_contract_codegen::generate_routed(
+            filament_contract_codegen::generate_routed(
                 input.source,
                 &input.package,
                 &input.positions,
@@ -234,8 +234,8 @@ impl Corpus {
         &self,
         function: &str,
     ) -> (
-        quire_contract_codegen::KaniScalarObligationHarness,
-        quire_contract_codegen::Artifact,
+        filament_contract_codegen::KaniScalarObligationHarness,
+        filament_contract_codegen::Artifact,
     ) {
         let generation = self.routed(&[function], true);
         let manifest = generation
@@ -262,12 +262,12 @@ impl Corpus {
 }
 
 const OPERATORS: [(&str, &str, &str); 6] = [
-    ("lt", "quire.op.enum.lt", "<"),
-    ("le", "quire.op.enum.le", "<="),
-    ("gt", "quire.op.enum.gt", ">"),
-    ("ge", "quire.op.enum.ge", ">="),
-    ("eq", "quire.op.enum.eq", "=="),
-    ("ne", "quire.op.enum.ne", "!="),
+    ("lt", "filament.op.enum.lt", "<"),
+    ("le", "filament.op.enum.le", "<="),
+    ("gt", "filament.op.enum.gt", ">"),
+    ("ge", "filament.op.enum.ge", ">="),
+    ("eq", "filament.op.enum.eq", "=="),
+    ("ne", "filament.op.enum.ne", "!="),
 ];
 
 fn proof_body(harness: &EnumScalarHarness) -> &str {
@@ -284,8 +284,8 @@ fn every_operator_generates_one_native_carrier_harness_from_its_node() {
     let corpus = corpus();
     let cases = OPERATORS.map(|(function, identity, native)| (function, identity, native, true));
     let colors = [
-        ("color_eq", "quire.op.enum.eq", "=="),
-        ("color_ne", "quire.op.enum.ne", "!="),
+        ("color_eq", "filament.op.enum.eq", "=="),
+        ("color_ne", "filament.op.enum.ne", "!="),
     ]
     .map(|(function, identity, native)| (function, identity, native, false));
     for (function, identity, native, ordered) in cases.into_iter().chain(colors) {
@@ -460,7 +460,7 @@ fn the_record_retains_declaration_operator_encoding_unwind_and_options() {
         serde_json::json!(["LOW", "MID", "HIGH"])
     );
     assert_eq!(identity["enumScalar"]["ordered"], true);
-    assert_eq!(identity["enumScalar"]["operator"], "quire.op.enum.ge");
+    assert_eq!(identity["enumScalar"]["operator"], "filament.op.enum.ge");
     assert_eq!(
         identity["enumScalar"]["declaration"]["path"],
         serde_json::json!(["Level"])
@@ -487,7 +487,7 @@ fn enum_transcript(harness: &EnumScalarHarness, draws: &[i64]) -> String {
 fn decode(
     harness: &EnumScalarHarness,
     transcript: &str,
-) -> Result<quire_contract_codegen::EnumWitness, quire_contract_codegen::DecodeFailure> {
+) -> Result<filament_contract_codegen::EnumWitness, filament_contract_codegen::DecodeFailure> {
     let identity = &harness.harness.identity;
     let playback = parse_assertion_playback(
         transcript,
@@ -496,7 +496,7 @@ fn decode(
         usize::MAX,
         usize::MAX,
     )
-    .map_err(quire_contract_codegen::DecodeFailure::from)?;
+    .map_err(filament_contract_codegen::DecodeFailure::from)?;
     decode_enum_falsification(identity, &playback)
 }
 
@@ -522,7 +522,7 @@ fn a_valid_binding_pair_decodes_to_the_declared_members() {
         (witness.left_member.as_str(), witness.right_member.as_str()),
         ("HIGH", "LOW")
     );
-    assert_eq!(witness.operator, "quire.op.enum.lt");
+    assert_eq!(witness.operator, "filament.op.enum.lt");
 }
 
 /// An out-of-range, missing, duplicated or foreign binding is refused with a typed cause and
@@ -585,8 +585,8 @@ fn an_enum_schema_with_bounds_off_the_member_list_is_refused() {
 
 // ---- owner replay (FR-049-AC-5, FR-049-AC-10) ----
 
-/// The selected corpus function recompiled by QSL's replay facade, as the owner route holds it.
-fn owner_package(function: &str) -> quire_contract_codegen::ReplayPackage {
+/// The selected corpus function recompiled by FSL's replay facade, as the owner route holds it.
+fn owner_package(function: &str) -> filament_contract_codegen::ReplayPackage {
     let unlimited = qsl_replay::ScalarLimits {
         integer_bits: u64::MAX,
         decimal_digits: u64::MAX,
@@ -599,14 +599,14 @@ fn owner_package(function: &str) -> quire_contract_codegen::ReplayPackage {
         work_units: u64::MAX,
         result_units: u64::MAX,
     };
-    quire_contract_codegen::ReplayPackage::new(
-        quire_contract_codegen::ReplayInputs {
-            decode_limits: quire_contract_codegen::WitnessDecodeLimits {
+    filament_contract_codegen::ReplayPackage::new(
+        filament_contract_codegen::ReplayInputs {
+            decode_limits: filament_contract_codegen::WitnessDecodeLimits {
                 bytes: 1 << 20,
                 values: 16,
             },
             package_name: "admitted-enums".to_owned(),
-            source: quire_contract_codegen::LockedSource {
+            source: filament_contract_codegen::LockedSource {
                 authority: "test".to_owned(),
                 identity: "admitted-enums.native".to_owned(),
                 bytes: SOURCE.as_bytes().to_vec(),
@@ -651,11 +651,11 @@ fn owner_declaration(corpus: &Corpus, generated: &EnumScalarHarness) -> qsl_repl
 }
 
 /// Decodes `draws` against `function`'s enum harness and replays the members through the owner.
-fn owner_result(function: &str, draws: &[i64]) -> (quire_contract_codegen::EnumWitness, bool) {
+fn owner_result(function: &str, draws: &[i64]) -> (filament_contract_codegen::EnumWitness, bool) {
     let corpus = corpus();
     let generated = corpus.harness(function);
     let witness = decode(&generated, &enum_transcript(&generated, draws)).expect("decodes");
-    let owner = quire_contract_codegen::replay_enum_witness(
+    let owner = filament_contract_codegen::replay_enum_witness(
         &owner_package(function),
         &owner_declaration(&corpus, &generated),
         &witness,
@@ -697,7 +697,7 @@ fn a_member_the_owner_does_not_declare_is_refused_by_the_owner_route() {
     let generated = corpus.harness("lt");
     let mut witness = decode(&generated, &enum_transcript(&generated, &[0, 1])).expect("decodes");
     witness.left_member = "NOT_A_MEMBER".to_owned();
-    let refusal = quire_contract_codegen::replay_enum_witness(
+    let refusal = filament_contract_codegen::replay_enum_witness(
         &owner_package("lt"),
         &owner_declaration(&corpus, &generated),
         &witness,
@@ -712,7 +712,7 @@ fn run(
     name: &str,
     function: &str,
     mutation: Option<(&str, &str)>,
-) -> quire_contract_codegen::KaniExecutionEvidence {
+) -> filament_contract_codegen::KaniExecutionEvidence {
     let corpus = corpus();
     let (mut harness, manifest) = corpus.routed_harness(function);
     if let Some((site, with)) = mutation {
@@ -956,8 +956,9 @@ fn the_routed_path_generates_enum_nodes_and_leaves_other_families_byte_identical
         assert!(
             matches!(
                 &record.disposition,
-                quire_contract_codegen::ObligationDisposition::Unsupported {
-                    reason: quire_contract_codegen::UnsupportedObligation::OperationNotRendered { .. }
+                filament_contract_codegen::ObligationDisposition::Unsupported {
+                    reason:
+                        filament_contract_codegen::UnsupportedObligation::OperationNotRendered { .. }
                 }
             ),
             "{record:?}"
@@ -966,7 +967,7 @@ fn the_routed_path_generates_enum_nodes_and_leaves_other_families_byte_identical
         let harness = harness.expect("the enum node is generated");
         assert!(matches!(
             &record.disposition,
-            quire_contract_codegen::ObligationDisposition::Supported { harness_symbol }
+            filament_contract_codegen::ObligationDisposition::Supported { harness_symbol }
                 if *harness_symbol == harness.identity.harness_symbol
         ));
         assert_eq!(harness.identity.node_id, corpus.node(functions[index]));
@@ -1003,16 +1004,18 @@ fn a_refused_enum_sibling_in_one_request_leaves_the_supported_enum_nodes_unchang
     let (first, first_harness) = kani_parts(&mixed.items[0].output);
     assert!(matches!(
         first.disposition,
-        quire_contract_codegen::ObligationDisposition::Supported { .. }
+        filament_contract_codegen::ObligationDisposition::Supported { .. }
     ));
     let (refused, refused_harness) = kani_parts(&mixed.items[1].output);
     assert!(
         refused_harness.is_none(),
         "a refused sibling has no harness"
     );
-    let quire_contract_codegen::ObligationDisposition::Unsupported {
+    let filament_contract_codegen::ObligationDisposition::Unsupported {
         reason:
-            quire_contract_codegen::UnsupportedObligation::EnumComparisonNotRendered { cause, .. },
+            filament_contract_codegen::UnsupportedObligation::EnumComparisonNotRendered {
+                cause, ..
+            },
     } = &refused.disposition
     else {
         panic!(
@@ -1024,7 +1027,7 @@ fn a_refused_enum_sibling_in_one_request_leaves_the_supported_enum_nodes_unchang
     let (third, third_harness) = kani_parts(&mixed.items[2].output);
     assert!(matches!(
         third.disposition,
-        quire_contract_codegen::ObligationDisposition::Supported { .. }
+        filament_contract_codegen::ObligationDisposition::Supported { .. }
     ));
     // Each supported node is generated as it is alone: same record, same harness text.
     assert_eq!(mixed.items[0].output, alone.items[0].output);
@@ -1040,7 +1043,7 @@ fn a_refused_enum_sibling_in_one_request_leaves_the_supported_enum_nodes_unchang
             .expect("lt generates")
             .identity
             .operation_identity,
-        "quire.op.enum.lt"
+        "filament.op.enum.lt"
     );
 }
 
@@ -1070,7 +1073,7 @@ fn kani_a_falsifying_counterexample_replays_through_the_owner_route() {
         witness.left_index, witness.right_index,
         "only equal members distinguish < from <="
     );
-    let owner = quire_contract_codegen::replay_enum_witness(
+    let owner = filament_contract_codegen::replay_enum_witness(
         &owner_package("lt"),
         &owner_declaration(&corpus, &generated),
         &witness,
@@ -1089,8 +1092,8 @@ fn kani_a_falsifying_counterexample_replays_through_the_owner_route() {
 fn run_with_launcher(
     name: &str,
     body: &str,
-    ceilings: quire_contract_codegen::ProofCeilings,
-) -> quire_contract_codegen::KaniExecutionEvidence {
+    ceilings: filament_contract_codegen::ProofCeilings,
+) -> filament_contract_codegen::KaniExecutionEvidence {
     use std::os::unix::fs::PermissionsExt;
 
     let corpus = corpus();
@@ -1112,14 +1115,16 @@ fn run_with_launcher(
     .unwrap();
     std::fs::set_permissions(&launcher, std::fs::Permissions::from_mode(0o755)).unwrap();
     let cancel = quire_exact::Cancel::new();
-    quire_contract_codegen::execute_kani_obligation(&quire_contract_codegen::KaniExecutionRequest {
-        cancel: &cancel,
-        installation: &quire_contract_codegen::KaniInstallation::new(launcher),
-        harness: (&generated.harness).into(),
-        crate_directory: directory,
-        target_directory: &directory.join("target"),
-        home_directory: None,
-    })
+    filament_contract_codegen::execute_kani_obligation(
+        &filament_contract_codegen::KaniExecutionRequest {
+            cancel: &cancel,
+            installation: &filament_contract_codegen::KaniInstallation::new(launcher),
+            harness: (&generated.harness).into(),
+            crate_directory: directory,
+            target_directory: &directory.join("target"),
+            home_directory: None,
+        },
+    )
     .unwrap_or_else(|refusal| panic!("{refusal}"))
 }
 
@@ -1152,7 +1157,7 @@ fn the_classifier_reads_the_enum_harness_cover_as_unsatisfied_missing_or_unwound
             }] }
         }))
         .unwrap();
-        quire_contract_codegen::classify_kani_run(status == "Success", Some(&report), None, None)
+        filament_contract_codegen::classify_kani_run(status == "Success", Some(&report), None, None)
             .unwrap()
             .outcome
     };
@@ -1171,7 +1176,7 @@ fn the_classifier_reads_the_enum_harness_cover_as_unsatisfied_missing_or_unwound
     assert_eq!(
         classify("Success", vec![check("Success", "assertion")]),
         KaniRunOutcome::Inconclusive {
-            reason: quire_contract_codegen::KaniInconclusiveReason::MissingCoverSummary
+            reason: filament_contract_codegen::KaniInconclusiveReason::MissingCoverSummary
         }
     );
     assert_eq!(
@@ -1184,7 +1189,7 @@ fn the_classifier_reads_the_enum_harness_cover_as_unsatisfied_missing_or_unwound
             ]
         ),
         KaniRunOutcome::Inconclusive {
-            reason: quire_contract_codegen::KaniInconclusiveReason::UnwindBoundExhausted
+            reason: filament_contract_codegen::KaniInconclusiveReason::UnwindBoundExhausted
         }
     );
 }
@@ -1197,7 +1202,7 @@ fn the_classifier_reads_the_enum_harness_cover_as_unsatisfied_missing_or_unwound
 #[cfg(unix)]
 #[test]
 fn a_timeout_and_a_missing_verdict_settle_the_enum_harness_inconclusive() {
-    use quire_contract_codegen::{run_terminal_value, KaniInconclusiveReason};
+    use filament_contract_codegen::{run_terminal_value, KaniInconclusiveReason};
     let timed = run_with_launcher(
         "enum-timeout",
         "exec sleep 30\n",
@@ -1235,7 +1240,10 @@ fn a_timeout_and_a_missing_verdict_settle_the_enum_harness_inconclusive() {
         qsl_replay::TerminalValue::Failed
     );
     assert_eq!(silent.unwind, 1);
-    assert_eq!(silent.solver, quire_contract_codegen::KaniSolver::Cadical);
+    assert_eq!(
+        silent.solver,
+        filament_contract_codegen::KaniSolver::Cadical
+    );
 }
 
 /// One extra index makes the carrier constructor reject the draw, so Kani falsifies it.

@@ -234,7 +234,7 @@ pub(crate) fn scalar_source_fixture(
     use crate::kani::identity::{
         KaniScalarObligationHarness, ScalarObligationArgument, ScalarObligationIdentity,
     };
-    let package_name = "quire-exact-scalar-oracles";
+    let package_name = "filament-exact-scalar-oracles";
     let identity = ScalarObligationIdentity {
         integer_representation: crate::kani::identity::ScalarIntegerRepresentation::General,
         native_integer_selection: None,
@@ -245,7 +245,7 @@ pub(crate) fn scalar_source_fixture(
             "ordinal": 0,
         }))
         .expect("generated host_scalar::oracle structural node id"),
-        operation_identity: "quire.op.integer.add".into(),
+        operation_identity: "filament.op.integer.add".into(),
         oracle_symbol: "oracle".into(),
         module_symbol: ModuleSymbol::try_from("host_scalar").unwrap(),
         harness_symbol: HarnessSymbol::try_from("check").unwrap(),

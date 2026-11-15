@@ -8,8 +8,8 @@ mod rekey;
 #[path = "../checked_package_support/draft_rows.rs"]
 mod draft_rows;
 
+use filament_contract_codegen::generate_v2_clause_oracle;
 use ix_trace_rs::trace;
-use quire_contract_codegen::generate_v2_clause_oracle;
 use quire_contract_model::{
     CheckedNodeId, CheckedNodeOwner, CheckedPackageEvidence, CheckedPackageReadLimits,
     CheckedPackageV2ReadResult, ContractSourceV1,
@@ -37,7 +37,7 @@ fn public_canonical_i64_literals_choose_the_primitive_constructor() {
             .descriptor
             .operation_identities
             .iter()
-            .any(|id| id == "quire.op.integer.ge"));
+            .any(|id| id == "filament.op.integer.ge"));
         if !generated
             .source
             .contains(&format!("Ok(rt::Integer::from({spelling}_i64))"))
@@ -84,13 +84,13 @@ fn public_negated_positive_two_to_63_keeps_its_child_and_owner_call() {
         .descriptor
         .operation_identities
         .iter()
-        .any(|id| id == "quire.op.integer.negate"));
+        .any(|id| id == "filament.op.integer.negate"));
     assert!(generated.source.contains("IntegerArithmetic::Negate"));
 }
 
-// QSL rejects beyond-i128 source literals before CG. These separate IR-reader
+// FSL rejects beyond-i128 source literals before CG. These separate IR-reader
 // controls vary an admitted source package's literal, then ask the owner's public
-// candidate/reader APIs for identities and admission. They are not QSL emission
+// candidate/reader APIs for identities and admission. They are not FSL emission
 // claims for those values and never alter the actual proof fixture.
 fn reader_variant(
     condition: &str,
@@ -99,7 +99,7 @@ fn reader_variant(
     let twin = Twin::with_balance_condition(condition);
     let (package, clause) = twin.emitted_package("BalanceNeverDrops");
     let mut wire = json!({
-        "contract_version": "quire.checked-package/v2",
+        "contract_version": "filament.checked-package/v2",
         "name": package.name(),
         "lock": package.lock(),
         "semantic_graph": package.graph(),
@@ -125,7 +125,7 @@ fn reader_variant(
     evidence
         .insert_domain_package_document(selected_model, document.bytes.clone())
         .unwrap();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     let resolved = rekey::resolve_wire(&wire, &evidence, CheckedPackageReadLimits::bounded());
     let clause = resolved.ids.resolve(&clause);
     (resolved.outcome, clause)
@@ -253,7 +253,7 @@ fn noncanonical_literal_admission_and_runtime_fallback_remain_distinct() {
     }
 }
 
-// This is a separately labelled IR-reader control, not a QSL-emitted bounded
+// This is a separately labelled IR-reader control, not a FSL-emitted bounded
 // arithmetic claim. Its result type is an existing checked integer range.
 fn bounded_addition_reader_attempt(coherent: bool) -> (CheckedPackageV2ReadResult, CheckedNodeId) {
     let (result, clause) = reader_variant("(self.balance + 1) > 1000", |wire| {
@@ -271,7 +271,7 @@ fn bounded_addition_reader_attempt(coherent: bool) -> (CheckedPackageV2ReadResul
         let authored = nodes
             .iter()
             .enumerate()
-            .filter(|(_, node)| node["body"]["operation"]["identity"] == "quire.op.integer.add")
+            .filter(|(_, node)| node["body"]["operation"]["identity"] == "filament.op.integer.add")
             .map(|(position, node)| {
                 (
                     position,
@@ -318,7 +318,7 @@ fn incoherent_arithmetic_result_types_keep_the_owner_type_refusal() {
 #[trace("TC-024", "FR-014-AC-57")]
 #[test]
 fn original_parameter_precondition_regenerates_with_unchanged_proof_semantics() {
-    use quire_contract_codegen::{
+    use filament_contract_codegen::{
         negotiate_kani_obligations, KaniObligationOutcome, KaniObligationRequest, KaniSolver,
         ObligationItem,
     };
@@ -328,7 +328,7 @@ fn original_parameter_precondition_regenerates_with_unchanged_proof_semantics() 
     assert_eq!(oracle.descriptor.node_id, clause);
     assert_eq!(
         oracle.descriptor.operation_identities,
-        ["quire.op.integer.lt"]
+        ["filament.op.integer.lt"]
     );
     let item = ObligationItem::V2Clause {
         package: &package,
@@ -417,7 +417,7 @@ fn coherent_bounded_arithmetic_control_is_decided_by_the_owner_reader() {
 fn reader_admitted_literal_fallbacks_and_bounded_stops_preserve_native_accounting() {
     use std::{fmt::Write as _, fs, process::Command};
 
-    use quire_contract_codegen::{EXACT_DEPENDENCY_SOURCE, SEMANTIC_VALUE_DEPENDENCY_SOURCE};
+    use filament_contract_codegen::{EXACT_DEPENDENCY_SOURCE, SEMANTIC_VALUE_DEPENDENCY_SOURCE};
 
     use super::{scratch_crate, v2_clause_integer_literal_agreement::NATIVE_SUPPORT};
 
@@ -523,7 +523,7 @@ fn controlled_{index}() {{
     )
     .unwrap();
     let manifest = format!(
-        "[package]\nname = \"controlled-literal-native\"\nversion = \"0.0.0\"\nedition = \"2021\"\n\n[dependencies]\nquire-exact = {{ {EXACT_DEPENDENCY_SOURCE}, features = [\"test-support\"] }}\nquire-semantic-value = {{ {SEMANTIC_VALUE_DEPENDENCY_SOURCE} }}\n{}\nix-trace-rs = {{ git = \"https://github.com/agent-ix/ix-trace-rs\", branch = \"main\" }}\n[workspace]\n",
+        "[package]\nname = \"controlled-literal-native\"\nversion = \"0.0.0\"\nedition = \"2021\"\n\n[dependencies]\nfilament-exact = {{ {EXACT_DEPENDENCY_SOURCE}, features = [\"test-support\"] }}\nfilament-semantic-value = {{ {SEMANTIC_VALUE_DEPENDENCY_SOURCE} }}\n{}\nix-trace-rs = {{ git = \"https://github.com/agent-ix/ix-trace-rs\", branch = \"main\" }}\n[workspace]\n",
         scratch_crate::runtime_dependency(&["exact"]),
     );
     scratch_crate::write_manifest(&scratch.path, &manifest);

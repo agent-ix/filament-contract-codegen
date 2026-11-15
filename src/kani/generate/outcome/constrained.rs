@@ -33,7 +33,7 @@ pub struct ConstrainedMethodRequest<'a> {
     pub constraint: Option<ConstrainedClauseSelection<'a>>,
     /// Actual admitted state context of both clauses.
     pub context: &'a CheckedNodeId,
-    /// Complete initial object fields in QSL's own snapshot value representation.
+    /// Complete initial object fields in FSL's own snapshot value representation.
     pub initial: &'a BTreeMap<String, SnapshotValue>,
     /// Exactly one implementation binding for every effective operation.
     pub operations: &'a [ConstrainedOperationBinding<'a>],

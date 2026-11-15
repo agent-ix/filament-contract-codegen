@@ -1,5 +1,5 @@
 //! FR-014-AC-6: generated exact scalar oracles and direct Contract Runtime
-//! execution agree on the QSpec TC-185, TC-186, TC-187, TC-192 and TC-193
+//! execution agree on the FSpec TC-185, TC-186, TC-187, TC-192 and TC-193
 //! vectors, in outcome, every admitted charge, every consumed counter, and
 //! the outcome of denying each admitted charge.
 //!
@@ -24,10 +24,10 @@ use std::{
 /// constraints from this repository's manifest use its seeded dependency
 /// resolution before the locked native test.
 const AGREEMENT_DEV_DEPENDENCIES: &str = concat!(
-    "qsl-replay = { version = \"=0.1.0\", git = \"https://github.com/agent-ix/quire-spec-language\", branch = \"main\" }\n",
+    "fsl-replay = { version = \"=0.1.0\", git = \"https://github.com/agent-ix/filament-spec-language\", branch = \"main\" }\n",
     "serde_json = \"=1.0.151\"\nsha2 = \"=0.10.9\"\n",
     "ix-trace-rs = { version = \"0.1\", git = \"https://github.com/agent-ix/ix-trace-rs\", branch = \"main\" }\n",
-    "quire-exact = { git = \"https://github.com/agent-ix/quire-exact\", branch = \"main\", features = [\"test-support\"] }\n",
+    "filament-exact = { git = \"https://github.com/agent-ix/filament-exact\", branch = \"main\", features = [\"test-support\"] }\n",
 );
 
 /// Writes `artifacts` (path, contents) as a crate at `<target tmp>/<label>`,
@@ -348,7 +348,7 @@ fn agreement_manifest_for_shared_target(manifest: &str, label: &str) -> String {
 fn composite_manifest_for_shared_target(manifest: &str, package_name: &str) -> String {
     let original = format!(
         "[package]\nname = \"{}\"\n",
-        quire_contract_codegen::COMPOSITE_EQUALITY_CRATE_NAME
+        filament_contract_codegen::COMPOSITE_EQUALITY_CRATE_NAME
     );
     assert_eq!(
         manifest.matches(&original).count(),
@@ -375,7 +375,7 @@ fn enum_manifest_for_shared_target(manifest: &str, package_name: &str) -> String
         original,
         &format!(
             "[lib]\nname = \"{}\"\npath = \"src/lib.rs\"\n",
-            quire_contract_codegen::COMPOSITE_EQUALITY_CRATE_NAME.replace('-', "_")
+            filament_contract_codegen::COMPOSITE_EQUALITY_CRATE_NAME.replace('-', "_")
         ),
         1,
     )
@@ -401,16 +401,16 @@ fn assert_shared_target_isolation(label: &str, preserve_library: bool) {
     let target = root.join("target");
     let original = format!(
         "[package]\nname = \"{}\"\nversion = \"0.0.0\"\nedition = \"2021\"\n\n[lib]\npath = \"src/lib.rs\"\n\n[workspace]\n",
-        quire_contract_codegen::COMPOSITE_EQUALITY_CRATE_NAME
+        filament_contract_codegen::COMPOSITE_EQUALITY_CRATE_NAME
     );
 
     for (case, value) in [("alpha", 11), ("beta", 29), ("alpha", 11)] {
         let package_name = format!(
             "{}-{case}",
-            quire_contract_codegen::COMPOSITE_EQUALITY_CRATE_NAME
+            filament_contract_codegen::COMPOSITE_EQUALITY_CRATE_NAME
         );
         let crate_name = if preserve_library {
-            quire_contract_codegen::COMPOSITE_EQUALITY_CRATE_NAME.replace('-', "_")
+            filament_contract_codegen::COMPOSITE_EQUALITY_CRATE_NAME.replace('-', "_")
         } else {
             package_name.replace('-', "_")
         };
@@ -568,7 +568,7 @@ fn tc_024_generated_scalar_crate_agrees_with_direct_runtime() {
         writeln!(modules, "mod {module};").expect("write to String");
         artifacts.push((format!("src/{module}.rs"), source));
         for claim in &oracles.claim_map.items {
-            let quire_contract_codegen::ClaimDisposition::Generated(generated) = &claim.result
+            let filament_contract_codegen::ClaimDisposition::Generated(generated) = &claim.result
             else {
                 continue;
             };
@@ -614,7 +614,7 @@ fn tc_024_generated_scalar_crate_agrees_with_direct_runtime() {
         })
         .collect::<Vec<_>>();
     let names = names_file(
-        quire_contract_codegen::EXACT_SCALAR_CRATE_NAME,
+        filament_contract_codegen::EXACT_SCALAR_CRATE_NAME,
         &aliases,
         "",
     );
@@ -633,7 +633,7 @@ fn tc_024_generated_scalar_crate_agrees_with_direct_runtime() {
 #[trace("FR-014-AC-61", "TC-024")]
 #[test]
 fn admitted_compound_conversion_oracles_agree_with_runtime() {
-    use quire_contract_codegen::{derive_exact_scalar_items, generate_exact_scalar_oracles};
+    use filament_contract_codegen::{derive_exact_scalar_items, generate_exact_scalar_oracles};
 
     let (package, ids) =
         super::exact_scalar_generation::package::compound_quantity_package().admit_resolved();
@@ -662,7 +662,7 @@ fn admitted_compound_conversion_oracles_agree_with_runtime() {
                 .iter()
                 .find(|claim| &claim.node_id == node)
                 .expect("requested conversion claim");
-            let quire_contract_codegen::ClaimDisposition::Generated(generated) = &claim.result
+            let filament_contract_codegen::ClaimDisposition::Generated(generated) = &claim.result
             else {
                 panic!("compound conversion refused: {claim:?}")
             };
@@ -670,7 +670,7 @@ fn admitted_compound_conversion_oracles_agree_with_runtime() {
         })
         .collect::<Vec<_>>();
     let names = names_file(
-        quire_contract_codegen::EXACT_SCALAR_CRATE_NAME,
+        filament_contract_codegen::EXACT_SCALAR_CRATE_NAME,
         &aliases,
         "",
     );
@@ -787,7 +787,7 @@ fn tc_024_v2_boolean_and_equality_oracles_agree_with_direct_runtime() {
         )
     });
     let names = names_file(
-        quire_contract_codegen::EXACT_SCALAR_CRATE_NAME,
+        filament_contract_codegen::EXACT_SCALAR_CRATE_NAME,
         &aliases,
         "",
     );
@@ -802,16 +802,16 @@ fn tc_024_v2_boolean_and_equality_oracles_agree_with_direct_runtime() {
     );
 }
 
-/// Published carried-quantity vectors execute emitted Rust against their owning QSV API.
+/// Published carried-quantity vectors execute emitted Rust against their owning FSV API.
 #[trace("TC-024", "FR-014-AC-62")]
 #[trace("TC-024", "FR-014-AC-63")]
 #[trace("TC-024", "FR-014-AC-64")]
 #[trace("TC-024", "FR-014-AC-65")]
 #[test]
 fn carried_quantity_vectors_compile_and_agree_with_owner() {
-    use quire_contract_codegen::{derive_exact_scalar_items, generate_exact_scalar_oracles};
+    use filament_contract_codegen::{derive_exact_scalar_items, generate_exact_scalar_oracles};
     let root =
-        PathBuf::from(std::env::var_os("QSPEC_DIR").expect("QSPEC_DIR points at published QSpec"));
+        PathBuf::from(std::env::var_os("FSPEC_DIR").expect("FSPEC_DIR points at published FSpec"));
     let vectors: serde_json::Value = serde_json::from_slice(
         &fs::read(root.join("proposals/checked-package-v2/quantity-carrier-vectors.json"))
             .expect("published carrier vectors"),
@@ -838,7 +838,7 @@ fn carried_quantity_vectors_compile_and_agree_with_owner() {
                 .collect::<Vec<_>>();
             let oracles =
                 generate_exact_scalar_oracles(&package, &items).expect("carried generation");
-            let quire_contract_codegen::ClaimDisposition::Generated(generated) =
+            let filament_contract_codegen::ClaimDisposition::Generated(generated) =
                 &oracles.claim_map.items[0].result
             else {
                 panic!(
@@ -848,7 +848,7 @@ fn carried_quantity_vectors_compile_and_agree_with_owner() {
             };
             assert_eq!(
                 oracles.claim_map.items[0].operation.provenance,
-                quire_contract_codegen::OperationProvenance::IrConfirmed
+                filament_contract_codegen::OperationProvenance::IrConfirmed
             );
             let operation_node = package
                 .resolved_graph()
@@ -895,7 +895,7 @@ fn carried_quantity_vectors_compile_and_agree_with_owner() {
                 generated.checked_bounds.contains(carrier_id),
                 "checked carrier is the target's actual bounded node"
             );
-            let quire_contract_codegen::ExactScalarOperation::CarriedQuantityConversion {
+            let filament_contract_codegen::ExactScalarOperation::CarriedQuantityConversion {
                 unit,
                 ..
             } = &items[0].operation
@@ -904,7 +904,7 @@ fn carried_quantity_vectors_compile_and_agree_with_owner() {
             };
             assert_eq!(unit, member_target("unit"));
             let names = names_file(
-                quire_contract_codegen::EXACT_SCALAR_CRATE_NAME,
+                filament_contract_codegen::EXACT_SCALAR_CRATE_NAME,
                 &[(generated.symbol.clone(), "convert".to_owned())],
                 &format!("pub const TARGET: &str = {target:?};\n"),
             );

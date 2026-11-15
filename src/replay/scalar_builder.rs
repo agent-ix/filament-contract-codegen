@@ -1,4 +1,4 @@
-//! Checked scalar plans. Execution and the QSL facade call belong to the driver.
+//! Checked scalar plans. Execution and the FSL facade call belong to the driver.
 
 use qsl_replay::{
     Domain, NativeOutcome, OperandIdentity, OperatorClaim, OperatorIdentity, OperatorParityReport,
@@ -21,7 +21,7 @@ use crate::core::{
 use crate::kani::identity::{KaniScalarObligationHarness, ScalarObligationIdentity};
 use crate::kani::terminal::ScalarSettlement;
 
-/// A typed pre-dispatch or report-binding refusal; this never fabricates a QSL settlement.
+/// A typed pre-dispatch or report-binding refusal; this never fabricates a FSL settlement.
 #[derive(Debug)]
 pub enum ScalarBuildError {
     /// Generation cannot supply authentic complete positional metadata.
@@ -39,13 +39,13 @@ pub enum ScalarBuildError {
     /// A refusal on a generated family with no operator-parity route. It keeps the earlier
     /// refusal's cause and, like the absent capability itself, yields no terminal record.
     UnavailableFamily(Box<ScalarBuildError>),
-    /// The QSL-owned structural mint refused the original claim.
+    /// The FSL-owned structural mint refused the original claim.
     Identity(qsl_replay::IdentityEncodeError),
     /// This generated family has no integer operator-parity observation route.
     Operation,
     /// The driver's authenticated execution assertion differs from the original staged context.
     Observation,
-    /// The genuine QSL report differs from the complete actual-sent claim.
+    /// The genuine FSL report differs from the complete actual-sent claim.
     Report,
     /// Actual facade wire or replay budget differs from the independently retained context.
     SentContext,
@@ -189,19 +189,19 @@ impl OriginalScalarContext {
             })
             .collect::<Result<Vec<_>, ScalarBuildError>>()?;
         let operation = match (identity.operation_identity.as_str(), operands.as_slice()) {
-            ("quire.op.integer.add", [left, right]) => ScalarOperation::Add {
+            ("filament.op.integer.add", [left, right]) => ScalarOperation::Add {
                 left: left.clone(),
                 right: right.clone(),
             },
-            ("quire.op.integer.sub", [left, right]) => ScalarOperation::Subtract {
+            ("filament.op.integer.sub", [left, right]) => ScalarOperation::Subtract {
                 left: left.clone(),
                 right: right.clone(),
             },
-            ("quire.op.integer.mul", [left, right]) => ScalarOperation::Multiply {
+            ("filament.op.integer.mul", [left, right]) => ScalarOperation::Multiply {
                 left: left.clone(),
                 right: right.clone(),
             },
-            ("quire.op.integer.negate", [operand]) => ScalarOperation::Negate {
+            ("filament.op.integer.negate", [operand]) => ScalarOperation::Negate {
                 operand: operand.clone(),
             },
             _ => return Err(ScalarBuildError::Operation),
@@ -324,7 +324,7 @@ impl ScalarReplayPlan {
     }
     /// Check the driver's execution assertion against every original retained tie.
     /// The caller's honest execution assertion is an explicit trust boundary. This method
-    /// executes nothing and makes no QSL call; a bare native outcome cannot complete a plan.
+    /// executes nothing and makes no FSL call; a bare native outcome cannot complete a plan.
     ///
     /// # Errors
     /// Any changed/missing staged context, identity, harness, record, operand or limit refuses.
@@ -366,7 +366,7 @@ impl ScalarReplayPlan {
     }
 }
 
-/// Completed plan carrying a checked driver observation. The driver calls QSL, then returns
+/// Completed plan carrying a checked driver observation. The driver calls FSL, then returns
 /// its genuine report for full actual-sent claim binding on every outcome.
 pub struct CompletedScalarReplay {
     wire: ReplayRequestWire,

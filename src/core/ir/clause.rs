@@ -225,7 +225,7 @@ impl Reader<'_, '_> {
             } => {
                 let identity = operation.identity()?;
                 match identity {
-                    "quire.op.state.pre" if args.len() == 1 => {
+                    "filament.op.state.pre" if args.len() == 1 => {
                         let read = self.term_body(&args[0])?;
                         let CheckedTerm::Application {
                             operation,
@@ -235,7 +235,7 @@ impl Reader<'_, '_> {
                         else {
                             return None;
                         };
-                        if operation.identity()? != "quire.op.record.project" {
+                        if operation.identity()? != "filament.op.record.project" {
                             return None;
                         }
                         let [deref] = arguments.as_slice() else {
@@ -243,7 +243,7 @@ impl Reader<'_, '_> {
                         };
                         self.field(&read, deref, ClauseInputSide::Pre)
                     }
-                    "quire.op.record.project" if args.len() == 1 => {
+                    "filament.op.record.project" if args.len() == 1 => {
                         self.field(value, &args[0], side)
                     }
                     _ => {
@@ -283,7 +283,11 @@ impl Reader<'_, '_> {
         if result_type != declaration {
             return None;
         }
-        let [subject] = application(&deref, ApplicationOperator::Deref, "quire.op.model.deref")?
+        let [subject] = application(
+            &deref,
+            ApplicationOperator::Deref,
+            "filament.op.model.deref",
+        )?
         else {
             return None;
         };
@@ -329,7 +333,7 @@ pub(crate) fn read_clause(
     let [parameters, _anchor, condition] = application(
         package.term(id)?,
         ApplicationOperator::StateClause,
-        "quire.op.state.clause",
+        "filament.op.state.clause",
     )?
     else {
         return None;

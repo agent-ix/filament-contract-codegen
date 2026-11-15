@@ -3,31 +3,31 @@ id: FR-055
 title: "Require every generated harness's mutant to fail in a kani-mutations target"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/StR-001
+  - target: ix://agent-ix/filament-contract-codegen/StR-001
     type: satisfies
-  - target: ix://agent-ix/quire-contract-codegen/FR-017
+  - target: ix://agent-ix/filament-contract-codegen/FR-017
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/NFR-006
+  - target: ix://agent-ix/filament-contract-codegen/NFR-006
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-041
+  - target: ix://agent-ix/filament-contract-codegen/FR-041
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-046
+  - target: ix://agent-ix/filament-contract-codegen/FR-046
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-047
+  - target: ix://agent-ix/filament-contract-codegen/FR-047
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-048
+  - target: ix://agent-ix/filament-contract-codegen/FR-048
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-049
+  - target: ix://agent-ix/filament-contract-codegen/FR-049
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-050
+  - target: ix://agent-ix/filament-contract-codegen/FR-050
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-051
+  - target: ix://agent-ix/filament-contract-codegen/FR-051
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-052
+  - target: ix://agent-ix/filament-contract-codegen/FR-052
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-053
+  - target: ix://agent-ix/filament-contract-codegen/FR-053
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-054
+  - target: ix://agent-ix/filament-contract-codegen/FR-054
     type: depends_on
 ---
 # FR-055: Require every generated harness's mutant to fail in a kani-mutations target
@@ -42,7 +42,7 @@ FR-046 to FR-054). This requirement gives those mutants one run.
 The build shall provide a `make kani-mutations` target that injects each declared mutant into a
 scratch copy of the source, never the working tree, runs the owning proof through Kani, and fails
 when any mutant still verifies. The vocabulary and contract shape follow the sibling
-`quire-contract-runtime` target of the same name, which is reference only: no mutation table or
+`filament-contract-runtime` target of the same name, which is reference only: no mutation table or
 code is copied from it.
 
 **Mutant declaration.** This repository shall hold one mutant declaration file (its path is an

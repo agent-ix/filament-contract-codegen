@@ -3,7 +3,7 @@ id: TC-017
 title: "Verify checked V2 clause strategy admission and refusal"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-008
+  - target: ix://agent-ix/filament-contract-codegen/FR-008
     type: verifies
 ---
 # TC-017: Verify checked V2 clause strategy admission and refusal
@@ -17,16 +17,16 @@ IR-703's public accessor is implemented in Contract IR.
 
 ## Test Procedure
 
-1. Produce a fresh ConfigVersion V2 package in QSL from the direct postcondition
+1. Produce a fresh ConfigVersion V2 package in FSL from the direct postcondition
    `self.versionNumber = pre(self.versionNumber)`, admit it through Contract IR and select its
    authentic clause id and claim occurrence. Request a strategy and inspect the census, relation,
    output and diagnostic fields. Independently request the let-bound
    `let s=pre(self) in s.versionNumber` form and assert typed operand ineligibility. Label any
-   hand-built topology fixtures synthetic; they do not establish QSL producer behavior.
+   hand-built topology fixtures synthetic; they do not establish FSL producer behavior.
 2. Through public IR admission, construct an invariant with a direct typed `amount < 7` comparison,
    `amount` bounded 0..=1000, and its reversed-order counterpart. Inspect authored operand order,
-   operator, provenance, observation and literal position. Assert QSL lowers ConfigVersion's `=`
-   to `quire.op.integer.eq` on the admitted package.
+   operator, provenance, observation and literal position. Assert FSL lowers ConfigVersion's `=`
+   to `filament.op.integer.eq` on the admitted package.
 3. Put a valid requested claim beside a comparison-oracle-refused sibling in one package. Request
    each claim separately. Exercise a selected-claim oracle-construction failure, each of the six
    operators through the planned V2 comparison-oracle path, arithmetic and Boolean operands,

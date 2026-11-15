@@ -1,11 +1,11 @@
 //! The terminal-value maps of a Kani run (FR-029) and of a Contract IR outcome (FR-030): one
 //! total `match` each, from [`KaniExecutionEvidence`] or an IR [`KaniOutcome`], paired with the
-//! settlement of its counterexample's replay, to QSL's FR-331 terminal value.
+//! settlement of its counterexample's replay, to FSL's FR-331 terminal value.
 //!
 //! The map is total over the pair, not over the outcome alone: a falsified run is a refutation
 //! only once its replay reproduces it. This module defines the replay settlement as the typed
-//! input the map reads, built from `qsl-replay` types only; `replay/` owns the conversion from
-//! its own errors and from QSL's result into it, so `kani/` imports nothing from `replay/`
+//! input the map reads, built from `fsl-replay` types only; `replay/` owns the conversion from
+//! its own errors and from FSL's result into it, so `kani/` imports nothing from `replay/`
 //! (AD-004). The value's category is [`TerminalValue::category`] and nothing else (AD-003 E-9):
 //! no `proof_category` function exists here.
 
@@ -30,24 +30,24 @@ pub enum ReplaySettlement<'a> {
     /// The replay settled `ReproducedWithEvaluatedWitness` in the `violation` category: the
     /// counterexample is a refutation.
     Reproduced,
-    /// The replay settled `Inconclusive`, with QSL's typed cause.
+    /// The replay settled `Inconclusive`, with FSL's typed cause.
     Disagreement(&'a DisagreementCause),
     /// `qsl_replay::replay`, `replay_frame` or `replay_state_clause` returned a refusal. The
-    /// refusal is read by QSL's own rule ([`TerminalValue::from_replay_refusal`]): a fault is
+    /// refusal is read by FSL's own rule ([`TerminalValue::from_replay_refusal`]): a fault is
     /// `Failed`, any other refusal is `Inconclusive` carrying the refusal's catalog code.
     Refused(&'a ReplayRefusal),
     /// A refusal of the replay setup on data, reached after the run was falsified, that is not a
     /// `ReplayRefusal`: a non-fault `CallSiteRefusal` or a `DependencyLockError::Input`. The code
-    /// is the one QSL's refusal value supplied.
+    /// is the one FSL's refusal value supplied.
     SetupRefused(Code),
-    /// An internal fault of QSL's call-site facade (`CallSiteRefusal::Fault`).
+    /// An internal fault of FSL's call-site facade (`CallSiteRefusal::Fault`).
     Fault,
-    /// A failure this repository raised that carries no QSL catalog code: the replay could not
+    /// A failure this repository raised that carries no FSL catalog code: the replay could not
     /// be built or read, its result cannot be read as a reproduction or a disagreement, the
     /// playback lacks a state field or lies outside its declared range, or the operation has a
     /// shape the state-clause replay does not support (FR-029-AC-16), or a decoded collection
     /// precondition totality falsification awaiting independent native evaluation (FR-029-AC-11).
-    /// None is a QSL data refusal,
+    /// None is a FSL data refusal,
     /// so none is `Incomplete` or `Inconclusive(ReplayRefused)`.
     CgDefect,
 }
@@ -63,9 +63,9 @@ pub enum TerminalPairError {
     UnexpectedSettlement,
     /// A proved IR outcome lacks its retained nonzero check count.
     MissingProvedCount,
-    /// IR's nonzero proof count exceeds QSL's `u32` terminal count.
+    /// IR's nonzero proof count exceeds FSL's `u32` terminal count.
     ProvedCountOutOfRange {
-        /// The retained count that cannot fit QSL's terminal value.
+        /// The retained count that cannot fit FSL's terminal value.
         success_checks: usize,
     },
     /// The owning IR constructor refused cancellation execution evidence.
@@ -86,7 +86,7 @@ impl std::fmt::Display for TerminalPairError {
             Self::ProvedCountOutOfRange { success_checks } => {
                 write!(
                     f,
-                    "IR proof check count {success_checks} exceeds QSL's u32 limit"
+                    "IR proof check count {success_checks} exceeds FSL's u32 limit"
                 )
             }
         }
@@ -95,12 +95,12 @@ impl std::fmt::Display for TerminalPairError {
 
 impl std::error::Error for TerminalPairError {}
 
-/// Maps one run's evidence and, for a falsified outcome, its replay settlement to QSL's
+/// Maps one run's evidence and, for a falsified outcome, its replay settlement to FSL's
 /// terminal value (FR-029). Outcome, SUCCESS count and CBMC cause come from the same evidence.
 /// A resource cause affects only failure-without-counterexample; diagnostics are not read.
 ///
 /// A vacuous proof and a cover-unsatisfied run have a zero-check `Checks` basis and
-/// `Certified` certification. QSL reads them as category `inconclusive`; no outcome maps to
+/// `Certified` certification. FSL reads them as category `inconclusive`; no outcome maps to
 /// `Tested`.
 ///
 /// # Errors
@@ -175,21 +175,21 @@ pub fn run_terminal_value(
 }
 
 /// Maps one Contract IR [`KaniOutcome`] that arrived from Contract IR, using its retained
-/// SUCCESS-check count and, for a `Counterexample`, its replay settlement, to QSL's terminal
+/// SUCCESS-check count and, for a `Counterexample`, its replay settlement, to FSL's terminal
 /// value (FR-030).
 ///
 /// This is not applied to an outcome derived from a run this repository executed: that run's
 /// value is [`run_terminal_value`]'s (FR-030 precedence). The map reads the kind, and the `code`
 /// only for `Unavailable` and `Inconclusive`, plus the `Declined` kinds, whose code is carried
-/// as the STD-001 code IR issued: [`DeclineCode::Std001`], never respelled as a QSL catalog
-/// code and never checked for registration (QSL records no issuer and refuses no unregistered
+/// as the STD-001 code IR issued: [`DeclineCode::Std001`], never respelled as a FSL catalog
+/// code and never checked for registration (FSL records no issuer and refuses no unregistered
 /// code). It never reads `source_id` or `context`. A vacuous proof has a zero-check `Checks`
 /// basis and `Certified` certification; no outcome maps to `Tested`.
 ///
 /// # Errors
 ///
 /// [`TerminalPairError`] when a `Counterexample` has no settlement, another kind has one,
-/// a proved outcome has no retained count, or the retained proof count exceeds QSL's `u32` range.
+/// a proved outcome has no retained count, or the retained proof count exceeds FSL's `u32` range.
 pub fn ir_outcome_terminal_value(
     outcome: &KaniOutcome,
     settlement: Option<ReplaySettlement<'_>>,
@@ -260,13 +260,13 @@ pub fn ir_outcome_terminal_value(
 /// is the trusted pairing authority.
 #[derive(Debug)]
 pub enum ScalarSettlement<'a> {
-    /// The genuine QSL operator-parity result of the driver's replay.
+    /// The genuine FSL operator-parity result of the driver's replay.
     Parity(&'a OperatorParityResult),
     /// A failure CG raised on a supported scalar family (FR-032-AC-24): read as `Failed`.
     CgDefect,
 }
 
-/// The value of a scalar settlement: QSL owns every `Parity` value (FR-032-AC-21).
+/// The value of a scalar settlement: FSL owns every `Parity` value (FR-032-AC-21).
 #[deny(
     clippy::wildcard_enum_match_arm,
     clippy::match_wildcard_for_single_variants

@@ -4,7 +4,7 @@
 //! Original-package construction of verified structural equality requests (FR-033).
 //!
 //! This boundary authenticates the retained source and checked package and constructs positional
-//! parity arguments. QSL mints the obligation identity from the checked application node and
+//! parity arguments. FSL mints the obligation identity from the checked application node and
 //! occurrence; the operand and domain body is retained separately for claim binding. This
 //! boundary does not authenticate a generated artifact, run a native observation, or establish a
 //! backend proof strength.
@@ -35,9 +35,9 @@ use super::{
     function::{DependencyLockError, LockedSource, ReplayInputs},
 };
 
-const PARITY_PRODUCER: &str = "quire-contract-codegen";
+const PARITY_PRODUCER: &str = "filament-contract-codegen";
 
-/// A pre-invocation construction refusal. No QSL report or terminal value exists on this path.
+/// A pre-invocation construction refusal. No FSL report or terminal value exists on this path.
 #[derive(Debug)]
 pub enum CompositeBuildError {
     /// The retained unit source reference or bytes differ from the original package's lock.
@@ -64,9 +64,9 @@ pub enum CompositeBuildError {
     NodeIdentity,
     /// The lock's dependency inputs are not admitted.
     Dependencies(DependencyLockError),
-    /// QSL refused recompilation of the retained source.
+    /// FSL refused recompilation of the retained source.
     Recompile(Box<AdmittedRefusal>),
-    /// QSL's public request decoder refused the original wire before recompilation.
+    /// FSL's public request decoder refused the original wire before recompilation.
     RequestDecode(Box<ReplayRequestRefusal>),
     /// IR refused the recompiled checked package.
     PackageRead(Box<CheckedPackageRefusal>),
@@ -90,11 +90,11 @@ pub enum CompositeBuildError {
     OperandShape,
     /// The owning parity identity or bound construction refused the claim.
     Identity(IdentityEncodeError),
-    /// QSL refused the producer packet before request construction.
+    /// FSL refused the producer packet before request construction.
     PacketAdmission(Box<WitnessRefusal>),
     /// An admitted packet belongs to another checked parity claim.
     PacketMismatch(CompositePacketMember),
-    /// A genuine QSL report did not bind to the request actually sent.
+    /// A genuine FSL report did not bind to the request actually sent.
     Report(CompositeReportError),
 }
 
@@ -249,9 +249,9 @@ impl OriginalCompositeEqContext {
     ///
     /// Parameter positions retain only their Node bounds. Population metadata is excluded from
     /// this request. Literal graph children retain empty Bounds and hence singleton source values;
-    /// QSL derives their values and domains from the original source and owns selected-function
+    /// FSL derives their values and domains from the original source and owns selected-function
     /// body and occurrence membership at invocation, returning a binding-checked refusal report.
-    /// Projection and identity refusals precede recompilation: public QSL stage-limit decoding
+    /// Projection and identity refusals precede recompilation: public FSL stage-limit decoding
     /// requires the genuine parity request, so this boundary authenticates context after projection.
     /// The supplied work ceiling
     /// bounds the IR operand projection. A requested operator absent from the original node,
@@ -314,7 +314,7 @@ impl OriginalCompositeEqContext {
             obligation_kind: "bounded_shadow".to_owned(),
             arguments,
         };
-        // QSL owns the structural NodeKey/model/ordinal mint. Operand and domain changes do not
+        // FSL owns the structural NodeKey/model/ordinal mint. Operand and domain changes do not
         // change this identity; the full claim remains available for report binding.
         let obligation = parity_obligation(&preimage).map_err(CompositeBuildError::Identity)?;
         let claim = CompositeParityClaim {
@@ -581,18 +581,18 @@ impl OriginalCompositeEqRequest {
         &self.operands
     }
 
-    /// The retained positional operand and domain body passed to QSL's identity owner.
+    /// The retained positional operand and domain body passed to FSL's identity owner.
     pub fn preimage(&self) -> &ParityPreimage {
         &self.preimage
     }
 
-    /// Invoke QSL's public verified-shadow facade with retained verified-run evidence.
+    /// Invoke FSL's public verified-shadow facade with retained verified-run evidence.
     ///
     /// This consumes caller-retained evidence; it neither runs Kani nor infers a proof strength.
     /// The genuine returned report passes the existing full-identity converter before returning.
     ///
     /// # Errors
-    /// Returns a binding refusal without a terminal value if QSL's report does not match what was sent.
+    /// Returns a binding refusal without a terminal value if FSL's report does not match what was sent.
     // The 192-byte refusal is retained inline to preserve the public PackageRead payload.
     #[allow(clippy::result_large_err)]
     pub fn settle_verified(
@@ -611,7 +611,7 @@ impl OriginalCompositeEqRequest {
     }
 }
 
-/// A genuine verified-shadow QSL report and the immutable sent identity the converter checked.
+/// A genuine verified-shadow FSL report and the immutable sent identity the converter checked.
 #[derive(Debug)]
 pub struct OriginalCompositeEqReport {
     sent: CompositeIdentity,
@@ -619,12 +619,12 @@ pub struct OriginalCompositeEqReport {
 }
 
 impl OriginalCompositeEqReport {
-    /// The complete claim retained before invoking QSL.
+    /// The complete claim retained before invoking FSL.
     pub fn sent(&self) -> &CompositeIdentity {
         &self.sent
     }
 
-    /// QSL's genuine public facade report.
+    /// FSL's genuine public facade report.
     pub fn report(&self) -> &VerifiedShadowReport {
         &self.report
     }

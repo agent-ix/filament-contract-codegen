@@ -13,7 +13,7 @@ pub enum ScalarReplayKind {
 }
 
 impl ScalarReplayKind {
-    /// The exact FR-032 wire allocation carried opaquely by QSL.
+    /// The exact FR-032 wire allocation carried opaquely by FSL.
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::OperatorParity => "operator_parity",

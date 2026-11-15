@@ -110,8 +110,8 @@ fi
         let mut command = Command::new(env!("CARGO_BIN_EXE_cg_gates"));
         command.arg(if script.contains("kani-scope") {
             "kani-scope"
-        } else if script.contains("qspec") {
-            "qspec-selftest"
+        } else if script.contains("fspec") {
+            "fspec-selftest"
         } else {
             "kani-gate"
         });
@@ -195,16 +195,16 @@ fn rust_gate_refuses_an_empty_kani_test_list() {
 
 #[trace("TC-045")]
 #[test]
-fn rust_qspec_selftest_rejects_a_make_that_accepts_an_unset_root() {
+fn rust_fspec_selftest_rejects_a_make_that_accepts_an_unset_root() {
     let sandbox = Sandbox::new();
     sandbox.write_executable("make", "#!/usr/bin/env bash\nexit 0\n");
     let output = sandbox
-        .command("qspec-selftest")
+        .command("fspec-selftest")
         .env("PATH", format!("{}:/usr/bin:/bin", sandbox.bin.display()))
         .output()
         .expect("selftest command");
     assert!(!output.status.success());
-    assert!(String::from_utf8_lossy(&output.stderr).contains("QSPEC_DIR"));
+    assert!(String::from_utf8_lossy(&output.stderr).contains("FSPEC_DIR"));
 }
 
 impl Drop for Sandbox {

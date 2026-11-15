@@ -3,17 +3,17 @@ id: FR-008
 title: "Admit checked V2 clauses for numeric strategy generation"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/StR-001
+  - target: ix://agent-ix/filament-contract-codegen/StR-001
     type: satisfies
-  - target: ix://agent-ix/quire-contract-codegen/FR-002
+  - target: ix://agent-ix/filament-contract-codegen/FR-002
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-014
+  - target: ix://agent-ix/filament-contract-codegen/FR-014
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/interface-001
+  - target: ix://agent-ix/filament-contract-codegen/interface-001
     type: implements
-  - target: ix://agent-ix/quire-contract-ir/FR-038
+  - target: ix://agent-ix/filament-contract-ir/FR-038
     type: depends_on
-  - target: ix://agent-ix/quire-spec-language/FR-034
+  - target: ix://agent-ix/filament-spec-language/FR-034
     type: references
 ---
 # FR-008: Admit checked V2 clauses for numeric strategy generation
@@ -26,12 +26,12 @@ admit a direct comparison and derive its exact domains. The generator SHALL retu
 strategy bundle or one typed, located refusal; it SHALL NOT generate a partial bundle. This is the
 V2 input contract for the constructive population and campaign behavior of FR-009 through FR-012.
 The V2 selected-claim acceptance rows remain Planned while CG's strategy request consumes the
-V1 `BoundPackage`/`ClauseRef` path. The accepted QSL checked package and selected claim are the
+V1 `BoundPackage`/`ClauseRef` path. The accepted FSL checked package and selected claim are the
 authority for the V2 chain; QSL-1082 and the IR-1013/FR-058 accessor must supply the accepted
 claim point to the downstream FR-011 verdict runner. The implemented IR-703 comparison accessor
 alone does not complete this V2 strategy chain.
 The IR accessor and its public consumer test are implemented under IR-703 in Contract IR; IR's
-fresh QSL producer-origin case runs only under its conformance gate. CG also needs a V2
+fresh FSL producer-origin case runs only under its conformance gate. CG also needs a V2
 comparison oracle for all six admitted operators, taking only the accessor's typed result. The V1
 bound oracle is not an input to it. The planned common CG unit is one internal typed
 integer-comparison lowerer, `lower_typed_integer_comparison`, in `src/oracle`. It will emit the executable predicate for
@@ -111,10 +111,10 @@ broader clause forms do not enlarge FR-008's admitted relation grammar.
   construction refusal, followed by rendering errors. The IR accessor owns the order within its
   own checks. Each request reports its first refusal only.
 - A postcondition directly authored as `self.versionNumber = pre(self.versionNumber)` SHALL be
-  eligible when QSL emits and IR admits the ConfigVersion V2 package and both reads have the same
-  0..=1000 range and QSL lowers `=` to `quire.op.integer.eq`; the left `Post` and right `Pre`
+  eligible when FSL emits and IR admits the ConfigVersion V2 package and both reads have the same
+  0..=1000 range and FSL lowers `=` to `filament.op.integer.eq`; the left `Post` and right `Pre`
   entries share the record.project id while their contextual observations remain distinct. A synthetic graph fixture SHALL NOT substitute for
-  this QSL-produced positive control.
+  this FSL-produced positive control.
 
 ## Constraints
 
@@ -129,7 +129,7 @@ broader clause forms do not enlarge FR-008's admitted relation grammar.
 
 | ID | Criteria | Verification |
 |----|----------|--------------|
-| FR-008-AC-1 | PLANNED (IR-364). A fresh QSL-produced, IR-admitted ConfigVersion V2 postcondition with direct `self.versionNumber = pre(self.versionNumber)` yields two `State` census entries in authored order, `Post` then `Pre`, each 0..=1000, with the same project id, `quire.op.integer.eq`, and the selected clause and authentic claim retained. The let-bound alias form yields a typed operand refusal and no bundle. | Test |
+| FR-008-AC-1 | PLANNED (IR-364). A fresh FSL-produced, IR-admitted ConfigVersion V2 postcondition with direct `self.versionNumber = pre(self.versionNumber)` yields two `State` census entries in authored order, `Post` then `Pre`, each 0..=1000, with the same project id, `filament.op.integer.eq`, and the selected clause and authentic claim retained. The let-bound alias form yields a typed operand refusal and no bundle. | Test |
 | FR-008-AC-2 | PLANNED (IR-364). An IR-admitted V2 `amount < 7` invariant with a typed current read of range 0..=1000 yields operator `Less`, primary `amount`, literal 7 and that inclusive census domain. Reversing the two authored operands preserves the reversed positions and corresponding operator semantics. | Test |
 | FR-008-AC-3 | PLANNED (IR-364). A valid selected comparison generates despite a comparison-oracle-refused sibling claim in the same package; requesting the refused claim returns its typed selected-claim cause and locus with no bundle. An oracle-construction failure for the selected claim returns no bundle. Each of integer.eq/ne/lt/le/gt/ge has an executable selected-claim comparison oracle whose result agrees with the ordered relation and generated tags. Arithmetic, alias, Boolean and literal-only shapes refuse at their own structural loci. | Test |
 | FR-008-AC-4 | PLANNED (IR-364). Unknown clause, absent claim, unsupported clause kind and malformed comparison report distinct typed causes in the stated first-defect order. Diagnostics carry selected clause and claim, structural path and reached child id when available, without claiming a unique child source region. | Test |
@@ -142,7 +142,7 @@ broader clause forms do not enlarge FR-008's admitted relation grammar.
 
 ## Dependencies
 
-- **Upstream**: [IR FR-038](ix://agent-ix/quire-contract-ir/FR-038) AC-202 through AC-209 (implemented under IR-703), and [QSL FR-034](ix://agent-ix/quire-spec-language/FR-034).
+- **Upstream**: [IR FR-038](ix://agent-ix/filament-contract-ir/FR-038) AC-202 through AC-209 (implemented under IR-703), and [FSL FR-034](ix://agent-ix/filament-spec-language/FR-034).
 - **Shared comparison core**: [FR-014](../../oracle/functional/FR-014-exact-scalar-oracles.md)
   AC-35 and AC-38 supply the V2 clause-oracle path and planned integer eq/ne derivation.
 - **Downstream**: [FR-009](./FR-009-constructive-correlated-populations.md),
@@ -166,7 +166,7 @@ implementation does not establish those CG obligations.
 
 FR-008-AC-9 is covered by
 `tests/it/v2_integer_comparison_admission.rs::v2_accessor_population_and_refusal_fields_agree`
-(TC-017). Real QSL-produced, IR-admitted comparisons cover all six operators, `StateField` and
+(TC-017). Real FSL-produced, IR-admitted comparisons cover all six operators, `StateField` and
 `OperationInput` provenance, and `Current`, `Pre` and `Post` observations. The test compares the
 public accessor's complete projection, operand ordinals and bounds with CG admission, then
 checks census bounds and tags against independently evaluated authored-order relations. Four

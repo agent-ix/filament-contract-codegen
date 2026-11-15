@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://agent-ix.github.io/quire-contract-codegen/schemas/v2-clause-coverage-observations-v1.schema.json",
+  "$id": "https://agent-ix.github.io/filament-contract-codegen/schemas/v2-clause-coverage-observations-v1.schema.json",
   "title": "Checked V2 clause LLVM observations, not native qualification",
   "type": "object",
   "additionalProperties": false,

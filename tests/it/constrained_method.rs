@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Authentic QSL inputs exercise the single generation entry and dedicated method execution.
+//! Authentic FSL inputs exercise the single generation entry and dedicated method execution.
 mod support;
+use filament_contract_codegen::*;
 use ix_trace_rs::trace;
 use qsl_replay::SnapshotValue;
-use quire_contract_codegen::*;
 use serde_json::json;
 use support::*;
 #[trace("TC-062", "FR-048-AC-1", "FR-048-AC-2")]
@@ -205,7 +205,7 @@ fn ordinary_execution_cannot_publish_a_constrained_success() {
 
 #[trace("TC-062", "FR-048-AC-10")]
 #[test]
-fn qsl_owner_evaluates_the_complete_small_state_domain() {
+fn fsl_owner_evaluates_the_complete_small_state_domain() {
     let f = fixture(
         &document(),
         "constrained-owner-domain",
@@ -435,15 +435,15 @@ fn boolean_and_partial_conditions_use_the_owner_oracle_and_unbounded_domains_ref
         let mut doc = document();
         match slot {
             "unread-field" => {
-                doc["types"][1]["fields"][2]["typeRef"] = json!("ix://quire/native/Integer")
+                doc["types"][1]["fields"][2]["typeRef"] = json!("ix://filament/native/Integer")
             }
             "uncalled-parameter" => {
                 doc["types"][1]["operations"][0]["params"][0]["typeRef"] =
-                    json!("ix://quire/native/Integer")
+                    json!("ix://filament/native/Integer")
             }
             "uncalled-result" => {
                 doc["types"][1]["operations"][1]["returns"]["typeRef"] =
-                    json!("ix://quire/native/Integer")
+                    json!("ix://filament/native/Integer")
             }
             _ => unreachable!(),
         }
@@ -513,7 +513,7 @@ fn run_installed(method: &KaniConstrainedMethodHarness) -> ConstrainedBackendEvi
     let scratch = crate::scratch_crate::TemporaryDirectory::new("constrained-method-installed");
     std::fs::create_dir_all(scratch.path.as_path().join("src")).unwrap();
     std::fs::create_dir_all(scratch.path.as_path().join(".cargo")).unwrap();
-    crate::scratch_crate::write_manifest(scratch.path.as_path(),"[package]\nname=\"constrained_method_control\"\nversion=\"0.0.0\"\nedition=\"2021\"\n[workspace]\n[dependencies]\nquire-exact={git=\"https://github.com/agent-ix/quire-exact\",branch=\"main\"}\nquire-contract-runtime={git=\"https://github.com/agent-ix/quire-contract-runtime\",branch=\"main\",features=[\"exact\"]}\n");
+    crate::scratch_crate::write_manifest(scratch.path.as_path(),"[package]\nname=\"constrained_method_control\"\nversion=\"0.0.0\"\nedition=\"2021\"\n[workspace]\n[dependencies]\nfilament-exact={git=\"https://github.com/agent-ix/filament-exact\",branch=\"main\"}\nfilament-contract-runtime={git=\"https://github.com/agent-ix/filament-contract-runtime\",branch=\"main\",features=[\"exact\"]}\n");
     std::fs::write(
         scratch.path.as_path().join(".cargo/config.toml"),
         "[build]\njobs=2\n",
@@ -608,9 +608,9 @@ fn a_standalone_collection_constraint_remains_unsupported_without_a_harness() {
         .unwrap()
         .push(field);
     let bytes = quire_canonical::to_vec(&doc, quire_canonical::Limits::new(1 << 20)).unwrap();
-    let source = format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.model.complete/v1\";\nmodel M = \"{MODEL}\";\ninvariant Safe using v on M::Node at current {{ self.n <= 3 }}\nconstraint Limit using v on M::Node at current {{ forall(item in self.items: item >= 0) }}\n");
+    let source = format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.model.complete/v1\";\nmodel M = \"{MODEL}\";\ninvariant Safe using v on M::Node at current {{ self.n <= 3 }}\nconstraint Limit using v on M::Node at current {{ forall(item in self.items: item >= 0) }}\n");
     let f = fixture_source(bytes, "constrained-standalone-collection", source);
-    let quantifier = f.package.resolved_graph().nodes.iter().find(|node| matches!(f.package.term(&node.node_id),Some(quire_contract_model::CheckedTerm::Application {operation,..}) if operation.identity()==Some("quire.op.collection.forall"))).expect("QSL emitted forall");
+    let quantifier = f.package.resolved_graph().nodes.iter().find(|node| matches!(f.package.term(&node.node_id),Some(quire_contract_model::CheckedTerm::Application {operation,..}) if operation.identity()==Some("filament.op.collection.forall"))).expect("FSL emitted forall");
     let items = [ObligationItem::CollectionClaim {
         package: &f.package,
         function_id: &f.constraints[0],
@@ -665,7 +665,7 @@ fn same_named_general_clause_bodies_and_preconditions_cannot_reuse_a_method() {
             } else {
                 "delta >= 0".into()
             };
-            let source = format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.model.complete/v1\";\nmodel M = \"{MODEL}\";\ninvariant Safe using v on M::Node at current {{ {safety} }}\nconstraint Limit0 using v on M::Node at current {{ {constraint} }}\npre Ready using v on M::Node::nudge {{ {precondition} }}\n");
+            let source = format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.model.complete/v1\";\nmodel M = \"{MODEL}\";\ninvariant Safe using v on M::Node at current {{ {safety} }}\nconstraint Limit0 using v on M::Node at current {{ {constraint} }}\npre Ready using v on M::Node::nudge {{ {precondition} }}\n");
             let bytes = quire_canonical::to_vec(&document(), quire_canonical::Limits::new(1 << 20))
                 .unwrap();
             fixture_source(bytes, "same-labelled-general-body", source)

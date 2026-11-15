@@ -3,7 +3,7 @@ id: TC-070
 title: "Verify measured-table tractability refusal and decider corpus"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-056
+  - target: ix://agent-ix/filament-contract-codegen/FR-056
     type: verifies
 ---
 # TC-070: Verify measured-table tractability refusal and decider corpus
@@ -27,7 +27,7 @@ installed Kani through CG's runner. This case is planned. Every mutant fails at 
 3. Load a valid table, an empty table and tables with an unknown verdict, a missing field and a
    fractional width, a missing `route` and an unknown `route`; assert the load results and the failing row index. Add a row for a fresh
    operation id and assert the decision changes with no source change (FR-056-AC-3).
-4. With a `not_tractable` row for `quire.op.integer.mul` at 21 bits, request a clause multiplying
+4. With a `not_tractable` row for `filament.op.integer.mul` at 21 bits, request a clause multiplying
    at width 21 and assert `V2ClauseNotTractable` with operation id, width, the route, the row, the versions and
    no harness, beside a supported sibling that keeps its harness (FR-056-AC-4).
 5. Probe `Int[0, 2^32]` (33 bits), `Int[0, 2^64 - 1]` (64 bits) and `Int[0, 2^64]` (65 bits) against a
@@ -38,7 +38,7 @@ installed Kani through CG's runner. This case is planned. Every mutant fails at 
    (FR-056-AC-6).
 7. Repeat step 4 with the row's generator version, then its kernel version, changed: the clause
    runs. Change only the Kani, CBMC or solver version: still refused (FR-056-AC-7).
-7a. With a `not_tractable` general-route row for `quire.op.integer.mul` at 21 bits, request the
+7a. With a `not_tractable` general-route row for `filament.op.integer.mul` at 21 bits, request the
    same multiply at 21 bits on `IntegerRoute::General` (refused) and on `IntegerRoute::Native`
    (the decider returns `Run`; the item is not refused as `V2ClauseNotTractable`, though the multiply
    fixtures end `RenderFailed` on native, which has no two-parameter precondition); swap the row to `native` and assert the reverse; add a `tractable` row on either route and

@@ -201,105 +201,105 @@ pub(super) fn family_of_identity(identity: &str) -> Option<Family> {
         });
     }
     Some(match identity {
-        "quire.op.boolean.and" => Family::Boolean(BooleanOperator::And),
-        "quire.op.boolean.or" => Family::Boolean(BooleanOperator::Or),
-        "quire.op.boolean.not" => Family::Boolean(BooleanOperator::Not),
-        "quire.op.boolean.implies" => Family::Boolean(BooleanOperator::Implies),
-        "quire.op.boolean.eq" => {
+        "filament.op.boolean.and" => Family::Boolean(BooleanOperator::And),
+        "filament.op.boolean.or" => Family::Boolean(BooleanOperator::Or),
+        "filament.op.boolean.not" => Family::Boolean(BooleanOperator::Not),
+        "filament.op.boolean.implies" => Family::Boolean(BooleanOperator::Implies),
+        "filament.op.boolean.eq" => {
             Family::Equality(EqualityOperator::Equal, EqualityOperandKind::Boolean)
         }
-        "quire.op.boolean.ne" => {
+        "filament.op.boolean.ne" => {
             Family::Equality(EqualityOperator::NotEqual, EqualityOperandKind::Boolean)
         }
-        "quire.op.integer.div" => Family::IntegerDivision,
-        "quire.op.integer.mod" => Family::IntegerModulo,
-        "quire.op.rational.add" => Family::RationalArithmetic(RationalOperator::Add),
-        "quire.op.rational.sub" => Family::RationalArithmetic(RationalOperator::Subtract),
-        "quire.op.rational.mul" => Family::RationalArithmetic(RationalOperator::Multiply),
-        "quire.op.rational.negate" => Family::RationalArithmetic(RationalOperator::Negate),
-        "quire.op.rational.div" => Family::RationalDivision,
-        "quire.op.rational.lt" => Family::Ordering(O::Less, K::Rational),
-        "quire.op.rational.le" => Family::Ordering(O::LessOrEqual, K::Rational),
-        "quire.op.rational.gt" => Family::Ordering(O::Greater, K::Rational),
-        "quire.op.rational.ge" => Family::Ordering(O::GreaterOrEqual, K::Rational),
-        "quire.op.decimal.lt" => Family::Ordering(O::Less, K::Decimal),
-        "quire.op.decimal.le" => Family::Ordering(O::LessOrEqual, K::Decimal),
-        "quire.op.decimal.gt" => Family::Ordering(O::Greater, K::Decimal),
-        "quire.op.decimal.ge" => Family::Ordering(O::GreaterOrEqual, K::Decimal),
-        "quire.op.decimal.add" => Family::DecimalArithmetic(DecimalOperator::Add),
-        "quire.op.decimal.sub" => Family::DecimalArithmetic(DecimalOperator::Subtract),
-        "quire.op.decimal.mul" => Family::DecimalArithmetic(DecimalOperator::Multiply),
-        "quire.op.decimal.div" => Family::DecimalArithmetic(DecimalOperator::Divide),
-        "quire.op.decimal.negate" => Family::DecimalArithmetic(DecimalOperator::Negate),
-        "quire.op.numeric.convert_rounding" => Family::DecimalArithmetic(DecimalOperator::Round),
-        "quire.op.ieee.float32.add" => {
+        "filament.op.integer.div" => Family::IntegerDivision,
+        "filament.op.integer.mod" => Family::IntegerModulo,
+        "filament.op.rational.add" => Family::RationalArithmetic(RationalOperator::Add),
+        "filament.op.rational.sub" => Family::RationalArithmetic(RationalOperator::Subtract),
+        "filament.op.rational.mul" => Family::RationalArithmetic(RationalOperator::Multiply),
+        "filament.op.rational.negate" => Family::RationalArithmetic(RationalOperator::Negate),
+        "filament.op.rational.div" => Family::RationalDivision,
+        "filament.op.rational.lt" => Family::Ordering(O::Less, K::Rational),
+        "filament.op.rational.le" => Family::Ordering(O::LessOrEqual, K::Rational),
+        "filament.op.rational.gt" => Family::Ordering(O::Greater, K::Rational),
+        "filament.op.rational.ge" => Family::Ordering(O::GreaterOrEqual, K::Rational),
+        "filament.op.decimal.lt" => Family::Ordering(O::Less, K::Decimal),
+        "filament.op.decimal.le" => Family::Ordering(O::LessOrEqual, K::Decimal),
+        "filament.op.decimal.gt" => Family::Ordering(O::Greater, K::Decimal),
+        "filament.op.decimal.ge" => Family::Ordering(O::GreaterOrEqual, K::Decimal),
+        "filament.op.decimal.add" => Family::DecimalArithmetic(DecimalOperator::Add),
+        "filament.op.decimal.sub" => Family::DecimalArithmetic(DecimalOperator::Subtract),
+        "filament.op.decimal.mul" => Family::DecimalArithmetic(DecimalOperator::Multiply),
+        "filament.op.decimal.div" => Family::DecimalArithmetic(DecimalOperator::Divide),
+        "filament.op.decimal.negate" => Family::DecimalArithmetic(DecimalOperator::Negate),
+        "filament.op.numeric.convert_rounding" => Family::DecimalArithmetic(DecimalOperator::Round),
+        "filament.op.ieee.float32.add" => {
             Family::IeeeArithmetic(IeeeArithmeticOperator::Add, IeeeWidth::Binary32)
         }
-        "quire.op.ieee.float32.sub" => {
+        "filament.op.ieee.float32.sub" => {
             Family::IeeeArithmetic(IeeeArithmeticOperator::Subtract, IeeeWidth::Binary32)
         }
-        "quire.op.ieee.float32.mul" => {
+        "filament.op.ieee.float32.mul" => {
             Family::IeeeArithmetic(IeeeArithmeticOperator::Multiply, IeeeWidth::Binary32)
         }
-        "quire.op.ieee.float32.div" => {
+        "filament.op.ieee.float32.div" => {
             Family::IeeeArithmetic(IeeeArithmeticOperator::Divide, IeeeWidth::Binary32)
         }
-        "quire.op.ieee.float64.add" => {
+        "filament.op.ieee.float64.add" => {
             Family::IeeeArithmetic(IeeeArithmeticOperator::Add, IeeeWidth::Binary64)
         }
-        "quire.op.ieee.float64.sub" => {
+        "filament.op.ieee.float64.sub" => {
             Family::IeeeArithmetic(IeeeArithmeticOperator::Subtract, IeeeWidth::Binary64)
         }
-        "quire.op.ieee.float64.mul" => {
+        "filament.op.ieee.float64.mul" => {
             Family::IeeeArithmetic(IeeeArithmeticOperator::Multiply, IeeeWidth::Binary64)
         }
-        "quire.op.ieee.float64.div" => {
+        "filament.op.ieee.float64.div" => {
             Family::IeeeArithmetic(IeeeArithmeticOperator::Divide, IeeeWidth::Binary64)
         }
-        "quire.op.ieee.float32.sqrt" => {
+        "filament.op.ieee.float32.sqrt" => {
             Family::IeeeArithmetic(IeeeArithmeticOperator::SquareRoot, IeeeWidth::Binary32)
         }
-        "quire.op.ieee.float64.sqrt" => {
+        "filament.op.ieee.float64.sqrt" => {
             Family::IeeeArithmetic(IeeeArithmeticOperator::SquareRoot, IeeeWidth::Binary64)
         }
-        "quire.op.ieee.float32.fma" => Family::IeeeArithmetic(
+        "filament.op.ieee.float32.fma" => Family::IeeeArithmetic(
             IeeeArithmeticOperator::FusedMultiplyAdd,
             IeeeWidth::Binary32,
         ),
-        "quire.op.ieee.float64.fma" => Family::IeeeArithmetic(
+        "filament.op.ieee.float64.fma" => Family::IeeeArithmetic(
             IeeeArithmeticOperator::FusedMultiplyAdd,
             IeeeWidth::Binary64,
         ),
-        "quire.op.ieee.numeric_equal" => Family::IeeeComparison(IeeeComparison::NumericEqual),
-        "quire.op.ieee.total_order" => Family::IeeeComparison(IeeeComparison::TotalOrder),
-        "quire.op.ieee.bit_identical" => Family::IeeeComparison(IeeeComparison::BitIdentical),
-        "quire.op.ieee.to_float32" => Family::IeeeToFloat32,
-        "quire.op.ieee.to_float64" => Family::IeeeToFloat64,
-        "quire.op.numeric.convert" => Family::NumericConvert,
-        "quire.op.text.eq" => Family::TextComparison(C::Equal),
-        "quire.op.text.ne" => Family::TextComparison(C::NotEqual),
-        "quire.op.text.lt" => Family::TextComparison(C::Less),
-        "quire.op.text.le" => Family::TextComparison(C::LessOrEqual),
-        "quire.op.text.gt" => Family::TextComparison(C::Greater),
-        "quire.op.text.ge" => Family::TextComparison(C::GreaterOrEqual),
-        "quire.op.enum.eq" => Family::EnumComparison(C::Equal),
-        "quire.op.enum.ne" => Family::EnumComparison(C::NotEqual),
-        "quire.op.enum.lt" => Family::EnumComparison(C::Less),
-        "quire.op.enum.le" => Family::EnumComparison(C::LessOrEqual),
-        "quire.op.enum.gt" => Family::EnumComparison(C::Greater),
-        "quire.op.enum.ge" => Family::EnumComparison(C::GreaterOrEqual),
+        "filament.op.ieee.numeric_equal" => Family::IeeeComparison(IeeeComparison::NumericEqual),
+        "filament.op.ieee.total_order" => Family::IeeeComparison(IeeeComparison::TotalOrder),
+        "filament.op.ieee.bit_identical" => Family::IeeeComparison(IeeeComparison::BitIdentical),
+        "filament.op.ieee.to_float32" => Family::IeeeToFloat32,
+        "filament.op.ieee.to_float64" => Family::IeeeToFloat64,
+        "filament.op.numeric.convert" => Family::NumericConvert,
+        "filament.op.text.eq" => Family::TextComparison(C::Equal),
+        "filament.op.text.ne" => Family::TextComparison(C::NotEqual),
+        "filament.op.text.lt" => Family::TextComparison(C::Less),
+        "filament.op.text.le" => Family::TextComparison(C::LessOrEqual),
+        "filament.op.text.gt" => Family::TextComparison(C::Greater),
+        "filament.op.text.ge" => Family::TextComparison(C::GreaterOrEqual),
+        "filament.op.enum.eq" => Family::EnumComparison(C::Equal),
+        "filament.op.enum.ne" => Family::EnumComparison(C::NotEqual),
+        "filament.op.enum.lt" => Family::EnumComparison(C::Less),
+        "filament.op.enum.le" => Family::EnumComparison(C::LessOrEqual),
+        "filament.op.enum.gt" => Family::EnumComparison(C::Greater),
+        "filament.op.enum.ge" => Family::EnumComparison(C::GreaterOrEqual),
         QUANTITY_CONVERT_IDENTITY => Family::QuantityConversion,
-        "quire.op.quantity.add" => Family::QuantityArithmetic(QuantityOperator::Add),
-        "quire.op.quantity.sub" => Family::QuantityArithmetic(QuantityOperator::Subtract),
-        "quire.op.quantity.mul" => Family::QuantityArithmetic(QuantityOperator::Multiply),
-        "quire.op.quantity.div" => Family::QuantityArithmetic(QuantityOperator::Divide),
-        "quire.op.quantity.pow" => Family::QuantityArithmetic(QuantityOperator::Power),
-        "quire.op.quantity.eq" => Family::QuantityComparison(C::Equal),
-        "quire.op.quantity.ne" => Family::QuantityComparison(C::NotEqual),
-        "quire.op.quantity.lt" => Family::QuantityComparison(C::Less),
-        "quire.op.quantity.le" => Family::QuantityComparison(C::LessOrEqual),
-        "quire.op.quantity.gt" => Family::QuantityComparison(C::Greater),
-        "quire.op.quantity.ge" => Family::QuantityComparison(C::GreaterOrEqual),
+        "filament.op.quantity.add" => Family::QuantityArithmetic(QuantityOperator::Add),
+        "filament.op.quantity.sub" => Family::QuantityArithmetic(QuantityOperator::Subtract),
+        "filament.op.quantity.mul" => Family::QuantityArithmetic(QuantityOperator::Multiply),
+        "filament.op.quantity.div" => Family::QuantityArithmetic(QuantityOperator::Divide),
+        "filament.op.quantity.pow" => Family::QuantityArithmetic(QuantityOperator::Power),
+        "filament.op.quantity.eq" => Family::QuantityComparison(C::Equal),
+        "filament.op.quantity.ne" => Family::QuantityComparison(C::NotEqual),
+        "filament.op.quantity.lt" => Family::QuantityComparison(C::Less),
+        "filament.op.quantity.le" => Family::QuantityComparison(C::LessOrEqual),
+        "filament.op.quantity.gt" => Family::QuantityComparison(C::Greater),
+        "filament.op.quantity.ge" => Family::QuantityComparison(C::GreaterOrEqual),
         _ => return None,
     })
 }

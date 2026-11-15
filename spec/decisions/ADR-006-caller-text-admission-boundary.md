@@ -3,11 +3,11 @@ id: ADR-006
 title: "Separate caller Text admission from checked expression oracles"
 type: ADR
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/ADR-001
+  - target: ix://agent-ix/filament-contract-codegen/ADR-001
     type: relates_to
-  - target: ix://agent-ix/quire-contract-codegen/FR-014
+  - target: ix://agent-ix/filament-contract-codegen/FR-014
     type: relates_to
-  - target: ix://agent-ix/quire-contract-codegen/FR-035
+  - target: ix://agent-ix/filament-contract-codegen/FR-035
     type: relates_to
 ---
 # ADR-006: Separate caller Text admission from checked expression oracles
@@ -25,10 +25,10 @@ proof evidence.
 generated scalar expression oracle to an admitted `CheckedPackageV2` node and
 its catalogued operation identity. The current source also has a
 `TextAdmission` descriptor and an emitted call to `rt::admit_text`, but its
-derivation maps a text-result `quire.op.numeric.convert` node to that
+derivation maps a text-result `filament.op.numeric.convert` node to that
 descriptor. The catalogued conversion requires an `exact_numeric` operand;
 Contract IR rejects each of the six attempted text-operand nodes before
-generation. There is no QSL Text-admission expression to supply such a node.
+generation. There is no FSL Text-admission expression to supply such a node.
 By contrast, catalogued text comparison nodes are admitted and retain their
 FR-014 oracle and runtime agreement evidence.
 
@@ -47,7 +47,7 @@ caller ingress, where no term node exists.
 Scope ADR-001 Q3 to generators of checked-package expression and contract
 claims. The caller Text-admission oracle and its proof form a separate,
 explicitly caller-declared ingress route under FR-035. That route has no
-checked node id, `ir_confirmed` provenance or QSL term identity. It does not
+checked node id, `ir_confirmed` provenance or FSL term identity. It does not
 enter FR-015's per-obligation checked-package Kani claim model or FR-025's
 Boolean/`i64` subject ABI; its own finite symbolic input and identity are
 required by FR-035. [FR-017](../kani/functional/FR-017-kani-execution-evidence.md)
@@ -90,7 +90,7 @@ text-comparison route remains under FR-014 and TC-024.
 ## Alternatives Considered
 
 - Make `numeric.convert` accept Text. Its catalogued operand is exact numeric,
-  and neither QSL nor QSpec currently defines a Text admission term; this
+  and neither FSL nor FSpec currently defines a Text admission term; this
   would give a caller boundary a false checked-expression identity.
 - Count a fixed text literal or the six refused conversion nodes as proof.
   Neither ranges over caller payloads or exercises an admitted generated

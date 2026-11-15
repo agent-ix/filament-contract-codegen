@@ -3,7 +3,7 @@ id: TC-036
 title: "Verify the generated harness subject ABI"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-025
+  - target: ix://agent-ix/filament-contract-codegen/FR-025
     type: verifies
 ---
 # TC-036: Verify the generated harness subject ABI
@@ -50,7 +50,7 @@ yield no harness.
     canonicality and public typed replay controls. Request missing, duplicate, foreign,
     role-swapped and domain-conflicting component schemas; no invented parameter may replace
     either component. Keep all legacy Boolean/integer controls unchanged.
-11. For the scalar V2 postcondition result path, select an admitted QSL operation anchor
+11. For the scalar V2 postcondition result path, select an admitted FSL operation anchor
     and compare its complete `model_operations(context, 65_536)` signature with the clause's
     `self`, optional `result` and ordered parameter binders. Exercise a work-limit refusal and
     an unavailable or mismatched signature, retaining the IR read refusal's fields.

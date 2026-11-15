@@ -6,16 +6,16 @@ use super::kani_obligations::boolean_implies_scalar;
 use super::scalar_playback::{replay_fixture, transcript, ReplayFixture};
 use super::scalar_replay_binding::{context, observe, plan};
 use super::terminal_map::synthetic_evidence;
-use ix_trace_rs::trace;
-use qsl_replay::{
-    Code, IdentityEncodeError, IncompleteCause, InconclusiveCause, NativeOutcome,
-    OperatorParityReport, OperatorParityResult, ReplayLimits, Std001Code, TerminalValue,
-};
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     run_terminal_value, scalar_ir_outcome_terminal_value, scalar_run_terminal_value,
     CompletedScalarReplay, KaniInconclusiveReason, KaniRunOutcome, LockedSource,
     OriginalScalarContext, ReplayInputs, ScalarAuthorityError, ScalarBuildError, ScalarSentRequest,
     ScalarSettlement, TerminalPairError, WitnessDecodeLimits, SCALAR_PLAYBACK_BYTES,
+};
+use ix_trace_rs::trace;
+use qsl_replay::{
+    Code, IdentityEncodeError, IncompleteCause, InconclusiveCause, NativeOutcome,
+    OperatorParityReport, OperatorParityResult, ReplayLimits, Std001Code, TerminalValue,
 };
 use quire_contract_ir::kani::{KaniCancellationSource, KaniOutcome, KaniOutcomeKind};
 use quire_contract_model::CheckedPackageReadLimits;
@@ -63,7 +63,7 @@ fn completed_sum(fixture: &ReplayFixture) -> (CompletedScalarReplay, ScalarSentR
 
 fn sum_fixture() -> ReplayFixture {
     replay_fixture(
-        "quire.op.integer.add",
+        "filament.op.integer.add",
         "x: Int[0, 9]",
         "Int[0, 18]",
         "x + x",
@@ -249,7 +249,7 @@ fn denies_wildcards(function: &syn::ItemFn) -> bool {
 
 #[trace("TC-047", "FR-032-AC-21", "FR-032-AC-24")]
 #[test]
-fn step_10_terminal_map_is_an_exhaustive_match_returning_the_qsl_terminal_value() {
+fn step_10_terminal_map_is_an_exhaustive_match_returning_the_fsl_terminal_value() {
     use syn::{visit::Visit, Expr, ExprMatch, ExprMethodCall, Item};
     #[derive(Default)]
     struct Scan {
@@ -490,7 +490,7 @@ fn step_11_pairing_requires_a_falsified_run_and_never_refutes() {
         }
         assert_eq!(
             scalar_ir_outcome_terminal_value(outcome, None),
-            quire_contract_codegen::ir_outcome_terminal_value(outcome, None),
+            filament_contract_codegen::ir_outcome_terminal_value(outcome, None),
             "{:?}",
             outcome.kind()
         );
@@ -919,7 +919,7 @@ fn step_14_the_flow_uses_only_the_scalar_identity_and_the_scan_finds_nothing() {
     // Compile-time half: generation, plan, completion, request, settlement and pairing are
     // called with `ScalarObligationIdentity` (the fixture's `harness.identity`) alone.
     let fixture = sum_fixture();
-    let identity: &quire_contract_codegen::ScalarObligationIdentity = &fixture.harness.identity;
+    let identity: &filament_contract_codegen::ScalarObligationIdentity = &fixture.harness.identity;
     let original = context(&fixture)
         .plan(
             &fixture.harness,
@@ -980,7 +980,7 @@ fn step_14_the_flow_uses_only_the_scalar_identity_and_the_scan_finds_nothing() {
 #[test]
 fn increment_fixture_has_no_out_of_result_range_value_and_agrees_natively() {
     let fixture = replay_fixture(
-        "quire.op.integer.add",
+        "filament.op.integer.add",
         "x: Int[0, 9]",
         "Int[0, 10]",
         "x + 1",

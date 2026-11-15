@@ -3,18 +3,18 @@ id: AD-007
 title: "Staged full-domain V2 symbolic proof encoding"
 type: ArchitectureDescription
 status: accepted
-owner: quire-contract-codegen-maintainer
+owner: filament-contract-codegen-maintainer
 system: V2 clause Kani symbolic input, sealed harness identity and counterexample decoding
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-015
+  - target: ix://agent-ix/filament-contract-codegen/FR-015
     type: references
-  - target: ix://agent-ix/quire-contract-codegen/FR-016
+  - target: ix://agent-ix/filament-contract-codegen/FR-016
     type: references
-  - target: ix://agent-ix/quire-contract-codegen/FR-017
+  - target: ix://agent-ix/filament-contract-codegen/FR-017
     type: references
-  - target: ix://agent-ix/quire-contract-codegen/AD-003
+  - target: ix://agent-ix/filament-contract-codegen/AD-003
     type: references
-  - target: ix://agent-ix/quire-contract-codegen/AD-006
+  - target: ix://agent-ix/filament-contract-codegen/AD-006
     type: references
 ---
 # AD-007: Staged full-domain V2 symbolic proof encoding
@@ -24,11 +24,11 @@ relationships:
 This accepted architecture decision selects a staged encoding design. It does not establish
 Kani tractability, change FR-015 acceptance or award proof credit. The encoding policy,
 versioned record and new reader controls below are not yet implemented.
-IR-1022 owns tractability of the same QSL-authored V2 postcondition clause required by
+IR-1022 owns tractability of the same FSL-authored V2 postcondition clause required by
 FR-015-AC-41 and AC-119: `amount < 1000 implies amount + 1 <= 1000`, with the checked
 parameter domain `amount: Int[0, 1000]`. CG owns the generated symbolic draw, sealed
 harness record and V2 counterexample reader. The admitted package, byte-identical FR-014
-oracle, genuine quire-exact operations and Meter, compiled subject, independent native
+oracle, genuine filament-exact operations and Meter, compiled subject, independent native
 arithmetic assertion, final cover and source-owner mutations retain their owners.
 
 The original installed healthy proof exhausted the existing 16 GiB ceiling; a separate

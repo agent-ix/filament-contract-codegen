@@ -3,31 +3,31 @@ id: FR-051
 title: "Generate bounded decimal scalar operation harnesses"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/StR-001
+  - target: ix://agent-ix/filament-contract-codegen/StR-001
     type: satisfies
-  - target: ix://agent-ix/quire-contract-codegen/FR-014
+  - target: ix://agent-ix/filament-contract-codegen/FR-014
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-015
+  - target: ix://agent-ix/filament-contract-codegen/FR-015
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-016
+  - target: ix://agent-ix/filament-contract-codegen/FR-016
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-017
+  - target: ix://agent-ix/filament-contract-codegen/FR-017
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-025
+  - target: ix://agent-ix/filament-contract-codegen/FR-025
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-028
+  - target: ix://agent-ix/filament-contract-codegen/FR-028
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-029
+  - target: ix://agent-ix/filament-contract-codegen/FR-029
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-039
+  - target: ix://agent-ix/filament-contract-codegen/FR-039
     type: depends_on
-  - target: ix://agent-ix/quire-contract-ir/FR-038
+  - target: ix://agent-ix/filament-contract-ir/FR-038
     type: references
-  - target: ix://agent-ix/quire-contract-codegen/FR-046
+  - target: ix://agent-ix/filament-contract-codegen/FR-046
     type: references
-  - target: ix://agent-ix/quire-contract-codegen/FR-050
+  - target: ix://agent-ix/filament-contract-codegen/FR-050
     type: references
-  - target: ix://agent-ix/quire-specification/FR-196
+  - target: ix://agent-ix/filament-specification/FR-196
     type: references
 ---
 # FR-051: Generate bounded decimal scalar operation harnesses
@@ -35,8 +35,8 @@ relationships:
 ## Description
 
 When an admitted request selects a reader-admitted `decimal` scalar operation
-(`quire.op.decimal.add`, `.sub`, `.mul`, `.div`, `.negate`,
-`quire.op.numeric.convert_rounding` into a decimal, or an ordering comparison
+(`filament.op.decimal.add`, `.sub`, `.mul`, `.div`, `.negate`,
+`filament.op.numeric.convert_rounding` into a decimal, or an ordering comparison
 `lt`, `le`, `gt`, `ge` over decimals) and the planned prerequisite below is
 available, CG SHALL generate a bounded Kani harness that proves the generated
 decimal oracle of
@@ -47,7 +47,7 @@ TC-030's Decimal scalar row settles today as `OperationNotRendered`, and the
 row that IR-259 waits on. It is a planned row, not a new IR schema, a new
 oracle or a claim of current Rust support.
 
-Prerequisite P1 is the quire-exact decimal carrier (ticket IR-1444): a symbolic
+Prerequisite P1 is the filament-exact decimal carrier (ticket IR-1444): a symbolic
 exact decimal operand and a native expression over it. It is not delivered.
 Every criterion that describes a supported harness is conditional on P1. The
 operand bound mechanism needs no further prerequisite: a bounded Decimal is
@@ -58,7 +58,7 @@ refuses an unbounded plain-reference operand as `RequiresBound` (FR-014-AC-25, w
 profile that does not require bounds is outside this row, and CG reports the
 missing bound defensively (AC-5).
 
-Decimal equality and inequality (`quire.op.decimal.eq`, `.ne`) are outside this
+Decimal equality and inequality (`filament.op.decimal.eq`, `.ne`) are outside this
 requirement: FR-014 refuses them as `OperationNotDerivable`, so no oracle exists
 to prove. Quantity carried-Decimal conversions are a quantity operation: FR-014-AC-62
 through AC-65 own their oracle, and FR-014-AC-51 and TC-030's Quantity scalar row
@@ -163,7 +163,7 @@ cause, malformed entries retain typed decode causes, and no replay is attempted
 for these evidence failures.
 
 When submitting a validated parameter to public replay, CG SHALL construct one
-`qsl_replay::WitnessValue::Decimal { coefficient, scale }` with owner Integer
+`fsl_replay::WitnessValue::Decimal { coefficient, scale }` with owner Integer
 values, which retains the pair unnormalized, per parameter. If the public route is
 unavailable the item is unsupported with no harness. CG introduces no transcript
 grammar or occurrence key.
@@ -174,8 +174,8 @@ All supported-harness criteria are conditional on P1 (IR-1444).
 
 | ID | Criteria | Verification |
 | --- | --- | --- |
-| FR-051-AC-1 | Each admitted decimal `add`, `sub`, `mul`, `div`, `negate`, `convert_rounding` and each of `lt`, `le`, `gt`, `ge` node selects a harness naming the operation identity and operand forms from the admitted node, and for the six arithmetic operations the `decimal_range` result bound (orderings have none); the oracle is FR-014's and the expected side is an independent native expression, not a second call of the oracle. `quire.op.decimal.eq` and `.ne` select no harness and keep FR-014's `OperationNotDerivable`. | Test |
-| FR-051-AC-2 | Each operand is drawn as a (coefficient, scale) pair at scales `0..=scale_max` that satisfies the owner `DecimalType::contains`, within the carrier's stated coefficient envelope. Every such member is reachable exactly once, including numerically equal pairs with different scales and the owner's own result form (`(5000, 2)` for 50 in `Decimal[0,100;0,2]`), and an independent host enumeration of the `contains`-admitted set matches the encoding; clipping an endpoint, rejecting a raw coefficient outside `[coefficient_min, coefficient_max]` that `contains` admits, admitting a pair `contains` rejects, collapsing equal-valued pairs or drawing only the target scale fails the correspondence check (QSpec FR-196-AC-5). | Test |
+| FR-051-AC-1 | Each admitted decimal `add`, `sub`, `mul`, `div`, `negate`, `convert_rounding` and each of `lt`, `le`, `gt`, `ge` node selects a harness naming the operation identity and operand forms from the admitted node, and for the six arithmetic operations the `decimal_range` result bound (orderings have none); the oracle is FR-014's and the expected side is an independent native expression, not a second call of the oracle. `filament.op.decimal.eq` and `.ne` select no harness and keep FR-014's `OperationNotDerivable`. | Test |
+| FR-051-AC-2 | Each operand is drawn as a (coefficient, scale) pair at scales `0..=scale_max` that satisfies the owner `DecimalType::contains`, within the carrier's stated coefficient envelope. Every such member is reachable exactly once, including numerically equal pairs with different scales and the owner's own result form (`(5000, 2)` for 50 in `Decimal[0,100;0,2]`), and an independent host enumeration of the `contains`-admitted set matches the encoding; clipping an endpoint, rejecting a raw coefficient outside `[coefficient_min, coefficient_max]` that `contains` admits, admitting a pair `contains` rejects, collapsing equal-valued pairs or drawing only the target scale fails the correspondence check (FSpec FR-196-AC-5). | Test |
 | FR-051-AC-3 | For `add`, `sub`, `mul`, `div`, `negate` and `convert_rounding` the oracle and native expression agree on the typed outcome, the completed value's retained representation (not only its normalized value), the loss record, ordered charges, the denied next charge and consumed counters, at zero, exact and short budgets at each charge point in the Behavior list. For the four ordering operators they agree on `Outcome<bool>`, charges and counters, with ordering by value. The reference neither runs the generated oracle twice nor bridges through Runtime. | Test |
 | FR-051-AC-4 | Each reachable noncompletion is asserted as the agreed typed outcome and never assumed away: `Undefined(DivisionByZero)` for a zero divisor (and `Incomplete` at `decimal.operands` instead at a zero budget, since the zero check follows that charge), `Refused(InexactDecimal)` under `exact` rounding for an inexact `div` quotient, a `mul` whose operand scales sum above the result scale, and `add`, `sub`, `negate` and `convert_rounding` over an operand whose scale exceeds the result scale, `Refused(DecimalOutOfDomain)` for an `add`, `sub`, `mul`, `div`, `negate` or `convert_rounding` result outside the result domain (including after rounding), and `Incomplete` at each charge point named in the Behavior list. No cause is relabelled and a stopped outcome is never proved completed. The generated harness contains no assumption that depends on the outcome (inspected, as FR-046-AC-4). | Test |
 | FR-051-AC-5 | A missing, unbounded or repeated `decimal_range` for an operand, or, for the six arithmetic operations only, a missing or ambiguous result bound, yields source-associated `requires-bound` naming the operand or result with no harness. The largest raw coefficient the encoding must reach is the lifted bound `max(|coefficient_min|, |coefficient_max|) x 10^(scale_max - scale_min)` (for `Decimal[0,10^18;0,2]` it is 10^20). A lifted bound beyond signed `i64`, even when both coefficient endpoints fit, or a scale endpoint beyond the carrier or `u32`, yields named `unsupported` retaining the endpoint and the lifted bound; generation never clips or substitutes a smaller domain. | Test |
@@ -195,7 +195,7 @@ All supported-harness criteria are conditional on P1 (IR-1444).
   under a bounds-required profile an unbounded decimal is `requires_bound` upstream
   (Contract IR FR-038).
 - [FR-046](./FR-046-rational-function-predicate-harnesses.md),
-  [FR-050](./FR-050-quantity-scalar-harnesses.md) and QSpec FR-196 are the
+  [FR-050](./FR-050-quantity-scalar-harnesses.md) and FSpec FR-196 are the
   precedent and the finite-encoding obligation this row follows.
 - TC-030's Decimal scalar row owns today's `OperationNotRendered` settlement; this
   row supersedes it for the listed decimal operations only when delivered.
@@ -209,6 +209,6 @@ All supported-harness criteria are conditional on P1 (IR-1444).
 PLANNED (IR-1440). This specification supplies no implementation or
 generated-proof credit. All ten criteria remain planned and untagged until P1 is
 delivered with the IR-269 decimal harness. The public Decimal replay value exists
-in `qsl_replay`; the CG decoder grouping and the carrier's physical bindings do
+in `fsl_replay`; the CG decoder grouping and the carrier's physical bindings do
 not. Oracle agreement under FR-014 is not Kani credit. The encoding covers retained
 scales `0..=scale_max` only.

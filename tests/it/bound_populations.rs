@@ -2,7 +2,7 @@ use ix_trace_rs::trace;
 use std::{collections::BTreeSet, fmt::Write as _, fs, process::Command};
 
 use crate::scratch_crate::TemporaryDirectory;
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     render_population, side_values, ComparisonOperator, Domain, GenerationTerminalState,
     OperandPosition, Partner, Population, PopulationRequest, PopulationSide, Relation,
     RenderedPopulation, SideValues, StrategyErrorCode, ValueSet,
@@ -180,7 +180,7 @@ fn small_relations(domain: Domain) -> Vec<Relation> {
 }
 
 fn assert_empty_population(
-    failure: &quire_contract_codegen::StrategyDiagnostic,
+    failure: &filament_contract_codegen::StrategyDiagnostic,
     side: PopulationSide,
 ) {
     assert_eq!(failure.code, StrategyErrorCode::EmptyPopulation);
@@ -953,7 +953,7 @@ fn tc_018_tc_021_generated_populations_compile_draw_and_shrink_inside_their_side
         }
     }
 
-    let temporary = TemporaryDirectory::new("quire-generated-bound-populations");
+    let temporary = TemporaryDirectory::new("filament-generated-bound-populations");
     fs::write(
         temporary.path.join("Cargo.toml"),
         "[package]\nname = \"generated-bound-populations\"\nversion = \"0.0.0\"\nedition = \"2021\"\n\n[dependencies]\nproptest = { version = \"=1.5.0\", default-features = false, features = [\"std\"] }\n\n[workspace]\n",

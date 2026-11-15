@@ -3,7 +3,7 @@ id: TC-054
 title: "Verify exact local protocol-target consumption"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-039
+  - target: ix://agent-ix/filament-contract-codegen/FR-039
     type: verifies
 ---
 # TC-054: Verify exact local protocol-target consumption
@@ -12,21 +12,21 @@ relationships:
 
 Verify [FR-039-AC-4](../functional/FR-039-contract-package-consumption.md)
 in two stages. The FR-322-AC-66 worked carrier can exercise the public strict
-reader now; that reader evidence does not establish QSL production or CG
+reader now; that reader evidence does not establish FSL production or CG
 consumption. The production CG controls require QSL-764 to emit the carrier
 from source, followed by Contract IR lowering into genuine admitted FR-330
 packages. The FR-322 reader owns target admission and located refusals.
 
 ## Test Procedure
 
-1. Submit QSpec FR-322-AC-66's worked `protocol`/`protocol_reference` carrier
+1. Submit FSpec FR-322-AC-66's worked `protocol`/`protocol_reference` carrier
    and local `protocol` target to the public strict reader. Check that the
    admitted typed graph has one local `body.target`, a matching sole dependency
    and `semantic_type`, and the carrier's one expression occurrence. This is a
-   reader control over the worked package, not a QSL-emitted or IR-lowered
+   reader control over the worked package, not a FSL-emitted or IR-lowered
    package and not evidence that CG generates from it.
 2. After QSL-764 supplies source-to-checked-IR production, admit a source
-   protocol reference through QSL, retain its checked package, and lower that
+   protocol reference through FSL, retain its checked package, and lower that
    package through Contract IR. Supply the genuine admitted FR-330 package to
    the production CG entry. Check that CG selects exactly `body.target` in the
    same `semantic_graph.nodes`, retains the requested key
@@ -35,7 +35,7 @@ packages. The FR-322 reader owns target admission and located refusals.
    no artifact when it cannot. Inspect the production path for one package
    graph and no text-based target lookup.
 3. Rebind the source reference to a second eligible local `protocol` node and
-   independently produce a second checked and genuinely admitted QSL/IR
+   independently produce a second checked and genuinely admitted FSL/IR
    package. Retain its checked package as well. With backend and request
    position fixed, check that selected target key and
    package identity change together. An ordinary local `reference` in another
@@ -70,7 +70,7 @@ occurrences in a typed CG refusal with no artifact.
 
 Planned (IR-765). The FR-322 worked carrier supplies a public strict-reader
 positive control (step 1) and recomputed adverse reader controls (step 4) now.
-QSL-764 is required for genuine QSL/IR source-to-CG positive and changed-binding
-controls (steps 2 and 3): no current QSL/IR source producer supplies genuine
+QSL-764 is required for genuine FSL/IR source-to-CG positive and changed-binding
+controls (steps 2 and 3): no current FSL/IR source producer supplies genuine
 `protocol_reference` packages. Reader controls alone do not establish
 FR-039-AC-4 implementation coverage.

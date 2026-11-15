@@ -4,16 +4,16 @@ title: "Traceability, licensing, and qualification boundary"
 type: NFR
 quality_attribute: compliance
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-014
+  - target: ix://agent-ix/filament-contract-codegen/FR-014
     type: constrains
-  - target: ix://agent-ix/quire-contract-codegen/FR-015
+  - target: ix://agent-ix/filament-contract-codegen/FR-015
     type: constrains
 ---
 # NFR-002: Traceability, licensing, and qualification boundary
 
 ## Statement
 
-- Every generated Rust file shall have a header naming `quire-contract-codegen` and every
+- Every generated Rust file shall have a header naming `filament-contract-codegen` and every
   input-carried generation subject identity it renders, as defined in Scope.
 - Where the generation input carries a requirement, revision or clause identifier, the generated
   Rust file header shall name it.
@@ -55,7 +55,7 @@ invent them.
 
 | ID | Criteria | Verification |
 |----|----------|--------------|
-| NFR-002-AC-1 | Every generated Rust file in a family named in Scope has a header naming `quire-contract-codegen`, every input-carried subject identity it renders as defined in Scope, and every requirement, revision or clause identifier present in the generation input. | Test (TC-001) |
+| NFR-002-AC-1 | Every generated Rust file in a family named in Scope has a header naming `filament-contract-codegen`, every input-carried subject identity it renders as defined in Scope, and every requirement, revision or clause identifier present in the generation input. | Test (TC-001) |
 | NFR-002-AC-2 | Every generated Rust file carries the `MIT OR Apache-2.0` SPDX identity. | Test (TC-001) |
 | NFR-002-AC-3 | Unsupported and inconclusive states remain explicit rather than silently succeeding. | Test (TC-003) |
 | NFR-002-AC-4 | Generated output makes no project-specific validation, accreditation, certification, or release-approval claim. | Inspection |

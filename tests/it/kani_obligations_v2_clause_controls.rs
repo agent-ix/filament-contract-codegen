@@ -1,7 +1,7 @@
 //! FR-015-AC-132 and FR-015-AC-151: the controls of the V2 clause fixture
 //! `result = (amount < 1000 implies amount + 1 <= 1000)` over `amount: Int[0, 1000]`.
 //!
-//! The package is compiled from the QSL source of `Twin::with_bounded_amount_implication`; the
+//! The package is compiled from the FSL source of `Twin::with_bounded_amount_implication`; the
 //! sealed harness is what `negotiate_kani_native_obligations` generates for it. The default lane
 //! runs the exhaustive host enumeration of all 1001 values (no Kani launch), the sealed
 //! `amount_current = 999` playback and the enumeration-record checks. The `kani` lane
@@ -9,8 +9,8 @@
 //! name matches) runs the installed controls through CG's runner, the two-phase run of
 //! FR-017-AC-63.
 //!
-//! The owner mutants are made in isolated copies of the locked `quire-exact` and
-//! `quire-contract-runtime` checkouts under the scratch directory; the shared checkouts are never
+//! The owner mutants are made in isolated copies of the locked `filament-exact` and
+//! `filament-contract-runtime` checkouts under the scratch directory; the shared checkouts are never
 //! edited.
 
 use std::{
@@ -20,14 +20,14 @@ use std::{
     time::{Duration, Instant},
 };
 
-use ix_trace_rs::trace;
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     execute_kani_concrete_playback, execute_kani_obligation, negotiate_kani_native_obligations,
     KaniConcretePlayback, KaniConcretePlaybackOutcome, KaniExecutionRequest,
     KaniInconclusiveReason, KaniInstallation, KaniObligationOutcome, KaniObligationRequest,
     KaniRunOutcome, KaniV2ClauseObligationHarness, MemoryObservation, MemoryUnit, ObligationItem,
     PeakMemorySource, PeakReading, ProofCeilings,
 };
+use ix_trace_rs::trace;
 
 use super::kani_obligations_state_frame::native_twin::Twin;
 use crate::scratch_crate::{
@@ -179,19 +179,19 @@ pub(crate) struct OwnerMutation {
 }
 
 const PLUS_ONE: OwnerMutation = OwnerMutation {
-    package: "quire-exact",
+    package: "filament-exact",
     file: "src/native_integer.rs",
     original: EXACT_SITE,
     mutated: "left.0.checked_add(right.0)?.checked_add(1)",
 };
 const LEFT_ONLY: OwnerMutation = OwnerMutation {
-    package: "quire-exact",
+    package: "filament-exact",
     file: "src/native_integer.rs",
     original: EXACT_SITE,
     mutated: "Some(left.0)",
 };
 const HELPER_FALSE: OwnerMutation = OwnerMutation {
-    package: "quire-contract-runtime",
+    package: "filament-contract-runtime",
     file: "src/operators.rs",
     original: HELPER_SITE,
     mutated: "    let _ = (antecedent, consequent);\n    R::from(false)",
@@ -266,7 +266,7 @@ impl ScratchCrate {
             );
         }
         let manifest = format!(
-            "[package]\nname = \"ir1509-clause-controls\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nquire-exact = {{ git = \"https://github.com/agent-ix/quire-exact\", branch = \"main\" }}\nquire-semantic-value = {{ git = \"https://github.com/agent-ix/quire-semantic-value\", branch = \"main\" }}\n{patch}\n[workspace]\n",
+            "[package]\nname = \"ir1509-clause-controls\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nfilament-exact = {{ git = \"https://github.com/agent-ix/filament-exact\", branch = \"main\" }}\nfilament-semantic-value = {{ git = \"https://github.com/agent-ix/filament-semantic-value\", branch = \"main\" }}\n{patch}\n[workspace]\n",
             runtime_dependency(&["exact"])
         );
         write_manifest(&directory.path, &manifest);
@@ -683,7 +683,7 @@ fn kani_crate(
 }
 
 pub(crate) struct InstalledRun {
-    pub(crate) evidence: quire_contract_codegen::KaniExecutionEvidence,
+    pub(crate) evidence: filament_contract_codegen::KaniExecutionEvidence,
 }
 
 pub(crate) fn run_installed(
@@ -937,7 +937,7 @@ impl PlaybackStandIn {
         harness: &KaniV2ClauseObligationHarness,
         test_name: &str,
         appended: &str,
-    ) -> Result<KaniConcretePlaybackOutcome, quire_contract_codegen::KaniExecutionRefusal> {
+    ) -> Result<KaniConcretePlaybackOutcome, filament_contract_codegen::KaniExecutionRefusal> {
         let cancel = quire_exact::Cancel::new();
         execute_kani_concrete_playback(
             &KaniExecutionRequest {
@@ -959,7 +959,7 @@ impl PlaybackStandIn {
 #[trace("FR-017-AC-57", "FR-017-AC-59", "TC-027")]
 #[test]
 fn the_playback_entry_launches_only_for_the_sealed_artifact_with_one_appended_test() {
-    use quire_contract_codegen::KaniExecutionRefusal as Refusal;
+    use filament_contract_codegen::KaniExecutionRefusal as Refusal;
     let harness = fixture();
     let sealed = &harness.rust.contents;
     let name = "playback_999_arithmetic";
@@ -1380,7 +1380,7 @@ fn tc_036_real_kani_runner_falsifies_an_out_of_domain_produced_result() {
     assert_eq!(failed, 1, "only the domain assertion fails");
 }
 
-/// The QSL precondition `other > 1000` over the `Int[0, 1000]` parameter `other` cannot hold on
+/// The FSL precondition `other > 1000` over the `Int[0, 1000]` parameter `other` cannot hold on
 /// any admitted input, so the installed proof ends with its final cover unsatisfied, neither
 /// resource exhaustion nor a vacuous `Verified`.
 #[trace("FR-015-AC-126", "FR-017-AC-63", "TC-025")]
@@ -1434,7 +1434,7 @@ fn the_matrix_status_of_the_enumeration_rows_says_enumeration_evidence_without_p
 #[test]
 #[ignore = "kani lane: run serially through `make kani`"]
 fn tc_070_real_kani_runs_the_clause_the_table_lets_through_and_refuses_the_measured_bad_multiply() {
-    use quire_contract_codegen::{
+    use filament_contract_codegen::{
         negotiate_kani_obligations_with_options, GenerationOptions, IntegerRoute,
         GENERATOR_VERSION, KERNEL_VERSION,
     };
@@ -1443,7 +1443,7 @@ fn tc_070_real_kani_runs_the_clause_the_table_lets_through_and_refuses_the_measu
     fs::write(
         &table,
         serde_json::to_vec(&[serde_json::json!({
-            "operation_ids": ["quire.op.integer.mul"],
+            "operation_ids": ["filament.op.integer.mul"],
             "route": "general",
             "max_operand_bits": 21,
             "collection_bound": null,
@@ -1493,8 +1493,8 @@ fn tc_070_real_kani_runs_the_clause_the_table_lets_through_and_refuses_the_measu
     let refused = negotiate(&package, &clause, IntegerRoute::General);
     assert!(matches!(
         &refused.records()[0].disposition,
-        quire_contract_codegen::ObligationDisposition::Unsupported {
-            reason: quire_contract_codegen::UnsupportedObligation::V2ClauseNotTractable { .. }
+        filament_contract_codegen::ObligationDisposition::Unsupported {
+            reason: filament_contract_codegen::UnsupportedObligation::V2ClauseNotTractable { .. }
         }
     ));
     let KaniObligationOutcome::Emitted {
@@ -1516,7 +1516,7 @@ fn tc_070_real_kani_runs_the_clause_the_table_lets_through_and_refuses_the_measu
     .emitted_package("TwoParameters");
     assert!(matches!(
         &negotiate(&narrow, &narrow_clause, IntegerRoute::General).records()[0].disposition,
-        quire_contract_codegen::ObligationDisposition::Supported { .. }
+        filament_contract_codegen::ObligationDisposition::Supported { .. }
     ));
 
     // The clause the table lets through runs under installed Kani to an executed verdict.

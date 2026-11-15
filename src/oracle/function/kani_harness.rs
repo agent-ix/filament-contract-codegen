@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! FR-021-AC-44 and AC-46: the Kani-harness entry (IR-1244).
 //!
-//! The strict reader, QSL's acquisition and callable selection run here, on the host, over the
+//! The strict reader, FSL's acquisition and callable selection run here, on the host, over the
 //! unit's retained bytes. Their outputs are emitted as literal descriptors; the emitted crate's
 //! `cfg(kani)` items rebuild the prepared function from them with the genuine constructors and
-//! run the generated body, so the proof never links the reader or the QSL compiler.
+//! run the generated body, so the proof never links the reader or the FSL compiler.
 
 use qsl_replay::NominalDeclaration;
 use quire_contract_model::{
@@ -60,19 +60,19 @@ enum SelectedBody {
 
 fn scalar_operator(identity: &str) -> Option<BinaryIntegerOperator> {
     match identity {
-        "quire.op.integer.add" => Some(BinaryIntegerOperator::Add),
-        "quire.op.integer.sub" => Some(BinaryIntegerOperator::Subtract),
-        "quire.op.integer.mul" => Some(BinaryIntegerOperator::Multiply),
+        "filament.op.integer.add" => Some(BinaryIntegerOperator::Add),
+        "filament.op.integer.sub" => Some(BinaryIntegerOperator::Subtract),
+        "filament.op.integer.mul" => Some(BinaryIntegerOperator::Multiply),
         _ => None,
     }
 }
 
 fn equality_operator(identity: &str) -> Option<EqualityOperatorKind> {
     match identity {
-        "quire.op.integer.eq" | "quire.op.boolean.eq" | "quire.op.structural.eq" => {
+        "filament.op.integer.eq" | "filament.op.boolean.eq" | "filament.op.structural.eq" => {
             Some(EqualityOperatorKind::Equal)
         }
-        "quire.op.integer.ne" | "quire.op.boolean.ne" | "quire.op.structural.ne" => {
+        "filament.op.integer.ne" | "filament.op.boolean.ne" | "filament.op.structural.ne" => {
             Some(EqualityOperatorKind::NotEqual)
         }
         _ => None,

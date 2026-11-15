@@ -13,14 +13,14 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 
+use filament_contract_codegen::{
+    checked_composite_declarations, checked_function_declarations, generate_kani_function_harness,
+    select_checked_callable, CheckedFunctionResources, CheckedFunctionSource, KaniFunctionRequest,
+};
 use ix_trace_rs::trace;
 use qsl_replay::{
     acquire_checked_closure, CompileUnit, DependencyInput, ReplayLimits, SourceIdentity,
     StageLimits,
-};
-use quire_contract_codegen::{
-    checked_composite_declarations, checked_function_declarations, generate_kani_function_harness,
-    select_checked_callable, CheckedFunctionResources, CheckedFunctionSource, KaniFunctionRequest,
 };
 use quire_contract_model::{
     CheckedNodeId, CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
@@ -29,13 +29,13 @@ use quire_contract_model::{
 
 const SAME: &str = concat!(
     "language \"ix:native\" edition \"1-draft\";\n",
-    "profile v = \"quire.value.complete/v1\";\n",
+    "profile v = \"filament.value.complete/v1\";\n",
     "function same using v(left: Int[0, 0], right: Int[0, 0]): Boolean pure { left = right }\n",
 );
 
 const COMPOSITE: &str = concat!(
     "language \"ix:native\" edition \"1-draft\";\n",
-    "profile v = \"quire.value.complete/v1\";\n",
+    "profile v = \"filament.value.complete/v1\";\n",
     "tuple Pair(Boolean, Integer);\n",
     "union Choice { Empty, Some(Pair) }\n",
     "record Holder { pair: Pair; shape: Choice; flag: Boolean?; }\n",
@@ -55,7 +55,7 @@ mod kani {
 
 const SECOND: &str = concat!(
     "language \"ix:native\" edition \"1-draft\";\n",
-    "profile v = \"quire.value.complete/v1\";\n",
+    "profile v = \"filament.value.complete/v1\";\n",
     "function alpha using v(left: Int[0, 0], right: Int[0, 0]): Boolean pure { left = right }\n",
     "function beta using v(left: Int[0, 0], right: Int[0, 0]): Boolean pure { left = right }\n",
 );
@@ -86,11 +86,11 @@ fn host_prepared(
     .expect("genuine checked source");
     let bytes = compiled.package().bytes().to_vec();
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     let CheckedPackageV2ReadResult::Admitted(package) =
         CheckedPackageV2::read(&bytes, CheckedPackageReadLimits::bounded(), &evidence)
     else {
-        panic!("Contract IR admits the QSL emission");
+        panic!("Contract IR admits the FSL emission");
     };
     let function = package
         .resolved_graph()
@@ -189,15 +189,15 @@ fn run_probe(label: &str, source: &str, name: &str, probe: &str) -> (String, Str
             let manifest = artifact.contents.replacen(
                 &format!(
                     "name = \"{}\"",
-                    quire_contract_codegen::EXACT_FUNCTION_CRATE_NAME
+                    filament_contract_codegen::EXACT_FUNCTION_CRATE_NAME
                 ),
                 &format!("name = \"{label}\""),
                 1,
             );
             manifest.replace(
-                "quire-contract-codegen = { git = \"https://github.com/agent-ix/quire-contract-codegen\", branch = \"main\" }",
+                "filament-contract-codegen = { git = \"https://github.com/agent-ix/filament-contract-codegen\", branch = \"main\" }",
                 &format!(
-                    "quire-contract-codegen = {{ path = {:?} }}",
+                    "filament-contract-codegen = {{ path = {:?} }}",
                     env!("CARGO_MANIFEST_DIR")
                 ),
             )

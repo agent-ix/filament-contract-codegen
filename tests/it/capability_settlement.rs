@@ -2,18 +2,18 @@
 //!
 //! Each test walks one row of FR-290's ordered rules.
 
-use ix_trace_rs::trace;
-use qsl_replay::{
-    compile_package, DependencyInput, DomainKey, DomainKind, FiniteBound, Integer, NodeKey,
-    ProofBound, ReplayLimits, SourceIdentity, StageLimits,
-};
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     negotiate_backend_provider, routed_contract_lowering_profile, BackendDescriptor, BackendKind,
     BackendProviderEnvelope, Candidate, Candidates, CapabilityKind, Cause,
     ContractDriverResultSelection, ContractRequestPosition, Disposition, EnvelopeRefusal,
     ExtentClassification, ExtentDomain, InvalidObligationItem, ItemSettlement, KaniForm, Mode,
     ProviderOrigin, RequestItem, RequestedKind, UnsupportedObligation, BACKEND_PROVIDER_CONTRACT,
     CAPABILITY_VOCABULARY,
+};
+use ix_trace_rs::trace;
+use qsl_replay::{
+    compile_package, DependencyInput, DomainKey, DomainKind, FiniteBound, Integer, NodeKey,
+    ProofBound, ReplayLimits, SourceIdentity, StageLimits,
 };
 use quire_contract_model::{
     CheckedNodeId, CheckedOccurrenceRole, CheckedPackageEvidence, CheckedPackageReadLimits,
@@ -73,7 +73,7 @@ fn reader_refusal_projection_preserves_every_public_field() {
     let ContractPackageReadResult::Refused(refusal) = reader else {
         panic!("malformed contract package must be refused: {reader:?}");
     };
-    let projected = quire_contract_codegen::project_contract_package_refusal(&refusal);
+    let projected = filament_contract_codegen::project_contract_package_refusal(&refusal);
     let wire = serde_json::to_value(EnvelopeRefusal::ContractPackageReadRefused {
         refusal: projected.clone(),
     })
@@ -127,7 +127,7 @@ fn named_refusal_adapter_preserves_unknown_version() {
     let ContractPackageReadResult::Refused(refusal) = reader else {
         panic!("unknown version must refuse: {reader:?}");
     };
-    let projected = quire_contract_codegen::project_contract_package_refusal(&refusal);
+    let projected = filament_contract_codegen::project_contract_package_refusal(&refusal);
     assert_eq!(projected.contract_version.as_deref(), Some("unknown"));
 }
 
@@ -139,7 +139,7 @@ fn refusal_adapter_preserves_selected_document_pointer() {
     let wire = source_bound_call_package().wire();
     let (_, resolved, _) = PackageBuilder::from_wire(wire).read_resolved();
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     // The selected document is the fixture's complete model (the reader resolves its imports
     // from it) with one integer past 2^53.
     let mut selected = exact_function_fixture::reference_model_document();
@@ -164,7 +164,7 @@ fn refusal_adapter_preserves_selected_document_pointer() {
         refusal.document_pointer.as_ref().map(JsonPointer::as_str),
         Some("/package/count")
     );
-    let projected = quire_contract_codegen::project_contract_package_refusal(&refusal);
+    let projected = filament_contract_codegen::project_contract_package_refusal(&refusal);
     assert_eq!(
         projected.document_pointer.as_deref(),
         Some("/package/count")
@@ -190,7 +190,7 @@ fn refusal_adapter_preserves_reader_node_locus() {
         panic!("duplicate function name must refuse: {reader:?}");
     };
     assert!(refusal.locus.is_some(), "reader must locate the node");
-    let projected = quire_contract_codegen::project_contract_package_refusal(&refusal);
+    let projected = filament_contract_codegen::project_contract_package_refusal(&refusal);
     assert_eq!(projected.locus, refusal.locus);
 }
 
@@ -214,7 +214,7 @@ fn incomplete_adapter_preserves_present_count_limit_path() {
         panic!("node ceiling must be incomplete: {reader:?}");
     };
     assert!(incomplete.path.is_some());
-    let projected = quire_contract_codegen::project_contract_package_incomplete(&incomplete);
+    let projected = filament_contract_codegen::project_contract_package_incomplete(&incomplete);
     assert_eq!(
         projected.path.as_deref(),
         incomplete.path.as_ref().map(JsonPointer::as_str)
@@ -230,7 +230,7 @@ fn reader_incomplete_projection_preserves_the_exhausted_limit() {
     let ContractPackageReadResult::Incomplete(incomplete) = reader else {
         panic!("byte ceiling must be incomplete: {reader:?}");
     };
-    let projected = quire_contract_codegen::project_contract_package_incomplete(&incomplete);
+    let projected = filament_contract_codegen::project_contract_package_incomplete(&incomplete);
     let wire = serde_json::to_value(EnvelopeRefusal::ContractPackageReadIncomplete {
         incomplete: projected,
     })
@@ -421,7 +421,7 @@ fn genuine_function_backend_refusals_stay_item_level() {
                     backend,
                     ..
                 }
-            } if operation_identity == "quire.op.function.call" && backend == "kani"
+            } if operation_identity == "filament.op.function.call" && backend == "kani"
         ),
         "structural should retain item-level OperationNotRendered: {settled:?}"
     );
@@ -488,7 +488,7 @@ fn item(kind: RequestedKind, candidates: Candidates) -> RequestItem {
         extent: bounded(),
         named_backend: None,
         candidates,
-        kani_form: integer_scalar("quire.op.integer.add"),
+        kani_form: integer_scalar("filament.op.integer.add"),
     }
 }
 
@@ -502,7 +502,7 @@ fn selected_scalar_form(package: CheckedPackageV2, node_id: CheckedNodeId) -> Ka
         .nodes
         .iter()
         .find(|node| {
-            checked_operation_identity(&node.body) == Some("quire.op.numeric.narrow")
+            checked_operation_identity(&node.body) == Some("filament.op.numeric.narrow")
                 && matches!(&node.body, CheckedTerm::Application { arguments, .. }
                     if matches!(arguments.first(), Some(CheckedTerm::Reference { target }) if target == &node_id))
         })
@@ -566,9 +566,9 @@ fn selected_scalar_form(package: CheckedPackageV2, node_id: CheckedNodeId) -> Ka
 }
 
 fn integer_scalar(operation_identity: &str) -> KaniForm {
-    if operation_identity == "quire.op.integer.add" {
+    if operation_identity == "filament.op.integer.add" {
         let source = "language \"ix:native\" edition \"1-draft\";\n\
-             profile v = \"quire.value.complete/v1\";\n\
+             profile v = \"filament.value.complete/v1\";\n\
              function f using v(a: Int[0, 9]): Int[0, 18] pure { a + a }\n";
         let compiled = compile_package(
             qsl_replay::CompileUnit {
@@ -582,23 +582,23 @@ fn integer_scalar(operation_identity: &str) -> KaniForm {
             StageLimits::default(),
             ReplayLimits::default(),
         )
-        .expect("QSL emits bounded integer add");
+        .expect("FSL emits bounded integer add");
         let mut evidence = CheckedPackageEvidence::new();
-        evidence.support_feature("quire.value.complete/v1");
+        evidence.support_feature("filament.value.complete/v1");
         let package = match CheckedPackageV2::read(
             compiled.bytes(),
             CheckedPackageReadLimits::bounded(),
             &evidence,
         ) {
             CheckedPackageV2ReadResult::Admitted(package) => *package,
-            other => panic!("IR admits QSL add: {other:?}"),
+            other => panic!("IR admits FSL add: {other:?}"),
         };
         let node_id = package
             .resolved_graph()
             .nodes
             .iter()
             .find(|node| checked_operation_identity(&node.body) == Some(operation_identity))
-            .expect("QSL add node")
+            .expect("FSL add node")
             .node_id
             .clone();
         return selected_scalar_form(package, node_id);
@@ -685,20 +685,23 @@ fn kani_supported_bounded_request_keeps_exact_proof_bound_input() {
         .resolved_graph()
         .nodes
         .iter()
-        .find(|node| checked_operation_identity(&node.body) == Some("quire.op.integer.add"))
+        .find(|node| checked_operation_identity(&node.body) == Some("filament.op.integer.add"))
         .expect("checked source carries integer addition")
         .node_id
         .clone();
-    let scalar_item =
-        quire_contract_codegen::derive_exact_scalar_items(&package, std::slice::from_ref(&node_id))
-            .into_iter()
-            .next()
-            .expect("one source item")
-            .expect("integer addition has a checked scalar plan");
-    let generated = quire_contract_codegen::generate_exact_scalar_oracles(&package, &[scalar_item])
-        .expect("checked scalar artifacts render");
+    let scalar_item = filament_contract_codegen::derive_exact_scalar_items(
+        &package,
+        std::slice::from_ref(&node_id),
+    )
+    .into_iter()
+    .next()
+    .expect("one source item")
+    .expect("integer addition has a checked scalar plan");
+    let generated =
+        filament_contract_codegen::generate_exact_scalar_oracles(&package, &[scalar_item])
+            .expect("checked scalar artifacts render");
     let claim = match &generated.claim_map.items[0].result {
-        quire_contract_codegen::ClaimDisposition::Generated(claim) => claim,
+        filament_contract_codegen::ClaimDisposition::Generated(claim) => claim,
         other => panic!("integer addition plan was not generated: {other:?}"),
     };
     let checked_bound = claim
@@ -737,7 +740,7 @@ fn kani_supported_bounded_request_keeps_exact_proof_bound_input() {
         }],
         bounds: vec![source_bound.clone()],
     });
-    request.kani_form = integer_scalar("quire.op.integer.add");
+    request.kani_form = integer_scalar("filament.op.integer.add");
     let envelope = envelope(
         vec![kani(vec![(CapabilityKind::ValueValidity, Mode::Bounded)])],
         vec![request],
@@ -793,7 +796,7 @@ fn kani_bounded_settlements_correlate_each_request_bound_by_index() {
                 RequestedKind::Known(CapabilityKind::ValueValidity),
                 Candidates::Set(vec![candidate(BackendKind::Kani.identity())]),
             );
-            request.kani_form = integer_scalar("quire.op.integer.add");
+            request.kani_form = integer_scalar("filament.op.integer.add");
             request.extent.as_mut().unwrap().bounds = vec![bound.clone()];
             request
         })
@@ -841,18 +844,16 @@ fn process_kind_uses_origin_manifest_modes_and_explicit_bound_kinds() {
     let backend = process("kani", &[Mode::Bounded], &[DomainKind::Integer]);
     assert_eq!(
         BackendKind::from_descriptor(&backend),
-        Some(BackendKind::Process(quire_contract_codegen::BackendId(
+        Some(BackendKind::Process(filament_contract_codegen::BackendId(
             "kani".to_owned()
         )))
     );
-    assert!(
-        !BackendKind::ALL.contains(&BackendKind::Process(quire_contract_codegen::BackendId(
-            "kani".to_owned()
-        )))
-    );
+    assert!(!BackendKind::ALL.contains(&BackendKind::Process(
+        filament_contract_codegen::BackendId("kani".to_owned())
+    )));
     assert_eq!(BackendKind::Kani.index(), 0);
     assert_eq!(
-        BackendKind::Process(quire_contract_codegen::BackendId("kani".to_owned())).index(),
+        BackendKind::Process(filament_contract_codegen::BackendId("kani".to_owned())).index(),
         1
     );
     let mut request = item(
@@ -1821,7 +1822,7 @@ fn kani_form_preflight_gates_support_and_preserves_extent_rules() {
         RequestedKind::Known(CapabilityKind::ValueValidity),
         candidates,
     );
-    request.kani_form = integer_scalar("quire.op.integer.add");
+    request.kani_form = integer_scalar("filament.op.integer.add");
     assert_eq!(
         settle_one(
             vec![kani(vec![(CapabilityKind::ValueValidity, Mode::Bounded)])],
@@ -1847,7 +1848,7 @@ fn kani_form_preflight_gates_support_and_preserves_extent_rules() {
         "an admitted unbounded form follows the finite-bound path"
     );
 
-    request.kani_form = integer_scalar("quire.op.integer.div");
+    request.kani_form = integer_scalar("filament.op.integer.div");
     let refused = settle_one(
         vec![kani(vec![(CapabilityKind::ValueValidity, Mode::Unbounded)])],
         request,
@@ -1896,7 +1897,7 @@ fn a_selected_quantity_conversion_settles_as_operation_not_rendered() {
                     backend: refusing,
                     ..
                 }
-            } if operation_identity == "quire.op.quantity.convert" && *refusing == backend
+            } if operation_identity == "filament.op.quantity.convert" && *refusing == backend
         ),
         "{:?}",
         settled.disposition
@@ -1908,7 +1909,7 @@ fn a_selected_quantity_conversion_settles_as_operation_not_rendered() {
 #[trace("FR-019-AC-44", "TC-030")]
 #[test]
 fn selected_scalar_context_refusal_keeps_validation_precedence() {
-    let mut form = integer_scalar("quire.op.integer.add");
+    let mut form = integer_scalar("filament.op.integer.add");
     let KaniForm::V2ScalarClaim { positions, .. } = &mut form else {
         unreachable!("bounded add is a selected scalar")
     };
@@ -2029,11 +2030,11 @@ fn kani_source_call_preflight_binds_callee_and_ordered_arguments() {
         } => {
             assert_eq!(
                 form.form,
-                quire_contract_codegen::KaniFormName::V2FunctionApplication
+                filament_contract_codegen::KaniFormName::V2FunctionApplication
             );
             assert_eq!(
                 form.family,
-                quire_contract_codegen::KaniFormFamily::FunctionApplication
+                filament_contract_codegen::KaniFormFamily::FunctionApplication
             );
             assert_eq!(
                 serde_json::to_value(form).unwrap()["form"],
@@ -2056,7 +2057,7 @@ fn kani_source_call_preflight_binds_callee_and_ordered_arguments() {
 }
 
 fn source_derived_division_refusal() -> UnsupportedObligation {
-    use quire_contract_codegen::{
+    use filament_contract_codegen::{
         negotiate_kani_obligations, KaniObligationOutcome, KaniObligationRequest,
         ObligationDisposition, ObligationItem,
     };
@@ -2067,21 +2068,23 @@ fn source_derived_division_refusal() -> UnsupportedObligation {
         .resolved_graph()
         .nodes
         .iter()
-        .find(|node| checked_operation_identity(&node.body) == Some("quire.op.integer.div"))
+        .find(|node| checked_operation_identity(&node.body) == Some("filament.op.integer.div"))
         .expect("checked scalar fixture carries integer division")
         .node_id
         .clone();
-    let item =
-        quire_contract_codegen::derive_exact_scalar_items(&package, std::slice::from_ref(&node_id))
-            .into_iter()
-            .next()
-            .expect("one requested node is derived")
-            .expect("integer division has a source-derived descriptor");
-    let claim_map = quire_contract_codegen::generate_exact_scalar_oracles(&package, &[item])
+    let item = filament_contract_codegen::derive_exact_scalar_items(
+        &package,
+        std::slice::from_ref(&node_id),
+    )
+    .into_iter()
+    .next()
+    .expect("one requested node is derived")
+    .expect("integer division has a source-derived descriptor");
+    let claim_map = filament_contract_codegen::generate_exact_scalar_oracles(&package, &[item])
         .expect("source-derived division plan renders")
         .claim_map;
     let generated = match &claim_map.items[0].result {
-        quire_contract_codegen::ClaimDisposition::Generated(generated) => generated,
+        filament_contract_codegen::ClaimDisposition::Generated(generated) => generated,
         other => panic!("derived integer division must generate its upstream oracle: {other:?}"),
     };
     let checked_bound = generated
@@ -2092,7 +2095,7 @@ fn source_derived_division_refusal() -> UnsupportedObligation {
         &package,
         std::slice::from_ref(&node_id),
     );
-    let result_selection = quire_contract_codegen::ContractDriverResultSelection::NotApplicable;
+    let result_selection = filament_contract_codegen::ContractDriverResultSelection::NotApplicable;
     let items = [ObligationItem::ScalarClaim {
         path_condition: &[],
         requirement_occurrence: None,
@@ -2129,7 +2132,7 @@ fn source_derived_division_refusal() -> UnsupportedObligation {
                     assert!(
                         derived_domains.iter().any(|domain| matches!(
                             domain,
-                            quire_contract_codegen::DerivedDomain::IntegerRange {
+                            filament_contract_codegen::DerivedDomain::IntegerRange {
                                 bound,
                                 lower,
                                 upper,
@@ -2173,7 +2176,7 @@ fn kani_selected_division_preserves_exact_renderer_refusal() {
 
     const DIVISION: u32 = 9_301_101;
     const DIVISION_NARROW: u32 = 9_301_102;
-    let mut builder = package::qsl_shaped_package();
+    let mut builder = package::fsl_shaped_package();
     let integer = package::key(package::T_INTEGER);
     let division_law =
         package::integer_division_definition(quire_exact::DivisionProfile::Truncating);
@@ -2186,15 +2189,15 @@ fn kani_selected_division_preserves_exact_renderer_refusal() {
         package::application(
             "binary",
             package::op_full(
-                "quire.op.integer.div",
+                "filament.op.integer.div",
                 vec![package::law("integer_division", division_law)],
                 None,
                 None,
             ),
             &integer,
             vec![
-                package::reference(&package::key(package::QSL_PARAM_X)),
-                package::reference(&package::key(package::QSL_LITERAL_TWO)),
+                package::reference(&package::key(package::FSL_PARAM_X)),
+                package::reference(&package::key(package::FSL_LITERAL_TWO)),
             ],
         ),
         &[],
@@ -2263,7 +2266,7 @@ fn kani_selected_division_preserves_exact_renderer_refusal() {
     };
     assert_eq!(
         identity.family,
-        quire_contract_codegen::KaniFormFamily::Integer
+        filament_contract_codegen::KaniFormFamily::Integer
     );
     assert_eq!(backend, BackendKind::Kani.identity());
     assert!(
@@ -2272,10 +2275,10 @@ fn kani_selected_division_preserves_exact_renderer_refusal() {
             UnsupportedObligation::OperationNotRendered {
                 operation_identity,
                 derived_domains,
-            } if operation_identity == "quire.op.integer.div"
+            } if operation_identity == "filament.op.integer.div"
                 && derived_domains.iter().any(|domain| matches!(
                     domain,
-                    quire_contract_codegen::DerivedDomain::IntegerRange {
+                    filament_contract_codegen::DerivedDomain::IntegerRange {
                         lower,
                         upper,
                         ..
@@ -2287,7 +2290,7 @@ fn kani_selected_division_preserves_exact_renderer_refusal() {
 
     let requirements = crate::common::requirements::project(&plain_source, positions);
     let records = crate::common::requirements::records(&requirements);
-    let routed = quire_contract_codegen::RoutedGenerationItem::from_descriptor(
+    let routed = filament_contract_codegen::RoutedGenerationItem::from_descriptor(
         0,
         node_id.clone(),
         candidate(BackendKind::Kani.identity()),
@@ -2297,13 +2300,13 @@ fn kani_selected_division_preserves_exact_renderer_refusal() {
     .with_scalar_selection(contract, result_selection.clone())
     .with_requirement(requirements[&0].clone());
     let plain_route = routed.clone();
-    let generated = quire_contract_codegen::generate_routed(
+    let generated = filament_contract_codegen::generate_routed(
         &plain_source,
         contract,
         positions,
         &[routed],
-        &quire_contract_codegen::GenerationContexts {
-            kani: Some(quire_contract_codegen::KaniGenerationContext {
+        &filament_contract_codegen::GenerationContexts {
+            kani: Some(filament_contract_codegen::KaniGenerationContext {
                 ceilings: crate::common::proof_ceilings::proof_ceilings(),
                 subject_path: "crate::subject",
                 unwind: 4,
@@ -2323,21 +2326,22 @@ fn kani_selected_division_preserves_exact_renderer_refusal() {
         .expect("selected division claim");
     assert_eq!(
         claim.operation.provenance,
-        quire_contract_codegen::OperationProvenance::IrConfirmed
+        filament_contract_codegen::OperationProvenance::IrConfirmed
     );
-    let quire_contract_codegen::ClaimDisposition::Generated(oracle) = &claim.result else {
+    let filament_contract_codegen::ClaimDisposition::Generated(oracle) = &claim.result else {
         panic!("source-backed division must generate its oracle: {claim:?}");
     };
     assert!(oracle
         .oracle_source
         .contains("rt::DivisionProfile::Truncating"));
-    let quire_contract_codegen::KindOutput::Kani { record, harness } = &generated.items[0].output
+    let filament_contract_codegen::KindOutput::Kani { record, harness } =
+        &generated.items[0].output
     else {
         panic!("selected division must reach the Kani arm")
     };
     assert_eq!(
         record.disposition,
-        quire_contract_codegen::ObligationDisposition::Unsupported { reason: refusal }
+        filament_contract_codegen::ObligationDisposition::Unsupported { reason: refusal }
     );
     assert!(harness.is_none(), "refused division emits no Kani harness");
 
@@ -2356,13 +2360,13 @@ fn kani_selected_division_preserves_exact_renderer_refusal() {
     };
     let plain_route = plain_route.with_scalar_selection(&plain, result_selection.clone());
     assert!(matches!(
-        quire_contract_codegen::generate_routed(
+        filament_contract_codegen::generate_routed(
             &plain_source,
             &plain,
             positions,
             &[plain_route],
-            &quire_contract_codegen::GenerationContexts {
-                kani: Some(quire_contract_codegen::KaniGenerationContext {
+            &filament_contract_codegen::GenerationContexts {
+                kani: Some(filament_contract_codegen::KaniGenerationContext {
                     ceilings: crate::common::proof_ceilings::proof_ceilings(),
                     subject_path: "crate::subject",
                     unwind: 4,
@@ -2370,7 +2374,7 @@ fn kani_selected_division_preserves_exact_renderer_refusal() {
                 }),
             },
         ),
-        Err(quire_contract_codegen::RoutedGenerationError::UnauthenticatedOperationView {
+        Err(filament_contract_codegen::RoutedGenerationError::UnauthenticatedOperationView {
             request_index: 0,
             node_id: refused,
         }) if refused == *node_id
@@ -2379,7 +2383,7 @@ fn kani_selected_division_preserves_exact_renderer_refusal() {
 
 fn v2_state_frame_form(
     fixture: crate::kani_obligations_state_frame::Fixture,
-    role: quire_contract_codegen::KaniObligationRole,
+    role: filament_contract_codegen::KaniObligationRole,
 ) -> KaniForm {
     KaniForm::V2StateFrame {
         package: std::sync::Arc::new(fixture.package),
@@ -2398,7 +2402,7 @@ fn v2_state_frame_form(
 #[trace("FR-019-AC-25", "FR-019-AC-26", "FR-019-AC-33")]
 #[test]
 fn kani_state_frame_planned_selectors_keep_the_exact_fr015_refusal() {
-    use quire_contract_codegen::{KaniObligationRole, StateFrameRefusal};
+    use filament_contract_codegen::{KaniObligationRole, StateFrameRefusal};
 
     let candidates = Candidates::Set(vec![candidate(BackendKind::Kani.identity())]);
     let backend = BackendKind::Kani.identity().to_owned();
@@ -2498,7 +2502,7 @@ fn kani_state_frame_planned_selectors_keep_the_exact_fr015_refusal() {
 #[trace("FR-019-AC-25", "FR-019-AC-27", "FR-019-AC-30", "FR-019-AC-33")]
 #[test]
 fn kani_state_frame_refusal_identity_keeps_operation_and_contract_frame_role() {
-    use quire_contract_codegen::{KaniObligationRole, KaniStateFrameRole, StateFrameRefusal};
+    use filament_contract_codegen::{KaniObligationRole, KaniStateFrameRole, StateFrameRefusal};
 
     let backend = BackendKind::Kani.identity().to_owned();
     let candidates = Candidates::Set(vec![candidate(&backend)]);
@@ -2571,7 +2575,7 @@ fn kani_state_frame_refusal_identity_keeps_operation_and_contract_frame_role() {
 #[trace("FR-019-AC-44", "TC-030")]
 #[test]
 fn kani_routed_preflight_requires_selected_result_occurrences() {
-    use quire_contract_codegen::{
+    use filament_contract_codegen::{
         negotiate_kani_obligations, KaniObligationOutcome, KaniObligationRequest, ObligationItem,
     };
     use std::time::Duration;
@@ -2584,16 +2588,16 @@ fn kani_routed_preflight_requires_selected_result_occurrences() {
         .filter(|node| &*node.node_tag == "expression")
         .map(|node| node.node_id.clone())
         .collect::<Vec<_>>();
-    let derived = quire_contract_codegen::derive_exact_scalar_items(&package, &node_ids);
+    let derived = filament_contract_codegen::derive_exact_scalar_items(&package, &node_ids);
     let derivable = derived
         .into_iter()
         .filter_map(Result::ok)
         .collect::<Vec<_>>();
-    let claim_map = quire_contract_codegen::generate_exact_scalar_oracles(&package, &derivable)
+    let claim_map = filament_contract_codegen::generate_exact_scalar_oracles(&package, &derivable)
         .expect("source-derived scalar plan renders")
         .claim_map;
     let contract = exact_function_fixture::admitted_function_contract(&package, &node_ids);
-    let result_selection = quire_contract_codegen::ContractDriverResultSelection::NotApplicable;
+    let result_selection = filament_contract_codegen::ContractDriverResultSelection::NotApplicable;
     let kani_items = claim_map
         .items
         .iter()
@@ -2657,21 +2661,21 @@ fn kani_routed_preflight_requires_selected_result_occurrences() {
 #[trace("FR-019-AC-44", "TC-030")]
 #[test]
 fn kani_scalar_family_selectors_require_selected_result() {
-    use quire_contract_codegen::KaniFormFamily;
+    use filament_contract_codegen::KaniFormFamily;
 
     let (package, claim_map, _) = crate::kani_obligations::scalar_package();
     let selectors = [
-        ("quire.op.integer.div", KaniFormFamily::Integer, false),
-        ("quire.op.rational.add", KaniFormFamily::Rational, false),
-        ("quire.op.decimal.add", KaniFormFamily::Decimal, false),
+        ("filament.op.integer.div", KaniFormFamily::Integer, false),
+        ("filament.op.rational.add", KaniFormFamily::Rational, false),
+        ("filament.op.decimal.add", KaniFormFamily::Decimal, false),
         (
-            "quire.op.ieee.float32.add",
+            "filament.op.ieee.float32.add",
             KaniFormFamily::IeeeFloat,
             false,
         ),
-        ("quire.op.text.eq", KaniFormFamily::Text, false),
-        ("quire.op.enum.eq", KaniFormFamily::Enum, false),
-        ("quire.op.quantity.add", KaniFormFamily::Quantity, false),
+        ("filament.op.text.eq", KaniFormFamily::Text, false),
+        ("filament.op.enum.eq", KaniFormFamily::Enum, false),
+        ("filament.op.quantity.add", KaniFormFamily::Quantity, false),
     ];
     for (operation, expected_family, _) in selectors {
         let source_claim = claim_map
@@ -2722,8 +2726,8 @@ fn kani_boolean_operator_selector_requires_selected_result() {
         settled.disposition,
         Disposition::InvalidRequest {
             cause: Cause::KaniFormInvalid {
-                form: quire_contract_codegen::KaniFormIdentity {
-                    family: quire_contract_codegen::KaniFormFamily::Boolean,
+                form: filament_contract_codegen::KaniFormIdentity {
+                    family: filament_contract_codegen::KaniFormFamily::Boolean,
                     ..
                 },
                 refusal: InvalidObligationItem::ScalarResultMissing,
@@ -2800,7 +2804,7 @@ fn kani_scalar_path_requires_selected_result_for_nonderivable_nodes() {
     );
     assert_eq!(
         form.role,
-        Some(quire_contract_codegen::KaniObligationRole::Postcondition)
+        Some(filament_contract_codegen::KaniObligationRole::Postcondition)
     );
 }
 
@@ -2826,7 +2830,7 @@ fn kani_form_refusal_keeps_candidate_and_mode_precedence() {
         }
     ));
 
-    let in_set = integer_scalar("quire.op.integer.add");
+    let in_set = integer_scalar("filament.op.integer.add");
     let KaniForm::V2ScalarClaim {
         package, node_id, ..
     } = in_set
@@ -2901,8 +2905,8 @@ fn kani_form_refusal_keeps_candidate_and_mode_precedence() {
 #[test]
 fn kani_form_identity_does_not_depend_on_display_or_debug_text() {
     for form in [
-        integer_scalar("quire.op.integer.add"),
-        integer_scalar("quire.op.rational.add"),
+        integer_scalar("filament.op.integer.add"),
+        integer_scalar("filament.op.rational.add"),
     ] {
         let renderings = [
             ("display label A", "debug label A"),
@@ -2933,12 +2937,12 @@ fn kani_form_identity_does_not_depend_on_display_or_debug_text() {
 fn tc_030_a_foreign_capability_vocabulary_refuses_the_carrier() {
     for supplied in [
         "",
-        "quire.capability-kind/v2",
-        "quire.capability-kind/v1 ",
-        "QUIRE.CAPABILITY-KIND/V1",
-        "quire.capability-kind/v10",
-        "quire.capability-kind/v1.0",
-        "quire.capability-kind/",
+        "filament.capability-kind/v2",
+        "filament.capability-kind/v1 ",
+        "FILAMENT.CAPABILITY-KIND/V1",
+        "filament.capability-kind/v10",
+        "filament.capability-kind/v1.0",
+        "filament.capability-kind/",
     ] {
         let refusal = negotiate_backend_provider(&BackendProviderEnvelope {
             capability_vocabulary: supplied.to_owned(),
@@ -3095,7 +3099,7 @@ fn tc_030_each_census_holds_every_variant_of_its_kind() {
 #[test]
 fn tc_030_a_foreign_contract_version_refuses_the_carrier_and_names_the_member() {
     let refusal = negotiate_backend_provider(&BackendProviderEnvelope {
-        contract_version: "quire.backend-provider/v2".to_owned(),
+        contract_version: "filament.backend-provider/v2".to_owned(),
         capability_vocabulary: String::new(),
         ..envelope(
             vec![kani(vec![(CapabilityKind::ValueValidity, Mode::Bounded)])],
@@ -3111,7 +3115,7 @@ fn tc_030_a_foreign_contract_version_refuses_the_carrier_and_names_the_member() 
         EnvelopeRefusal::InvalidCapability {
             cause: "unsupported-version",
             member: "contract_version",
-            received: "quire.backend-provider/v2".to_owned(),
+            received: "filament.backend-provider/v2".to_owned(),
         },
         "both members are wrong here, and the refusal names the one it read"
     );

@@ -3,7 +3,7 @@ id: TC-037
 title: "Verify the backend adapter trait and its closed-enum dispatch"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-026
+  - target: ix://agent-ix/filament-contract-codegen/FR-026
     type: verifies
 ---
 # TC-037: Verify the backend adapter trait and its closed-enum dispatch

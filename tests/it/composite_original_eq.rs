@@ -5,6 +5,10 @@
 
 use std::collections::BTreeMap;
 
+use filament_contract_codegen::{
+    CompositeBuildError, CompositePacketMember, DependencyLock, LockedSource,
+    OriginalCompositeEqContext, OriginalCompositeEqRequest, ReplayInputs,
+};
 use ix_trace_rs::trace;
 use qsl_replay::{
     compile_package, parity_obligation, DependencyInput, Domain, DomainKey, DomainKind,
@@ -12,10 +16,6 @@ use qsl_replay::{
     ParityBoundRefusal, ProofBound, Refinement, ReplayLimits, ReplayRefusal, ReplayRequest,
     ReplayTarget, ScalarIdentityMismatch, ScalarLimits, SourceIdentity, StageLimits,
     SuppliedLibrary, TerminalValue, VerifiedShadow, VerifiedShadowResult,
-};
-use quire_contract_codegen::{
-    CompositeBuildError, CompositePacketMember, DependencyLock, LockedSource,
-    OriginalCompositeEqContext, OriginalCompositeEqRequest, ReplayInputs,
 };
 use quire_contract_model::{
     CheckedCompositeOperandDomain, CheckedCompositeOperandError, CheckedNodeId,
@@ -56,7 +56,7 @@ fn checked_operation_identity(body: &CheckedTerm) -> Option<&str> {
 }
 
 pub(super) const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\n\
-    profile v = \"quire.value.complete/v1\";\n\
+    profile v = \"filament.value.complete/v1\";\n\
     record Q { x: Integer; }\n\
     function f using v(a: Sequence<Int[0, 9]>[0, 3], b: Sequence<Int[0, 9]>[0, 3]): Boolean pure { a = b }\n\
     function n using v(a: Sequence<Int[0, 9]>[0, 3], b: Sequence<Int[0, 9]>[0, 3]): Boolean pure { a != b }\n\
@@ -69,7 +69,7 @@ pub(super) const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\n\
     function opt_none using v(a: Option<Boolean>): Boolean pure { a = none }\n";
 
 const REPEATED_SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\n\
-    profile v = \"quire.value.complete/v1\";\n\
+    profile v = \"filament.value.complete/v1\";\n\
     function repeated using v(a: Sequence<Int[0, 9]>[0, 3], b: Sequence<Int[0, 9]>[0, 3]): Boolean pure { (a = b) and (a = b) }\n";
 
 fn limits() -> ScalarLimits {
@@ -134,7 +134,7 @@ fn checked(source: &str) -> OriginalPackage {
 
 fn evidence() -> CheckedPackageEvidence {
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     evidence
 }
 
@@ -159,7 +159,7 @@ fn compiled(source: &str, dependencies: &DependencyInput) -> qsl_replay::Compile
         StageLimits::default(),
         ReplayLimits::default(),
     )
-    .expect("fixture compiles through public QSL facade")
+    .expect("fixture compiles through public FSL facade")
 }
 
 fn read_checked(bytes: &[u8], evidence: &CheckedPackageEvidence) -> OriginalPackage {
@@ -168,7 +168,7 @@ fn read_checked(bytes: &[u8], evidence: &CheckedPackageEvidence) -> OriginalPack
             checked: *package,
             raw: qsl_replay::ReplayPackage::read(bytes, u64::MAX).unwrap(),
         },
-        other => panic!("QSL fixture must admit in IR: {other:?}"),
+        other => panic!("FSL fixture must admit in IR: {other:?}"),
     }
 }
 
@@ -233,7 +233,7 @@ impl OriginalRequestFixture for OriginalCompositeEqContext {
 }
 
 fn application(package: &CheckedPackageV2, function: &str) -> (CheckedNodeId, CheckedOccurrence) {
-    application_with_operator(package, function, "quire.op.structural.eq")
+    application_with_operator(package, function, "filament.op.structural.eq")
 }
 
 fn application_with_operator(
@@ -332,7 +332,7 @@ pub(super) fn parameter_bounds(
         .collect()
 }
 
-/// Original parameter/parameter construction reaches a genuine QSL verified report and converter.
+/// Original parameter/parameter construction reaches a genuine FSL verified report and converter.
 /// This is a constructor control with supplied verified evidence, not a generated-family proof.
 #[trace("FR-033-AC-1", "FR-033-AC-18", "TC-048")]
 #[test]
@@ -497,7 +497,7 @@ fn original_literal_operands_retain_graph_children_and_empty_bounds() {
 #[test]
 fn original_ne_parameter_operands_keep_order_and_operator() {
     let package = checked(SOURCE);
-    let (node, occurrence) = application_with_operator(&package, "n", "quire.op.structural.ne");
+    let (node, occurrence) = application_with_operator(&package, "n", "filament.op.structural.ne");
     let original = package
         .composite_application_operands(&node, &occurrence, 100_000)
         .unwrap();
@@ -547,7 +547,7 @@ fn original_ne_parameter_operands_keep_order_and_operator() {
 #[test]
 fn original_ne_literal_operand_keeps_empty_bounds() {
     let package = checked(SOURCE);
-    let (node, occurrence) = application_with_operator(&package, "m", "quire.op.structural.ne");
+    let (node, occurrence) = application_with_operator(&package, "m", "filament.op.structural.ne");
     let request = context(package.clone(), "m")
         .request(&node, &occurrence, EqualityOperator::NotEqual, &[], 100_000)
         .unwrap();
@@ -591,8 +591,8 @@ fn original_operator_mismatch_refuses_with_typed_operators() {
     ] {
         let package = checked(SOURCE);
         let identity = match node_operator {
-            EqualityOperator::Equal => "quire.op.structural.eq",
-            EqualityOperator::NotEqual => "quire.op.structural.ne",
+            EqualityOperator::Equal => "filament.op.structural.eq",
+            EqualityOperator::NotEqual => "filament.op.structural.ne",
         };
         let (node, occurrence) = application_with_operator(&package, function, identity);
         assert!(matches!(
@@ -634,7 +634,7 @@ fn a_non_equality_operation_refuses_as_an_ineligible_operator() {
     assert_ineligible_operator(
         "function k using v(a: Int[0, 9], b: Int[0, 9]): Boolean pure { a < b }",
         "k",
-        "quire.op.integer.lt",
+        "filament.op.integer.lt",
     );
 }
 
@@ -645,7 +645,7 @@ fn a_quantity_conversion_refuses_as_an_ineligible_operator() {
     assert_ineligible_operator(
         "dimension Length;\nunit m : Length = rational(1, 1);\nunit cm : Length = rational(1, 100) * m;\nfunction c using v(a: Quantity<cm, Int[0, 1000]>): Quantity<m> pure { convert<Quantity<m>>(a) }",
         "c",
-        "quire.op.quantity.convert",
+        "filament.op.quantity.convert",
     );
 }
 
@@ -656,7 +656,7 @@ fn repeated_requests_keep_each_nodes_original_operation() {
     let package = checked(SOURCE);
     let (equal_node, equal_occurrence) = application(&package, "f");
     let (not_equal_node, not_equal_occurrence) =
-        application_with_operator(&package, "n", "quire.op.structural.ne");
+        application_with_operator(&package, "n", "filament.op.structural.ne");
     let context = context(package.clone(), "f");
 
     let equal = context
@@ -730,7 +730,7 @@ fn self_comparison_keeps_two_positional_arguments() {
 fn original_ne_literal_literal_keeps_two_empty_bounds_children() {
     let package = checked(SOURCE);
     let (node, occurrence) =
-        application_with_operator(&package, "ne_lits", "quire.op.structural.ne");
+        application_with_operator(&package, "ne_lits", "filament.op.structural.ne");
     let request = context(package.clone(), "ne_lits")
         .request(&node, &occurrence, EqualityOperator::NotEqual, &[], 100_000)
         .unwrap();
@@ -791,7 +791,7 @@ fn original_ne_literal_literal_keeps_two_empty_bounds_children() {
 fn original_ne_self_comparison_keeps_two_positional_arguments() {
     let package = checked(SOURCE);
     let (node, occurrence) =
-        application_with_operator(&package, "ne_same", "quire.op.structural.ne");
+        application_with_operator(&package, "ne_same", "filament.op.structural.ne");
     let bounds = vec![ProofBound::new(
         DomainKey::Node {
             node: node_key(&package, &first_child(&package, &node, &occurrence)),
@@ -893,7 +893,7 @@ fn opt_none_with_inline_operand() -> OriginalPackage {
         .unwrap()
         .iter()
         .position(|node| {
-            node["body"]["operation"]["identity"] == "quire.op.structural.eq"
+            node["body"]["operation"]["identity"] == "filament.op.structural.eq"
                 && is_none(&node["body"]["arguments"][1]["target"])
         })
         .expect("opt_none application");
@@ -929,7 +929,7 @@ fn opt_none_with_inline_operand() -> OriginalPackage {
     ]);
     node["dependencies"] = serde_json::json!([parameter_id]);
     node["node_id"] = id(serde_json::json!([
-        "expression", "binary", {"operand": 4}, "quire.op.structural.eq", "binary", {"operand": 3}
+        "expression", "binary", {"operand": 4}, "filament.op.structural.eq", "binary", {"operand": 3}
     ]));
     // The function holding the application names it by id; renumber that id and its row.
     let function = wire["semantic_graph"]["nodes"]
@@ -948,7 +948,7 @@ fn opt_none_with_inline_operand() -> OriginalPackage {
     wire["semantic_graph"]["operand_rows"][function] =
         serde_json::json!([f_text, f_integer, f_option, f_parameter, f_boolean]);
     let application_id = id(serde_json::json!([
-        "expression", "binary", {"operand": 3}, "quire.op.structural.eq", "binary", {"operand": 4}
+        "expression", "binary", {"operand": 3}, "filament.op.structural.eq", "binary", {"operand": 4}
     ]));
     let function_node = &mut wire["semantic_graph"]["nodes"][function];
     function_node["body"]["members"][1]["value"]["target"] = application_id.clone();
@@ -983,7 +983,7 @@ fn opt_none_with_inline_operand() -> OriginalPackage {
 fn inline_non_integer_operand_refuses_through_operands_without_a_request() {
     let inline = opt_none_with_inline_operand();
     let (node, occurrence) =
-        application_with_operator(&inline, "opt_none", "quire.op.structural.eq");
+        application_with_operator(&inline, "opt_none", "filament.op.structural.eq");
     let Err(refusal) = context(inline.clone(), "opt_none").request(
         &node,
         &occurrence,
@@ -1007,7 +1007,7 @@ fn inline_non_integer_operand_refuses_through_operands_without_a_request() {
 
     let graph = checked(SOURCE);
     let (node, occurrence) =
-        application_with_operator(&graph, "opt_none", "quire.op.structural.eq");
+        application_with_operator(&graph, "opt_none", "filament.op.structural.eq");
     let Err(control) = context(graph, "opt_none").request(
         &node,
         &occurrence,
@@ -1183,7 +1183,7 @@ fn tc_035_original_composite_request_requires_its_own_packet() {
     );
     assert_eq!(request.wire().backend, packet.backend.as_deref().unwrap());
     let readback = ReplayRequest::decode(request.wire().clone(), ReplayLimits::default())
-        .expect("the packet-backed request has a typed QSL readback");
+        .expect("the packet-backed request has a typed FSL readback");
     assert_eq!(
         readback
             .replay_target()
@@ -1329,10 +1329,10 @@ fn tc_035_original_composite_packets_bind_distinct_real_occurrences() {
         .nodes
         .iter()
         .find(|node| {
-            checked_operation_identity(&node.body) == Some("quire.op.structural.eq")
+            checked_operation_identity(&node.body) == Some("filament.op.structural.eq")
                 && node.occurrences.len() >= 2
         })
-        .expect("QSL emits one structural equality node with two actual occurrences");
+        .expect("FSL emits one structural equality node with two actual occurrences");
     let node = application.node_id.clone();
     let first = application.occurrences[0].clone();
     let second = application.occurrences[1].clone();
@@ -1365,7 +1365,7 @@ fn tc_035_original_composite_packets_bind_distinct_real_occurrences() {
             )
             .expect("the matching independently produced packet is accepted");
         let readback = ReplayRequest::decode(request.wire().clone(), ReplayLimits::default())
-            .expect("QSL reads the packet-backed occurrence");
+            .expect("FSL reads the packet-backed occurrence");
         assert_eq!(
             readback
                 .replay_target()
@@ -1388,10 +1388,10 @@ fn tc_035_original_composite_packets_bind_distinct_real_occurrences() {
     ));
 }
 
-/// QSL owns body membership and refuses an admitted node from another function before Disagreed.
+/// FSL owns body membership and refuses an admitted node from another function before Disagreed.
 #[trace("FR-033-AC-1", "FR-033-AC-12", "TC-048")]
 #[test]
-fn another_functions_node_reaches_binding_checked_qsl_refusal() {
+fn another_functions_node_reaches_binding_checked_fsl_refusal() {
     let package = checked(SOURCE);
     let (node, occurrence) = application(&package, "g");
     let request = context(package.clone(), "f")
@@ -1408,7 +1408,7 @@ fn another_functions_node_reaches_binding_checked_qsl_refusal() {
     assert_eq!(report.report().claim(), report.sent());
     let settlement = report.settlement().unwrap();
     let VerifiedShadowResult::Refused(refusal) = settlement.result() else {
-        panic!("QSL membership refusal: {:?}", settlement.result())
+        panic!("FSL membership refusal: {:?}", settlement.result())
     };
     assert!(
         matches!(&**refusal, ReplayRefusal::ScalarIdentity(cause) if matches!(&**cause, ScalarIdentityMismatch::Function { node: refused, .. } if *refused == node_key(&package, &node)))
@@ -1419,10 +1419,10 @@ fn another_functions_node_reaches_binding_checked_qsl_refusal() {
     );
 }
 
-/// An actual nonoperand Node bound survives CG's filter and QSL refuses it before Disagreed.
+/// An actual nonoperand Node bound survives CG's filter and FSL refuses it before Disagreed.
 #[trace("FR-033-AC-11", "FR-033-AC-12", "TC-048")]
 #[test]
-fn unrelated_node_bound_reaches_binding_checked_qsl_refusal() {
+fn unrelated_node_bound_reaches_binding_checked_fsl_refusal() {
     let package = checked(SOURCE);
     let (node, occurrence) = application(&package, "f");
     let (other_node, other_occurrence) = application(&package, "g");
@@ -1477,7 +1477,7 @@ fn unrelated_node_bound_reaches_binding_checked_qsl_refusal() {
     assert_eq!(report.report().claim(), report.sent());
     let settlement = report.settlement().unwrap();
     let VerifiedShadowResult::Refused(refusal) = settlement.result() else {
-        panic!("QSL bound refusal: {:?}", settlement.result())
+        panic!("FSL bound refusal: {:?}", settlement.result())
     };
     assert!(
         matches!(&**refusal, ReplayRefusal::ParityBound(cause) if matches!(&**cause, ParityBoundRefusal::HarnessUnknownKey { key: refused } if *refused == key))
@@ -1499,7 +1499,7 @@ fn original_operand_projection_obeys_work_ceiling() {
     );
 }
 
-/// Original non-default stage limits reach QSL recompilation without substituting defaults.
+/// Original non-default stage limits reach FSL recompilation without substituting defaults.
 #[trace("FR-033-AC-1", "TC-048")]
 #[test]
 fn original_stage_limit_stops_recompile_before_invocation() {
@@ -1548,7 +1548,7 @@ fn duplicate_positional_bound_refuses_without_an_obligation() {
 fn original_imported_context_refuses_before_invocation() {
     let source = SOURCE.replace("record Q", "import \"test/eq-library\" as d;\nrecord Q");
     let library = |comparison: &str| {
-        let bytes = format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nfunction big using v(x: Int[0, 9]): Boolean pure {{ {comparison} }}\n").into_bytes();
+        let bytes = format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nfunction big using v(x: Int[0, 9]): Boolean pure {{ {comparison} }}\n").into_bytes();
         let source = LockedSource {
             authority: "test".to_owned(),
             identity: "eq-library.native".to_owned(),
@@ -1690,7 +1690,7 @@ fn retained_context_kr_families_preserve_complete_request_outputs_and_refused_si
             let original_package_name = package.name().to_owned();
             let (equal_node, equal_occurrence) = application(&package, "f");
             let (not_equal_node, not_equal_occurrence) =
-                application_with_operator(&package, "n", "quire.op.structural.ne");
+                application_with_operator(&package, "n", "filament.op.structural.ne");
             let retained = package
                 .into_context(
                     &inputs(&source).source,

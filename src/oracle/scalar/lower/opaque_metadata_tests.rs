@@ -3,7 +3,7 @@
 
 //! Admitted narrowing control plus a defensive term-only control for opaque
 //! operation metadata. The fixture extension is authored here; it carries no
-//! claim of QSL compilation or generated oracle behavior.
+//! claim of FSL compilation or generated oracle behavior.
 
 use super::Graph;
 use super::{narrowing, references, Narrowing};
@@ -87,18 +87,18 @@ fn read(bytes: &[u8], evidence: &CheckedPackageEvidence, label: &str) -> Checked
 #[trace("TC-024")]
 #[test]
 fn opaque_operation_member_does_not_add_a_consumer_to_true_narrowing() {
-    let root = PathBuf::from(std::env::var_os("QSPEC_DIR").expect("published QSpec checkout"))
+    let root = PathBuf::from(std::env::var_os("FSPEC_DIR").expect("published FSpec checkout"))
         .join("proposals/checked-package-v2");
     let mut wire: Value = serde_json::from_slice(
         &fs::read(root.join("fixtures/positive-operation-identities.json")).unwrap(),
     )
     .unwrap();
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
-    // The fixture's model-root owner is resolved from the domain document QSpec publishes
+    evidence.support_feature("filament.value.complete/v1");
+    // The fixture's model-root owner is resolved from the domain document FSpec publishes
     // for it, as for every published fixture read.
     checked_package_evidence::retain_selected_document(
-        &PathBuf::from(std::env::var_os("QSPEC_DIR").expect("published QSpec checkout")),
+        &PathBuf::from(std::env::var_os("FSPEC_DIR").expect("published FSpec checkout")),
         "positive-operation-identities.json",
         &mut evidence,
     );
@@ -116,7 +116,7 @@ fn opaque_operation_member_does_not_add_a_consumer_to_true_narrowing() {
         *node = frame.document_value_in_row(holder, node).unwrap();
     }
     let target = original.resolved_graph().nodes.iter().find(|n| matches!(original.term(&n.node_id),
-        Some(CheckedTerm::Application { operation, .. }) if operation.identity() == Some("quire.op.integer.mul"))).unwrap();
+        Some(CheckedTerm::Application { operation, .. }) if operation.identity() == Some("filament.op.integer.mul"))).unwrap();
     let bound = original
         .resolved_graph()
         .nodes
@@ -136,7 +136,7 @@ fn opaque_operation_member_does_not_add_a_consumer_to_true_narrowing() {
         .as_array()
         .unwrap()
         .iter()
-        .find(|e| e["identity"] == "quire.op.numeric.narrow")
+        .find(|e| e["identity"] == "filament.op.numeric.narrow")
         .unwrap();
     assert_eq!(entry["operator"], "convert");
     assert_eq!(entry["operands"], json!(["exact_numeric"]));
@@ -186,7 +186,7 @@ fn opaque_operation_member_does_not_add_a_consumer_to_true_narrowing() {
         .as_array_mut()
         .unwrap()
         .push(narrow_wire);
-    // This is an authored fixture extension, not a claim that QSL compiled it.
+    // This is an authored fixture extension, not a claim that FSL compiled it.
     // Reuse a genuine published expression locus for the additional occurrence.
     for occurrence in original
         .source_map()
@@ -203,7 +203,7 @@ fn opaque_operation_member_does_not_add_a_consumer_to_true_narrowing() {
     let baseline_bytes = encode_draft(&wire);
     let baseline = read(&baseline_bytes, &evidence, "TRUE_NARROW_BASELINE");
     let opaque_node = baseline.resolved_graph().nodes.iter().find(|n| matches!(baseline.term(&n.node_id),
-        Some(CheckedTerm::Application { operation, .. }) if operation.identity() == Some("quire.op.integer.add"))).unwrap();
+        Some(CheckedTerm::Application { operation, .. }) if operation.identity() == Some("filament.op.integer.add"))).unwrap();
     let CheckedTerm::Application { operation, .. } = &opaque_node.body else {
         panic!("admitted opaque node is an application");
     };

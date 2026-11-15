@@ -2,21 +2,14 @@
 //!
 //! A direct test-only `KaniObligationIdentity` supplies persisted argument bindings for
 //! deterministic playback, domain, native replay and O-09 identity checks. It asserts no
-//! generated harness or installed proof. QSL's `call_site` supplies the package and parameter
+//! generated harness or installed proof. FSL's `call_site` supplies the package and parameter
 //! identities; its `replay` facade recompiles the source and evaluates the selected function.
 //! The installed E7-E9 control awaits a genuine V2 generated harness under IR-1047.
 
 use ix_trace_rs::trace;
 use std::collections::BTreeMap;
 
-use qsl_replay::{
-    CallSiteRefusal, CanonicalAssignment, Code, DeclaredDomain, DependencyInputRefusal,
-    DependencySelectionsCause, DisagreementCause, DomainKey, DomainKind, FiniteBound, Integer,
-    ProofBound, ReplayLimits, ReplayRefusal, ReplayRequestRefusal, ReplaySource, ScalarLimits,
-    Verdict, WitnessSettlement, DEFAULT_REPLAY_INPUT_BYTES,
-};
-use qsl_replay::{Witness, WitnessValue};
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     parse_assertion_playback, replay_counterexample, replay_counterexample_through,
     replay_falsification, DependencyLock, DependencyLockError, EvidenceFailureCause,
     FunctionPacketError, HarnessSymbol, KaniBindingRole, KaniIntegerBounds, KaniObligationIdentity,
@@ -24,18 +17,25 @@ use quire_contract_codegen::{
     Playback, ReplayInputs, ReplayPackage, ReplayPackageError, ReplayParameter, ReplayVerdict,
     SpineReplayError, WitnessDecodeLimits,
 };
+use qsl_replay::{
+    CallSiteRefusal, CanonicalAssignment, Code, DeclaredDomain, DependencyInputRefusal,
+    DependencySelectionsCause, DisagreementCause, DomainKey, DomainKind, FiniteBound, Integer,
+    ProofBound, ReplayLimits, ReplayRefusal, ReplayRequestRefusal, ReplaySource, ScalarLimits,
+    Verdict, WitnessSettlement, DEFAULT_REPLAY_INPUT_BYTES,
+};
+use qsl_replay::{Witness, WitnessValue};
 use quire_contract_model::{
     ClauseId, ClauseRef, IntegerDomain, OverflowPolicy, RequirementRef, SourceSpan,
 };
 use quire_semantic_value::catalog::{Category, InternalFault};
 use serde_json::json;
 
-const PROFILE: &str = "profile v = \"quire.value.complete/v1\";\n";
+const PROFILE: &str = "profile v = \"filament.value.complete/v1\";\n";
 const AUTHORITY: &str = "agent-ix";
 const IDENTITY: &str = "test:skeleton-spine";
 const FUNCTION: &str = "balance_never_grows";
 
-/// The native twin of the clause over the subject: the QSL function the replay evaluates.
+/// The native twin of the clause over the subject: the FSL function the replay evaluates.
 fn native_source(post_balance: &str) -> String {
     format!(
         "language \"ix:native\" edition \"1-draft\";\n{PROFILE}\
@@ -107,7 +107,7 @@ fn request_of(package: &ReplayPackage, source: ReplaySource) -> qsl_replay::Repl
     identity.arguments = package
         .parameters()
         .iter()
-        .map(|parameter| quire_contract_codegen::ObligationBinding {
+        .map(|parameter| filament_contract_codegen::ObligationBinding {
             identifier: parameter.argument.to_owned(),
             ..template.clone()
         })
@@ -131,7 +131,7 @@ fn request_of(package: &ReplayPackage, source: ReplaySource) -> qsl_replay::Repl
     let mut request = package
         .request(&identity, packet)
         .expect("the selected function admits its backend packet");
-    // Input-arm cases below exercise QSL's generic request behavior after CG's packet boundary.
+    // Input-arm cases below exercise FSL's generic request behavior after CG's packet boundary.
     request.source = source;
     request
 }
@@ -149,7 +149,7 @@ fn compile_native_twin(source: &str, function: &str) -> ReplayPackage {
     }
 }
 
-/// Replays `values` against `native`, the QSL source compiled and recompiled.
+/// Replays `values` against `native`, the FSL source compiled and recompiled.
 // Exercise the public inline mismatch error without adding an error allocation.
 #[allow(clippy::result_large_err)]
 fn replay_against(
@@ -188,7 +188,7 @@ fn replay_parameters_keep_the_existing_transcript_entry_names() {
          function flag using v(b: Boolean): Boolean pure {{ b }}\n"
     );
     let mut replay_inputs = inputs(&source, Vec::new());
-    // Separator bytes must stay escaped in the entry name QSL receives.
+    // Separator bytes must stay escaped in the entry name FSL receives.
     replay_inputs.package_name = "skeleton%;|<>".to_owned();
     let package = ReplayPackage::new(replay_inputs, "flag").expect("the twin compiles");
     let parameters = package.parameters();
@@ -217,8 +217,8 @@ fn success() -> Verdict {
 }
 
 /// A falsifying input that satisfies the proved precondition (`amount <= balance`) replays
-/// through QSL's `replay` and settles the same violation: the twin carrying the injected
-/// violation evaluates the clause to false at the input. QSL evaluated it; nothing here
+/// through FSL's `replay` and settles the same violation: the twin carrying the injected
+/// violation evaluates the clause to false at the input. FSL evaluated it; nothing here
 /// supplies the verdict.
 /// The structural node key a parameter's witness entry name spells: the name is the compact JSON
 /// of the node id, which holds no percent escape for the identifiers these fixtures use.
@@ -254,7 +254,7 @@ fn node_key_of_entry_name(name: &str) -> qsl_replay::NodeKey {
 
 #[trace("FR-016-AC-9", "FR-032-AC-14", "TC-026", "TC-047")]
 #[test]
-fn tc_026_a_falsifying_input_replays_through_qsl_to_the_same_violation() {
+fn tc_026_a_falsifying_input_replays_through_fsl_to_the_same_violation() {
     let result =
         replay_against(&native_source(VIOLATING_TWIN), &values(1, 5)).expect("the replay settles");
     assert_eq!(
@@ -265,11 +265,11 @@ fn tc_026_a_falsifying_input_replays_through_qsl_to_the_same_violation() {
     assert!(result.disagreement().is_none());
     assert!(
         result.charges().work_units > 0,
-        "QSL charged the evaluation"
+        "FSL charged the evaluation"
     );
 }
 
-/// The verdict is QSL's evaluation at the witness point: the same twin holds the clause at
+/// The verdict is FSL's evaluation at the witness point: the same twin holds the clause at
 /// `amount = 0`, so a witness that is not a counterexample settles `inconclusive` with the
 /// proved violation and the replayed success both named.
 #[trace("FR-016-AC-9", "FR-016-AC-10", "TC-026")]
@@ -285,7 +285,7 @@ fn tc_026_the_replayed_verdict_depends_on_the_witness_value() {
     );
 }
 
-/// The healthy twin holds the clause at a real counterexample's input, so QSL settles
+/// The healthy twin holds the clause at a real counterexample's input, so FSL settles
 /// `inconclusive` naming both verdicts: replay never repairs a disagreement into a
 /// reproduction.
 #[trace("FR-016-AC-4", "FR-016-AC-10", "TC-026")]
@@ -344,7 +344,7 @@ fn tc_026_a_boolean_value_replays_as_zero_or_one() {
 }
 
 /// Every refusal the adapter has is its own typed error: a delimiter in a transcript field, a
-/// node id that makes the transcript inadmissible, a request QSL refuses, and a request whose
+/// node id that makes the transcript inadmissible, a request FSL refuses, and a request whose
 /// source is not a witness.
 #[trace("FR-016-AC-11", "TC-026")]
 #[test]
@@ -557,7 +557,7 @@ fn tc_026_the_request_package_reference_carries_the_lock_dependencies() {
     assert!(without.dependencies.is_empty());
 }
 
-/// A lock whose only defect is one library identity selected twice has no admitted request: QSL's
+/// A lock whose only defect is one library identity selected twice has no admitted request: FSL's
 /// `DependencyInput::new` refuses it as `DuplicateIdentity` (code `invalid_package`), and it
 /// arrives as `DependencyLockError::Input`. This crate carries no duplicate check of its own.
 #[trace("FR-016-AC-24", "TC-026")]
@@ -572,7 +572,7 @@ fn tc_026_a_lock_repeating_a_dependency_is_refused() {
     )
     .expect_err("the repeated identity is refused");
     let ReplayPackageError::Dependencies(DependencyLockError::Input(input)) = &refusal else {
-        panic!("expected a refusal from QSL's dependency input, got {refusal}");
+        panic!("expected a refusal from FSL's dependency input, got {refusal}");
     };
     let DependencyInputRefusal::DuplicateIdentity { identity, .. } = input else {
         panic!("expected DuplicateIdentity, got {input}");
@@ -709,7 +709,7 @@ fn tc_026_a_changed_dependency_selection_is_refused_before_replay() {
         let refusal = package
             .replay_request_through(wire, |_| {
                 calls += 1;
-                panic!("{case} dependency selection must stop before QSL replay")
+                panic!("{case} dependency selection must stop before FSL replay")
             })
             .expect_err("the admitted dependency selection must match exactly");
         let SpineReplayError::DependencySelectionMismatch(cause) = refusal else {
@@ -718,7 +718,7 @@ fn tc_026_a_changed_dependency_selection_is_refused_before_replay() {
         assert_eq!(cause.position, position, "{case}");
         assert_eq!(cause.expected, expected, "{case}");
         assert_eq!(cause.actual, actual, "{case}");
-        assert_eq!(calls, 0, "{case} reached QSL replay");
+        assert_eq!(calls, 0, "{case} reached FSL replay");
     }
 
     let mut calls = 0;
@@ -736,7 +736,7 @@ fn tc_026_a_changed_dependency_selection_is_refused_before_replay() {
     );
 }
 
-/// Kind and argument domains remain on the retained proving-run record. They do not rekey QSL's
+/// Kind and argument domains remain on the retained proving-run record. They do not rekey FSL's
 /// producer identity, so a packet cannot use that same identity to change either claim member.
 #[trace("FR-016-AC-27", "FR-016-AC-28", "TC-026")]
 #[test]
@@ -754,7 +754,7 @@ fn tc_026_a_held_producer_identity_rejects_changed_claim_members() {
         control.obligation_identity,
         package
             .obligation_identity(&original)
-            .expect("QSL issued the selected identity")
+            .expect("FSL issued the selected identity")
     );
 
     let mut changed_kind = original.clone();
@@ -772,7 +772,7 @@ fn tc_026_a_held_producer_identity_rejects_changed_claim_members() {
                 .expect("the binding remains finite"),
             package
                 .obligation_identity(&original)
-                .expect("QSL issued the identity"),
+                .expect("FSL issued the identity"),
             "{name} is a record member, not an identity component"
         );
         assert!(
@@ -785,11 +785,11 @@ fn tc_026_a_held_producer_identity_rejects_changed_claim_members() {
     }
 }
 
-/// A lock selecting a library the unit does not import compiles, but QSL refuses the request
+/// A lock selecting a library the unit does not import compiles, but FSL refuses the request
 /// naming it as unselected.
 #[trace("FR-016-AC-18", "TC-026")]
 #[test]
-fn tc_026_qsl_refuses_a_dependency_the_unit_does_not_select() {
+fn tc_026_fsl_refuses_a_dependency_the_unit_does_not_select() {
     let package = ReplayPackage::new(
         inputs(&native_source(VIOLATING_TWIN), vec![dependency_lock()]),
         FUNCTION,
@@ -803,7 +803,7 @@ fn tc_026_qsl_refuses_a_dependency_the_unit_does_not_select() {
         |source| request_of(&package, source),
         ReplayLimits::default(),
     )
-    .expect_err("QSL refuses the unselected dependency");
+    .expect_err("FSL refuses the unselected dependency");
     assert!(
         matches!(
             &refusal,
@@ -840,7 +840,7 @@ fn tc_026_libraries_sharing_a_source_owner_are_refused() {
     );
 }
 
-/// A lock library whose source has the unit's own owner is refused by QSL's call site.
+/// A lock library whose source has the unit's own owner is refused by FSL's call site.
 #[trace("FR-016-AC-20", "TC-026")]
 #[test]
 fn tc_026_a_library_sharing_the_units_source_owner_is_refused() {
@@ -859,7 +859,7 @@ fn tc_026_a_library_sharing_the_units_source_owner_is_refused() {
 }
 
 /// Playback for a different retained proving-run function cannot be replayed through the
-/// previously bound QSL twin merely because its argument names have the same shape.
+/// previously bound FSL twin merely because its argument names have the same shape.
 #[trace("FR-024-AC-43", "FR-024-AC-46", "TC-035")]
 #[test]
 fn tc_035_function_replay_refuses_another_proving_run_identity_before_execution() {
@@ -876,7 +876,7 @@ fn tc_035_function_replay_refuses_another_proving_run_identity_before_execution(
         .expect("the retained proof identity binds the twin");
     assert!(matches!(
         package.request(&other, packet),
-        Err(quire_contract_codegen::FunctionPacketError::ProvingRunMismatch)
+        Err(filament_contract_codegen::FunctionPacketError::ProvingRunMismatch)
     ));
     let mut calls = 0;
     let verdict = replay_counterexample_through(
@@ -885,7 +885,7 @@ fn tc_035_function_replay_refuses_another_proving_run_identity_before_execution(
         &package,
         |_| {
             calls += 1;
-            panic!("a different proving-run identity must not reach QSL");
+            panic!("a different proving-run identity must not reach FSL");
         },
     )
     .expect("a mismatched identity is an evidence failure");
@@ -1039,11 +1039,11 @@ fn tc_026_function_replay_refuses_poisoned_suffixes_at_both_decode_bounds() {
         });
     assert!(
         matches!(refused, Err(SpineReplayError::Packet(_))),
-        "QSL's input_bytes bound must not limit CG decoding: {refused:?}"
+        "FSL's input_bytes bound must not limit CG decoding: {refused:?}"
     );
     assert_eq!(
         calls, 0,
-        "packet admission must reject the small QSL input_bytes bound before execution"
+        "packet admission must reject the small FSL input_bytes bound before execution"
     );
     for (poisoned, limits, code) in [
         (
@@ -1293,7 +1293,7 @@ fn tc_026_a_counterexample_for_another_harness_is_never_replayed() {
     );
 }
 
-/// A replay that runs and does not reproduce the violation is evidence failure naming QSL's
+/// A replay that runs and does not reproduce the violation is evidence failure naming FSL's
 /// settlement, never a clause success.
 #[trace("FR-016-AC-4", "TC-026")]
 #[test]

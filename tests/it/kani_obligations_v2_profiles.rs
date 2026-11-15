@@ -1,4 +1,4 @@
-//! FR-015-AC-126 and FR-015-AC-129 (IR-948): the V2 pre/post/invariant profiles over the QSL-source
+//! FR-015-AC-126 and FR-015-AC-129 (IR-948): the V2 pre/post/invariant profiles over the FSL-source
 //! `test/bank` package, `Account.balance: Int[0, 100]` and `withdraw(amount: Int[0, 100])`.
 //!
 //! The default lane checks what generation yields for the profile package: a harness for the
@@ -6,19 +6,19 @@
 //! planned. The `kani` lane
 //! (`#[ignore]`, run one at a time by `make kani`) runs the installed Kani through CG's runner at
 //! unwind 8, the two-phase run of FR-017-AC-63, and replays each invariant counterexample through
-//! QSL. Peak memory is the `memory.peak` of the cgroup scope the test runs in.
+//! FSL. Peak memory is the `memory.peak` of the cgroup scope the test runs in.
 
 use std::{path::PathBuf, sync::Arc, time::Instant};
 
-use ix_trace_rs::trace;
-use qsl_replay::{ReplayResult, WitnessSettlement, WitnessValue};
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     decode_v2_clause_falsification, execute_kani_obligation, negotiate_kani_native_obligations,
     parse_assertion_playback, KaniCheckClass, KaniCheckStatus, KaniExecutionEvidence,
     KaniExecutionRequest, KaniInstallation, KaniObligationOutcome, KaniObligationRequest,
     KaniRunOutcome, KaniV2ClauseObligationHarness, ObligationDisposition, ObligationItem,
     ObligationKind, ProofCeilings, StateClauseHarness, StateClauseReplay, UnsupportedObligation,
 };
+use ix_trace_rs::trace;
+use qsl_replay::{ReplayResult, WitnessSettlement, WitnessValue};
 use quire_contract_model::CheckedNodeId;
 use quire_semantic_value::catalog::Category;
 
@@ -292,14 +292,14 @@ fn an_arithmetic_sibling_precondition_refuses_the_state_postcondition() {
     assert_sibling_refused(&profile((0, 100), "amount + 1 <= self.balance", INVARIANT));
 }
 
-/// QSL refuses a `pre(...)` read in a precondition, so no sibling reaches the renderer's
-/// `pre(...)` sibling arm; this pins that refusal and fails if QSL starts to admit one.
+/// FSL refuses a `pre(...)` read in a precondition, so no sibling reaches the renderer's
+/// `pre(...)` sibling arm; this pins that refusal and fails if FSL starts to admit one.
 #[trace("FR-015-AC-43", "TC-025")]
 #[test]
-fn qsl_refuses_a_pre_read_in_a_sibling_precondition() {
+fn fsl_refuses_a_pre_read_in_a_sibling_precondition() {
     let twin = profile((0, 100), "amount <= pre(self.balance)", INVARIANT);
     let Err(refusal) = twin.clause_site("CanAfford") else {
-        panic!("QSL refuses a pre read in a precondition");
+        panic!("FSL refuses a pre read in a precondition");
     };
     assert!(format!("{refusal:?}").contains("forbidden-pre-read"));
 }
@@ -379,8 +379,8 @@ fn the_profile_package_yields_a_harness_per_kind_with_distinct_identities() {
 }
 
 /// The postcondition member of FR-015-AC-129 is blocked once now: the CG generator renders the
-/// state-reading postcondition (IR-948 slice 2b), and QSL still refuses the specified equality
-/// text (QSL-1901). This test fails when QSL lifts so that the PARTIAL status is revisited.
+/// state-reading postcondition (IR-948 slice 2b), and FSL still refuses the specified equality
+/// text (QSL-1901). This test fails when FSL lifts so that the PARTIAL status is revisited.
 #[trace("FR-015-AC-129", "FR-015-AC-43", "TC-025")]
 #[test]
 fn the_postcondition_renders_and_the_specified_equality_text_is_blocked_by_qsl() {
@@ -439,7 +439,7 @@ fn the_postcondition_renders_and_the_specified_equality_text_is_blocked_by_qsl()
         INVARIANT,
     );
     let Err(refusal) = equality.clause_site("Debited") else {
-        panic!("QSL refuses the specified equality text");
+        panic!("FSL refuses the specified equality text");
     };
     let refusal = format!("{refusal:?}");
     assert!(
@@ -580,7 +580,7 @@ fn tc_025_real_kani_verifies_the_profile_invariant_with_its_cover_satisfied() {
 }
 
 /// Runs the mutant's invariant harness, requires a two-phase `Falsified` verdict whose in-domain
-/// counterexample is `expected`, and replays it through QSL as a reproduced violation.
+/// counterexample is `expected`, and replays it through FSL as a reproduced violation.
 fn falsified_and_replayed(label: &str, twin: &Twin, expected: i64) {
     let harness = harness_of(twin, "NonNegative");
     let evidence = run(label, &harness);
@@ -616,7 +616,7 @@ fn falsified_and_replayed(label: &str, twin: &Twin, expected: i64) {
         .documents
         .iter()
         .filter_map(|bytes| serde_json::from_slice::<serde_json::Value>(bytes).ok())
-        .find(|document| document["format"] == "quire.state.snapshot/v1")
+        .find(|document| document["format"] == "filament.state.snapshot/v1")
         .expect("a state snapshot");
     assert_eq!(
         snapshot["populations"][0]["objects"][0]["fields"]["balance"]["integer"],

@@ -2,9 +2,9 @@
 //! operation-contract Kani harness and a frame-effect Kani harness, both scoped to the clause's
 //! operation.
 //!
-//! The package is hand-built in the shape QSL lowers `post Deposit ... { self.balance >=
+//! The package is hand-built in the shape FSL lowers `post Deposit ... { self.balance >=
 //! pre(self.balance) }` to: a `postcondition` `state_clause` whose condition is one
-//! `quire.op.integer.ge` over `record.project(deref(self), balance)` and `pre` of the same read,
+//! `filament.op.integer.ge` over `record.project(deref(self), balance)` and `pre` of the same read,
 //! anchored on the `deposit` operation whose frame modifies `balance` only. The framed object
 //! declares its own fields, so IR admits the field reads without a domain package.
 //!
@@ -14,7 +14,7 @@
 //! each seeded defect is falsified for the intended property, and regenerating the frame from a
 //! mutated package turns a green proof red.
 
-use quire_contract_codegen as scalar_fixture_types;
+use filament_contract_codegen as scalar_fixture_types;
 #[path = "../state_frame_support/model.rs"]
 pub(crate) mod model;
 #[path = "../state_frame_support/native_twin.rs"]
@@ -34,6 +34,23 @@ use std::{
     time::Duration,
 };
 
+use filament_contract_codegen::{
+    derive_v2_clause_descriptor, generate_v2_clause_claim_map, generate_v2_clause_native_oracle,
+    generate_v2_clause_oracle,
+};
+use filament_contract_codegen::{
+    execute_kani_obligation, generate_state_frame_obligations, negotiate_kani_native_obligations,
+    negotiate_kani_obligations, BoundNotResolvedCause, FrameReplay, FrameReplayError,
+    InvalidObligationItem, KaniExecutionRequest, KaniInstallation, KaniObligationError,
+    KaniObligationOutcome, KaniObligationRequest, KaniRunOutcome, ModuleSymbol,
+    ObligationDisposition, ObligationItem, ObligationKind, ObligationRecord, PreStateFault,
+    ProofDependencyKind, ProofDependencyRequest, ProofDependencyState, ProofExecutionState,
+    ProofReadiness, ScopeMember, SelectedTargetMember, StateComparison, StateFieldDomain,
+    StateFrameHarness, StateFrameIdentity, StateFrameLoweringRefusal, StateFrameObligations,
+    StateFrameProperty, StateFrameRefusal, StateFrameRequest, StateFrameRole,
+    UnsupportedFrameEffect, UnsupportedObligation, MAX_OBLIGATION_ITEMS, MAX_OBLIGATION_UNWIND,
+};
+use filament_contract_codegen::{HarnessSymbol, StateFrameRecordError};
 use ix_trace_rs::trace;
 use native_twin::{
     playback_text, Invocation, Run, Tamper, Twin, CLAUSES, INVOCATION_DOCUMENT, PRE_DOCUMENT,
@@ -48,23 +65,6 @@ use qsl_replay::{
     InconclusiveCause, ObligationIdentity, OccurrenceKey, OperationSite, Origin, QualifiedName,
     ReplayRefusal, ReplayResult, ReplaySource, Role, TerminalValue, Verdict, WitnessSettlement,
 };
-use quire_contract_codegen::{
-    derive_v2_clause_descriptor, generate_v2_clause_claim_map, generate_v2_clause_native_oracle,
-    generate_v2_clause_oracle,
-};
-use quire_contract_codegen::{
-    execute_kani_obligation, generate_state_frame_obligations, negotiate_kani_native_obligations,
-    negotiate_kani_obligations, BoundNotResolvedCause, FrameReplay, FrameReplayError,
-    InvalidObligationItem, KaniExecutionRequest, KaniInstallation, KaniObligationError,
-    KaniObligationOutcome, KaniObligationRequest, KaniRunOutcome, ModuleSymbol,
-    ObligationDisposition, ObligationItem, ObligationKind, ObligationRecord, PreStateFault,
-    ProofDependencyKind, ProofDependencyRequest, ProofDependencyState, ProofExecutionState,
-    ProofReadiness, ScopeMember, SelectedTargetMember, StateComparison, StateFieldDomain,
-    StateFrameHarness, StateFrameIdentity, StateFrameLoweringRefusal, StateFrameObligations,
-    StateFrameProperty, StateFrameRefusal, StateFrameRequest, StateFrameRole,
-    UnsupportedFrameEffect, UnsupportedObligation, MAX_OBLIGATION_ITEMS, MAX_OBLIGATION_UNWIND,
-};
-use quire_contract_codegen::{HarnessSymbol, StateFrameRecordError};
 use quire_contract_model::{
     CheckedMemberType, CheckedNodeId, CheckedPackageReadLimits, CheckedPackageV2, CheckedTerm,
 };
@@ -88,14 +88,14 @@ const SUBJECT_SOURCE: &str = include_str!("../state_frame_support/subject.rs");
 
 #[trace("FR-014-AC-38")]
 #[test]
-fn qsl_emitted_state_clause_derives_a_confirmed_field_backed_oracle() {
+fn fsl_emitted_state_clause_derives_a_confirmed_field_backed_oracle() {
     let (package, clause) = Twin::new().emitted_package("BalanceNeverDrops");
     let generated = generate_v2_clause_oracle(&package, &clause)
         .expect("the admitted state clause condition is supported");
     assert_eq!(generated.descriptor.node_id, clause);
     assert_eq!(
         generated.provenance,
-        quire_contract_codegen::OperationProvenance::IrConfirmed
+        filament_contract_codegen::OperationProvenance::IrConfirmed
     );
     assert!(generated.source.contains("pub fn oracle_"));
     assert!(generated.source.contains("order_numbers"));
@@ -121,7 +121,7 @@ fn qsl_emitted_state_clause_derives_a_confirmed_field_backed_oracle() {
     let end = (entry.probe.end_column - 1) as usize;
     assert_eq!(&line[start..end], "pub");
 
-    let scratch = super::scratch_crate::TemporaryDirectory::new("quire-v2-clause-oracle");
+    let scratch = super::scratch_crate::TemporaryDirectory::new("filament-v2-clause-oracle");
     fs::write(scratch.path.join("src/lib.rs"), format!(
         "{}\n#[test]\nfn clause_values() {{\n    use rt::{{Meter, ScalarLimits}};\n    let limits = ScalarLimits {{ integer_bits: 1000, decimal_digits: 1000, scale_expansion: 1000, text_input_bytes: 1000, text_scalars: 1000, normalized_scalars: 1000, unit_edges: 1000, value_occurrences: 1000, work_units: 1000, result_units: 1000 }};\n    let mut meter = Meter::new(limits);\n    let current = rt::Integer::from(5i64);\n    let pre = rt::Integer::from(4i64);\n    assert!(matches!(oracle_clause(&current, &pre, &mut meter), Ok(rt::Outcome::Completed(true))));\n    let mut meter = Meter::new(limits);\n    assert!(matches!(oracle_clause(&pre, &current, &mut meter), Ok(rt::Outcome::Completed(false))));\n    let lower = rt::Integer::from(0i64);\n    let upper = rt::Integer::from(1000i64);\n    let mut meter = Meter::new(limits);\n    assert!(matches!(oracle_clause(&lower, &upper, &mut meter), Ok(rt::Outcome::Completed(false))));\n    let mut meter = Meter::new(limits);\n    assert!(matches!(oracle_clause(&upper, &lower, &mut meter), Ok(rt::Outcome::Completed(true))));\n    let mut meter = Meter::new(ScalarLimits {{ work_units: 0, ..limits }});\n    assert!(matches!(oracle_clause(&current, &pre, &mut meter), Ok(rt::Outcome::Incomplete(_))));\n}}\n",
         generated.source
@@ -129,9 +129,9 @@ fn qsl_emitted_state_clause_derives_a_confirmed_field_backed_oracle() {
     super::scratch_crate::write_manifest(
         &scratch.path,
         &format!(
-            "[package]\nname = \"generated-v2-clause\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nquire-exact = {{ {} }}\n\n[workspace]\n",
+            "[package]\nname = \"generated-v2-clause\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nfilament-exact = {{ {} }}\n\n[workspace]\n",
             super::scratch_crate::runtime_dependency(&["exact"]),
-            quire_contract_codegen::EXACT_DEPENDENCY_SOURCE
+            filament_contract_codegen::EXACT_DEPENDENCY_SOURCE
         ),
     );
     let build = super::scratch_crate::lock_agreement_build();
@@ -176,7 +176,7 @@ fn clause_claim_map_carries_the_derived_descriptor_and_typed_disposition() {
     assert_eq!(&map.source.lock, package.lock());
     assert_eq!(map.items.len(), 1);
     assert_eq!(map.items[0].node_id, clause);
-    let quire_contract_codegen::ClaimDisposition::Generated(generated) = &map.items[0].result
+    let filament_contract_codegen::ClaimDisposition::Generated(generated) = &map.items[0].result
     else {
         panic!("the clause claim was not generated");
     };
@@ -184,7 +184,7 @@ fn clause_claim_map_carries_the_derived_descriptor_and_typed_disposition() {
     assert_eq!(generated.descriptor.condition_node_id, Some(condition_node));
     assert_eq!(
         generated.descriptor.operation_identities,
-        ["quire.op.integer.ge"]
+        ["filament.op.integer.ge"]
     );
     assert_eq!(
         derive_v2_clause_descriptor(&package, &clause),
@@ -192,7 +192,7 @@ fn clause_claim_map_carries_the_derived_descriptor_and_typed_disposition() {
     );
     assert_eq!(
         generated.provenance,
-        quire_contract_codegen::OperationProvenance::IrConfirmed
+        filament_contract_codegen::OperationProvenance::IrConfirmed
     );
     let encoded = serde_json::to_value(&map).unwrap();
     assert_eq!(
@@ -211,8 +211,8 @@ fn clause_claim_map_carries_the_derived_descriptor_and_typed_disposition() {
     assert_eq!(refused.items[0].node_id, non_clause.node_id);
     assert!(matches!(
         refused.items[0].result,
-        quire_contract_codegen::ClaimDisposition::Refused {
-            refusal: quire_contract_codegen::V2ClauseRefusal::NotClause
+        filament_contract_codegen::ClaimDisposition::Refused {
+            refusal: filament_contract_codegen::V2ClauseRefusal::NotClause
         }
     ));
 }
@@ -230,7 +230,7 @@ fn admitted_clause_refuses_non_clause_node() {
         .expect("an expression node");
     assert_eq!(
         generate_v2_clause_oracle(&package, &non_clause.node_id),
-        Err(quire_contract_codegen::V2ClauseRefusal::NotClause),
+        Err(filament_contract_codegen::V2ClauseRefusal::NotClause),
     );
 }
 
@@ -251,7 +251,7 @@ fn clause_oracle_refuses_a_clause_from_another_admitted_package() {
         .any(|node| node.node_id == foreign.clause));
     assert_eq!(
         generate_v2_clause_oracle(&admitted.package, &foreign.clause),
-        Err(quire_contract_codegen::V2ClauseRefusal::NotClause)
+        Err(filament_contract_codegen::V2ClauseRefusal::NotClause)
     );
 }
 
@@ -268,13 +268,13 @@ fn admitted_inline_clause_keeps_the_clause_identity() {
     assert_eq!(generated.descriptor.node_id, admitted.clause);
     assert_eq!(
         generated.provenance,
-        quire_contract_codegen::OperationProvenance::IrConfirmed
+        filament_contract_codegen::OperationProvenance::IrConfirmed
     );
     assert!(generated.descriptor.inputs.is_empty());
     assert_eq!(generated.source_map[0].expected_consequents, Some(0));
     assert!(generated.descriptor.operation_identities.is_empty());
     assert!(generated.source.contains("pub fn oracle_clause() -> bool"));
-    let scratch = super::scratch_crate::TemporaryDirectory::new("quire-v2-inline-clause");
+    let scratch = super::scratch_crate::TemporaryDirectory::new("filament-v2-inline-clause");
     fs::write(
         scratch.path.join("src/lib.rs"),
         format!(
@@ -286,9 +286,9 @@ fn admitted_inline_clause_keeps_the_clause_identity() {
     super::scratch_crate::write_manifest(
         &scratch.path,
         &format!(
-            "[package]\nname = \"generated-v2-inline-clause\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nquire-exact = {{ {} }}\n\n[workspace]\n",
+            "[package]\nname = \"generated-v2-inline-clause\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nfilament-exact = {{ {} }}\n\n[workspace]\n",
             super::scratch_crate::runtime_dependency(&["exact"]),
-            quire_contract_codegen::EXACT_DEPENDENCY_SOURCE
+            filament_contract_codegen::EXACT_DEPENDENCY_SOURCE
         ),
     );
     let build = super::scratch_crate::lock_agreement_build();
@@ -309,22 +309,22 @@ fn admitted_inline_clause_keeps_the_clause_identity() {
 
 #[trace("FR-014-AC-38")]
 #[test]
-fn qsl_emitted_pre_of_an_expression_is_refused() {
+fn fsl_emitted_pre_of_an_expression_is_refused() {
     let (package, clause) = Twin::with_balance_condition("self.balance >= pre(self.balance + 1)")
         .emitted_package("BalanceNeverDrops");
     assert_eq!(
         generate_v2_clause_oracle(&package, &clause),
-        Err(quire_contract_codegen::V2ClauseRefusal::UnsupportedCondition),
+        Err(filament_contract_codegen::V2ClauseRefusal::UnsupportedCondition),
     );
 }
 
 #[trace("FR-014-AC-38")]
 #[test]
-fn qsl_emitted_negated_clause_composes_the_boolean_oracle() {
+fn fsl_emitted_negated_clause_composes_the_boolean_oracle() {
     let (package, clause) =
         Twin::with_negated_balance_clause().emitted_package("BalanceNeverDrops");
     let generated = generate_v2_clause_oracle(&package, &clause)
-        .expect("a QSL emitted negated clause condition");
+        .expect("a FSL emitted negated clause condition");
     assert_eq!(generated.descriptor.node_id, clause);
     assert!(generated.source.contains("evaluate_boolean"));
     assert!(generated.source.contains("order_numbers"));
@@ -333,7 +333,7 @@ fn qsl_emitted_negated_clause_composes_the_boolean_oracle() {
 
 #[trace("FR-014-AC-38")]
 #[test]
-fn qsl_model_field_range_is_the_clause_input_range() {
+fn fsl_model_field_range_is_the_clause_input_range() {
     let (package, clause) =
         Twin::with_field_ranges((-5, 10), (50, 60)).emitted_package("BalanceNeverDrops");
     let generated = generate_v2_clause_oracle(&package, &clause)
@@ -348,7 +348,7 @@ fn qsl_model_field_range_is_the_clause_input_range() {
 
 #[trace("FR-014-AC-38")]
 #[test]
-fn qsl_bounded_operation_parameter_becomes_a_clause_input() {
+fn fsl_bounded_operation_parameter_becomes_a_clause_input() {
     let (package, clause) =
         Twin::with_bounded_other_condition().emitted_package("BalanceNeverDrops");
     let generated = generate_v2_clause_oracle(&package, &clause)
@@ -365,7 +365,7 @@ fn qsl_bounded_operation_parameter_becomes_a_clause_input() {
         .inputs
         .iter()
         .any(|input| input.name == "current_balance" && (input.lower, input.upper) == (0, 1000)));
-    let scratch = super::scratch_crate::TemporaryDirectory::new("quire-v2-param-clause");
+    let scratch = super::scratch_crate::TemporaryDirectory::new("filament-v2-param-clause");
     fs::write(
         scratch.path.join("src/lib.rs"),
         format!(
@@ -377,9 +377,9 @@ fn qsl_bounded_operation_parameter_becomes_a_clause_input() {
     super::scratch_crate::write_manifest(
         &scratch.path,
         &format!(
-            "[package]\nname = \"generated-v2-param-clause\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nquire-exact = {{ {} }}\n\n[workspace]\n",
+            "[package]\nname = \"generated-v2-param-clause\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nfilament-exact = {{ {} }}\n\n[workspace]\n",
             super::scratch_crate::runtime_dependency(&["exact"]),
-            quire_contract_codegen::EXACT_DEPENDENCY_SOURCE
+            filament_contract_codegen::EXACT_DEPENDENCY_SOURCE
         ),
     );
     let build = super::scratch_crate::lock_agreement_build();
@@ -401,7 +401,7 @@ fn qsl_bounded_operation_parameter_becomes_a_clause_input() {
 /// The result-only subject returns an integer; its result is checked and reaches the oracle.
 #[trace("FR-025-AC-11", "FR-025-AC-12", "FR-025-AC-13", "TC-036")]
 #[test]
-fn qsl_result_binder_is_not_drawn_as_a_postcondition_parameter() {
+fn fsl_result_binder_is_not_drawn_as_a_postcondition_parameter() {
     let (package, clause) =
         Twin::with_bounded_result_postcondition().emitted_package("DepositResult");
     let outcome = negotiate(&[ObligationItem::V2Clause {
@@ -510,7 +510,7 @@ fn qsl_result_binder_is_not_drawn_as_a_postcondition_parameter() {
 /// An unused result is still produced and checked, while the parameter is the sole draw.
 #[trace("FR-025-AC-11", "FR-025-AC-12", "FR-025-AC-13", "TC-036")]
 #[test]
-fn qsl_result_unused_binder_still_checks_produced_domain() {
+fn fsl_result_unused_binder_still_checks_produced_domain() {
     let (package, clause) =
         Twin::with_unused_bounded_result_postcondition().emitted_package("DepositParameter");
     let outcome = negotiate(&[ObligationItem::V2Clause {
@@ -551,7 +551,7 @@ fn qsl_result_unused_binder_still_checks_produced_domain() {
 /// Signature order controls the subject call while logical draws ascend by parameter name.
 #[trace("FR-025-AC-1", "FR-025-AC-11", "FR-025-AC-12", "TC-036")]
 #[test]
-fn qsl_result_postcondition_keeps_declared_parameter_call_order() {
+fn fsl_result_postcondition_keeps_declared_parameter_call_order() {
     let (package, clause) =
         Twin::with_two_parameter_result_postcondition().emitted_package("ResultWithParameters");
     let outcome = negotiate(&[ObligationItem::V2Clause {
@@ -596,7 +596,7 @@ fn qsl_result_postcondition_keeps_declared_parameter_call_order() {
 /// The emitted Boolean result oracle reads the exact returned bit for both values.
 #[trace("FR-025-AC-12", "FR-025-AC-13", "TC-036")]
 #[test]
-fn qsl_result_boolean_uses_the_same_subject_value_for_both_bits() {
+fn fsl_result_boolean_uses_the_same_subject_value_for_both_bits() {
     let (package, clause) =
         Twin::with_boolean_result_postcondition("result").emitted_package("DepositResult");
     let oracle = generate_v2_clause_oracle(&package, &clause).expect("Boolean result oracle");
@@ -650,9 +650,9 @@ fn qsl_result_boolean_uses_the_same_subject_value_for_both_bits() {
     super::scratch_crate::write_manifest(
         &directory.path,
         &format!(
-            "[package]\nname = \"generated-v2-boolean-result\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nquire-exact = {{ {} }}\n\n[workspace]\n",
+            "[package]\nname = \"generated-v2-boolean-result\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nfilament-exact = {{ {} }}\n\n[workspace]\n",
             super::scratch_crate::runtime_dependency(&["exact"]),
-            quire_contract_codegen::EXACT_DEPENDENCY_SOURCE,
+            filament_contract_codegen::EXACT_DEPENDENCY_SOURCE,
         ),
     );
     super::scratch_crate::resolve_seeded_lock(&directory.path);
@@ -672,7 +672,7 @@ fn qsl_result_boolean_uses_the_same_subject_value_for_both_bits() {
 /// Boolean parameters are drawn, then passed by value to both the subject and clause oracle.
 #[trace("FR-025-AC-11", "FR-025-AC-12", "TC-036")]
 #[test]
-fn qsl_result_boolean_parameter_preserves_value_binding() {
+fn fsl_result_boolean_parameter_preserves_value_binding() {
     let (package, clause) =
         Twin::with_boolean_result_parameter_postcondition().emitted_package("DepositResult");
     let outcome = negotiate(&[ObligationItem::V2Clause {
@@ -718,7 +718,7 @@ fn qsl_result_boolean_parameter_preserves_value_binding() {
 /// operation parameter as the only draw.
 #[trace("FR-025-AC-12", "TC-036")]
 #[test]
-fn qsl_operation_without_a_result_returns_unit_and_draws_only_its_parameter() {
+fn fsl_operation_without_a_result_returns_unit_and_draws_only_its_parameter() {
     let (package, clause) =
         Twin::with_bounded_amount_condition("amount < 1000").emitted_package("BalanceNeverDrops");
     let outcome = negotiate(&[ObligationItem::V2Clause {
@@ -746,7 +746,7 @@ fn qsl_operation_without_a_result_returns_unit_and_draws_only_its_parameter() {
 /// An unbounded selected result is refused before any scalar harness is exposed.
 #[trace("FR-025-AC-12", "TC-036")]
 #[test]
-fn qsl_result_unbounded_refuses_without_a_scalar_harness() {
+fn fsl_result_unbounded_refuses_without_a_scalar_harness() {
     let (package, clause) =
         Twin::with_unbounded_result_postcondition().emitted_package("DepositResult");
     let outcome = negotiate(&[ObligationItem::V2Clause {
@@ -775,10 +775,10 @@ fn qsl_result_unbounded_refuses_without_a_scalar_harness() {
 /// inside the model's bound, and emits its own cover-only harness with the exact clause oracle.
 #[trace("TC-025")]
 #[test]
-fn qsl_parameter_precondition_is_a_separate_v2_cover_obligation() {
+fn fsl_parameter_precondition_is_a_separate_v2_cover_obligation() {
     let (package, clause) =
         Twin::with_bounded_other_precondition().emitted_package("OtherBelowLimit");
-    let oracle = generate_v2_clause_oracle(&package, &clause).expect("QSL precondition oracle");
+    let oracle = generate_v2_clause_oracle(&package, &clause).expect("FSL precondition oracle");
     assert_eq!(oracle.descriptor.inputs.len(), 1);
     assert_eq!(oracle.descriptor.inputs[0].name, "parameter_other");
     assert_eq!(
@@ -823,7 +823,7 @@ fn qsl_parameter_precondition_is_a_separate_v2_cover_obligation() {
 /// A selected model field supplies its declared domain to a V2 precondition draw.
 #[trace("FR-015-AC-39", "TC-025")]
 #[test]
-fn qsl_precondition_draws_selected_own_field_domain() {
+fn fsl_precondition_draws_selected_own_field_domain() {
     let (package, clause) =
         Twin::with_balance_field_precondition().emitted_package("BalanceAboveFloor");
     let oracle = generate_v2_clause_oracle(&package, &clause).expect("admitted field oracle");
@@ -902,10 +902,10 @@ fn qsl_precondition_draws_selected_own_field_domain() {
 /// checked argument order in a single V2 precondition harness.
 #[trace("FR-015-AC-39", "TC-025")]
 #[test]
-fn qsl_two_parameter_precondition_draws_each_declared_domain() {
+fn fsl_two_parameter_precondition_draws_each_declared_domain() {
     let (package, clause) =
         Twin::with_two_bounded_parameter_precondition().emitted_package("TwoParameters");
-    let oracle = generate_v2_clause_oracle(&package, &clause).expect("admitted QSL clause oracle");
+    let oracle = generate_v2_clause_oracle(&package, &clause).expect("admitted FSL clause oracle");
     let inputs = oracle
         .descriptor
         .inputs
@@ -967,7 +967,7 @@ fn qsl_two_parameter_precondition_draws_each_declared_domain() {
 /// a caller-supplied bound or an emitted proof claim.
 #[trace("FR-015-AC-39", "TC-025")]
 #[test]
-fn qsl_two_parameter_precondition_refuses_unrenderable_domains() {
+fn fsl_two_parameter_precondition_refuses_unrenderable_domains() {
     for twin in [
         Twin::with_unbounded_second_parameter_precondition(),
         Twin::with_wide_second_parameter_precondition(),
@@ -997,26 +997,26 @@ fn qsl_two_parameter_precondition_refuses_unrenderable_domains() {
 }
 
 /// The public V2 request embeds the clause-identified FR-014 source for each supported
-/// connective and comparison, keeping the QSL clause node as the oracle's identity.
+/// connective and comparison, keeping the FSL clause node as the oracle's identity.
 #[trace("FR-015-AC-40", "TC-025")]
 #[test]
-fn qsl_v2_precondition_embeds_exact_referenced_clause_oracle() {
+fn fsl_v2_precondition_embeds_exact_referenced_clause_oracle() {
     for (condition, operation_identity) in [
-        ("other < 1000 and other >= 0", "quire.op.boolean.and"),
-        ("other < 1000 or other >= 0", "quire.op.boolean.or"),
-        ("not (other < 1000)", "quire.op.boolean.not"),
+        ("other < 1000 and other >= 0", "filament.op.boolean.and"),
+        ("other < 1000 or other >= 0", "filament.op.boolean.or"),
+        ("not (other < 1000)", "filament.op.boolean.not"),
         (
             "other < 1000 implies other >= 0",
-            "quire.op.boolean.implies",
+            "filament.op.boolean.implies",
         ),
-        ("(other < 1000) = (other >= 0)", "quire.op.boolean.eq"),
-        ("(other < 1000) != (other >= 0)", "quire.op.boolean.ne"),
-        ("other = other", "quire.op.integer.eq"),
-        ("other != other", "quire.op.integer.ne"),
-        ("other < 1000", "quire.op.integer.lt"),
-        ("other <= 1000", "quire.op.integer.le"),
-        ("other > 0", "quire.op.integer.gt"),
-        ("other >= 0", "quire.op.integer.ge"),
+        ("(other < 1000) = (other >= 0)", "filament.op.boolean.eq"),
+        ("(other < 1000) != (other >= 0)", "filament.op.boolean.ne"),
+        ("other = other", "filament.op.integer.eq"),
+        ("other != other", "filament.op.integer.ne"),
+        ("other < 1000", "filament.op.integer.lt"),
+        ("other <= 1000", "filament.op.integer.le"),
+        ("other > 0", "filament.op.integer.gt"),
+        ("other >= 0", "filament.op.integer.ge"),
     ] {
         let (package, clause) = Twin::with_bounded_other_precondition_condition(condition)
             .emitted_package("OtherBelowLimit");
@@ -1142,7 +1142,7 @@ fn ordinary_v2_clause_cannot_settle_as_a_collection_totality_failure() {
         harness.identity.module_symbol.as_str(),
         harness.identity.harness_symbol.as_str(),
     );
-    let playback = quire_contract_codegen::parse_assertion_playback(
+    let playback = filament_contract_codegen::parse_assertion_playback(
         &transcript,
         harness.identity.harness_symbol.as_str(),
         harness.identity.module_symbol.as_str(),
@@ -1150,10 +1150,10 @@ fn ordinary_v2_clause_cannot_settle_as_a_collection_totality_failure() {
         0,
     )
     .expect("synthetic assertion parses");
-    let error = quire_contract_codegen::settle_v2_collection_precondition_falsification(
+    let error = filament_contract_codegen::settle_v2_collection_precondition_falsification(
         harness,
         &playback,
-        quire_contract_codegen::WitnessDecodeLimits {
+        filament_contract_codegen::WitnessDecodeLimits {
             bytes: 4096,
             values: 0,
         },
@@ -1294,7 +1294,7 @@ fn v2_clause_census_is_order_independent_and_records_readiness() {
     );
     assert_eq!(ready.identity.dependencies[0].proof_id, "proof_a");
     assert_eq!(ready.identity.dependencies[1].proof_id, "proof_b");
-    let persisted = |harness: &quire_contract_codegen::KaniV2ClauseObligationHarness| -> Value {
+    let persisted = |harness: &filament_contract_codegen::KaniV2ClauseObligationHarness| -> Value {
         serde_json::from_str(&harness.record.contents).expect("persisted V2 identity record")
     };
     let assert_census = |record: &Value, first_state: &str, readiness: &str| {
@@ -1378,13 +1378,13 @@ fn native_v2_precondition_keeps_original_parameter_bounds_and_ordering() {
     assert_eq!(harness.identity.unwind, 3);
     assert_eq!(
         harness.identity.solver,
-        quire_contract_codegen::KaniSolver::Cadical
+        filament_contract_codegen::KaniSolver::Cadical
     );
     assert_eq!(harness.identity.arguments[0].minimum, 0);
     assert_eq!(harness.identity.arguments[0].maximum, 1000);
     assert_eq!(
         harness.identity.integer_representation,
-        quire_contract_codegen::ScalarIntegerRepresentation::Native
+        filament_contract_codegen::ScalarIntegerRepresentation::Native
     );
     assert_eq!(
         harness.identity.native_integer_selection,
@@ -1580,7 +1580,7 @@ fn native_v2_postcondition_keeps_guarded_arithmetic_and_independent_expectation(
     assert_eq!(harness.identity.unwind, 3);
     assert_eq!(
         harness.identity.solver,
-        quire_contract_codegen::KaniSolver::Cadical
+        filament_contract_codegen::KaniSolver::Cadical
     );
     assert_eq!(
         harness.identity.native_integer_selection,
@@ -1710,11 +1710,11 @@ pub(super) fn decode_native_v2_helper_mutant_playback() {
         harness.record.contents.as_bytes()
     );
     let transcript = fs::read_to_string(path("IR705_HELPER_COUNTEREXAMPLE")).unwrap();
-    let limits = quire_contract_codegen::WitnessDecodeLimits {
+    let limits = filament_contract_codegen::WitnessDecodeLimits {
         bytes: 1024 * 1024,
         values: 1,
     };
-    let playback = quire_contract_codegen::parse_assertion_playback(
+    let playback = filament_contract_codegen::parse_assertion_playback(
         &transcript,
         harness.identity.harness_symbol.as_str(),
         harness.identity.module_symbol.as_str(),
@@ -1723,7 +1723,7 @@ pub(super) fn decode_native_v2_helper_mutant_playback() {
     )
     .expect("actual backend playback parses once");
     let decoded =
-        quire_contract_codegen::decode_v2_clause_falsification(harness, &playback, limits)
+        filament_contract_codegen::decode_v2_clause_falsification(harness, &playback, limits)
             .expect("actual playback joins the original sealed harness");
     let [(name, qsl_replay::WitnessValue::Integer(amount))] = decoded.as_slice() else {
         panic!("one typed original integer draw: {decoded:?}");
@@ -1786,11 +1786,11 @@ fn kani_concrete_playback_synthetic() {{\n\
 }}\n",
             harness.identity.module_symbol, harness.identity.harness_symbol,
         );
-        let limits = quire_contract_codegen::WitnessDecodeLimits {
+        let limits = filament_contract_codegen::WitnessDecodeLimits {
             bytes: 4096,
             values: 1,
         };
-        let playback = quire_contract_codegen::parse_assertion_playback(
+        let playback = filament_contract_codegen::parse_assertion_playback(
             &transcript,
             harness.identity.harness_symbol.as_str(),
             harness.identity.module_symbol.as_str(),
@@ -1798,7 +1798,7 @@ fn kani_concrete_playback_synthetic() {{\n\
             limits.values,
         )
         .expect("synthetic assertion parses once");
-        quire_contract_codegen::decode_v2_clause_falsification(harness, &playback, limits)
+        filament_contract_codegen::decode_v2_clause_falsification(harness, &playback, limits)
     };
     for value in [0_i64, 1000] {
         let decoded = decode(value).expect("inclusive endpoint decoded");
@@ -1933,7 +1933,7 @@ fn native_v2_chained_probe_uses_selected_intermediate_interval() {
     let multiply = selected
         .operations
         .iter()
-        .find(|decision| decision.operation_identity == "quire.op.integer.mul")
+        .find(|decision| decision.operation_identity == "filament.op.integer.mul")
         .expect("checked Multiply after bounded Add");
     assert_eq!(multiply.operands[0].lower, "1");
     assert_eq!(multiply.operands[0].upper, "1001");
@@ -1952,7 +1952,7 @@ fn native_v2_chained_probe_uses_selected_intermediate_interval() {
 /// remain distinct harness identities for each supported scalar V2 clause kind.
 #[trace("FR-015-AC-47", "TC-025")]
 #[test]
-fn qsl_v2_scalar_clause_identity_tracks_request_facts() {
+fn fsl_v2_scalar_clause_identity_tracks_request_facts() {
     for (twin, clause_name, kind) in [
         (
             Twin::with_bounded_other_precondition(),
@@ -2033,7 +2033,7 @@ fn qsl_v2_scalar_clause_identity_tracks_request_facts() {
 fn v2_precondition_fixture_harness(
     twin: Twin,
     clause_name: &str,
-) -> quire_contract_codegen::KaniV2ClauseObligationHarness {
+) -> filament_contract_codegen::KaniV2ClauseObligationHarness {
     let (package, clause) = twin.emitted_package(clause_name);
     let item = ObligationItem::V2Clause {
         package: &package,
@@ -2063,16 +2063,16 @@ fn v2_precondition_fixture_harness(
 
 fn write_v2_precondition_fixture(
     directory: &std::path::Path,
-    harness: &quire_contract_codegen::KaniV2ClauseObligationHarness,
+    harness: &filament_contract_codegen::KaniV2ClauseObligationHarness,
 ) {
     fs::write(directory.join("src/lib.rs"), &harness.rust.contents).expect("generated crate");
     super::scratch_crate::write_manifest(
         directory,
         &format!(
-            "[package]\nname = \"generated-v2-precondition\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nquire-exact = {{ {} }}\nquire-semantic-value = {{ {} }}\n\n[workspace]\n",
+            "[package]\nname = \"generated-v2-precondition\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nfilament-exact = {{ {} }}\nfilament-semantic-value = {{ {} }}\n\n[workspace]\n",
             super::scratch_crate::runtime_dependency(&["exact"]),
-            quire_contract_codegen::EXACT_DEPENDENCY_SOURCE,
-            quire_contract_codegen::SEMANTIC_VALUE_DEPENDENCY_SOURCE
+            filament_contract_codegen::EXACT_DEPENDENCY_SOURCE,
+            filament_contract_codegen::SEMANTIC_VALUE_DEPENDENCY_SOURCE
         ),
     );
     fs::write(
@@ -2134,7 +2134,7 @@ fn tc_025_v2_precondition_fixture_compiles_with_its_direct_dependencies() {
 
 #[trace("FR-014-AC-38")]
 #[test]
-fn qsl_emitted_clause_composes_boolean_and_integer_operations() {
+fn fsl_emitted_clause_composes_boolean_and_integer_operations() {
     let mut compiled = String::new();
     for (index, (expression, expected)) in [
         ("self.balance + 1 >= pre(self.balance)", true),
@@ -2186,15 +2186,15 @@ fn qsl_emitted_clause_composes_boolean_and_integer_operations() {
             generated.source,
         ));
     }
-    let scratch = super::scratch_crate::TemporaryDirectory::new("quire-v2-clause-corpus");
+    let scratch = super::scratch_crate::TemporaryDirectory::new("filament-v2-clause-corpus");
     fs::write(scratch.path.join("src/lib.rs"), compiled).unwrap();
     super::scratch_crate::write_manifest(
         &scratch.path,
         &format!(
-            "[package]\nname = \"generated-v2-clause-corpus\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nquire-exact = {{ {} }}\nquire-semantic-value = {{ {} }}\n\n[workspace]\n",
+            "[package]\nname = \"generated-v2-clause-corpus\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nfilament-exact = {{ {} }}\nfilament-semantic-value = {{ {} }}\n\n[workspace]\n",
             super::scratch_crate::runtime_dependency(&["exact"]),
-            quire_contract_codegen::EXACT_DEPENDENCY_SOURCE,
-            quire_contract_codegen::SEMANTIC_VALUE_DEPENDENCY_SOURCE
+            filament_contract_codegen::EXACT_DEPENDENCY_SOURCE,
+            filament_contract_codegen::SEMANTIC_VALUE_DEPENDENCY_SOURCE
         ),
     );
     let clause_corpus_cargo = std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
@@ -2227,7 +2227,7 @@ fn skipped_v2_clause_consequent_has_a_measured_zero_native_probe() {
         .filter(|region| region.role == "implication_consequent")
         .collect::<Vec<_>>();
     assert_eq!(consequents.len(), 1);
-    let scratch = super::scratch_crate::TemporaryDirectory::new("quire-v2-clause-native-probe");
+    let scratch = super::scratch_crate::TemporaryDirectory::new("filament-v2-clause-native-probe");
     fs::write(
         scratch.path.join("src/lib.rs"),
         format!(
@@ -2239,9 +2239,9 @@ fn skipped_v2_clause_consequent_has_a_measured_zero_native_probe() {
     super::scratch_crate::write_manifest(
         &scratch.path,
         &format!(
-            "[package]\nname = \"generated-v2-clause-native-probe\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nquire-exact = {{ {} }}\n\n[workspace]\n",
+            "[package]\nname = \"generated-v2-clause-native-probe\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nfilament-exact = {{ {} }}\n\n[workspace]\n",
             super::scratch_crate::runtime_dependency(&["exact"]),
-            quire_contract_codegen::EXACT_DEPENDENCY_SOURCE
+            filament_contract_codegen::EXACT_DEPENDENCY_SOURCE
         ),
     );
     let toolchain = format!("+{}", env!("CARGO_PKG_RUST_VERSION"));
@@ -2281,7 +2281,7 @@ fn skipped_v2_clause_consequent_has_a_measured_zero_native_probe() {
     );
     let coverage = fs::read(scratch.path.join("coverage.json")).unwrap();
     let measured =
-        quire_contract_codegen::parse_llvm_coverage(&coverage, scratch.path.to_str().unwrap())
+        filament_contract_codegen::parse_llvm_coverage(&coverage, scratch.path.to_str().unwrap())
             .unwrap();
     assert_eq!(
         measured
@@ -2437,7 +2437,7 @@ fn field_read_through(
         bound,
         application(
             "query",
-            op_full("quire.op.record.project", vec![], None, Some(member)),
+            op_full("filament.op.record.project", vec![], None, Some(member)),
             bound,
             vec![reference(deref)],
         ),
@@ -2454,7 +2454,7 @@ fn pre_read(builder: &mut PackageBuilder, code: u32, read: &str, bound: &str) ->
         bound,
         application(
             "pre",
-            op("quire.op.state.pre"),
+            op("filament.op.state.pre"),
             bound,
             vec![reference(read)],
         ),
@@ -2501,7 +2501,7 @@ fn state_frame_base_package() -> PackageBuilder {
         &boolean,
         application(
             "unary",
-            op("quire.op.boolean.not"),
+            op("filament.op.boolean.not"),
             &boolean,
             vec![boolean_literal(true)],
         ),
@@ -2670,7 +2670,7 @@ fn add_shape(builder: &mut PackageBuilder, shape: &Shape) {
         &object,
         application(
             "deref",
-            op("quire.op.model.deref"),
+            op("filament.op.model.deref"),
             &object,
             vec![reference(&key(shape.scoped(SELF)))],
         ),
@@ -2684,7 +2684,7 @@ fn add_shape(builder: &mut PackageBuilder, shape: &Shape) {
         &object,
         application(
             "deref",
-            op("quire.op.model.deref"),
+            op("filament.op.model.deref"),
             &object,
             vec![reference(&key(shape.scoped(OTHER)))],
         ),
@@ -2737,14 +2737,14 @@ fn add_shape(builder: &mut PackageBuilder, shape: &Shape) {
                     builder.select_definition(definition.clone());
                     (
                         "binary",
-                        "quire.op.integer.div",
+                        "filament.op.integer.div",
                         vec![literal("integer", "4"), literal("integer", "2")],
                         vec![law("integer_division", definition)],
                     )
                 }
                 Condition::Modulo => (
                     "binary",
-                    "quire.op.integer.mod",
+                    "filament.op.integer.mod",
                     vec![literal("integer", "4"), literal("integer", "2")],
                     Vec::new(),
                 ),
@@ -2774,7 +2774,7 @@ fn add_shape(builder: &mut PackageBuilder, shape: &Shape) {
         &key(T_BOOLEAN),
         application(
             "binary",
-            op("quire.op.integer.ge"),
+            op("filament.op.integer.ge"),
             &key(T_BOOLEAN),
             vec![left, right],
         ),
@@ -2789,7 +2789,7 @@ fn add_shape(builder: &mut PackageBuilder, shape: &Shape) {
             &key(T_BOOLEAN),
             application(
                 "unary",
-                op("quire.op.boolean.not"),
+                op("filament.op.boolean.not"),
                 &key(T_BOOLEAN),
                 vec![reference(&condition)],
             ),
@@ -2805,7 +2805,7 @@ fn add_shape(builder: &mut PackageBuilder, shape: &Shape) {
             &key(T_BOOLEAN),
             application(
                 "binary",
-                op("quire.op.boolean.and"),
+                op("filament.op.boolean.and"),
                 &key(T_BOOLEAN),
                 vec![reference(&condition), reference(&condition)],
             ),
@@ -2824,7 +2824,7 @@ fn add_shape(builder: &mut PackageBuilder, shape: &Shape) {
             application(
                 "binary",
                 op_full(
-                    "quire.op.text.eq",
+                    "filament.op.text.eq",
                     vec![law("text_profile", definition)],
                     Some(mode_kv("text_profile", "nfc")),
                     None,
@@ -2852,7 +2852,7 @@ fn add_shape(builder: &mut PackageBuilder, shape: &Shape) {
         application(
             "state_clause",
             op_full(
-                "quire.op.state.clause",
+                "filament.op.state.clause",
                 vec![],
                 None,
                 Some(json!({"kind": "state_clause", "clause": shape.clause})),
@@ -2967,7 +2967,7 @@ pub(crate) fn ir295_state_fields() -> &'static [&'static str] {
     &STATE_FIELDS
 }
 
-/// The selected model fixture, with graph identities taken from QSL's emitted package.
+/// The selected model fixture, with graph identities taken from FSL's emitted package.
 pub(crate) fn emitted_fixture(twin: &Twin, clause_name: &str) -> Fixture {
     let (package, clause) = twin.emitted_package(clause_name);
     let node = |form: &str| {
@@ -3056,7 +3056,7 @@ fn both_state_obligation_identities_change_with_either_required_ceiling() {
 const FORBIDDEN_CHECK: &str =
     "operation `deposit` changed `audit`, which its frame does not modify";
 
-/// Generate both roles directly from the checked package QSL emits for the twin's clause.
+/// Generate both roles directly from the checked package FSL emits for the twin's clause.
 fn generated_from_twin(
     twin: &Twin,
     clause_name: &str,
@@ -3077,7 +3077,7 @@ fn generated_from_twin_with_ceilings(
     clause_name: &str,
     fields: &[&str],
     subject_path: &str,
-    ceilings: quire_contract_codegen::ProofCeilings,
+    ceilings: filament_contract_codegen::ProofCeilings,
 ) -> StateFrameObligations {
     let (package, clause) = twin.emitted_package(clause_name);
     generate_state_frame_obligations(
@@ -3095,7 +3095,7 @@ fn generated_from_twin_with_ceilings(
     .expect("the emitted clause generates both roles")
 }
 
-/// The healthy twin's frame identity from QSL's emitted checked package.
+/// The healthy twin's frame identity from FSL's emitted checked package.
 pub(crate) fn frame_harness(twin: &Twin) -> StateFrameIdentity {
     generated_from_twin(twin, "BalanceNeverDrops", &STATE_FIELDS, SUBJECT_PATH)
         .frame
@@ -3118,7 +3118,7 @@ fn tc_026_frame_replay_refuses_poisoned_suffixes_at_both_decode_bounds() {
     let harness = frame_harness(&twin);
     let invocation = twin.invocation("account", (5, 0), (6, 1));
     let run = run_of(&harness, [5, 0]);
-    let limits = quire_contract_codegen::WitnessDecodeLimits {
+    let limits = filament_contract_codegen::WitnessDecodeLimits {
         bytes: run.playback.len(),
         values: 2,
     };
@@ -3133,7 +3133,7 @@ fn tc_026_frame_replay_refuses_poisoned_suffixes_at_both_decode_bounds() {
         (
             run.playback
                 .replace("    ];", "        // 0\n        vec![not_a_byte],\n    ];"),
-            quire_contract_codegen::WitnessDecodeLimits {
+            filament_contract_codegen::WitnessDecodeLimits {
                 bytes: usize::MAX,
                 values: 2,
             },
@@ -3161,7 +3161,7 @@ fn tc_026_frame_replay_refuses_poisoned_suffixes_at_both_decode_bounds() {
             "account",
             "audit",
             &candidate,
-            quire_contract_codegen::WitnessDecodeLimits {
+            filament_contract_codegen::WitnessDecodeLimits {
                 bytes: candidate.playback.len(),
                 values: 3,
             },
@@ -3186,7 +3186,7 @@ fn tc_035_frame_replay_rechecks_parsed_playback_bounds() {
     let harness = frame_harness(&twin);
     let invocation = twin.invocation("account", (5, 0), (6, 1));
     let run = run_of(&harness, [5, 0]);
-    let admitted = quire_contract_codegen::WitnessDecodeLimits {
+    let admitted = filament_contract_codegen::WitnessDecodeLimits {
         bytes: run.playback.len(),
         values: 2,
     };
@@ -3202,14 +3202,14 @@ fn tc_035_frame_replay_rechecks_parsed_playback_bounds() {
     .expect("complete parsed playback is admitted at both limits");
     for (requested, code) in [
         (
-            quire_contract_codegen::WitnessDecodeLimits {
+            filament_contract_codegen::WitnessDecodeLimits {
                 bytes: admitted.bytes - 1,
                 values: admitted.values,
             },
             "cg_witness_decode_bytes_limit",
         ),
         (
-            quire_contract_codegen::WitnessDecodeLimits {
+            filament_contract_codegen::WitnessDecodeLimits {
                 bytes: admitted.bytes,
                 values: admitted.values - 1,
             },
@@ -3232,14 +3232,14 @@ fn tc_035_frame_replay_rechecks_parsed_playback_bounds() {
     }
     for (run_limits, code) in [
         (
-            quire_contract_codegen::WitnessDecodeLimits {
+            filament_contract_codegen::WitnessDecodeLimits {
                 bytes: admitted.bytes - 1,
                 values: admitted.values,
             },
             "cg_witness_decode_bytes_limit",
         ),
         (
-            quire_contract_codegen::WitnessDecodeLimits {
+            filament_contract_codegen::WitnessDecodeLimits {
                 bytes: admitted.bytes,
                 values: admitted.values - 1,
             },
@@ -3279,7 +3279,7 @@ fn carried_frame_identity(twin: &Twin, operation: &str, run: &Run) -> Obligation
         .obligation_identity
 }
 
-/// The identity issued with QSL's selected operation-frame claim.
+/// The identity issued with FSL's selected operation-frame claim.
 fn producer_frame_identity(site: &OperationSite) -> ObligationIdentity {
     assert_eq!(site.frame_occurrence.node(), &site.frame);
     site.obligation_identity().clone()
@@ -4207,7 +4207,7 @@ fn tc_025_every_state_frame_item_has_a_record_whatever_an_earlier_item_refused()
 ///
 /// This integration test is traced only to TC-025: it compares with the public two-role entry,
 /// while the crate-internal role-parity test backs FR-015-AC-60 by comparing both direct roles
-/// with their negotiated items over a QSL-emitted fixture.
+/// with their negotiated items over a FSL-emitted fixture.
 #[trace("TC-025")]
 #[test]
 fn tc_025_a_supported_state_frame_item_returns_the_harness_the_engine_generates() {
@@ -4712,7 +4712,7 @@ fn tc_025_the_single_clause_entry_keeps_its_first_refusal_when_both_roles_refuse
 ///
 /// This integration test is traced only to TC-025: it checks harness role and clause, while the
 /// crate-internal role-parity test backs FR-015-AC-68 with direct `generate_state_frame_role`
-/// comparisons over the same QSL-emitted fixture.
+/// comparisons over the same FSL-emitted fixture.
 #[trace("TC-025")]
 #[test]
 fn tc_025_the_two_roles_of_a_state_clause_settle_independently() {
@@ -4815,7 +4815,7 @@ fn tc_025_replay_frame_refuses_an_envelope_that_disagrees_with_its_payload() {
     ));
 }
 
-/// The frame-replay payload's identities are QSL's answer for the operation, and the envelope
+/// The frame-replay payload's identities are FSL's answer for the operation, and the envelope
 /// names the payload's own frame node and frame occurrence.
 #[trace("FR-015-AC-33", "FR-015-AC-34", "TC-025")]
 #[test]
@@ -4833,11 +4833,11 @@ fn tc_025_the_frame_replay_envelope_names_the_payloads_frame_and_occurrence() {
     );
 }
 
-/// The non-Kani frame path carries QSL's call-site identities through the packet and succeeds
+/// The non-Kani frame path carries FSL's call-site identities through the packet and succeeds
 /// through `FrameReplay::replay`, whose implementation calls `qsl_replay::replay_frame`.
 #[trace("TC-035", "FR-024-AC-6", "FR-024-AC-41")]
 #[test]
-fn tc_035_frame_packet_reaches_qsl_with_call_site_identities() {
+fn tc_035_frame_packet_reaches_fsl_with_call_site_identities() {
     let twin = Twin::new();
     let site = twin.operation_site("deposit").expect("operation site");
     let invocation = twin.invocation("account", (5, 0), (6, 1));
@@ -4867,16 +4867,16 @@ fn tc_035_frame_packet_reaches_qsl_with_call_site_identities() {
         replay.packet.occurrence_key.as_ref(),
         Some(&site.frame_occurrence)
     );
-    let result = replay.replay().expect("QSL admits the frame envelope");
+    let result = replay.replay().expect("FSL admits the frame envelope");
     assert!(matches!(result.result(), ReplayResult::Witness(_)));
 }
 
-/// The driver-supplied typed target, including its declaring owner, is the value sent to QSL.
+/// The driver-supplied typed target, including its declaring owner, is the value sent to FSL.
 #[trace("FR-024-AC-54", "TC-035")]
 #[test]
 fn tc_035_selected_frame_target_reaches_packet_and_request() {
     let twin = Twin::new();
-    let site = twin.operation_site("deposit").expect("QSL operation site");
+    let site = twin.operation_site("deposit").expect("FSL operation site");
     let invocation = twin.invocation("account", (5, 0), (6, 1));
     let replay = twin.frame_replay(&invocation, "account", "audit", &forbidden_run(&twin));
     assert_eq!(
@@ -4890,7 +4890,7 @@ fn tc_035_selected_frame_target_reaches_packet_and_request() {
     assert_eq!(replay.packet.occurrence_key, Some(site.frame_occurrence));
 }
 
-/// Selecting a subtype preserves the operation's declaring owner in the supplied QSL target.
+/// Selecting a subtype preserves the operation's declaring owner in the supplied FSL target.
 #[trace("FR-024-AC-54", "TC-035")]
 #[test]
 fn tc_035_inherited_frame_target_retains_declaring_owner() {
@@ -5038,7 +5038,7 @@ fn tc_035_selected_frame_target_refuses_missing_and_mismatched_members() {
     let invocation = twin.invocation("account", (5, 0), (6, 1));
     let run = forbidden_run(&twin);
     let check = |edit: fn(
-        &mut Option<quire_contract_codegen::SelectedFrameTarget>,
+        &mut Option<filament_contract_codegen::SelectedFrameTarget>,
         &mut OccurrenceKey,
         &mut CheckedPackageV2,
     ),
@@ -5134,7 +5134,7 @@ fn tc_035_selected_frame_target_refuses_missing_and_mismatched_members() {
     ));
 }
 
-/// `FrameReplay::replay` returns QSL's result without Kani: a forbidden write settles a reproduced
+/// `FrameReplay::replay` returns FSL's result without Kani: a forbidden write settles a reproduced
 /// violation that names the written field, and a write the frame grants is a respected frame.
 #[trace("FR-015-AC-36", "TC-025")]
 #[test]
@@ -5272,7 +5272,7 @@ fn tc_035_the_request_and_envelope_carry_the_producer_frame_claim() {
     replay.replay().expect("equal producer claim replays");
 }
 
-/// A packet cannot replace the selected frame claim's QSL identity while the request keeps it.
+/// A packet cannot replace the selected frame claim's FSL identity while the request keeps it.
 /// This checks the actual replay entry, after the unmodified pair has settled successfully.
 #[trace("FR-024-AC-47", "TC-035")]
 #[test]
@@ -5294,7 +5294,7 @@ fn tc_035_a_changed_envelope_identity_refuses_before_frame_replay() {
         matches!(
             changed.replay(),
             Err(FrameReplayError::ClaimMismatch(
-                quire_contract_codegen::FrameClaimMember::EnvelopeIdentity
+                filament_contract_codegen::FrameClaimMember::EnvelopeIdentity
             ))
         ),
         "a changed envelope identity must refuse before frame execution"
@@ -5310,7 +5310,7 @@ fn tc_035_a_changed_envelope_identity_refuses_before_frame_replay() {
     assert!(matches!(
         changed.replay(),
         Err(FrameReplayError::ClaimMismatch(
-            quire_contract_codegen::FrameClaimMember::RequestIdentity
+            filament_contract_codegen::FrameClaimMember::RequestIdentity
         ))
     ));
 
@@ -5330,7 +5330,7 @@ fn tc_035_a_changed_envelope_identity_refuses_before_frame_replay() {
     assert!(matches!(
         changed.replay(),
         Err(FrameReplayError::ClaimMismatch(
-            quire_contract_codegen::FrameClaimMember::EnvelopeOccurrence
+            filament_contract_codegen::FrameClaimMember::EnvelopeOccurrence
         ))
     ));
 }
@@ -5603,7 +5603,7 @@ fn tc_025_unranged_fields_have_a_reason_and_no_duplicate_record_names() {
     assert_eq!(generated.frame.identity.unranged[0].field, "audit");
     assert_eq!(
         generated.frame.identity.unranged[0].reason,
-        quire_contract_codegen::StateUnrangedReason::TypeNotRange
+        filament_contract_codegen::StateUnrangedReason::TypeNotRange
     );
     let mut record: Value = serde_json::from_str(&generated.frame.record.contents).expect("record");
     let first = record["identity"]["unranged"][0].clone();
@@ -5681,7 +5681,7 @@ fn tc_025_model_member_types_without_i64_ranges_remain_unranged() {
         assert_eq!(generated.frame.identity.unranged[0].field, "audit");
         assert_eq!(
             generated.frame.identity.unranged[0].reason,
-            quire_contract_codegen::StateUnrangedReason::TypeNotRange
+            filament_contract_codegen::StateUnrangedReason::TypeNotRange
         );
         assert_eq!(
             StateFrameIdentity::from_record(&generated.frame.record.contents)
@@ -5746,7 +5746,7 @@ fn selected_model_variant_field_is_unranged_in_generated_frame_identity() {
     assert_eq!(generated.frame.identity.unranged[0].field, "audit");
     assert_eq!(
         generated.frame.identity.unranged[0].reason,
-        quire_contract_codegen::StateUnrangedReason::TypeNotRange
+        filament_contract_codegen::StateUnrangedReason::TypeNotRange
     );
     assert_eq!(
         StateFrameIdentity::from_record(&generated.frame.record.contents)
@@ -5794,7 +5794,7 @@ fn tc_035_the_playback_is_decoded_in_the_harnesss_draw_order() {
     );
 }
 
-/// An emitted Boolean model field is drawn without an integer domain. QSL refuses an integer
+/// An emitted Boolean model field is drawn without an integer domain. FSL refuses an integer
 /// playback against that same source model; CG retains the field and persisted reason as context.
 #[trace("FR-015-AC-81", "TC-035")]
 #[test]
@@ -5810,7 +5810,7 @@ fn tc_035_a_field_with_no_declared_range_is_decoded_and_not_checked() {
     assert_eq!(harness.unranged[0].field, "audit");
     assert_eq!(
         harness.unranged[0].reason,
-        quire_contract_codegen::StateUnrangedReason::TypeNotRange
+        filament_contract_codegen::StateUnrangedReason::TypeNotRange
     );
     let audit = 5_000_000_000_i64;
     let invocation = twin.invocation("account", (5, audit), (5, audit));
@@ -5825,12 +5825,12 @@ fn tc_035_a_field_with_no_declared_range_is_decoded_and_not_checked() {
         .expect("the unranged playback builds");
     let error = replay
         .replay()
-        .expect_err("QSL refuses an integer for the selected Boolean field");
+        .expect_err("FSL refuses an integer for the selected Boolean field");
     let FrameReplayError::Refused { refusal, unranged } = &error else {
-        panic!("expected QSL refusal: {error}")
+        panic!("expected FSL refusal: {error}")
     };
     assert_eq!(unranged, &harness.unranged);
-    let terminal = quire_contract_codegen::run_terminal_value(
+    let terminal = filament_contract_codegen::run_terminal_value(
         &crate::terminal_map::synthetic_evidence(
             KaniRunOutcome::Falsified {
                 counterexample: "model-type mismatch".to_owned(),
@@ -5846,9 +5846,9 @@ fn tc_035_a_field_with_no_declared_range_is_decoded_and_not_checked() {
     );
 }
 
-/// The same QSL source model supplies CG's selected field range and QSL replay within the
+/// The same FSL source model supplies CG's selected field range and FSL replay within the
 /// integer range its current source representation can express. The out-of-range playback is
-/// stopped by CG's declared-domain check before QSL replay.
+/// stopped by CG's declared-domain check before FSL replay.
 #[trace("FR-015-AC-77", "FR-024-AC-32", "TC-035")]
 #[test]
 fn tc_035_a_source_model_range_within_jcs_safe_integer_replays_without_override() {
@@ -5905,7 +5905,7 @@ fn tc_035_a_source_model_range_within_jcs_safe_integer_replays_without_override(
     )
     .expect("matching source-model replay builds")
     .replay()
-    .expect("QSL admits the source-model pre state");
+    .expect("FSL admits the source-model pre state");
     let outside = 1_000_001;
     let invocation = twin.invocation("account", (5, outside), (5, outside));
     assert!(matches!(
@@ -5922,7 +5922,7 @@ fn tc_035_a_source_model_range_within_jcs_safe_integer_replays_without_override(
 }
 
 /// A checked package admitted against a selected wide model records `TypeNotRange` and keeps
-/// that context on refusal. QSL replay recompiles the original 0..1000 source model in this
+/// that context on refusal. FSL replay recompiles the original 0..1000 source model in this
 /// fixture, so this test does not establish same-model replay of the wide override.
 #[trace("FR-015-AC-81", "TC-025")]
 #[test]
@@ -5976,7 +5976,7 @@ fn tc_025_wide_model_override_preserves_unranged_context_without_a_replay_claim(
     assert_eq!(harness.unranged[0].field, "audit");
     assert_eq!(
         harness.unranged[0].reason,
-        quire_contract_codegen::StateUnrangedReason::TypeNotRange
+        filament_contract_codegen::StateUnrangedReason::TypeNotRange
     );
     let unranged = -1_i64;
     let invocation = twin.invocation("account", (5, unranged), (5, unranged));
@@ -5999,7 +5999,7 @@ fn tc_025_wide_model_override_preserves_unranged_context_without_a_replay_claim(
     );
     let error = replay
         .replay()
-        .expect_err("QSL refuses the pre state outside the original source model range");
+        .expect_err("FSL refuses the pre state outside the original source model range");
     assert!(
         matches!(
             &error,
@@ -6007,14 +6007,14 @@ fn tc_025_wide_model_override_preserves_unranged_context_without_a_replay_claim(
                 if unranged == &harness.unranged
                     && unranged.len() == 1
                     && unranged[0].field == "audit"
-                    && unranged[0].reason == quire_contract_codegen::StateUnrangedReason::TypeNotRange
+                    && unranged[0].reason == filament_contract_codegen::StateUnrangedReason::TypeNotRange
         ),
         "{error}"
     );
     let FrameReplayError::Refused { refusal, .. } = &error else {
-        unreachable!("the QSL refusal was checked above")
+        unreachable!("the FSL refusal was checked above")
     };
-    let terminal = quire_contract_codegen::run_terminal_value(
+    let terminal = filament_contract_codegen::run_terminal_value(
         &crate::terminal_map::synthetic_evidence(
             KaniRunOutcome::Falsified {
                 counterexample: "model-type mismatch".to_owned(),
@@ -6166,7 +6166,7 @@ fn tc_035_a_decoded_value_outside_its_declared_range_is_refused_at_the_endpoints
             )
             .unwrap_or_else(|error| panic!("{} = {admitted} is admitted: {error}", domain.field))
             .replay()
-            .unwrap_or_else(|error| panic!("{} = {admitted} reaches QSL: {error}", domain.field));
+            .unwrap_or_else(|error| panic!("{} = {admitted} reaches FSL: {error}", domain.field));
         }
         for outside in [domain.minimum - 1, domain.maximum + 1] {
             let error = refused(replay_of(
@@ -6417,14 +6417,14 @@ fn tc_035_a_harness_scope_that_is_not_the_requested_operation_is_refused_by_memb
     replay_of(&twin, "deposit", &run_of(&aligned, [5, 0])).expect("the aligned scope builds");
 }
 
-/// The anchor and frame nodes of the package QSL itself emits from the twin's unit
+/// The anchor and frame nodes of the package FSL itself emits from the twin's unit
 /// (`call_site`'s package bytes, admitted by the model reader) have, as `CheckedNodeId`s, exactly
 /// the ids `call_site` names as the site's `anchor` and `frame`, and the anchor binds that frame:
 /// the node ids the generator reads from a package and the wire ids the replay requires are one
 /// id, with no rebase.
 #[trace("FR-024-AC-28", "FR-024-AC-30", "TC-035")]
 #[test]
-fn tc_035_the_node_ids_of_the_package_qsl_emits_are_the_ids_call_site_names() {
+fn tc_035_the_node_ids_of_the_package_fsl_emits_are_the_ids_call_site_names() {
     let twin = Twin::new();
     let (package, _) = twin.emitted_package("BalanceNeverDrops");
     let site = twin.operation_site("deposit").expect("located");
@@ -6478,11 +6478,11 @@ fn tc_035_the_node_ids_of_the_package_qsl_emits_are_the_ids_call_site_names() {
     assert_eq!(fixture_scope.frame, frame.node_id);
 }
 
-/// QSL's emitted object body is empty; the admitted model's accessor supplies both ranges,
+/// FSL's emitted object body is empty; the admitted model's accessor supplies both ranges,
 /// including the unread `audit` field.
 #[trace("FR-015-AC-77", "FR-015-AC-79")]
 #[test]
-fn tc_025_the_generator_uses_model_fields_of_the_package_qsl_emits() {
+fn tc_025_the_generator_uses_model_fields_of_the_package_fsl_emits() {
     let twin = Twin::new();
     let (package, clause) = twin.emitted_package("BalanceNeverDrops");
     let object = package
@@ -6497,7 +6497,7 @@ fn tc_025_the_generator_uses_model_fields_of_the_package_qsl_emits() {
             _ => None,
         },
         Some(0),
-        "QSL emits the object type with no members in its body"
+        "FSL emits the object type with no members in its body"
     );
     let generated = generate_state_frame_obligations(
         &StateFrameRequest {
@@ -6639,8 +6639,8 @@ fn tc_035_the_frame_envelope_declares_no_domain() {
 
 const KANI_TIMEOUT: Duration = Duration::from_secs(600);
 
-const SMALL_FRAME_CEILINGS: quire_contract_codegen::ProofCeilings =
-    quire_contract_codegen::ProofCeilings {
+const SMALL_FRAME_CEILINGS: filament_contract_codegen::ProofCeilings =
+    filament_contract_codegen::ProofCeilings {
         memory_bytes: std::num::NonZeroU64::new(4 * 1024 * 1024 * 1024).unwrap(),
         wall_clock: Duration::from_secs(120),
     };
@@ -6664,7 +6664,7 @@ pub(crate) fn prove(harness: &StateFrameHarness) -> KaniRunOutcome {
 /// Retains real run evidence for terminal projection after replay.
 pub(crate) fn prove_evidence(
     harness: &StateFrameHarness,
-) -> quire_contract_codegen::KaniExecutionEvidence {
+) -> filament_contract_codegen::KaniExecutionEvidence {
     let cancel = quire_exact::Cancel::new();
     let installation = KaniInstallation::discover().expect("cargo-kani is installed");
     let directory = scratch("crate");
@@ -6909,7 +6909,7 @@ fn tc_025_real_kani_proves_allowed_and_forbidden_frame_effects_and_a_mutated_fra
 /// `FrameReplay::new` and `replay` from its harness's identity and the bounded parse of its
 /// complete retained playback text:
 /// no obligation identity and no transcript are supplied, the decoded pre state is tied to the
-/// invocation of the native run, and QSL reproduces the violation on the written field.
+/// invocation of the native run, and FSL reproduces the violation on the written field.
 #[trace(
     "FR-015-AC-32",
     "FR-024-AC-30",
@@ -7021,9 +7021,9 @@ fn tc_025_real_kani_the_allowed_frame_effect_replays_as_a_respected_frame() {
     "FR-015-AC-49"
 )]
 #[test]
-fn qsl_state_invariant_is_a_separate_v2_assertion_obligation() {
+fn fsl_state_invariant_is_a_separate_v2_assertion_obligation() {
     let (package, clause) = Twin::with_balance_invariant().emitted_package("BalanceNonnegative");
-    let oracle = generate_v2_clause_oracle(&package, &clause).expect("QSL invariant oracle");
+    let oracle = generate_v2_clause_oracle(&package, &clause).expect("FSL invariant oracle");
     assert_eq!(oracle.descriptor.inputs.len(), 1);
     assert_eq!(oracle.descriptor.inputs[0].name, "current_balance");
     assert_eq!(
@@ -7112,10 +7112,10 @@ fn qsl_state_invariant_is_a_separate_v2_assertion_obligation() {
 /// Each field read by an object invariant is a separate bounded state-field draw.
 #[trace("FR-015-AC-39", "TC-025")]
 #[test]
-fn qsl_invariant_draws_each_selected_model_field_it_reads() {
+fn fsl_invariant_draws_each_selected_model_field_it_reads() {
     let twin = Twin::with_distinct_invariant_field_ranges("self.balance <= self.audit");
     let (package, clause) = twin.emitted_package("BalanceNonnegative");
-    let oracle = generate_v2_clause_oracle(&package, &clause).expect("two-field QSL oracle");
+    let oracle = generate_v2_clause_oracle(&package, &clause).expect("two-field FSL oracle");
     assert_eq!(oracle.descriptor.inputs.len(), 2);
     assert_eq!(
         oracle
@@ -7162,7 +7162,7 @@ fn qsl_invariant_draws_each_selected_model_field_it_reads() {
 /// A selected field with no finite domain cannot become a symbolic invariant argument.
 #[trace("FR-015-AC-39", "TC-025")]
 #[test]
-fn qsl_invariant_unbounded_field_refuses_without_harness() {
+fn fsl_invariant_unbounded_field_refuses_without_harness() {
     let (package, clause) =
         Twin::with_unbounded_balance_invariant().emitted_package("BalanceNonnegative");
     let outcome = negotiate(&[ObligationItem::V2Clause {
@@ -7200,7 +7200,7 @@ fn qsl_invariant_unbounded_field_refuses_without_harness() {
     "FR-015-AC-125"
 )]
 #[test]
-fn qsl_native_invariant_preserves_oracle_selection_and_deterministic_identity() {
+fn fsl_native_invariant_preserves_oracle_selection_and_deterministic_identity() {
     let (package, clause) = Twin::with_balance_invariant().emitted_package("BalanceNonnegative");
     let oracle = generate_v2_clause_native_oracle(&package, &clause).unwrap();
     let items = [ObligationItem::V2Clause {
@@ -7243,7 +7243,7 @@ fn qsl_native_invariant_preserves_oracle_selection_and_deterministic_identity() 
     );
     assert_eq!(
         first.identity.integer_representation,
-        quire_contract_codegen::ScalarIntegerRepresentation::Native
+        filament_contract_codegen::ScalarIntegerRepresentation::Native
     );
     assert_eq!(
         first.identity.proof_execution_state,
@@ -7262,7 +7262,7 @@ fn qsl_native_invariant_preserves_oracle_selection_and_deterministic_identity() 
 /// Arithmetic invariants remain refused until their independent arithmetic probes are lowered.
 #[trace("TC-025", "FR-015-AC-41", "FR-015-AC-49")]
 #[test]
-fn qsl_invariant_arithmetic_is_refused_without_unchecked_harness() {
+fn fsl_invariant_arithmetic_is_refused_without_unchecked_harness() {
     let (package, clause) = Twin::with_balance_invariant_condition("self.balance + 1 >= 0")
         .emitted_package("BalanceNonnegative");
     generate_v2_clause_oracle(&package, &clause).expect("the clause oracle supports arithmetic");
@@ -7288,7 +7288,7 @@ fn qsl_invariant_arithmetic_is_refused_without_unchecked_harness() {
 }
 
 /// Admitted operators outside the V2 grammar are named before oracle or collection lowering,
-/// while an admitted QSL precondition in the same request still emits its harness.
+/// while an admitted FSL precondition in the same request still emits its harness.
 #[trace("FR-015-AC-42", "TC-025")]
 #[test]
 fn v2_unsupported_clause_operator_names_exact_identity_without_suppressing_sibling() {
@@ -7353,9 +7353,17 @@ fn v2_unsupported_clause_operator_names_exact_identity_without_suppressing_sibli
         panic!("every selected clause has a record");
     };
     for (record, node_id, operation_identity) in [
-        (division_record, &refused_clauses[0], "quire.op.integer.div"),
-        (modulo_record, &refused_clauses[1], "quire.op.integer.mod"),
-        (text_record, &refused_clauses[2], "quire.op.text.eq"),
+        (
+            division_record,
+            &refused_clauses[0],
+            "filament.op.integer.div",
+        ),
+        (
+            modulo_record,
+            &refused_clauses[1],
+            "filament.op.integer.mod",
+        ),
+        (text_record, &refused_clauses[2], "filament.op.text.eq"),
     ] {
         assert_eq!(
             record.disposition,
@@ -7388,7 +7396,7 @@ fn v2_unsupported_clause_operator_names_exact_identity_without_suppressing_sibli
 /// with independent native predicates at admitted boundaries, including a false invariant.
 #[trace("TC-025", "FR-015-AC-40", "FR-015-AC-49", "FR-015-AC-125")]
 #[test]
-fn qsl_invariant_emitted_oracles_execute_healthy_mutant_and_two_field_conditions() {
+fn fsl_invariant_emitted_oracles_execute_healthy_mutant_and_two_field_conditions() {
     let mut source = String::new();
     for (index, condition) in [
         "self.balance >= 0",
@@ -7483,10 +7491,10 @@ pub fn check() {{
     super::scratch_crate::write_manifest(
         &directory.path,
         &format!(
-            "[package]\nname = \"generated-v2-invariant-oracles\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nquire-exact = {{ {} }}\nquire-semantic-value = {{ {} }}\n\n[workspace]\n",
+            "[package]\nname = \"generated-v2-invariant-oracles\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nfilament-exact = {{ {} }}\nfilament-semantic-value = {{ {} }}\n\n[workspace]\n",
             super::scratch_crate::runtime_dependency(&["exact"]),
-            quire_contract_codegen::EXACT_DEPENDENCY_SOURCE,
-            quire_contract_codegen::SEMANTIC_VALUE_DEPENDENCY_SOURCE,
+            filament_contract_codegen::EXACT_DEPENDENCY_SOURCE,
+            filament_contract_codegen::SEMANTIC_VALUE_DEPENDENCY_SOURCE,
         ),
     );
     super::scratch_crate::resolve_seeded_lock(&directory.path);
@@ -7518,7 +7526,7 @@ pub fn check() {{
     "FR-015-AC-49"
 )]
 #[test]
-fn qsl_constant_invariants_need_no_symbolic_input_or_subject() {
+fn fsl_constant_invariants_need_no_symbolic_input_or_subject() {
     for condition in ["true", "false", "0 <= 1", "0 > 1"] {
         let (package, clause) =
             Twin::with_balance_invariant_condition(condition).emitted_package("BalanceNonnegative");
@@ -7593,12 +7601,12 @@ fn generated_native_boolean_equality_matches_the_typed_route() {
     for (index, (condition, operation, operator)) in [
         (
             "result = (amount < 1000 implies amount + 1 <= 1000)",
-            "quire.op.boolean.eq",
+            "filament.op.boolean.eq",
             "Equal",
         ),
         (
             "result != (amount < 1000 implies amount + 1 <= 1000)",
-            "quire.op.boolean.ne",
+            "filament.op.boolean.ne",
             "NotEqual",
         ),
     ]
@@ -7716,10 +7724,10 @@ fn main() {
     super::scratch_crate::write_manifest(
         &directory.path,
         &format!(
-            "[package]\nname = \"generated-native-boolean-equality\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nquire-exact = {{ {} }}\nquire-semantic-value = {{ {} }}\n\n[workspace]\n",
+            "[package]\nname = \"generated-native-boolean-equality\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nfilament-exact = {{ {} }}\nfilament-semantic-value = {{ {} }}\n\n[workspace]\n",
             super::scratch_crate::runtime_dependency(&["exact"]),
-            quire_contract_codegen::EXACT_DEPENDENCY_SOURCE,
-            quire_contract_codegen::SEMANTIC_VALUE_DEPENDENCY_SOURCE,
+            filament_contract_codegen::EXACT_DEPENDENCY_SOURCE,
+            filament_contract_codegen::SEMANTIC_VALUE_DEPENDENCY_SOURCE,
         ),
     );
     super::scratch_crate::resolve_seeded_lock(&directory.path);

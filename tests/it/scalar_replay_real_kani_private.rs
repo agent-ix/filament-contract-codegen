@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! IR-631 real-Kani half of FR-032-AC-7 and FR-032-AC-8 (TC-047): a falsified Kani run of the
 //! routed native `x + 1` arithmetic mutant is planned from its real playback, observed natively on
-//! the same staged bytes, replayed by the genuine QSL facade and settled as `Diverged` and `Failed`.
+//! the same staged bytes, replayed by the genuine FSL facade and settled as `Diverged` and `Failed`.
 //!
 //! The mutant is a crate-private construction: the generator never emits a falsifiable harness, so
 //! this test re-seals one with the original replay body and package bound and the same mutation in
@@ -16,17 +16,17 @@ use crate::kani::{
     run::tool::KaniInstallation,
     test_support::proof_ceilings::proof_ceilings_with_wall_clock,
 };
-use ix_trace_rs::trace;
-use qsl_replay::{
-    compile_package, DependencyInput, NativeOutcome, OperatorParityResult, ReplayLimits,
-    SourceIdentity, StageLimits, TerminalValue,
-};
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     generate_routed_native, routed_contract_lowering_profile, scalar_run_terminal_value, Artifact,
     BackendDescriptor, Candidate, ContractDriverResultSelection, ContractRequestPosition,
     GenerationContexts, KaniGenerationContext, KindOutput, LockedSource, OriginalScalarContext,
     ProviderOrigin, ReplayInputs, RoutedGenerationItem, ScalarDriverObservation, ScalarSentRequest,
     ScalarSettlement, WitnessDecodeLimits, SCALAR_PLAYBACK_BYTES,
+};
+use ix_trace_rs::trace;
+use qsl_replay::{
+    compile_package, DependencyInput, NativeOutcome, OperatorParityResult, ReplayLimits,
+    SourceIdentity, StageLimits, TerminalValue,
 };
 use quire_contract_model::{
     CheckedOccurrenceRole, CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
@@ -35,7 +35,7 @@ use quire_contract_model::{
 };
 use std::{collections::BTreeMap, path::PathBuf, sync::Arc, time::Duration};
 
-const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nfunction subject using v(x: Int[0, 9]): Int[0, 10] pure { x + 1 }\n";
+const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nfunction subject using v(x: Int[0, 9]): Int[0, 10] pure { x + 1 }\n";
 
 fn application(body: &CheckedTerm, operation: &str) -> bool {
     matches!(body, CheckedTerm::Application { operation: found, .. } if found.identity() == Some(operation))
@@ -48,7 +48,7 @@ struct Fixture {
     artifacts: Vec<Artifact>,
 }
 
-/// The QSL-emitted `x + 1` over `Int[0, 9]` through the native routed generation.
+/// The FSL-emitted `x + 1` over `Int[0, 9]` through the native routed generation.
 fn native_fixture() -> Fixture {
     let compiled = compile_package(
         qsl_replay::CompileUnit {
@@ -62,9 +62,9 @@ fn native_fixture() -> Fixture {
         StageLimits::default(),
         ReplayLimits::default(),
     )
-    .expect("QSL compiles the authored scalar source");
+    .expect("FSL compiles the authored scalar source");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     let CheckedPackageV2ReadResult::Admitted(checked) = CheckedPackageV2::read(
         compiled.bytes(),
         CheckedPackageReadLimits::bounded(),
@@ -75,14 +75,14 @@ fn native_fixture() -> Fixture {
     let nodes = &checked.resolved_graph().nodes;
     let node_id = nodes
         .iter()
-        .find(|node| application(&node.body, "quire.op.integer.add"))
+        .find(|node| application(&node.body, "filament.op.integer.add"))
         .expect("one authored addition")
         .node_id
         .clone();
     let conversion = nodes
         .iter()
         .find(|node| {
-            application(&node.body, "quire.op.numeric.narrow")
+            application(&node.body, "filament.op.numeric.narrow")
                 && matches!(&node.body, CheckedTerm::Application { arguments, .. }
                     if matches!(arguments.first(), Some(CheckedTerm::Reference { target }) if target == &node_id))
         })
@@ -310,7 +310,7 @@ fn a_real_falsified_native_mutant_plans_observes_and_settles_diverged_failed() {
         })
         .expect("the observation is of the planned staged bytes");
 
-    // The genuine QSL facade and the settlement converter.
+    // The genuine FSL facade and the settlement converter.
     let (wire, claim, limits) = completed.request();
     let sent = ScalarSentRequest {
         wire: wire.clone(),

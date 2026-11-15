@@ -1,21 +1,21 @@
-# Quire Contract Codegen
+# Filament Contract Codegen
 
 [![Discord](https://img.shields.io/badge/Discord-Join%20us-5865F2?logo=discord&logoColor=white)](https://discord.gg/k8DVhuYBR2)
-[![Quire](https://img.shields.io/badge/Quire-Specification%20Language-1F6FEB)](https://github.com/agent-ix/quire-spec-language)
+[![Filament](https://img.shields.io/badge/Filament-Specification%20Language-1F6FEB)](https://github.com/agent-ix/filament-spec-language)
 
-quire-contract-codegen is a Rust library that generates oracles, property tests,
+filament-contract-codegen is a Rust library that generates oracles, property tests,
 proofs and evidence records from one checked contract package.
 
 Its input is a checked contract package from
-[quire-contract-ir](https://github.com/agent-ix/quire-contract-ir). The
+[filament-contract-ir](https://github.com/agent-ix/filament-contract-ir). The
 property tests are proptest strategies and harnesses, the proofs are Kani
 harnesses, and each evidence record links an output to its clause. The same
 package always generates the same bytes. A counterexample from a failed proof
-is replayed through QSL to confirm the violation.
+is replayed through FSL to confirm the violation.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/hero-dark.svg">
-  <img alt="One checked contract package goes into quire-contract-codegen and fans out into four generated outputs: Rust oracles, property tests, Kani proofs and evidence records. A counterexample from a Kani run is replayed natively through QSL, and the result is either a reproduced violation or an evidence failure." src="docs/images/hero-light.svg">
+  <img alt="One checked contract package goes into filament-contract-codegen and fans out into four generated outputs: Rust oracles, property tests, Kani proofs and evidence records. A counterexample from a Kani run is replayed natively through FSL, and the result is either a reproduced violation or an evidence failure." src="docs/images/hero-light.svg">
 </picture>
 
 > **Status: public prerelease.** The public API is not stable, `Cargo.toml`
@@ -23,14 +23,14 @@ is replayed through QSL to confirm the violation.
 > breaking changes.
 
 A clause that codegen cannot lower becomes a typed refusal in the claim map. A
-counterexample that QSL cannot reproduce is reported as an evidence failure.
+counterexample that FSL cannot reproduce is reported as an evidence failure.
 
 ## Replay example
 
 Codegen has no command line, and building its inputs takes a checked package.
 The smallest self-contained piece is the replay step. It takes the values Kani
-found, runs them through a QSL function that mirrors the clause, and checks
-whether QSL agrees the clause is violated. These excerpts are from
+found, runs them through a FSL function that mirrors the clause, and checks
+whether FSL agrees the clause is violated. These excerpts are from
 [`tests/it/skeleton_spine.rs`](tests/it/skeleton_spine.rs), which runs in the
 default test lane:
 
@@ -47,7 +47,7 @@ fn native_source(post_balance: &str) -> String {
 }
 
 #[test]
-fn tc_026_a_falsifying_input_replays_through_qsl_to_the_same_violation() {
+fn tc_026_a_falsifying_input_replays_through_fsl_to_the_same_violation() {
     let result =
         replay_against(&native_source(VIOLATING_TWIN), &values(1, 5)).expect("the replay settles");
     assert_eq!(
@@ -60,7 +60,7 @@ fn tc_026_a_falsifying_input_replays_through_qsl_to_the_same_violation() {
 
 `replay_against` calls `replay_falsification` with the decoded witness values
 (`amount_current = 1`, `balance_pre = 5`). The same file shows the opposite
-case: a healthy twin does not reproduce the violation, so QSL settles
+case: a healthy twin does not reproduce the violation, so FSL settles
 `inconclusive` and names both verdicts.
 
 ## Outputs
@@ -71,20 +71,20 @@ case: a healthy twin does not reproduce the violation, so QSL settles
 | Property tests | `generate_tristate_harness`, `generate_bound_strategy`, `generate_enum_strategy`, `generate_i64_strategy` | Proptest strategies and a harness that records every case as accepted, rejected by the precondition, or discarded, with the accounting kept. |
 | Kani proofs | `negotiate_kani_obligations`, `generate_state_frame_obligations`, `generate_bounded_kani_corpus_case` | Kani harnesses with explicit bounds and typed per-obligation dispositions. |
 | Running Kani | `execute_kani_obligation`, `execute_kani_obligations`, `classify_kani_run` | The run's outcome, classified (see below). |
-| Replay | `decode_falsification`, `replay_falsification`, `replay_counterexample` | A Kani counterexample decoded and re-run in QSL. |
+| Replay | `decode_falsification`, `replay_falsification`, `replay_counterexample` | A Kani counterexample decoded and re-run in FSL. |
 | Evidence | `analyze_bound_coverage`, `parse_llvm_coverage`, `classify_clause` | Observations of which bounded cases and clauses a test run reached. |
 | Routing | `negotiate_contract_package`, `generate_routed` | Settles which backend takes each item of a package, then generates for it. |
 | Publishing | `write_bundle_atomic` | Writes a generated bundle to disk all at once or not at all. |
 
 Generated Rust depends only on
-[quire-contract-runtime](https://github.com/agent-ix/quire-contract-runtime) and
+[filament-contract-runtime](https://github.com/agent-ix/filament-contract-runtime) and
 the customer's own types.
 
 ### Kani run outcomes
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/outcomes-dark.svg">
-  <img alt="A Kani run ends as verified, falsified, cover unsatisfied, cancelled or inconclusive. Only a falsified run returns a counterexample, which codegen replays through QSL: the result is a reproduced violation, or an evidence failure when the counterexample is not valid evidence." src="docs/images/outcomes-light.svg">
+  <img alt="A Kani run ends as verified, falsified, cover unsatisfied, cancelled or inconclusive. Only a falsified run returns a counterexample, which codegen replays through FSL: the result is a reproduced violation, or an evidence failure when the counterexample is not valid evidence." src="docs/images/outcomes-light.svg">
 </picture>
 
 A *cover unsatisfied* run is vacuous: nothing failed, but the contract's bounds
@@ -102,38 +102,38 @@ Each generated artifact is a path and its contents. The documents under
 | `kani-corpus-proof-graph-v1.schema.json` | The bounded Kani corpus proof graph. |
 | `bound-coverage-observations-v1.schema.json` | Bound coverage observations. |
 
-## The Quire ecosystem
+## The Filament ecosystem
 
 Codegen is a backend between the language layer and the tools that run its
 output.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/ecosystem-dark.svg">
-  <img alt="The Quire repositories. The main chain runs from the standard, quire-specification, to the compiler, quire-spec-language, then quire-contract-ir, quire-contract-codegen and quire-contract-runtime. quire-spec-language also feeds quire-protocol, and quire-contract-ir feeds quire-analyze. quire-observation feeds quire-protocol and quire-mltl. Above the chain, quire-driver runs it, quire-integration tests it and quire-verification plans verification. Below it, shared libraries used throughout: quire-eval, quire-exact, quire-semantic-value, quire-walk, quire-canonical and quire-verification-contracts." src="docs/images/ecosystem-light.svg">
+  <img alt="The Filament repositories. The main chain runs from the standard, filament-specification, to the compiler, filament-spec-language, then filament-contract-ir, filament-contract-codegen and filament-contract-runtime. filament-spec-language also feeds filament-protocol, and filament-contract-ir feeds filament-analyze. filament-observation feeds filament-protocol and filament-mltl. Above the chain, filament-driver runs it, filament-integration tests it and filament-verification plans verification. Below it, shared libraries used throughout: filament-eval, filament-exact, filament-semantic-value, filament-walk, quire-canonical and filament-verification-contracts." src="docs/images/ecosystem-light.svg">
 </picture>
 
-It depends on [quire-contract-ir](https://github.com/agent-ix/quire-contract-ir)
+It depends on [filament-contract-ir](https://github.com/agent-ix/filament-contract-ir)
 (the checked package and its model types),
-[quire-contract-runtime](https://github.com/agent-ix/quire-contract-runtime)
+[filament-contract-runtime](https://github.com/agent-ix/filament-contract-runtime)
 (what generated code builds on),
-[quire-exact](https://github.com/agent-ix/quire-exact),
+[filament-exact](https://github.com/agent-ix/filament-exact),
 [quire-canonical](https://github.com/agent-ix/quire-canonical) (identity
 encoding), and
-[quire-spec-language](https://github.com/agent-ix/quire-spec-language) for one
-crate only, `qsl-replay`. Its tests also use
-[quire-verification-contracts](https://github.com/agent-ix/quire-verification-contracts).
-It is used by [quire-driver](https://github.com/agent-ix/quire-driver) and
-[quire-integration](https://github.com/agent-ix/quire-integration).
+[filament-spec-language](https://github.com/agent-ix/filament-spec-language) for one
+crate only, `fsl-replay`. Its tests also use
+[filament-verification-contracts](https://github.com/agent-ix/filament-verification-contracts).
+It is used by [filament-driver](https://github.com/agent-ix/filament-driver) and
+[filament-integration](https://github.com/agent-ix/filament-integration).
 
 ## Building and testing
 
 The minimum Rust version is declared by `rust-version` in `Cargo.toml`. The
 real-Kani tests need `make tools` once per machine, and the full gate reads
 checked-package fixtures from a
-[quire-specification](https://github.com/agent-ix/quire-specification) checkout:
+[filament-specification](https://github.com/agent-ix/filament-specification) checkout:
 
 ```bash
-make ci QSPEC_DIR=/path/to/quire-specification
+make ci FSPEC_DIR=/path/to/filament-specification
 ```
 
 `make ci` runs formatting, specification validation, Clippy, the tests under the

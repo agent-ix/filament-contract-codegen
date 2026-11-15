@@ -1,11 +1,11 @@
-//! Deterministic Rust, property-test, proof, and evidence generation from Quire contracts.
+//! Deterministic Rust, property-test, proof, and evidence generation from Filament contracts.
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 
 // Integration fixture modules name this crate as an external dependency.
 #[cfg(test)]
-extern crate self as quire_contract_codegen;
+extern crate self as filament_contract_codegen;
 
 #[cfg(test)]
 #[path = "../tests/checked_package_support/evidence.rs"]

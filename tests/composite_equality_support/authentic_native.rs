@@ -41,7 +41,7 @@ pub fn source(case: &str) -> String {
     };
     let left_expression =
         target.map_or_else(|| "a".to_owned(), |target| format!("convert<{target}>(a)"));
-    format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\n{declarations}function f using v(a: {left},b: {right}): Boolean pure {{ {left_expression} = b }}\n")
+    format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\n{declarations}function f using v(a: {left},b: {right}): Boolean pure {{ {left_expression} = b }}\n")
 }
 
 pub fn compile(case: &str) -> AdmittedCompilation {

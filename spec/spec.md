@@ -1,6 +1,6 @@
 ---
 type: master-requirements
-name: quire-contract-codegen
+name: filament-contract-codegen
 org: agent-ix
 component_type: rust-library
 implementation_language: rust
@@ -27,7 +27,7 @@ oracles, tri-state test harnesses, shaped proptest strategies, Kani obligations 
 ### Out of Scope
 
 - A Rust compiler, property-testing framework, proof engine, or coverage engine.
-- Contract parsing or canonicalization owned by `quire-contract-ir`.
+- Contract parsing or canonicalization owned by `filament-contract-ir`.
 - Project-specific certification or accreditation.
 
 ## System Overview
@@ -36,7 +36,7 @@ oracles, tri-state test harnesses, shaped proptest strategies, Kani obligations 
 
 The crate consumes a versioned serialized contract package and emits a deterministic artifact bundle.
 It uses a bounded deterministic renderer plus `syn` validation for Rust syntax, depends generated customer code only on
-`quire-contract-runtime` and declared customer types, adapts to proptest and Kani, and consumes LLVM
+`filament-contract-runtime` and declared customer types, adapts to proptest and Kani, and consumes LLVM
 coverage exports rather than implementing those engines.
 
 ### Intended Users
@@ -53,7 +53,7 @@ generation of FR-014, FR-015, FR-019, FR-021 and FR-022. NFR-006 constrains FR-0
 FR-031 and FR-041 by gating a change that can alter what real Kani proves on the real-Kani lane.
 `interface-001` defines the serialized input, the library and CLI operations, the artifact bundle,
 the diagnostics and the evidence contract. AD-001 describes the architecture and its seams to
-Contract IR, Contract Runtime and QSL. ADR-001 to ADR-004 record the owner's decisions on the
+Contract IR, Contract Runtime and FSL. ADR-001 to ADR-004 record the owner's decisions on the
 generators, the input model, the backend adapter, Kani tractability and the generated subject ABI.
 ADR-005 records the original guardian-gate analysis and is superseded by ADR-007, the minimal Kani
 run ownership decision (process group, wall-clock timeout, environment-owned memory cap).
@@ -68,7 +68,7 @@ context-free traversals may use None; every reached nominal reconstruction
 requires genuine context. An explicit wrong context always refuses before
 classification, and absence does not authenticate source. The native
 source-retaining route keeps mandatory full authentication. Exact owns kernel
-values/types/metering, QSV owns declaration/equality/enum semantics, and Runtime
+values/types/metering, FSV owns declaration/equality/enum semantics, and Runtime
 retains only its own residual functions. All enum cases use checker-issued
 keys, including unused cases. The existing record/tuple closure requirements
 remain; their genuine owner-key lookup is a separate capability gap in the
@@ -82,7 +82,7 @@ scalar proof qualification are distinct, both still required.
 | No panic on a generation or analysis path | NFR-005 | TC-042 |
 | Bound numeric and state strategies | FR-008 to FR-013, NFR-004 | TC-017 to TC-022 |
 | Complete-V1 oracles | FR-014 scalar, FR-018 composite equality, FR-021 function application, [FR-042](oracle/functional/FR-042-generated-checked-invariant-causes.md) typed checked-invariant causes | TC-024, TC-029, TC-031 |
-| Generated-closure evaluator corpus | [FR-044](oracle/functional/FR-044-export-generated-closure-evaluation-corpus.md) planned FR-402 evaluator-case source export, with expectations from quire-eval once available | [TC-058](oracle/matrix/TC-058-generated-closure-evaluation-corpus.md) planned |
+| Generated-closure evaluator corpus | [FR-044](oracle/functional/FR-044-export-generated-closure-evaluation-corpus.md) planned FR-402 evaluator-case source export, with expectations from filament-eval once available | [TC-058](oracle/matrix/TC-058-generated-closure-evaluation-corpus.md) planned |
 | Checked-package fixture identity ownership | [FR-037](core/functional/FR-037-fixture-identity.md) application and nominal fixture identities | [TC-052](core/matrix/TC-052-fixture-identity.md) planned consumer regression |
 | Typed V2 operator selection | [FR-038](core/functional/FR-038-typed-operator-catalog.md) internal CG catalog over IR-admitted identities | Criterion-tagged V2 oracle and Kani consumer tests planned |
 | Production ContractPackage consumption | [FR-039](core/functional/FR-039-contract-package-consumption.md) one admitted FR-330 package for negotiation and generation | [TC-053](core/matrix/TC-053-contract-package-consumption.md) planned production integration checks |
@@ -103,9 +103,9 @@ scalar proof qualification are distinct, both still required.
 | Real-Kani lane gating | NFR-006 live installed-Kani lane controls; [FR-041](kani/functional/FR-041-claimed-module-proof-gate.md) current-build module discharge and mutation controls Open after retirement of the fixed V1 inventory and hold, with V2 implication and same-claim FR-003@4 producers planned | TC-045 live lane controls; [TC-056](kani/matrix/TC-056-claimed-module-proof-gate.md) module proof and mutation controls Open pending genuine current-build claims |
 | Typed obligation inventories, criterion-keyed candidate tuples and separate producer facts | [FR-036](evidence/functional/FR-036-source-obligation-census.md) | [TC-051](evidence/matrix/TC-051-source-obligation-census.md) planned; Gated on IR-759 |
 | Backend adapter (routed) | FR-026 adapter trait and registration | TC-037 |
-| HP-2 SMT induction producer | [FR-045](routed/functional/FR-045-hyper-smt-induction-map.md) CG solver-run evidence and outcome handoff over QSL-owned hyper queries | [TC-059](routed/matrix/TC-059-hyper-smt-induction-map.md) partial |
+| HP-2 SMT induction producer | [FR-045](routed/functional/FR-045-hyper-smt-induction-map.md) CG solver-run evidence and outcome handoff over FSL-owned hyper queries | [TC-059](routed/matrix/TC-059-hyper-smt-induction-map.md) partial |
 | Terminal-value maps (kani) | FR-029 and FR-030 terminal-value maps | TC-040, TC-041 |
-| Counterexample replay | FR-016 witness decode and native replay, FR-024 submission in QSL's counterexample envelope, [FR-032](replay/functional/FR-032-routed-scalar-replay-binding.md) scalar binding, proposition preservation and (planned) settlement, [FR-033](replay/functional/FR-033-composite-parity-replay-binding.md) planned composite equality parity | TC-026, TC-035, [TC-047](replay/matrix/TC-047-routed-scalar-replay-binding.md) and [TC-048](replay/matrix/TC-048-composite-parity-replay-binding.md) planned/gated |
+| Counterexample replay | FR-016 witness decode and native replay, FR-024 submission in FSL's counterexample envelope, [FR-032](replay/functional/FR-032-routed-scalar-replay-binding.md) scalar binding, proposition preservation and (planned) settlement, [FR-033](replay/functional/FR-033-composite-parity-replay-binding.md) planned composite equality parity | TC-026, TC-035, [TC-047](replay/matrix/TC-047-routed-scalar-replay-binding.md) and [TC-048](replay/matrix/TC-048-composite-parity-replay-binding.md) planned/gated |
 | Capability settlement and routing | FR-019 settlement, FR-022 routed generation | TC-030, TC-033 |
 
 FR-018 and FR-014 refuse the
@@ -115,12 +115,12 @@ The numbers FR-034 and TC-049 (caller-death guardian ownership, IR-639) are reti
 [ADR-007](decisions/ADR-007-minimal-kani-run-ownership.md) and are not reused.
 The formerly reserved `FR-020` number is retired as a separate temporal or
 protocol semantic-oracle owner ([AD-001](assurance/AD-001-codegen-architecture.md)).
-QSL owns temporal meaning and monitor-plan derivation; RT's monitor execution
+FSL owns temporal meaning and monitor-plan derivation; RT's monitor execution
 remains Planned. CG's temporal and protocol backend obligations stay under
 [FR-019](routed/functional/FR-019-capability-settlement.md) negotiation,
 [FR-022](routed/functional/FR-022-routed-generation.md) routed generation.
 [FR-045](routed/functional/FR-045-hyper-smt-induction-map.md) separately owns
-only HP-2 induction solver run records over QSL-encoded queries; it adds no
+only HP-2 induction solver run records over FSL-encoded queries; it adds no
 general temporal/protocol oracle.
 The [routed matrix](routed/matrix/tests.md) keeps FR-019-AC-34 through AC-41
 Planned; this decision creates no oracle implementation or test credit.
@@ -128,7 +128,7 @@ Planned; this decision creates no oracle implementation or test credit.
 ## Subsystems
 
 Specification files are grouped by subsystem under `spec/<subsystem>/`, following
-`ix://agent-ix/quire-contract-ir/ADR-0056` (the layout `quire-contract-ir` already uses). Identifiers
+`ix://agent-ix/filament-contract-ir/ADR-0056` (the layout `filament-contract-ir` already uses). Identifiers
 stay flat and globally sequential; the directory carries the subsystem. Each subsystem directory
 holds `stakeholder/`, `functional/`, `non-functional/` and `matrix/` as it needs them: the matrix is
 `matrix/tests.md` and the `TC-###` artifacts it declares sit beside it. Architecture descriptions
@@ -139,12 +139,12 @@ are in `assurance/`, decision records in `decisions/`, and every SpecReview in t
 
 | Subsystem | Path | Role | Owning crates/modules | ADs | Owner |
 | --- | --- | --- | --- | --- | --- |
-| Core | `spec/core/` | The stakeholder need, the library and CLI interface and publication conformance, and the reproducibility, atomic-publication and provenance-boundary properties every subsystem shares | `lib` (crate root), `publication`, `oracle` (the shared lowering core, imported by strategy, kani and oracle modules) | AD-001, quire-contract-ir:ADR-0056 | Contract codegen lane |
+| Core | `spec/core/` | The stakeholder need, the library and CLI interface and publication conformance, and the reproducibility, atomic-publication and provenance-boundary properties every subsystem shares | `lib` (crate root), `publication`, `oracle` (the shared lowering core, imported by strategy, kani and oracle modules) | AD-001, filament-contract-ir:ADR-0056 | Contract codegen lane |
 | Strategy | `spec/strategy/` | Tri-state proptest harnesses, bound numeric and state strategies, constructive populations, boundary campaigns and shrinking, and the strategy output consumable by Contract Runtime | `harness`, `strategy`, `bound`, `bound_strategy` | AD-001, ADR-001 | Contract codegen lane |
 | Oracle | `spec/oracle/` | Exact complete-V1 scalar, composite-equality and function-application oracle generation and its agreement with the runtime | `exact_scalar`, `composite_equality`, `exact_function`, `generation` | AD-001, ADR-001 | Contract codegen lane |
-| Kani | `spec/kani/` | Bounded Kani obligation generation, the generated subject ABI, proof ceilings, execution evidence, and the maps from a Kani run outcome and a Contract IR Kani outcome to QSL's terminal value | `src/kani/` (generation, finite-input lowerers, corpus, run, output and terminal maps) | AD-001, AD-003, AD-004, ADR-001 to ADR-005 | Contract codegen lane |
+| Kani | `spec/kani/` | Bounded Kani obligation generation, the generated subject ABI, proof ceilings, execution evidence, and the maps from a Kani run outcome and a Contract IR Kani outcome to FSL's terminal value | `src/kani/` (generation, finite-input lowerers, corpus, run, output and terminal maps) | AD-001, AD-003, AD-004, ADR-001 to ADR-005 | Contract codegen lane |
 | Routed | `spec/routed/` | Capability settlement at one negotiation point, routed generation per backend kind, and the backend adapter contract | `capability`, `routed_generation` | AD-001, ADR-002 | Contract codegen lane |
-| Replay | `spec/replay/` | Witness decoding and native replay of Kani counterexamples, and their submission in QSL's counterexample envelope | `replay::witness`, `replay::function`, `replay::frame`, `kani::output::playback` | AD-001, AD-002, AD-003, ADR-001 | Contract codegen lane |
+| Replay | `spec/replay/` | Witness decoding and native replay of Kani counterexamples, and their submission in FSL's counterexample envelope | `replay::witness`, `replay::function`, `replay::frame`, `kani::output::playback` | AD-001, AD-002, AD-003, ADR-001 | Contract codegen lane |
 | Evidence | `spec/evidence/` | Vacuity and unexecuted-flow evidence; planned complete source-obligation census and separate producer facts | `vacuity`, `bound_coverage`; planned source census export | AD-001, AD-003, [AD-005](assurance/AD-005-source-obligation-producer.md) | Contract codegen lane |
 
 The current Kani module and public-surface ownership map, measured against the
@@ -154,7 +154,7 @@ source tree and crate-root re-exports, is:
 | --- | --- | --- |
 | `kani/generate/{negotiate,outcome,scalar,frame}`; `negotiate_kani_obligations`, `negotiate_kani_native_obligations`, `generate_state_frame_obligations`, and the public request/result types | FR-015; FR-025 for argument/subject ABI | Live V2 scalar, clause, collection and state/frame dispatch. V2 invariant rendering and full contract-family controls remain planned (IR-266, IR-489, IR-917). |
 | `kani/generate/{record,spec,render}` and `kani/generate/collection` | FR-015; FR-025 for recorded harness identity and ABI | Validated private `HarnessSpec` and shared renderer are live for scalar, V2 parameter-precondition cover and symbolic collection after CG #588. Collection AC-96/99 remain partial; the renderer is not proof of their installed-backend controls. |
-| `kani/generate/clause.rs` and `kani/generate/clause/v2.rs` | FR-015 V2 clause criteria, including AC-38 to AC-49 | `clause.rs` is now only the V2 module declaration. Supported V2 parameter precondition and postcondition paths exist. AC-44/45 census validation and persisted readiness are implemented and tagged; AC-38 to AC-43, AC-46, AC-48/49 and full AC-47 remain planned or partial. Invariant still refuses (IR-266); QSL-authored clause mutation control remains open (IR-917). |
+| `kani/generate/clause.rs` and `kani/generate/clause/v2.rs` | FR-015 V2 clause criteria, including AC-38 to AC-49 | `clause.rs` is now only the V2 module declaration. Supported V2 parameter precondition and postcondition paths exist. AC-44/45 census validation and persisted readiness are implemented and tagged; AC-38 to AC-43, AC-46, AC-48/49 and full AC-47 remain planned or partial. Invariant still refuses (IR-266); FSL-authored clause mutation control remains open (IR-917). |
 | `kani/generate/census_validation.rs`, `kani/census.rs` and their public diagnostic/dependency types | FR-015-AC-22/25/44/45 for V2 census; FR-015 bounded-corpus criteria | The V2 clause path uses typed census requests from `kani/census.rs`. `census_validation.rs` remains for the live corpus and exposes `KaniDiagnostic`/`KaniErrorCode`; it no longer supports a V1 bundle. Its remaining helpers retire with their last corpus callers under AD-004 step 4g. |
 | `kani/generate/corpus/{mod.rs,bounded_kani_corpus.rs}`; `generate_bounded_kani_corpus_case` and its public request/result types | FR-015-AC-51 to AC-58, AC-90 to AC-95, AC-109 to AC-111 and AC-123 until AC-111 | Live graph/collection finite-input corpus. Arithmetic retired at AC-109; collection AC-110 and graph/final API AC-111 remain planned, gated as those criteria state. Corpus replay and the API's AC-123 direct-result obligation persist until AC-111. |
 | `kani/generate/lower/{mod.rs,bounded_kani_profile.rs,finite_reference_graphs.rs,bounded_collections.rs}`; `classify_bounded_kani_profile`, `prepare_finite_graph_reaches`, `prepare_bounded_collection_query` and public types | FR-015-AC-82 to AC-89, AC-109 to AC-111 and AC-123 while each operation remains | Remaining finite-input auxiliaries are live. The collection lowerer and its AC-123 direct-result obligation retire at AC-110; graph/profile lowerers and module entry retire at AC-111, ending the graph operation's AC-123 direct-result obligation. |
@@ -164,7 +164,7 @@ source tree and crate-root re-exports, is:
 | `kani/terminal.rs` and public terminal-map operations | FR-029 and FR-030 | Live terminal maps; the backend adapter trait remains planned under FR-026. |
 | `kani/generate/role_parity_tests.rs` and `kani/test_support.rs` | FR-014-AC-38 and FR-015-AC-60/68; FR-015/FR-017 tests using shared helpers | Test-only role parity and fixture helpers. |
 | `kani/mod.rs` and `kani/generate/mod.rs` | The child-module owners above | Module declarations and test-only helpers; no separate generation API. |
-| `replay/{witness,function,frame,state_clause}` and Kani playback scanning in `kani/output/playback.rs` | FR-016 witness decode/native replay and FR-024 QSL envelope intake | Live function/frame paths; common typed intake remains planned. Corpus replay remains live until FR-015-AC-111. |
+| `replay/{witness,function,frame,state_clause}` and Kani playback scanning in `kani/output/playback.rs` | FR-016 witness decode/native replay and FR-024 FSL envelope intake | Live function/frame paths; common typed intake remains planned. Corpus replay remains live until FR-015-AC-111. |
 
 The reverse inventory is: FR-015 owns generation, census, corpus and proof identity;
 FR-025 owns the generated binding/subject ABI; FR-017 owns execution and run
@@ -201,8 +201,8 @@ Two recorded exceptions to the layout convention, both to be settled at the layo
 
 ## References
 
-- [CG to QSL replay seam](assurance/AD-002-cg-qsl-replay-seam.md).
-- [Evidence chain across IR, CG and QSL](assurance/AD-003-evidence-chain.md).
+- [CG to FSL replay seam](assurance/AD-002-cg-fsl-replay-seam.md).
+- [Evidence chain across IR, CG and FSL](assurance/AD-003-evidence-chain.md).
 - [CG crate layout](assurance/AD-004-cg-crate-layout.md).
 - ISO/IEC/IEEE 29148 (requirements engineering), per `standards_alignment`.
 

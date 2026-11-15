@@ -30,12 +30,12 @@ impl Comparison {
     /// The comparison a catalogued identity names.
     pub(crate) fn from_identity(identity: &str) -> Option<Self> {
         Some(match identity {
-            "quire.op.integer.lt" => Self::Lt,
-            "quire.op.integer.le" => Self::Le,
-            "quire.op.integer.gt" => Self::Gt,
-            "quire.op.integer.ge" => Self::Ge,
-            "quire.op.integer.eq" => Self::Eq,
-            "quire.op.integer.ne" => Self::Ne,
+            "filament.op.integer.lt" => Self::Lt,
+            "filament.op.integer.le" => Self::Le,
+            "filament.op.integer.gt" => Self::Gt,
+            "filament.op.integer.ge" => Self::Ge,
+            "filament.op.integer.eq" => Self::Eq,
+            "filament.op.integer.ne" => Self::Ne,
             _ => return None,
         })
     }

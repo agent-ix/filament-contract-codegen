@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Residual acceptance checks over the routed scalar fixtures: setup-step precedence
-//! (AC-2), single-member report binding (AC-6), QSL's stale-dependency refusal (AC-17), absent
+//! (AC-2), single-member report binding (AC-6), FSL's stale-dependency refusal (AC-17), absent
 //! retained body members (AC-18), invented membership refused before comparison (AC-12).
 //! Native controls only: no Kani proof or backend falsification.
 
@@ -8,21 +8,21 @@ use super::kani_obligations::boolean_implies_scalar;
 use super::scalar_playback::{replay_fixture, routed_implies_fixture, transcript, ReplayFixture};
 use super::scalar_replay_binding::{context, observe, plan};
 use super::terminal_map::synthetic_evidence;
+use filament_contract_codegen::{
+    scalar_run_terminal_value, CompletedScalarReplay, KaniRunOutcome, ScalarAuthorityError,
+    ScalarBuildError, ScalarSentRequest, TerminalPairError, SCALAR_PLAYBACK_BYTES,
+};
 use ix_trace_rs::trace;
 use qsl_replay::{
     Code, Domain, InconclusiveCause, NodeKey, OperandIdentity, OperatorClaim, OperatorParityReport,
     OperatorParityResult, Origin, ParityArgument, ParityPreimage, ReplayLimits, ReplayRefusal,
     ReplayRequestWire, Role, ScalarIdentityMismatch, ScalarOperand, ScalarOperation, TerminalValue,
 };
-use quire_contract_codegen::{
-    scalar_run_terminal_value, CompletedScalarReplay, KaniRunOutcome, ScalarAuthorityError,
-    ScalarBuildError, ScalarSentRequest, TerminalPairError, SCALAR_PLAYBACK_BYTES,
-};
 use quire_exact::{Integer, IntegerInterval};
 
 fn sum_fixture() -> ReplayFixture {
     replay_fixture(
-        "quire.op.integer.add",
+        "filament.op.integer.add",
         "x: Int[0, 9]",
         "Int[0, 18]",
         "x + x",
@@ -36,7 +36,7 @@ fn completed_sum(fixture: &ReplayFixture) -> CompletedScalarReplay {
     original.complete(observation).unwrap()
 }
 
-/// The genuine request that plan sends to the QSL facade.
+/// The genuine request that plan sends to the FSL facade.
 fn genuine_request(fixture: &ReplayFixture) -> (ReplayRequestWire, OperatorClaim, ReplayLimits) {
     completed_sum(fixture).request()
 }
@@ -50,7 +50,7 @@ fn operands(operation: &ScalarOperation) -> Vec<&ScalarOperand> {
     }
 }
 
-/// The obligation identity QSL's public mint gives `claim`, so a mutated claim stays
+/// The obligation identity FSL's public mint gives `claim`, so a mutated claim stays
 /// self-consistent with the identity it travels under.
 fn remint(wire: &mut ReplayRequestWire, claim: &OperatorClaim) {
     let preimage = ParityPreimage {
@@ -96,7 +96,7 @@ fn setup_refusal_precedence_follows_the_stated_step_order() {
     let fixture = sum_fixture();
     let identity = &fixture.harness.identity;
     let body = fixture.harness.scalar_replay_body().unwrap();
-    let run = |artifacts: &[quire_contract_codegen::Artifact], text: &str| {
+    let run = |artifacts: &[filament_contract_codegen::Artifact], text: &str| {
         context(&fixture).plan(&fixture.harness, identity, body, artifacts, text)
     };
     let rename = |text: &str| {
@@ -179,7 +179,7 @@ fn setup_refusal_precedence_follows_the_stated_step_order() {
     // earlier is wrong.
     let implies = routed_implies_fixture();
     let implies_identity = &implies.harness.identity;
-    let unavailable = |artifacts: &[quire_contract_codegen::Artifact], text: &str| {
+    let unavailable = |artifacts: &[filament_contract_codegen::Artifact], text: &str| {
         context(&fixture).plan(&implies.harness, implies_identity, body, artifacts, text)
     };
     let implies_good = transcript(implies_identity, &[1, 1]);
@@ -274,7 +274,7 @@ fn every_refusal_on_an_unavailable_family_settles_nothing() {
 }
 
 fn rename_implies(
-    identity: &quire_contract_codegen::ScalarObligationIdentity,
+    identity: &filament_contract_codegen::ScalarObligationIdentity,
     text: &str,
 ) -> String {
     text.replace(
@@ -346,13 +346,13 @@ fn each_single_retained_member_change_refuses_the_genuine_report() {
     }
 }
 
-/// QSL's own typed refusal: a claimed package, path or producer ordinal that is not the
-/// recompiled package's, or an identity QSL does not recompute, is `stale_dependency` before any
+/// FSL's own typed refusal: a claimed package, path or producer ordinal that is not the
+/// recompiled package's, or an identity FSL does not recompute, is `stale_dependency` before any
 /// scalar comparison. The body-only edit under an equal node is the converter's `BodyMismatch`,
 /// asserted in `scalar_replay_binding.rs`.
 #[trace("TC-047", "FR-032-AC-17")]
 #[test]
-fn qsl_refuses_a_changed_node_identity_as_stale_dependency() {
+fn fsl_refuses_a_changed_node_identity_as_stale_dependency() {
     let fixture = sum_fixture();
     let (wire, claim, limits) = genuine_request(&fixture);
     let control = qsl_replay::replay_operator_parity(wire.clone(), claim.clone(), limits);
@@ -492,7 +492,7 @@ fn a_body_or_record_missing_a_retained_member_refuses_setup() {
 #[test]
 fn draw_order_is_kept_and_unrelated_enclosing_parameters_are_excluded() {
     let fixture = replay_fixture(
-        "quire.op.integer.sub",
+        "filament.op.integer.sub",
         "x: Int[10, 20], y: Int[0, 9], z: Int[50, 60]",
         "Int[-20, -1]",
         "y - x",
@@ -549,12 +549,12 @@ fn draw_order_is_kept_and_unrelated_enclosing_parameters_are_excluded() {
 
 /// A self-consistent claim, reminted under the public owning mint, that invents an occurrence
 /// or graph child, or misstates an inline literal's value or singleton range, is refused by
-/// QSL's membership checks, never by the identity comparison and never compared.
+/// FSL's membership checks, never by the identity comparison and never compared.
 #[trace("TC-047", "FR-032-AC-12")]
 #[test]
 fn invented_membership_is_refused_before_identity_comparison() {
     let fixture = replay_fixture(
-        "quire.op.integer.add",
+        "filament.op.integer.add",
         "x: Int[0, 9]",
         "Int[3, 12]",
         "x + 3",

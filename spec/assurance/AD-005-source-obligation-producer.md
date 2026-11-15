@@ -6,15 +6,15 @@ status: accepted
 owner: Contract Codegen lane
 system: selected source candidate census and separate capability, refusal and execution facts
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-036
+  - target: ix://agent-ix/filament-contract-codegen/FR-036
     type: realizes
-  - target: ix://agent-ix/quire-contract-codegen/AD-001
+  - target: ix://agent-ix/filament-contract-codegen/AD-001
     type: references
-  - target: ix://agent-ix/quire-contract-codegen/AD-003
+  - target: ix://agent-ix/filament-contract-codegen/AD-003
     type: references
-  - target: ix://agent-ix/quire-contract-ir/FR-045
+  - target: ix://agent-ix/filament-contract-ir/FR-045
     type: references
-  - target: ix://agent-ix/quire-contract-ir/AD-008
+  - target: ix://agent-ix/filament-contract-ir/AD-008
     type: references
 ---
 # Source-obligation census producer and acyclic consumer seam
@@ -41,15 +41,15 @@ or file ledger.
 
 | Authority | Existing typed input | Information available and boundary |
 | --- | --- | --- |
-| IR model | `quire_contract_model::CheckedPackageV2::{package_id,lock,graph,node_kinds,source_map}` in `checked_package/v2/mod.rs` | Admitted selected semantic graph, source occurrences and original selections. Authored semantic Function nodes are not production Rust functions. |
-| QSL checked package | `qsl_package::CheckedPackage::graph()` and `qsl_semantics::check::CheckedGraph::{source,semantic_graph,occurrences,requirements}` | Immutable source and checked claim records keyed by `OccurrenceKey`; `RequirementRecord` exposes capability/extent, result bound and path conditions before backend negotiation. These records are not authored FR acceptance criteria. |
-| QSL native composed checker | `quire_spec_language::checking::composed::DeclarationTypes::obligations()` and its `Obligation`/`Site` | Source-owned pending proof/runtime conditions, preserving declaration/unit/expression location; distinct from the checked claim-record population and not discharged proofs. |
-| QSL native bindings | `checking::{ClauseBinding,CheckBindings}` | Caller-authored requirement/clause correspondence; no acceptance-criterion or production-symbol relation. |
+| IR model | `filament_contract_model::CheckedPackageV2::{package_id,lock,graph,node_kinds,source_map}` in `checked_package/v2/mod.rs` | Admitted selected semantic graph, source occurrences and original selections. Authored semantic Function nodes are not production Rust functions. |
+| FSL checked package | `fsl_package::CheckedPackage::graph()` and `fsl_semantics::check::CheckedGraph::{source,semantic_graph,occurrences,requirements}` | Immutable source and checked claim records keyed by `OccurrenceKey`; `RequirementRecord` exposes capability/extent, result bound and path conditions before backend negotiation. These records are not authored FR acceptance criteria. |
+| FSL native composed checker | `filament_spec_language::checking::composed::DeclarationTypes::obligations()` and its `Obligation`/`Site` | Source-owned pending proof/runtime conditions, preserving declaration/unit/expression location; distinct from the checked claim-record population and not discharged proofs. |
+| FSL native bindings | `checking::{ClauseBinding,CheckBindings}` | Caller-authored requirement/clause correspondence; no acceptance-criterion or production-symbol relation. |
 | Production structural extraction | `quire_code_rs::{SourceFile,parse_file,extract}`, `ParsedFile::facts`, `CodeFact` | Existing Module/Function facts with qualified name, parent, path, span and diagnostics from selected source bytes. Production selection and obligation mapping require explicit authority; mention/call edges do not authenticate those mappings or load-bearing reachability. |
 
 A census selects one reviewed source population and its complete owner inventory;
 it does not union unrelated checker populations or declare every semantic graph node
-a proof obligation. A QSL request subset or a CG claim map generated only for selected
+a proof obligation. A FSL request subset or a CG claim map generated only for selected
 items is not that complete inventory. The selection records the inventory owner and
 population scope so absence of a family cannot be hidden behind an empty success.
 
@@ -59,7 +59,7 @@ population scope so absence of a family cannot be hidden behind an empty success
 semantic obligation occurrences and selected production module/function identities.
 It must retain the inventories themselves, many-to-many links, explicit missing
 mappings and foreign/dangling relation refusals. The existing IR checked package and
-QSL records do not provide that relation. Existing production extraction supplies
+FSL records do not provide that relation. Existing production extraction supplies
 symbols, not the authored semantic relation. CG must not fabricate it from a name,
 tag, check location or call graph.
 
@@ -75,8 +75,8 @@ package, semantic-obligation, criterion, production-symbol and correspondence in
 No negotiation, artifact or result parameter influences population membership.
 It returns separate complete obligation/entity inventories, complete-key candidate
 rows and explicit entity/production mapping-gap records. Re-reading
-`ix://agent-ix/quire-contract-ir/FR-045` Behavior and
-`ix://agent-ix/quire-contract-ir/AD-008` Claim and population establishes the key:
+`ix://agent-ix/filament-contract-ir/FR-045` Behavior and
+`ix://agent-ix/filament-contract-ir/AD-008` Claim and population establishes the key:
 owning criterion × semantic obligation × selected source identity × declared domain.
 Every distinct authored complete tuple is one candidate; several criteria linked to
 one obligation remain separate candidates. Different source identities or declared
@@ -117,10 +117,10 @@ planned refinement supplies no executed observation.
 
 ### Acyclic consumer
 
-CG already depends on `quire-contract-ir` for Kani APIs and on the cycle-free
-`quire-contract-model` for semantic types. IR root cannot add a CG dependency to read
-this export. The neutral IR-759 contract must retain the model's prohibition on QSL,
-CG and IR-root dependencies. Concrete QSL/CG adapters belong above those authorities.
+CG already depends on `filament-contract-ir` for Kani APIs and on the cycle-free
+`filament-contract-model` for semantic types. IR root cannot add a CG dependency to read
+this export. The neutral IR-759 contract must retain the model's prohibition on FSL,
+CG and IR-root dependencies. Concrete FSL/CG adapters belong above those authorities.
 
 CG's public result is borrowable in a consumer that already depends on CG and IR.
 That consumer implements the IR-owned accounting input port using the reviewed neutral
@@ -134,7 +134,7 @@ these planned names do not claim a currently available upstream API.
 - Enumerate before producer work, from complete selected source inventories. This
   requires an explicit correspondence input but makes retries and omissions unable
   to alter population membership.
-- Reuse existing IR/QSL semantic and production-extraction authorities. Source
+- Reuse existing IR/FSL semantic and production-extraction authorities. Source
   parsing and schema copies in CG would add another authority and are excluded.
 - Separate capability, pre-run refusal and execution records. This preserves an
   unsupported decision with no invented execution and identifies the refusal stage.

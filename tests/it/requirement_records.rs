@@ -3,8 +3,7 @@
 use ix_trace_rs::trace;
 use std::collections::BTreeMap;
 
-use qsl_replay::{compile_package, DependencyInput, ReplayLimits, SourceIdentity, StageLimits};
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     derive_exact_scalar_items, generate_exact_scalar_oracles, generate_routed,
     negotiate_kani_obligations, routed_contract_lowering_profile, ContractDriverResultSelection,
     ContractRequestPosition, GenerationContexts, KaniGenerationContext, KaniObligationOutcome,
@@ -13,6 +12,7 @@ use quire_contract_codegen::{
     RoutedGeneration, RoutedGenerationError, RoutedGenerationItem, RoutedRequirement,
     UnsupportedObligation,
 };
+use qsl_replay::{compile_package, DependencyInput, ReplayLimits, SourceIdentity, StageLimits};
 use quire_contract_model::{
     CheckedNodeId, CheckedOccurrenceRole, CheckedPackageEvidence, CheckedPackageReadLimits,
     CheckedPackageV2, CheckedPackageV2ReadResult, CheckedTerm, ContractDependencies,
@@ -27,7 +27,7 @@ use crate::routed_generation::{admitted_routing_input, route};
 fn direct_increment_record() -> String {
     let KaniObligationOutcome::Emitted {
         scalar_harnesses, ..
-    } = direct_outcome(package::QSL_INC, false)
+    } = direct_outcome(package::FSL_INC, false)
     else {
         panic!("the request is rejected");
     };
@@ -37,14 +37,14 @@ fn direct_increment_record() -> String {
     harness.record.contents.clone()
 }
 
-/// The direct FR-015 outcome for the QSL-shaped node `code`, under one guard when `guarded`.
+/// The direct FR-015 outcome for the FSL-shaped node `code`, under one guard when `guarded`.
 fn direct_outcome(code: u32, guarded: bool) -> KaniObligationOutcome {
     direct_outcome_guarded(code, guarded.then_some(code))
 }
 
 /// The direct FR-015 outcome for the node `code`, under one guard on the node `guard`.
 fn direct_outcome_guarded(code: u32, guard: Option<u32>) -> KaniObligationOutcome {
-    let mut builder = package::qsl_shaped_package();
+    let mut builder = package::fsl_shaped_package();
     builder.expression_occurrences();
     let (checked, ids) = builder.admit_resolved();
     let node_id = ids.resolve(&package::code_id(code));
@@ -101,7 +101,7 @@ fn direct_increment_record_equals_the_committed_golden() {
     assert_eq!(direct_increment_record(), golden);
 }
 
-fn qsl_package(name: &str, source: &str) -> CheckedPackageV2 {
+fn fsl_package(name: &str, source: &str) -> CheckedPackageV2 {
     let path = format!("{name}.native");
     let compiled = compile_package(
         qsl_replay::CompileUnit {
@@ -115,16 +115,16 @@ fn qsl_package(name: &str, source: &str) -> CheckedPackageV2 {
         StageLimits::default(),
         ReplayLimits::default(),
     )
-    .expect("QSL compiles the source");
+    .expect("FSL compiles the source");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     match CheckedPackageV2::read(
         compiled.bytes(),
         CheckedPackageReadLimits::bounded(),
         &evidence,
     ) {
         CheckedPackageV2ReadResult::Admitted(package) => *package,
-        other => panic!("IR admits QSL output: {other:?}"),
+        other => panic!("IR admits FSL output: {other:?}"),
     }
 }
 
@@ -194,7 +194,7 @@ fn narrow_of<'a>(
         .nodes
         .iter()
         .filter(|node| {
-            operation(node) == Some("quire.op.numeric.narrow")
+            operation(node) == Some("filament.op.numeric.narrow")
                 && first_argument(node) == Some(application)
         })
         .map(|node| &node.node_id)
@@ -299,7 +299,7 @@ impl Scenario {
         }
     }
 
-    /// The records QSL writes for the scenario's requirements.
+    /// The records FSL writes for the scenario's requirements.
     fn records(&self) -> BTreeMap<RequirementOccurrence, RequirementRecordInput> {
         self.requirements
             .iter()
@@ -373,7 +373,7 @@ impl Scenario {
 }
 
 const RR16: &str = "language \"ix:native\" edition \"1-draft\";\n\
-    profile v = \"quire.value.complete/v1\";\n\
+    profile v = \"filament.value.complete/v1\";\n\
     function g using v(p: Int[0, 10]): Boolean pure { true }\n\
     function h using v(q: Int[0, 20]): Boolean pure { true }\n\
     function f using v(x: Int[0, 9]): Boolean pure { g(x + 1) and h(x + 1) }\n";
@@ -381,12 +381,12 @@ const RR16: &str = "language \"ix:native\" edition \"1-draft\";\n\
 /// The checked RR-16 package: one `x + 1` node with two occurrences, directly narrowed to
 /// `Int[0, 10]` and `Int[0, 20]`.
 fn rr16() -> Scenario {
-    let checked = qsl_package("rr16", RR16);
+    let checked = fsl_package("rr16", RR16);
     let add = checked
         .resolved_graph()
         .nodes
         .iter()
-        .find(|node| operation(node) == Some("quire.op.integer.add"))
+        .find(|node| operation(node) == Some("filament.op.integer.add"))
         .expect("the shared addition")
         .node_id
         .clone();
@@ -452,8 +452,8 @@ fn kani_record(
     generation: &RoutedGeneration,
     request_index: usize,
 ) -> (
-    &quire_contract_codegen::ObligationRecord,
-    Option<&quire_contract_codegen::KaniScalarObligationHarness>,
+    &filament_contract_codegen::ObligationRecord,
+    Option<&filament_contract_codegen::KaniScalarObligationHarness>,
 ) {
     let item = generation
         .items
@@ -464,7 +464,7 @@ fn kani_record(
 }
 
 fn asserts_bound(
-    harness: &quire_contract_codegen::KaniScalarObligationHarness,
+    harness: &filament_contract_codegen::KaniScalarObligationHarness,
     upper: i64,
 ) -> bool {
     harness.rust.contents.contains(&format!(
@@ -796,7 +796,7 @@ fn record_checks_follow_the_fixed_order() {
 }
 
 const GUARDED: &str = "language \"ix:native\" edition \"1-draft\";\n\
-    profile v = \"quire.value.complete/v1\";\n\
+    profile v = \"filament.value.complete/v1\";\n\
     function f using v(p: Boolean, x: Int[0, 9]): Int[0, 10] pure { if p then x + 1 else x + 1 }\n\
     function g using v(x: Int[0, 9]): Int[0, 10] pure { x + 1 }\n\
     function h using v(x: Int[0, 9]): Int[0, 200] pure { if x > 5 then x + 100 else 0 }\n\
@@ -812,11 +812,11 @@ struct Guarded {
 }
 
 fn guarded() -> Guarded {
-    let checked = qsl_package("ir304-guarded", GUARDED);
+    let checked = fsl_package("ir304-guarded", GUARDED);
     let nodes = &checked.resolved_graph().nodes;
     let adds = nodes
         .iter()
-        .filter(|node| operation(node) == Some("quire.op.integer.add"))
+        .filter(|node| operation(node) == Some("filament.op.integer.add"))
         .collect::<Vec<_>>();
     let by_text = |needle: &str| {
         adds.iter()
@@ -1000,7 +1000,7 @@ fn claim_refusals_precede_the_guard_refusal() {
     let k_add = nodes
         .iter()
         .find(|node| {
-            operation(node) == Some("quire.op.integer.add")
+            operation(node) == Some("filament.op.integer.add")
                 && narrow_of(&guarded.checked, &node.node_id).is_empty()
                 && occurrences(&guarded.checked, &node.node_id).len() == 1
         })
@@ -1009,7 +1009,7 @@ fn claim_refusals_precede_the_guard_refusal() {
         .clone();
     let ge = nodes
         .iter()
-        .find(|node| operation(node) == Some("quire.op.integer.ge"))
+        .find(|node| operation(node) == Some("filament.op.integer.ge"))
         .expect("c's comparison")
         .node_id
         .clone();
@@ -1020,7 +1020,7 @@ fn claim_refusals_precede_the_guard_refusal() {
         .node_id
         .clone();
     let p = guarded.p.clone();
-    let checked = qsl_package("ir304-guarded", GUARDED);
+    let checked = fsl_package("ir304-guarded", GUARDED);
     let guard = |node: &CheckedNodeId, holds: bool| RequirementGuard {
         occurrence: conv_occurrence(&checked, node, 0),
         holds,
@@ -1059,8 +1059,8 @@ fn claim_refusals_precede_the_guard_refusal() {
 #[test]
 fn guard_refusal_precedes_the_bound_and_reachability_refusals() {
     for (code, plain) in [
-        (package::QSL_PLUS_HUNDRED, "result_bound_unreachable"),
-        (package::QSL_PLUS_HUGE, "domain_not_representable_in_i64"),
+        (package::FSL_PLUS_HUNDRED, "result_bound_unreachable"),
+        (package::FSL_PLUS_HUGE, "domain_not_representable_in_i64"),
     ] {
         let reason = |guarded: bool| {
             let KaniObligationOutcome::Emitted { records, .. } = direct_outcome(code, guarded)
@@ -1100,7 +1100,7 @@ fn op_is(identity: &'static str) -> impl Fn(&quire_contract_model::CheckedSemant
 
 fn is_plus(addend: &'static str) -> impl Fn(&quire_contract_model::CheckedSemanticNodeV2) -> bool {
     move |node| {
-        operation(node) == Some("quire.op.integer.add")
+        operation(node) == Some("filament.op.integer.add")
             && format!("{:?}", node.node_id.path).contains(&format!("\"{addend}\""))
     }
 }
@@ -1140,7 +1140,7 @@ fn item_spec(
 /// A package whose routed items are the `+` applications selected by predicate, each converted to
 /// its declared result and routed under its guards.
 fn guard_items(name: &str, source: &str, items: &[(NodePredicate, &[GuardSpec])]) -> Scenario {
-    let checked = qsl_package(name, source);
+    let checked = fsl_package(name, source);
     let specs = items
         .iter()
         .map(|(application, guards)| item_spec(&checked, *application, guards))
@@ -1169,13 +1169,13 @@ fn guard_fn(signature: &str, body: &str) -> String {
         "Int[0, 10]"
     };
     format!(
-        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nfunction t using v({signature}): {returns} pure {{ {body} }}\n"
+        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nfunction t using v({signature}): {returns} pure {{ {body} }}\n"
     )
 }
 
 type Settled = (
     serde_json::Value,
-    Option<quire_contract_codegen::KaniScalarObligationHarness>,
+    Option<filament_contract_codegen::KaniScalarObligationHarness>,
 );
 
 /// The disposition JSON and harness of the scenario's item at `index`.
@@ -1194,7 +1194,7 @@ fn settle(scenario: &Scenario) -> Settled {
     settle_at(scenario, 0)
 }
 
-fn args(harness: &quire_contract_codegen::KaniScalarObligationHarness) -> Vec<(i64, i64)> {
+fn args(harness: &filament_contract_codegen::KaniScalarObligationHarness) -> Vec<(i64, i64)> {
     harness
         .identity
         .arguments
@@ -1221,7 +1221,7 @@ fn guard_assumptions(source: &str) -> Vec<String> {
 fn guarded_harness(
     scenario: &Scenario,
 ) -> (
-    quire_contract_codegen::KaniScalarObligationHarness,
+    filament_contract_codegen::KaniScalarObligationHarness,
     Vec<String>,
 ) {
     let (disposition, harness) = settle(scenario);
@@ -1351,7 +1351,7 @@ fn unlowerable_guards_settle_per_item_with_their_reason() {
         "x: Int[0, 9]",
         "if x + 1 > 5 then x + 100 else 0",
         "100",
-        "quire.op.integer.gt",
+        "filament.op.integer.gt",
     );
     assert_eq!(form, "unsupported_guard_form");
 
@@ -1359,7 +1359,7 @@ fn unlowerable_guards_settle_per_item_with_their_reason() {
         "n: Integer, x: Int[0, 9]",
         "if n >= 0 then x + 1 else 0",
         "1",
-        "quire.op.integer.ge",
+        "filament.op.integer.ge",
     );
     assert_eq!(
         unbounded,
@@ -1370,18 +1370,18 @@ fn unlowerable_guards_settle_per_item_with_their_reason() {
         "x: Int[0, 9]",
         "if x < 100000000000000000000000 then x + 1 else 0",
         "1",
-        "quire.op.integer.lt",
+        "filament.op.integer.lt",
     );
     let literal_not_i64 =
         serde_json::json!({"guard_literal_not_i64": {"value": "100000000000000000000000"}});
     assert_eq!(literal, literal_not_i64);
 
-    // The `=` literal QSL widens through a conversion keeps its reason.
+    // The `=` literal FSL widens through a conversion keeps its reason.
     let (_, widened) = reason(
         "x: Int[0, 1000000000000000000000000], z: Int[0, 9]",
         "if x = 100000000000000000000000 then z + 1 else 0",
         "1",
-        "quire.op.integer.eq",
+        "filament.op.integer.eq",
     );
     assert_eq!(widened, literal_not_i64);
 }
@@ -1391,11 +1391,11 @@ fn unlowerable_guards_settle_per_item_with_their_reason() {
 #[test]
 fn a_refused_guard_leaves_its_supported_sibling_untouched() {
     let source =
-        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\n\
+        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\n\
         function a using v(x: Int[0, 9]): Int[0, 11] pure { x + 2 }\n\
         function g using v(x: Int[0, 9]): Int[0, 9] pure { x }\n\
         function t using v(x: Int[0, 9]): Int[0, 12] pure { if g(x) > 5 then x + 3 else 0 }\n";
-    let guard: &[GuardSpec] = &[(&op_is("quire.op.integer.gt"), true, 0)];
+    let guard: &[GuardSpec] = &[(&op_is("filament.op.integer.gt"), true, 0)];
     let scenario = guard_items(
         "ir304-sibling",
         source,
@@ -1427,7 +1427,7 @@ fn integer_guards_narrow_the_operand_domains() {
             name,
             &source,
             &is_plus("100"),
-            &[(&op_is("quire.op.integer.gt"), holds)],
+            &[(&op_is("filament.op.integer.gt"), holds)],
         );
         let (harness, assumptions) = guarded_harness(&scenario);
         assert!(asserts_bound(&harness, 200));
@@ -1447,7 +1447,7 @@ fn integer_guards_narrow_the_operand_domains() {
             "if x < y then x + 1 else x + 1",
         ),
         &is_plus("1"),
-        &[(&op_is("quire.op.integer.lt"), true)],
+        &[(&op_is("filament.op.integer.lt"), true)],
     );
     let (harness, assumptions) = guarded_harness(&two);
     assert_eq!(args(&harness), vec![(0, 9), (1, 1)]);
@@ -1455,7 +1455,7 @@ fn integer_guards_narrow_the_operand_domains() {
     assert_eq!(harness.identity.guard_inputs.len(), 1);
     assert_eq!(
         harness.identity.guard_inputs[0].domain,
-        quire_contract_codegen::ScalarGuardDomain::Integer {
+        filament_contract_codegen::ScalarGuardDomain::Integer {
             minimum: 0,
             maximum: 9
         }
@@ -1471,7 +1471,7 @@ fn integer_guards_narrow_the_operand_domains() {
 #[trace("FR-022-AC-33", "TC-033")]
 #[test]
 fn every_comparison_narrows_by_the_values_that_falsify_it() {
-    // (operator, name, literal, holds, narrowed range of `x`). QSL widens an `=` or `!=` literal
+    // (operator, name, literal, holds, narrowed range of `x`). FSL widens an `=` or `!=` literal
     // through a conversion, which the lowering reads through to the literal.
     let cases = [
         ("<", "lt", "5", true, (0, 4)),
@@ -1497,12 +1497,12 @@ fn every_comparison_narrows_by_the_values_that_falsify_it() {
             &format!("if x {symbol} {rhs} then x + 100 else 0"),
         );
         let comparison: &'static str = match name {
-            "lt" => "quire.op.integer.lt",
-            "le" => "quire.op.integer.le",
-            "gt" => "quire.op.integer.gt",
-            "ge" => "quire.op.integer.ge",
-            "eq" => "quire.op.integer.eq",
-            _ => "quire.op.integer.ne",
+            "lt" => "filament.op.integer.lt",
+            "le" => "filament.op.integer.le",
+            "gt" => "filament.op.integer.gt",
+            "ge" => "filament.op.integer.ge",
+            "eq" => "filament.op.integer.eq",
+            _ => "filament.op.integer.ne",
         };
         let scenario = guard_scenario(
             &format!("ir304-table-{index}"),
@@ -1552,12 +1552,12 @@ fn contradictory_guards_settle_path_condition_unsatisfiable() {
         (
             "dead-gt",
             "if x > 20 then x + 100 else 0",
-            "quire.op.integer.gt",
+            "filament.op.integer.gt",
         ),
         (
             "dead-lt",
             "if 20 < x then x + 100 else 0",
-            "quire.op.integer.lt",
+            "filament.op.integer.lt",
         ),
     ] {
         let (scenario, reason) = dead(name, body, &[(&op_is(comparison), true, 0)]);
@@ -1571,8 +1571,8 @@ fn contradictory_guards_settle_path_condition_unsatisfiable() {
         "dead-second",
         "if x >= 5 then (if x < 3 then x + 100 else 0) else 0",
         &[
-            (&op_is("quire.op.integer.ge"), true, 0),
-            (&op_is("quire.op.integer.lt"), true, 0),
+            (&op_is("filament.op.integer.ge"), true, 0),
+            (&op_is("filament.op.integer.lt"), true, 0),
         ],
     );
     assert_eq!(
@@ -1586,7 +1586,7 @@ fn contradictory_guards_settle_path_condition_unsatisfiable() {
 
     // the same node without a guard is `result_bound_unreachable`
     let KaniObligationOutcome::Emitted { records, .. } =
-        direct_outcome(package::QSL_PLUS_HUNDRED, false)
+        direct_outcome(package::FSL_PLUS_HUNDRED, false)
     else {
         panic!("the request is rejected");
     };
@@ -1694,7 +1694,7 @@ fn a_guard_whose_context_root_is_dropped_refuses_the_whole_call() {
 #[test]
 fn a_guard_root_the_package_does_not_lower_is_not_lowered() {
     let source =
-        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\n\
+        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\n\
         function a using v(x: Int[0, 9]): Int[0, 11] pure { x + 2 }\n\
         function g using v(x: Int[0, 9]): Int[0, 9] pure { x }\n\
         function t using v(x: Int[0, 9]): Int[0, 12] pure { if g(x) > 5 then x + 3 else 0 }\n";
@@ -1705,8 +1705,8 @@ fn a_guard_root_the_package_does_not_lower_is_not_lowered() {
         .supported_tags
         .remove(&quire_contract_model::CheckedNodeTag::Function);
     {
-        let checked = qsl_package("ir304-unlowered-root", source);
-        let guard: &[GuardSpec] = &[(&op_is("quire.op.integer.gt"), true, 0)];
+        let checked = fsl_package("ir304-unlowered-root", source);
+        let guard: &[GuardSpec] = &[(&op_is("filament.op.integer.gt"), true, 0)];
         let items: [(NodePredicate, &[GuardSpec]); 2] =
             [(&is_plus("2"), &[]), (&is_plus("3"), guard)];
         let specs = items
@@ -1797,7 +1797,7 @@ fn a_guard_inside_the_closure_but_not_a_requested_root_is_not_lowered() {
 #[test]
 fn a_guard_on_a_node_that_is_no_lowered_root_is_not_lowered() {
     let KaniObligationOutcome::Emitted { records, .. } =
-        direct_outcome_guarded(package::QSL_INC, Some(package::QSL_LITERAL_HUNDRED))
+        direct_outcome_guarded(package::FSL_INC, Some(package::FSL_LITERAL_HUNDRED))
     else {
         panic!("the request is rejected");
     };
@@ -1819,14 +1819,14 @@ fn an_unlowered_second_guard_precedes_unsatisfiability() {
         &[
             (
                 &|node| {
-                    operation(node) == Some("quire.op.integer.gt")
+                    operation(node) == Some("filament.op.integer.gt")
                         && !format!("{:?}", node.body).contains("add")
                 },
                 true,
             ),
             (
                 &|node| {
-                    operation(node) == Some("quire.op.integer.gt")
+                    operation(node) == Some("filament.op.integer.gt")
                         && format!("{:?}", node.body).contains("add")
                 },
                 true,
@@ -1847,8 +1847,8 @@ pub(crate) fn ac35_native_harness(
     comparison: &str,
     identity: &'static str,
 ) -> (
-    quire_contract_codegen::KaniScalarObligationHarness,
-    quire_contract_codegen::Artifact,
+    filament_contract_codegen::KaniScalarObligationHarness,
+    filament_contract_codegen::Artifact,
 ) {
     let scenario = guard_scenario(
         "ac35",
@@ -1860,7 +1860,7 @@ pub(crate) fn ac35_native_harness(
         &[(&op_is(identity), true)],
     );
     let records = RequirementRecords::new(scenario.records());
-    let generation = quire_contract_codegen::generate_routed_native(
+    let generation = filament_contract_codegen::generate_routed_native(
         &scenario.checked,
         &scenario.package,
         &scenario.positions,
@@ -1897,13 +1897,16 @@ pub(crate) fn ac35_native_harness(
 #[trace("FR-022-AC-35", "TC-033")]
 #[test]
 fn the_guarded_native_harness_is_thin_and_ends_with_its_cover() {
-    for (comparison, identity) in [("<", "quire.op.integer.lt"), (">", "quire.op.integer.gt")] {
+    for (comparison, identity) in [
+        ("<", "filament.op.integer.lt"),
+        (">", "filament.op.integer.gt"),
+    ] {
         let (harness, _manifest) = ac35_native_harness(comparison, identity);
         let source = &harness.rust.contents;
         let proof = &source[source.find("#[kani::proof]").expect("the proof attribute")..];
         assert_eq!(
             harness.identity.integer_representation,
-            quire_contract_codegen::ScalarIntegerRepresentation::Native
+            filament_contract_codegen::ScalarIntegerRepresentation::Native
         );
         assert!(
             !proof.contains("rt::Integer"),

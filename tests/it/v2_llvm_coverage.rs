@@ -1,9 +1,9 @@
 //! V2 clause population and LLVM probe observations from admitted checked packages.
 
-use ix_trace_rs::trace;
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     analyze_v2_llvm_coverage, V2ClauseCoverageInput, V2_COVERAGE_FORMAT, V2_COVERAGE_SCHEMA,
 };
+use ix_trace_rs::trace;
 use serde_json::{json, Value};
 
 use super::kani_obligations_state_frame::native_twin::Twin;
@@ -24,7 +24,7 @@ fn input_for(
     package: &quire_contract_model::CheckedPackageV2,
     node_id: quire_contract_model::CheckedNodeId,
 ) -> V2ClauseCoverageInput<'static> {
-    let oracle = quire_contract_codegen::generate_v2_clause_oracle(package, &node_id).unwrap();
+    let oracle = filament_contract_codegen::generate_v2_clause_oracle(package, &node_id).unwrap();
     let source = Box::leak(oracle.source.into_bytes().into_boxed_slice());
     let source_map = Box::leak(
         serde_json::to_vec(&oracle.source_map)
@@ -415,9 +415,9 @@ fn admitted_v2_oracle_is_vacuous_under_real_llvm_when_consequent_is_skipped() {
     super::scratch_crate::write_manifest(
         &root,
         &format!(
-            "[package]\nname=\"v2-coverage-native\"\nversion=\"0.0.0\"\nedition=\"2021\"\n[dependencies]\n{}\nquire-exact = {{ {} }}\n[workspace]\n",
+            "[package]\nname=\"v2-coverage-native\"\nversion=\"0.0.0\"\nedition=\"2021\"\n[dependencies]\n{}\nfilament-exact = {{ {} }}\n[workspace]\n",
             super::scratch_crate::runtime_dependency(&["exact"]),
-            quire_contract_codegen::EXACT_DEPENDENCY_SOURCE
+            filament_contract_codegen::EXACT_DEPENDENCY_SOURCE
         ),
     );
     let toolchain = format!("+{}", env!("CARGO_PKG_RUST_VERSION"));

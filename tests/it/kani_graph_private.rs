@@ -5,7 +5,7 @@
 //! The mutants edit the generated reachability helper and are sealed with the crate-private
 //! constructor, the same fault-injection seam the scalar mutants use; production callers cannot
 //! re-seal a changed harness. Each Falsified playback is decoded into the graph Kani drew and put
-//! before QSL's `replay_state_clause` over the AUTHORED clause (no separately written
+//! before FSL's `replay_state_clause` over the AUTHORED clause (no separately written
 //! reachability): the negated claim must reproduce as a violation, and each source mutant, whose
 //! authored clause holds natively, must settle as a verdict disagreement.
 //!
@@ -13,7 +13,7 @@
 //! (`transitivity`), whose three reachability applications are quantifier-bound, is `Verified` by
 //! the unmutated harness, its harness mutant (the transitive closure removed, so reachability is
 //! the selected edges only) is Falsified and the unchanged authored clause holds natively on the
-//! decoded graph, and its claim mutant (the conclusion reversed) is Falsified and QSL reaches the
+//! decoded graph, and its claim mutant (the conclusion reversed) is Falsified and FSL reaches the
 //! same `Violation` verdict (its evaluated-witness settlement is not reached; see that test).
 //!
 //! There is NO wrong-role mutant. The harness draws one end only, so a closure that follows
@@ -69,7 +69,7 @@ fn relation(name: &str, lower: u64, upper: u64, unique: bool) -> Value {
     json!({
         "identity": format!("ix://ir268.test/domain/relationship/Node-{name}"),
         "category": "structural", "composite": false, "direction": "source-to-target",
-        "origin": {"source": {"sourceIdentity": SOURCE, "path": "spec.qspec", "startLine": 1, "startColumn": 1}},
+        "origin": {"source": {"sourceIdentity": SOURCE, "path": "spec.fspec", "startLine": 1, "startColumn": 1}},
         "sourceEnd": {"type": NODE, "role": name,
                       "multiplicity": {"lower": 0, "upper": 9, "ordered": false, "unique": unique}},
         "targetEnd": {"type": NODE,
@@ -89,8 +89,8 @@ fn domain_document() -> Vec<u8> {
         "source": {"identity": SOURCE, "version": "1.0.0", "dialect": "spec-bundle"},
         "package": {"identity": DOMAIN, "version": "1.0.0", "mappingVersions": [], "profileVersions": []},
         "constructs": [
-            construct("entity", "quire.meaning.model.object-type/v1"),
-            construct("population", "quire.meaning.model.population/v1")
+            construct("entity", "filament.meaning.model.object-type/v1"),
+            construct("population", "filament.meaning.model.population/v1")
         ],
         "occurrences": [], "extensions": [],
         "types": [{
@@ -109,7 +109,7 @@ fn domain_document() -> Vec<u8> {
             "operations": [{
                 "identity": format!("{NODE}/visit"), "name": "visit",
                 "params": [], "pre": [], "post": [],
-                "origin": {"source": {"sourceIdentity": SOURCE, "path": "spec.qspec", "startLine": 1, "startColumn": 1}},
+                "origin": {"source": {"sourceIdentity": SOURCE, "path": "spec.fspec", "startLine": 1, "startColumn": 1}},
                 "frame": {"modifies": [], "creates": [], "deletes": []}
             }]
         }],
@@ -153,7 +153,7 @@ pub(crate) fn authored_over(
         .map(|name| format!("invariant {name} using v on M::Node at current {{ {condition} }}\n"))
         .collect();
     let source = format!(
-        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.model.complete/v1\";\nmodel M = \"{DOMAIN}\";\nbound Nodes on M::CollectionNodes [{maximum}]\npredicate inspect using v (input: M::Node): Boolean {{ true }}\n{invariants}"
+        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.model.complete/v1\";\nmodel M = \"{DOMAIN}\";\nbound Nodes on M::CollectionNodes [{maximum}]\npredicate inspect using v (input: M::Node): Boolean {{ true }}\n{invariants}"
     );
     let site = call_site(
         SourceIdentity::new(AUTHORITY, UNIT),
@@ -164,9 +164,9 @@ pub(crate) fn authored_over(
         &DependencyInput::default(),
         &ClauseName(Identifier::new(names[0]).unwrap()),
     )
-    .unwrap_or_else(|error| panic!("QSL emits the authored clause: {error:?}"));
+    .unwrap_or_else(|error| panic!("FSL emits the authored clause: {error:?}"));
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     evidence
         .insert_domain_package_document(DOMAIN, domain.clone())
         .unwrap();
@@ -277,7 +277,7 @@ pub(crate) fn run_outcome(harness: &KaniGraphObligationHarness, label: &str) -> 
     fs::write(
         scratch.0.join("Cargo.toml"),
         format!(
-            "[package]\nname = \"generated-kani-graph\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\nquire-contract-runtime = {{ {}, features = [\"exact\"] }}\n\n[workspace]\n",
+            "[package]\nname = \"generated-kani-graph\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\nfilament-contract-runtime = {{ {}, features = [\"exact\"] }}\n\n[workspace]\n",
             crate::RUNTIME_DEPENDENCY_SOURCE
         ),
     )
@@ -424,7 +424,7 @@ pub(crate) fn replay(
         .expect("the playback decodes in the harness's domain");
     let witness = inputs.witness().cloned().expect("a decoded graph");
     let replay = StateClauseReplay::new_graph_invariant(inputs).expect("the replay is built");
-    let result = replay.replay().expect("QSL settles the graph replay");
+    let result = replay.replay().expect("FSL settles the graph replay");
     (witness, result)
 }
 
@@ -448,7 +448,7 @@ fn replay_under(
         .decode_falsification(harness, &playback, UNBOUNDED)
         .expect("the playback decodes in the harness's domain");
     let replay = StateClauseReplay::new_graph_invariant(inputs)?;
-    Ok(replay.replay().expect("QSL settles the graph replay"))
+    Ok(replay.replay().expect("FSL settles the graph replay"))
 }
 
 fn relationship(name: &str) -> String {
@@ -491,12 +491,12 @@ pub(crate) fn assert_clause_holds(result: &qsl_replay::StateClauseReplayResult) 
 }
 
 /// The negated claim: `not reaches(self, self, loop)` over a forced `{1,1}` end at population 1
-/// is false on the only admitted graph. Kani falsifies the unmutated harness, and QSL replays the
+/// is false on the only admitted graph. Kani falsifies the unmutated harness, and FSL replays the
 /// same authored clause on the decoded graph and reproduces the violation.
 #[trace("TC-025", "FR-015-AC-106")]
 #[test]
 #[ignore = "real Kani qualification: run serially inside the flock and the 24G scope"]
-fn real_kani_negated_claim_falsifies_and_qsl_replay_reproduces_it() {
+fn real_kani_negated_claim_falsifies_and_fsl_replay_reproduces_it() {
     let authored = authored("not reaches(self, self, loop)", 1);
     let healthy = harness(&authored, &[0]);
     let counterexample = run_falsified(&healthy, "negated");
@@ -510,7 +510,7 @@ fn real_kani_negated_claim_falsifies_and_qsl_replay_reproduces_it() {
 #[trace("TC-025", "FR-015-AC-106")]
 #[test]
 #[ignore = "real Kani qualification: run serially inside the flock and the 24G scope"]
-fn real_kani_zero_length_path_mutant_falsifies_and_qsl_replay_disagrees() {
+fn real_kani_zero_length_path_mutant_falsifies_and_fsl_replay_disagrees() {
     let authored = authored("not reaches(self, self, empty)", 3);
     let healthy = harness(&authored, &[0]);
     let mutant = mutated(
@@ -530,7 +530,7 @@ fn real_kani_zero_length_path_mutant_falsifies_and_qsl_replay_disagrees() {
 #[trace("TC-025", "FR-015-AC-106")]
 #[test]
 #[ignore = "real Kani qualification: run serially inside the flock and the 24G scope"]
-fn real_kani_rejected_self_loop_mutant_falsifies_and_qsl_replay_disagrees() {
+fn real_kani_rejected_self_loop_mutant_falsifies_and_fsl_replay_disagrees() {
     let authored = authored("reaches(self, self, loop)", 1);
     let healthy = harness(&authored, &[]);
     let mutant = mutated(
@@ -544,13 +544,13 @@ fn real_kani_rejected_self_loop_mutant_falsifies_and_qsl_replay_disagrees() {
     assert_clause_holds(&result);
 }
 
-/// No Kani: a hand-authored graph is put before QSL and the authored clause judges it. A forced
+/// No Kani: a hand-authored graph is put before FSL and the authored clause judges it. A forced
 /// self-loop violates `not reaches(self, self, loop)` and satisfies `reaches(self, self, loop)`.
 /// The witness is set through a test seam: a public caller can only obtain one by decoding a
 /// playback.
 #[trace("TC-025", "FR-015-AC-106")]
 #[test]
-fn qsl_replay_judges_a_concrete_graph_by_the_authored_clause() {
+fn fsl_replay_judges_a_concrete_graph_by_the_authored_clause() {
     let witness = crate::GraphWitness {
         objects: 1,
         start: 0,
@@ -567,7 +567,7 @@ fn qsl_replay_judges_a_concrete_graph_by_the_authored_clause() {
         let result = StateClauseReplay::new_graph_invariant(inputs)
             .expect("the replay is built")
             .replay()
-            .expect("QSL settles the graph replay");
+            .expect("FSL settles the graph replay");
         if violated {
             assert_reproduced(&result);
         } else {
@@ -585,7 +585,7 @@ fn qsl_replay_judges_a_concrete_graph_by_the_authored_clause() {
     let result = StateClauseReplay::new_graph_invariant(inputs)
         .expect("the replay is built")
         .replay()
-        .expect("QSL settles the graph replay");
+        .expect("FSL settles the graph replay");
     assert_clause_holds(&result);
 }
 
@@ -733,14 +733,14 @@ fn snapshot_instances(replay: &StateClauseReplay) -> Value {
         .documents
         .iter()
         .filter_map(|bytes| serde_json::from_slice::<Value>(bytes).ok())
-        .find(|document| document["format"] == "quire.state.snapshot/v1")
+        .find(|document| document["format"] == "filament.state.snapshot/v1")
         .expect("the snapshot")["relationships"][0]["instances"]
         .clone()
 }
 
-/// The reverse direction swaps each instance's source and target, and QSL admits both
+/// The reverse direction swaps each instance's source and target, and FSL admits both
 /// snapshots of a two-cycle; a non-unique end writes a repeated target as repeated instances,
-/// which QSL either admits or refuses by itself (recorded below).
+/// which FSL either admits or refuses by itself (recorded below).
 #[trace("TC-025", "FR-015-AC-106")]
 #[test]
 fn the_reverse_direction_and_a_non_unique_end_reach_the_snapshot() {
@@ -765,7 +765,7 @@ fn the_reverse_direction_and_a_non_unique_end_reach_the_snapshot() {
             instances[0]["target"]["key"],
             if forward { "n1" } else { "n0" }
         );
-        results.push(settled(&replay.replay().expect("QSL settles")));
+        results.push(settled(&replay.replay().expect("FSL settles")));
     }
     // A cycle reaches itself in either direction: the same violation.
     assert_eq!(results[0], results[1]);
@@ -782,7 +782,7 @@ fn the_reverse_direction_and_a_non_unique_end_reach_the_snapshot() {
     let replay = StateClauseReplay::new_graph_invariant(inputs).expect("built");
     assert_eq!(snapshot_instances(&replay).as_array().unwrap().len(), 2);
     // Object 1 has no edge, so object 0 does not reach itself: the clause holds.
-    assert_clause_holds(&replay.replay().expect("QSL settles the repeated instances"));
+    assert_clause_holds(&replay.replay().expect("FSL settles the repeated instances"));
 }
 
 /// Healthy controls on this fixture for the claims the mutants falsify: the unmutated harness
@@ -842,7 +842,7 @@ fn verified_transitivity(end: &str) {
 
 /// Harness mutant: the closure step is removed, so reachability is the selected edges only and a
 /// two-step path with no direct edge falsifies transitivity. The authored clause is unchanged, and
-/// QSL's replay of it on the decoded graph holds (the native closure is transitive), so the
+/// FSL's replay of it on the decoded graph holds (the native closure is transitive), so the
 /// verdicts disagree and the spurious counterexample is the detection.
 fn transitivity_without_closure(end: &str) {
     let authored = authored(&transitivity(end), 3);
@@ -877,21 +877,21 @@ fn real_kani_healthy_transitivity_verifies_over_a_zero_to_three_non_unique_end()
 #[trace("TC-025", "FR-015-AC-106")]
 #[test]
 #[ignore = "real Kani qualification: run serially inside the flock and the 24G scope"]
-fn real_kani_transitivity_without_closure_mutant_falsifies_and_qsl_replay_disagrees() {
+fn real_kani_transitivity_without_closure_mutant_falsifies_and_fsl_replay_disagrees() {
     transitivity_without_closure("kids");
 }
 
 #[trace("TC-025", "FR-015-AC-106")]
 #[test]
 #[ignore = "real Kani qualification: run serially inside the flock and the 24G scope"]
-fn real_kani_non_unique_transitivity_without_closure_mutant_falsifies_and_qsl_replay_disagrees() {
+fn real_kani_non_unique_transitivity_without_closure_mutant_falsifies_and_fsl_replay_disagrees() {
     transitivity_without_closure("litter");
 }
 
 /// Claim mutant: the conclusion is reversed, so the authored clause itself is false on a chain
-/// graph. Kani falsifies the unmutated harness over the mutated claim, and QSL replays that
+/// graph. Kani falsifies the unmutated harness over the mutated claim, and FSL replays that
 /// mutant's own authored clause on the decoded graph and reaches the same `Violation` verdict.
-/// The clause is universally quantified, so QSL also derives a separating witness (the binder
+/// The clause is universally quantified, so FSL also derives a separating witness (the binder
 /// objects that violate it) that the harness's playback does not carry: the settlement is
 /// `Inconclusive` with a witness cause (`given` absent, `derived` present), not
 /// `ReproducedWithEvaluatedWitness`. Verdict agreement is evidenced; the evaluated-witness
@@ -899,7 +899,7 @@ fn real_kani_non_unique_transitivity_without_closure_mutant_falsifies_and_qsl_re
 #[trace("TC-025", "FR-015-AC-106")]
 #[test]
 #[ignore = "real Kani qualification: run serially inside the flock and the 24G scope"]
-fn real_kani_reversed_transitivity_claim_falsifies_and_qsl_replay_agrees_on_the_verdict() {
+fn real_kani_reversed_transitivity_claim_falsifies_and_fsl_replay_agrees_on_the_verdict() {
     let authored = authored(&reversed("kids"), 3);
     let healthy = harness(&authored, &CONCLUSION);
     let counterexample = run_falsified(&healthy, "transitivity-reversed");
@@ -947,7 +947,7 @@ fn real_kani_every_object_reaches_over_a_two_to_three_end_verifies() {
 }
 
 /// Harness mutant: the draw's lower-bound assumption is dropped, so an object may have no edge
-/// and the claim is falsified. QSL's replay is not run: the decoder refuses the counterexample's
+/// and the claim is falsified. FSL's replay is not run: the decoder refuses the counterexample's
 /// degree below the end's lower bound as `GraphWitnessNotInDomain`, the domain guard asserted here.
 #[trace("TC-025", "FR-015-AC-106")]
 #[test]
@@ -973,7 +973,7 @@ fn real_kani_dropping_the_lower_bound_assumption_falsifies_the_every_object_clai
 }
 
 /// One structure declared as `Graph` and `Other` is one clause node with two occurrences. A
-/// harness keyed by an occurrence replays only under the clause name QSL gives that occurrence:
+/// harness keyed by an occurrence replays only under the clause name FSL gives that occurrence:
 /// the second occurrence reproduces under `Other` and is refused under `Graph`, and the first is
 /// refused under `Other`.
 #[trace("TC-025", "FR-015-AC-107")]

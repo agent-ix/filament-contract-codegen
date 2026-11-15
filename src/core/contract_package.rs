@@ -26,7 +26,7 @@ pub fn routed_contract_lowering_profile() -> CompleteLoweringProfileV2 {
     CompleteLoweringProfileV2 {
         reference: LoweringProfileRef {
             authority: "agent-ix".into(),
-            identity: "quire.codegen.routed-contract/v1".into(),
+            identity: "filament.codegen.routed-contract/v1".into(),
         },
         required_source_selections: Vec::new(),
         supported_tags: BTreeSet::from([
@@ -365,7 +365,7 @@ impl<'a> PackageItems<'a> {
         self.package.wire().source_keys.get(*index)
     }
 
-    /// Compare two QSL keys through their owning admitted V2 frame.
+    /// Compare two FSL keys through their owning admitted V2 frame.
     pub(crate) fn same_source_node(&self, left: &CheckedNodeId, right: &CheckedNodeId) -> bool {
         ContractSourceKeyV1::from_v2_request(self.source, left)
             .zip(ContractSourceKeyV1::from_v2_request(self.source, right))

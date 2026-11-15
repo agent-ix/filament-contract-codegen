@@ -4,7 +4,7 @@ use qsl_replay::{
     acquire_checked_closure, CompileUnit, DependencyInput, ReplayLimits, SourceIdentity,
     StageLimits,
 };
-use quire_contract_codegen::{CheckedFunctionResources, CheckedFunctionSource};
+use filament_contract_codegen::{CheckedFunctionResources, CheckedFunctionSource};
 use quire_contract_model::{
     CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2, CheckedPackageV2ReadResult,
 };
@@ -86,7 +86,7 @@ fn acquired() -> qsl_replay::CheckedClosureCompilation {
 fn package() -> CheckedPackageV2 {
     let acquired = acquired();
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     match CheckedPackageV2::read(
         acquired.package().bytes(),
         CheckedPackageReadLimits::bounded(),
@@ -114,7 +114,7 @@ fn selection(
         })
         .expect("actual callable")
         .node_id;
-    quire_contract_codegen::select_checked_callable(package, package, function, acquired)
+    filament_contract_codegen::select_checked_callable(package, package, function, acquired)
         .expect("same acquisition and owner")
 }
 fn source(
@@ -137,7 +137,7 @@ fn nominal_value() -> Value {
     let acquired = acquired();
     let selected = selection(&acquired, &package, "eq");
     let views =
-        quire_contract_codegen::checked_function_declarations(&package, &acquired, &selected)
+        filament_contract_codegen::checked_function_declarations(&package, &acquired, &selected)
             .unwrap();
     assert_eq!(
         views.len(),
@@ -376,7 +376,7 @@ fn authentic_owner_declarations_construct_once_and_duplicate_keeps_original_diag
     };
     assert_eq!(invalid.cause, DeclarationCause::DuplicateKey);
     let originals =
-        quire_contract_codegen::checked_function_declarations(&package, &acquired, &selected)
+        filament_contract_codegen::checked_function_declarations(&package, &acquired, &selected)
             .unwrap();
     let original_name = originals[0]
         .qualified_name()
@@ -505,7 +505,7 @@ fn real_constructor_work_and_storage_stops_never_become_declaration_rejections()
             | (false, EnvironmentFailure::Allocation(request)) => request,
             (_, other) => panic!("distinct constructor storage stop: {other:?}"),
         };
-        assert!(request.amount() > 0, "actual QSV reservation request");
+        assert!(request.amount() > 0, "actual FSV reservation request");
         assert_eq!(cancellation, None);
     }
 }

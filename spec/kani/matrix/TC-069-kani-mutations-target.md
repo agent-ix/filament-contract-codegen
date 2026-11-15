@@ -3,7 +3,7 @@ id: TC-069
 title: "Verify the kani-mutations target"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-055
+  - target: ix://agent-ix/filament-contract-codegen/FR-055
     type: verifies
 ---
 # TC-069: Verify the kani-mutations target

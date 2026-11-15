@@ -1,10 +1,10 @@
 //! Public V2 population and census construction from IR-admitted selected claims.
 
-use ix_trace_rs::trace;
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     admit_v2_integer_comparison, prepare_v2_numeric_population, Population, PopulationSide,
     StrategyErrorCode, V2SelectedClaimKey,
 };
+use ix_trace_rs::trace;
 
 use super::v2_integer_comparison_admission::admitted;
 
@@ -30,19 +30,19 @@ fn selected_v2_equality_prepares_constructive_population_and_census() {
     assert!(broad.census.in_domain().iter().all(|case| {
         case.tag
             == if case.primary == case.partner.expect("two reads") {
-                quire_contract_codegen::CensusTag::Holds
+                filament_contract_codegen::CensusTag::Holds
             } else {
-                quire_contract_codegen::CensusTag::Violated
+                filament_contract_codegen::CensusTag::Violated
             }
     }));
     assert_eq!(broad.census.in_domain().len(), 10);
-    let satisfying = quire_contract_codegen::side_values(
+    let satisfying = filament_contract_codegen::side_values(
         &selected.relation,
         selected.domain,
         PopulationSide::Satisfying,
     )
     .expect("equality side");
-    let violating = quire_contract_codegen::side_values(
+    let violating = filament_contract_codegen::side_values(
         &selected.relation,
         selected.domain,
         PopulationSide::Violating,
@@ -126,9 +126,12 @@ fn selected_v2_literal_mirrors_generate_exact_population_sets() {
                 (PopulationSide::Satisfying, true),
                 (PopulationSide::Violating, false),
             ] {
-                let actual =
-                    quire_contract_codegen::side_values(&selected.relation, selected.domain, side)
-                        .expect("both literal sides exist");
+                let actual = filament_contract_codegen::side_values(
+                    &selected.relation,
+                    selected.domain,
+                    side,
+                )
+                .expect("both literal sides exist");
                 let expected: Vec<_> = (0..=3).filter(|value| predicate(*value) == holds).collect();
                 let actual: Vec<_> = (0..=3)
                     .filter(|value| actual.contains(*value, None))

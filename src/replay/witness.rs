@@ -15,9 +15,9 @@
 //! The block selection, the refusal codes and the rendered-value cross-check preserve the
 //! witness reader's behavior while keeping Kani wording in the output reader.
 //!
-//! The values come out as [`qsl_replay::WitnessValue`], the type QSL's replay envelope carries,
-//! so [`crate::replay::function`] hands them to QSL without a conversion. The output reader
-//! handles Kani's transcript grammar; QSL's `Witness::decode` reads a different grammar.
+//! The values come out as [`qsl_replay::WitnessValue`], the type FSL's replay envelope carries,
+//! so [`crate::replay::function`] hands them to FSL without a conversion. The output reader
+//! handles Kani's transcript grammar; FSL's `Witness::decode` reads a different grammar.
 //!
 //! [`decode_falsification`] also checks the transcript's own claimed identity: a transcript from
 //! a sibling obligation over the same operation (same union ABI, hence the same arity and byte

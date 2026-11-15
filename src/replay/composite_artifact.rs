@@ -139,7 +139,7 @@ impl OriginalCompositeArtifactBinding {
         self.inputs.accounting_limits
     }
     /// Validate actual native context and staged bytes against the immutable generation/body.
-    /// This produces no QSL falsified evidence or terminal settlement. A native Boolean cannot
+    /// This produces no FSL falsified evidence or terminal settlement. A native Boolean cannot
     /// supply the pair count or backend success still owned by IR-806.
     ///
     /// # Errors
@@ -179,7 +179,7 @@ impl OriginalCompositeArtifactBinding {
     }
 }
 
-/// Checked native artifact/context evidence only. Its outcome is not proof or QSL shadow evidence.
+/// Checked native artifact/context evidence only. Its outcome is not proof or FSL shadow evidence.
 #[derive(Debug)]
 pub struct AuthenticatedCompositeArtifact {
     request: OriginalCompositeEqRequest,

@@ -3,15 +3,15 @@ id: FR-026
 title: "Reach linked backends through one adapter trait and the closed backend enum"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/StR-001
+  - target: ix://agent-ix/filament-contract-codegen/StR-001
     type: satisfies
-  - target: ix://agent-ix/quire-contract-codegen/FR-019
+  - target: ix://agent-ix/filament-contract-codegen/FR-019
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-022
+  - target: ix://agent-ix/filament-contract-codegen/FR-022
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/ADR-002
+  - target: ix://agent-ix/filament-contract-codegen/ADR-002
     type: references
-  - target: ix://agent-ix/quire-spec-language/ADR-013
+  - target: ix://agent-ix/filament-spec-language/ADR-013
     type: references
 ---
 # FR-026: Reach linked backends through one adapter trait and the closed backend enum
@@ -23,7 +23,7 @@ one implementation of a single adapter trait, and shall reach an adapter only th
 match on the closed `BackendKind` enum
 ([ADR-002](../../decisions/ADR-002-backend-adapter-boundary.md) Q0, Q1 and Q4). ADR-002 Q4 states how a
 second linked backend registers. `Process(BackendId)` has no CG adapter; the
-driver's plugin host owns its process adapter (QSL ADR-029 PV-4).
+driver's plugin host owns its process adapter (FSL ADR-029 PV-4).
 
 ## Inputs
 
@@ -64,7 +64,7 @@ driver's plugin host owns its process adapter (QSL ADR-029 PV-4).
 ## Dependencies
 
 - **Upstream**: [FR-019](./FR-019-capability-settlement.md), whose closed `BackendKind` is the
-  registry; [FR-022](./FR-022-routed-generation.md); QSL ADR-013 T-7, under which QSL converts the
+  registry; [FR-022](./FR-022-routed-generation.md); FSL ADR-013 T-7, under which FSL converts the
   FR-331 provider envelope.
 - **Downstream**: [TC-037](../matrix/TC-037-backend-adapter-contract.md),
   [FR-029](../../kani/functional/FR-029-run-outcome-terminal-record.md).

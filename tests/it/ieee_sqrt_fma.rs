@@ -2,16 +2,16 @@
 // Copyright (C) 2026 Agent-IX
 
 //! IEEE `sqrt` and `fma` derivation and generation (FR-014-AC-72 through FR-014-AC-80, IR-1502).
-//! Genuine QSL source is passed unchanged through the strict reader; the generated native oracles
+//! Genuine FSL source is passed unchanged through the strict reader; the generated native oracles
 //! are compiled and compared with a direct owner `evaluate_ieee` call.
 
 use crate::scalar_source_forms::{compiled, generated, run_native};
-use ix_trace_rs::trace;
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     derive_exact_scalar_items, generate_exact_scalar_oracles, ClaimDerivationRefusal,
     ClaimDisposition, ExactScalarItem, ExactScalarOperation, ExactScalarRefusal,
     IeeeArithmeticOperator, OperationProvenance, ScalarForm,
 };
+use ix_trace_rs::trace;
 use quire_contract_model::{CheckedPackageV2, CheckedTerm};
 use quire_exact::{IeeeWidth, RoundingMode};
 
@@ -34,7 +34,7 @@ impl Case {
             )
         };
         format!(
-            "function subject using v({parameters}): {width}[{rounding}] pure {{ quire::value::ieee::{}({arguments}) }}",
+            "function subject using v({parameters}): {width}[{rounding}] pure {{ filament::value::ieee::{}({arguments}) }}",
             self.callee
         )
     }
@@ -45,7 +45,7 @@ impl Case {
         } else {
             "float64"
         };
-        format!("quire.op.ieee.{width}.{}", self.callee)
+        format!("filament.op.ieee.{width}.{}", self.callee)
     }
 }
 
@@ -88,7 +88,7 @@ fn only_node<'a>(
     node
 }
 
-/// The four identities derive from genuine QSL-emitted `call` forms, are `ir_confirmed`, and the
+/// The four identities derive from genuine FSL-emitted `call` forms, are `ir_confirmed`, and the
 /// descriptor names the operation and width the identity names (identity, descriptor, identity).
 #[trace("TC-024", "FR-014-AC-72", "FR-014-AC-73", "FR-014-AC-74")]
 #[test]
@@ -142,10 +142,10 @@ fn genuine_sqrt_and_fma_calls_derive_as_ir_confirmed_and_round_trip() {
 fn descriptors_do_not_cross_operation_or_width() {
     let sqrt64 = compiled(&ALL[1].source());
     let fma32 = compiled(&ALL[2].source());
-    let sqrt_node = only_node(&sqrt64, "quire.op.ieee.float64.sqrt")
+    let sqrt_node = only_node(&sqrt64, "filament.op.ieee.float64.sqrt")
         .node_id
         .clone();
-    let fma_node = only_node(&fma32, "quire.op.ieee.float32.fma")
+    let fma_node = only_node(&fma32, "filament.op.ieee.float32.fma")
         .node_id
         .clone();
     let descriptor = |operator, width| ExactScalarOperation::IeeeArithmetic {
@@ -231,21 +231,21 @@ fn refusal_of(
 fn defensive_seam_refuses_other_shapes_for_sqrt_and_fma() {
     let package = compiled(
         "function add32 using v(a: Float32[nearest-even], b: Float32[nearest-even]): Float32[nearest-even] pure { a + b }\n\
-         function cmp32 using v(a: Float32[nearest-even], b: Float32[nearest-even]): Boolean pure { quire::value::ieee::totalOrder(a, b) }\n\
-         function root32 using v(a: Float32[nearest-even]): Float32[nearest-even] pure { quire::value::ieee::sqrt(a) }",
+         function cmp32 using v(a: Float32[nearest-even], b: Float32[nearest-even]): Boolean pure { filament::value::ieee::totalOrder(a, b) }\n\
+         function root32 using v(a: Float32[nearest-even]): Float32[nearest-even] pure { filament::value::ieee::sqrt(a) }",
     );
     let descriptor = |operator| ExactScalarOperation::IeeeArithmetic {
         operator,
         width: IeeeWidth::Binary32,
         rounding: RoundingMode::NearestEven,
     };
-    let add = only_node(&package, "quire.op.ieee.float32.add")
+    let add = only_node(&package, "filament.op.ieee.float32.add")
         .node_id
         .clone();
-    let cmp = only_node(&package, "quire.op.ieee.total_order")
+    let cmp = only_node(&package, "filament.op.ieee.total_order")
         .node_id
         .clone();
-    let sqrt = only_node(&package, "quire.op.ieee.float32.sqrt")
+    let sqrt = only_node(&package, "filament.op.ieee.float32.sqrt")
         .node_id
         .clone();
     for operator in [
@@ -287,21 +287,21 @@ fn defensive_seam_refuses_other_shapes_for_sqrt_and_fma() {
 }
 
 /// `from_exact`, `to_rational` and both `negate` identities keep the `OperationNotDerivable`
-/// refusal over genuine QSL-emitted nodes, and a supported sibling is unaffected (FR-014-AC-80).
+/// refusal over genuine FSL-emitted nodes, and a supported sibling is unaffected (FR-014-AC-80).
 #[trace("TC-024", "FR-014-AC-80")]
 #[test]
 fn from_exact_to_rational_and_negate_stay_not_derivable() {
     let package = compiled(
         "function neg32 using v(a: Float32[nearest-even]): Float32[nearest-even] pure { -a }\n\
          function neg64 using v(a: Float64[nearest-even]): Float64[nearest-even] pure { -a }\n\
-         function root using v(a: Float32[nearest-even]): Float32[nearest-even] pure { quire::value::ieee::sqrt(a) }",
+         function root using v(a: Float32[nearest-even]): Float32[nearest-even] pure { filament::value::ieee::sqrt(a) }",
     );
-    let sibling = only_node(&package, "quire.op.ieee.float32.sqrt")
+    let sibling = only_node(&package, "filament.op.ieee.float32.sqrt")
         .node_id
         .clone();
     for identity in [
-        "quire.op.ieee.float32.negate",
-        "quire.op.ieee.float64.negate",
+        "filament.op.ieee.float32.negate",
+        "filament.op.ieee.float64.negate",
     ] {
         let node = only_node(&package, identity).node_id.clone();
         let derived = derive_exact_scalar_items(&package, &[node, sibling.clone()]);

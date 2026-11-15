@@ -3,9 +3,9 @@ id: TC-031
 title: "Verify function-application oracle generation, agreement, and static location tagging"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-021
+  - target: ix://agent-ix/filament-contract-codegen/FR-021
     type: verifies
-  - target: ix://agent-ix/quire-specification/FR-322
+  - target: ix://agent-ix/filament-specification/FR-322
     type: references
 ---
 # TC-031: Verify function-application oracle generation, agreement, and static location tagging
@@ -15,8 +15,8 @@ relationships:
 Verify CG's target-neutral function-body graph analysis, flat SSA schedule,
 caller-selected work and source-byte limits, compact location records, typed
 refusals and deterministic claim ordering. The planned concrete owner-path
-corpus acquires and applies checked callables through QSL FR-485's permitted
-`qsl_replay` facade. QSL delivered that API in merged PR #1483; the corpus
+corpus acquires and applies checked callables through FSL FR-485's permitted
+`fsl_replay` facade. FSL delivered that API in merged PR #1483; the corpus
 remains Planned until the IR-595 CG consumer lands and is verified. The old
 Contract Runtime `exact` corpus remains historical
 evidence for the behavioral obligations retained in FR-021; it is not a
@@ -24,7 +24,7 @@ required dependency or target path.
 
 ## Test Procedure
 
-1. Build an admitted `quire.checked-package/v2` package under QSpec FR-322.
+1. Build an admitted `filament.checked-package/v2` package under FSpec FR-322.
    Bind each requested function to its admitted V2 `function` declaration
    node (whose body is the root), ordered `value`/`parameter` node ids and
    declared types. Build scalar, equality and nested-call expression bodies
@@ -86,13 +86,13 @@ required dependency or target path.
    query unit less refuses without a partial path. For AC-17's planned runtime
    check, independently compare own and imported callable root locations with
    FR-485 session outcomes; this does not replace the static path assertions
-   (AC-15, AC-17 and AC-29; QSL FR-485 delivered, IR-595 Planned).
+   (AC-15, AC-17 and AC-29; FSL FR-485 delivered, IR-595 Planned).
 7. On a shallow body with separately observable left and right charge
    points, inspect branch/stop instructions. A denied left charge must branch
    out before any right charge, and an admitted left charge must precede the
    right and parent operation. In the planned FR-485 corpus, run both denial
    injections with fresh meters and compare actual charge prefixes and
-   incomplete outcomes (AC-5, AC-9 and AC-26; QSL FR-485 delivered, IR-595 Planned).
+   incomplete outcomes (AC-5, AC-9 and AC-26; FSL FR-485 delivered, IR-595 Planned).
 8. Reuse the six duplicate-declaring-node fixtures and permutations of
    FR-021-AC-22: both admissible; one Stage-1 refusal; shared name plus a
    distinct-node declaration; a nested caller; two duplicate groups holding
@@ -129,35 +129,35 @@ required dependency or target path.
     (AC-8), no kernel-mode application and no literal outcomes/charges (AC-14)
     are inspected on the schedule and generated source.
 12. Inspect the present schedule crate and concrete oracle dependencies.
-    Record that the schedule crate requires no `quire_contract_runtime::exact`
+    Record that the schedule crate requires no `filament_contract_runtime::exact`
     path, but the current concrete oracle still imports that port in
     `src/oracle/function/mod.rs`; therefore AC-32 remains Planned. In the
     planned FR-485 corpus, inspect CG imports, emitted source and dependencies
     after replacing the old port. Only then assert that neither the schedule
     nor any concrete oracle requires the port, alias, wrapper or compatibility
-    surface, and that the concrete oracle uses only `qsl_replay` for QSL
-    checked-closure acquisition and application (AC-32; QSL FR-485 delivered,
+    surface, and that the concrete oracle uses only `fsl_replay` for FSL
+    checked-closure acquisition and application (AC-32; FSL FR-485 delivered,
     IR-595 Planned).
 12a. Inspect (AC-18, FR-014-AC-47): scan the function-application corpus's test
     names, `Trace:` tags, output lines and doc comments, this procedure's steps
     and the FR-021 rows of the oracle matrix. None may claim, or present as
-    evidence, agreement with the QSL value authority; text that states the
+    evidence, agreement with the FSL value authority; text that states the
     boundary (outside CG, owned by IR-842) is permitted.
 12b. Planned owner-path corpus (AC-2, AC-4, AC-5, AC-9, AC-17, AC-32,
-     AC-35 through AC-37; QSL FR-485 delivered by merged #1483,
+     AC-35 through AC-37; FSL FR-485 delivered by merged #1483,
      IR-595 Planned). For each retained function
-     vector, call `qsl_replay::acquire_checked_closure` with the seven supplied
+     vector, call `fsl_replay::acquire_checked_closure` with the seven supplied
      inputs, take `CheckedClosureCompilation::handle()`, and use
      `CheckedClosureHandle::lookup_callable(owner_package_id, wire_node_id)`.
      From that same handle create `registry()`, register the generated
-     `quire_eval::BodyFactory` with the opaque selection and
+     `filament_eval::BodyFactory` with the opaque selection and
      `selection.signature()`, and assert `Ok(Admission::Accepted)`. Build the
      `ApplicationEnvironment` from the supplied object closure, then call
      `begin_call` with that selection, completed arguments, environment and
      fresh caller-owned meter. Drive the returned `CheckedApplicationSession`
      through `step` or `run` to its leaf terminal result. Build the
      direct application independently from the request through a separate
-     FR-485 acquisition and fresh meter, using QSL's interpreted callable
+     FR-485 acquisition and fresh meter, using FSL's interpreted callable
      with no generated body registered in the direct registry.
      Compare outcomes, ordered admitted charges and consumed counters. Check
      arity, wrong-value-kind and dangling-reference as exact leaf Begin input
@@ -166,9 +166,9 @@ required dependency or target path.
      `Foreign(package_id)` or `WrongKind` before selection or Begin. None
      makes an application charge; keep any unreachable refusal open until a
      valid triggering fixture exists. For own and admitted dependency
-     functions, derive the QSL lookup owner from the declaring V2 package's
-     `quire.package.semantic/v2` domain and exact digest and the `WireNodeId`
-     from the admitted `quire.checked-semantic-node/v1` function node digest.
+     functions, derive the FSL lookup owner from the declaring V2 package's
+     `filament.package.semantic/v2` domain and exact digest and the `WireNodeId`
+     from the admitted `filament.checked-semantic-node/v1` function node digest.
      Verify the caller supplied all seven FR-485 acquisition inputs alongside
      the independently admitted Contract IR package, that each generated or
      direct run acquired its closure once, and that CG neither rechecked nor
@@ -181,7 +181,7 @@ required dependency or target path.
      `selection.owner_package_id()` and read-only `selection.key()` bytes to
      the declaring package and function id; the selection, not that key, is
      registration and Begin authority. Pair the admitted CG request for A
-     with a separately authentic QSL acquisition for B to exercise the unit
+     with a separately authentic FSL acquisition for B to exercise the unit
      package mismatch. To exercise the selection key mismatch, pass a genuine
      second successful selection for a different callable in A's unit to CG's
      private post-lookup identity-validation function with the original
@@ -195,7 +195,7 @@ required dependency or target path.
      same-key, different-owner selection is therefore not an admitted FR-485
      vector. For each executable mismatch assert the affected item has
      `OwnerIdentityMismatch` before registration, Begin, body invocation or
-     charge, while a matching sibling remains unchanged. A failed QSL lookup
+     charge, while a matching sibling remains unchanged. A failed FSL lookup
      retains its exact `CallableLookupRefusal` distinction through the
      `FacadeLookup` refusal's stable `cause_code` and rendered `detail`,
      rather than becoming an identity mismatch. Register and Begin with a
@@ -228,15 +228,15 @@ required dependency or target path.
      exhaustive match with no wildcard arm. Check a failed
      registration or Begin does not run a body or charge
      a meter and a successful Begin seals that registry. Inspect CG and the
-     emitted oracle crate dependencies for direct `quire-eval`, `quire-exact`
-     and `quire-semantic-value` beside `qsl-replay`, and for no RT `exact` or
-     direct QSL evaluator/checker internals. Keep `qsl_replay::replay` in the
+     emitted oracle crate dependencies for direct `filament-eval`, `filament-exact`
+     and `filament-semantic-value` beside `fsl-replay`, and for no RT `exact` or
+     direct FSL evaluator/checker internals. Keep `fsl_replay::replay` in the
      separate Kani witness settlement test, not this generated-body run. Inject
      a denial at `function.call` and
      compare the stop point and unchanged denied charge. For own and imported
      callables, compare the returned root location to the declaring checked
      graph's body root, separate from the CG static location path. Do not
-     present this same-leaf comparison as IR-842 QSL value-authority parity.
+     present this same-leaf comparison as IR-842 FSL value-authority parity.
 12c. Generated-body guards (FR-021-AC-38 to AC-40): use TC-057's emitted-source
      mutation only in the test copy of a genuine FR-485 Boolean callable;
      run the unchanged generated result check through the registered body
@@ -245,7 +245,7 @@ required dependency or target path.
      other outcome arms retain their identity and charge prefix. Compare
      against that selection's checker-issued result type. For a nominal
      callable, consume QSL-1105's owner-complete declarations and exercise
-     the emitted QSV construction path. A test-only pre-body assembly
+     the emitted FSV construction path. A test-only pre-body assembly
      mutation resubmits one unchanged real owner declaration to the same
      constructor, retaining only its genuine duplicate-key
      `Refused(InvalidDeclaration)` as `GeneratedEnvironmentRejected`; the
@@ -259,7 +259,7 @@ required dependency or target path.
      activates execution when a shipped result family actually requests membership
      storage.
 13. Direct unsupported roots (FR-021-AC-11, FR-021-AC-33 and FR-021-AC-41).
-    Admit formula, fairness and case roots through Contract IR's public V2 reader, using QSpec FR-370/FR-440
+    Admit formula, fairness and case roots through Contract IR's public V2 reader, using FSpec FR-370/FR-440
     for formula/case shapes and Contract IR FR-038-AC-107 for fairness.
     Request each root first as an item's call-node id. For the separate body
     leg, use that root as a declared function's body and supply a distinct,
@@ -373,8 +373,8 @@ and one item disposition. Deep generation succeeds under raised work and
 source-byte limits on a small stack, compiles as a schedule crate and has no
 depth refusal. The first denied work or byte charge refuses before action or
 partial publication. Existing duplicate, unknown-name, lowering and blocker
-precedence remains testable. Concrete QSL-owner-path compilation and execution
-through FR-485 remain Planned pending IR-595; the QSL API is delivered, and no
+precedence remains testable. Concrete FSL-owner-path compilation and execution
+through FR-485 remain Planned pending IR-595; the FSL API is delivered, and no
 Contract Runtime `exact` path is required.
 
 Source-authenticated direct formula, fairness and case requests have one typed unsupported claim

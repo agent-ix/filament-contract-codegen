@@ -122,7 +122,7 @@ impl Operator {
             frame_symbol,
         ) = match self {
             O::Add => (
-                "quire.op.integer.add",
+                "filament.op.integer.add",
                 Family::IntegerArithmetic,
                 OperandOrder::LeftThenRight,
                 ResultKind::Integer,
@@ -132,7 +132,7 @@ impl Operator {
                 None,
             ),
             O::Subtract => (
-                "quire.op.integer.sub",
+                "filament.op.integer.sub",
                 Family::IntegerArithmetic,
                 OperandOrder::LeftThenRight,
                 ResultKind::Integer,
@@ -142,7 +142,7 @@ impl Operator {
                 None,
             ),
             O::Multiply => (
-                "quire.op.integer.mul",
+                "filament.op.integer.mul",
                 Family::IntegerArithmetic,
                 OperandOrder::LeftThenRight,
                 ResultKind::Integer,
@@ -152,7 +152,7 @@ impl Operator {
                 None,
             ),
             O::Negate => (
-                "quire.op.integer.negate",
+                "filament.op.integer.negate",
                 Family::IntegerArithmetic,
                 OperandOrder::Unary,
                 ResultKind::Integer,
@@ -162,7 +162,7 @@ impl Operator {
                 None,
             ),
             O::Less => (
-                "quire.op.integer.lt",
+                "filament.op.integer.lt",
                 Family::IntegerOrdering,
                 OperandOrder::LeftThenRight,
                 ResultKind::Boolean,
@@ -172,7 +172,7 @@ impl Operator {
                 Some(FrameSymbol::Less),
             ),
             O::LessOrEqual => (
-                "quire.op.integer.le",
+                "filament.op.integer.le",
                 Family::IntegerOrdering,
                 OperandOrder::LeftThenRight,
                 ResultKind::Boolean,
@@ -182,7 +182,7 @@ impl Operator {
                 Some(FrameSymbol::LessOrEqual),
             ),
             O::Greater => (
-                "quire.op.integer.gt",
+                "filament.op.integer.gt",
                 Family::IntegerOrdering,
                 OperandOrder::LeftThenRight,
                 ResultKind::Boolean,
@@ -192,7 +192,7 @@ impl Operator {
                 Some(FrameSymbol::Greater),
             ),
             O::GreaterOrEqual => (
-                "quire.op.integer.ge",
+                "filament.op.integer.ge",
                 Family::IntegerOrdering,
                 OperandOrder::LeftThenRight,
                 ResultKind::Boolean,
@@ -202,7 +202,7 @@ impl Operator {
                 Some(FrameSymbol::GreaterOrEqual),
             ),
             O::Equal => (
-                "quire.op.integer.eq",
+                "filament.op.integer.eq",
                 Family::IntegerOrdering,
                 OperandOrder::LeftThenRight,
                 ResultKind::Boolean,
@@ -212,7 +212,7 @@ impl Operator {
                 Some(FrameSymbol::Equal),
             ),
             O::NotEqual => (
-                "quire.op.integer.ne",
+                "filament.op.integer.ne",
                 Family::IntegerOrdering,
                 OperandOrder::LeftThenRight,
                 ResultKind::Boolean,
@@ -260,7 +260,7 @@ mod tests {
     fn catalog_entries_preserve_identity_family_arity_result_and_consumer_projection() {
         let expected = [
             (
-                "quire.op.integer.add",
+                "filament.op.integer.add",
                 Family::IntegerArithmetic,
                 OperandOrder::LeftThenRight,
                 ResultKind::Integer,
@@ -268,7 +268,7 @@ mod tests {
                 None,
             ),
             (
-                "quire.op.integer.sub",
+                "filament.op.integer.sub",
                 Family::IntegerArithmetic,
                 OperandOrder::LeftThenRight,
                 ResultKind::Integer,
@@ -276,7 +276,7 @@ mod tests {
                 None,
             ),
             (
-                "quire.op.integer.mul",
+                "filament.op.integer.mul",
                 Family::IntegerArithmetic,
                 OperandOrder::LeftThenRight,
                 ResultKind::Integer,
@@ -284,7 +284,7 @@ mod tests {
                 None,
             ),
             (
-                "quire.op.integer.negate",
+                "filament.op.integer.negate",
                 Family::IntegerArithmetic,
                 OperandOrder::Unary,
                 ResultKind::Integer,
@@ -292,7 +292,7 @@ mod tests {
                 None,
             ),
             (
-                "quire.op.integer.lt",
+                "filament.op.integer.lt",
                 Family::IntegerOrdering,
                 OperandOrder::LeftThenRight,
                 ResultKind::Boolean,
@@ -300,7 +300,7 @@ mod tests {
                 Some(FrameSymbol::Less),
             ),
             (
-                "quire.op.integer.le",
+                "filament.op.integer.le",
                 Family::IntegerOrdering,
                 OperandOrder::LeftThenRight,
                 ResultKind::Boolean,
@@ -308,7 +308,7 @@ mod tests {
                 Some(FrameSymbol::LessOrEqual),
             ),
             (
-                "quire.op.integer.gt",
+                "filament.op.integer.gt",
                 Family::IntegerOrdering,
                 OperandOrder::LeftThenRight,
                 ResultKind::Boolean,
@@ -316,7 +316,7 @@ mod tests {
                 Some(FrameSymbol::Greater),
             ),
             (
-                "quire.op.integer.ge",
+                "filament.op.integer.ge",
                 Family::IntegerOrdering,
                 OperandOrder::LeftThenRight,
                 ResultKind::Boolean,
@@ -324,7 +324,7 @@ mod tests {
                 Some(FrameSymbol::GreaterOrEqual),
             ),
             (
-                "quire.op.integer.eq",
+                "filament.op.integer.eq",
                 Family::IntegerOrdering,
                 OperandOrder::LeftThenRight,
                 ResultKind::Boolean,
@@ -332,7 +332,7 @@ mod tests {
                 Some(FrameSymbol::Equal),
             ),
             (
-                "quire.op.integer.ne",
+                "filament.op.integer.ne",
                 Family::IntegerOrdering,
                 OperandOrder::LeftThenRight,
                 ResultKind::Boolean,
@@ -357,12 +357,12 @@ mod tests {
             assert_eq!(Operator::from_identity(entry.identity), Some(operation));
         }
         assert_eq!(
-            Operator::from_identity("quire.op.integer.eq")
+            Operator::from_identity("filament.op.integer.eq")
                 .unwrap()
                 .entry()
                 .scalar_operator,
             None
         );
-        assert_eq!(Operator::from_identity("quire.op.boolean.and"), None);
+        assert_eq!(Operator::from_identity("filament.op.boolean.and"), None);
     }
 }

@@ -8,12 +8,12 @@ use std::collections::BTreeSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use ix_trace_rs::trace;
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     negotiate_kani_obligations, CapabilityKind, Cause, ClaimDisposition, Disposition,
     ItemSettlement, KaniObligationOutcome, KaniObligationRequest, ObligationDisposition,
     ObligationItem, UnsupportedObligation,
 };
+use ix_trace_rs::trace;
 use quire_contract_model::CheckedNodeId;
 
 use crate::common::panic_scan::{non_test_code_outside_literals, panic_tokens_in};
@@ -508,7 +508,7 @@ fn tc_042_ac2_a_claim_map_this_generator_did_not_produce_is_operation_not_render
         .items
         .iter()
         .find(|claim| {
-            claim.operation.identity == "quire.op.integer.add"
+            claim.operation.identity == "filament.op.integer.add"
                 && matches!(claim.result, ClaimDisposition::Generated(_))
         })
         .map(|claim| claim.node_id.clone())
@@ -520,7 +520,7 @@ fn tc_042_ac2_a_claim_map_this_generator_did_not_produce_is_operation_not_render
     }))
     .expect("a node id");
 
-    let disposition_of = |claim_map: &quire_contract_codegen::ClaimMap<_>| {
+    let disposition_of = |claim_map: &filament_contract_codegen::ClaimMap<_>| {
         let admitted = admitted_scalar_claims(&package, claim_map);
         let items = [ObligationItem::ScalarClaim {
             path_condition: &[],
@@ -534,7 +534,8 @@ fn tc_042_ac2_a_claim_map_this_generator_did_not_produce_is_operation_not_render
                 .iter()
                 .position(|claim| claim.node_id == target)
                 .expect("selected claim"),
-            result_selection: &quire_contract_codegen::ContractDriverResultSelection::NotApplicable,
+            result_selection:
+                &filament_contract_codegen::ContractDriverResultSelection::NotApplicable,
         }];
         let outcome = negotiate_kani_obligations(&KaniObligationRequest {
             ceilings: crate::common::proof_ceilings::proof_ceilings(),

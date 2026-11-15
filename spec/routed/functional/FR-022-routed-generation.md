@@ -3,21 +3,21 @@ id: FR-022
 title: "Generate for routed items per backend kind without re-negotiating"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/StR-001
+  - target: ix://agent-ix/filament-contract-codegen/StR-001
     type: satisfies
-  - target: ix://agent-ix/quire-contract-codegen/FR-015
+  - target: ix://agent-ix/filament-contract-codegen/FR-015
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-019
+  - target: ix://agent-ix/filament-contract-codegen/FR-019
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-039
+  - target: ix://agent-ix/filament-contract-codegen/FR-039
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-014
+  - target: ix://agent-ix/filament-contract-codegen/FR-014
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-017
+  - target: ix://agent-ix/filament-contract-codegen/FR-017
     type: references
-  - target: ix://agent-ix/quire-contract-codegen/FR-002
+  - target: ix://agent-ix/filament-contract-codegen/FR-002
     type: references
-  - target: ix://agent-ix/quire-contract-codegen/FR-032
+  - target: ix://agent-ix/filament-contract-codegen/FR-032
     type: references
 ---
 # FR-022: Generate for routed items per backend kind without re-negotiating
@@ -25,7 +25,7 @@ relationships:
 ## Description
 
 When the orchestrating driver hands this generator the items that FR-019
-settled `supported` and that QSL `route` then routed, each with its request
+settled `supported` and that FSL `route` then routed, each with its request
 index, its routed backend and that backend's closed backend kind, together
 with one admitted IR `ContractPackageV1` and the complete lowering-position
 mapping, the generator shall run the
@@ -33,13 +33,13 @@ generation arm of each item's backend kind and return that arm's output keyed
 by the item's request index. It shall not settle, select or route a backend
 again.
 
-This is the CG generation arm of seam S9 (QSL ADR-012 §5 and §7.2 step 4;
+This is the CG generation arm of seam S9 (FSL ADR-012 §5 and §7.2 step 4;
 ADR-011 T-13 driver step 7 and §9 scenario 7). FR-019 is the `negotiate_*`
 arm of the same seam. The two are separate requirements because settling a
 disposition and generating for a settled item are different claims: a
 settlement names a backend, and generation returns the backend kind's output.
 The linked Kani arm may produce an artifact; the process-provider arm produces
-none (QSL ADR-029 PV-4).
+none (FSL ADR-029 PV-4).
 
 For the production FR-330 boundary,
 [FR-039](../../core/functional/FR-039-contract-package-consumption.md) makes
@@ -73,7 +73,7 @@ generation shall refuse the whole call with a typed selection error before
 emitting any harness. It shall not find a replacement narrow elsewhere in the
 package.
 
-For a routed scalar claim, the driver also hands CG the originating QSL
+For a routed scalar claim, the driver also hands CG the originating FSL
 `RequirementItem`'s occurrence key, result-bound type node, direct conversion
 occurrence and ordered path condition (as a `RoutedRequirement` on the item),
 together with the checked package's requirement records keyed by occurrence
@@ -85,8 +85,8 @@ authenticated selection for the same request index. A missing record or any
 disagreement is a typed whole-call refusal naming the request index and
 occurrence before an oracle, harness or obligation identity is produced. CG
 does not choose a record by node id or infer a guard or result bound from
-another occurrence. The driver projects QSL's checked values into CG's typed
-input at this boundary; CG does not acquire a new QSL library dependency.
+another occurrence. The driver projects FSL's checked values into CG's typed
+input at this boundary; CG does not acquire a new FSL library dependency.
 The record's path condition then becomes assumptions of the item's scalar
 harness, and its occurrence key becomes part of the harness identity
 (see "Per-occurrence requirement records" below).
@@ -107,7 +107,7 @@ constructs no FR-019 `Disposition` here.
 Two checks remain, and neither is a settlement. First, the routed backend
 kind must agree with the routed identity: a built-in kind uses
 `BackendKind::from_identity`, while `Process(id)` carries the same identity
-string as the routed backend (FR-019, QSL ADR-029 PV-4). An item is never sent to
+string as the routed backend (FR-019, FSL ADR-029 PV-4). An item is never sent to
 another kind's arm.
 Second, the kind's generation arm still accounts every item it is given with
 its own typed per-item record. For Kani that record is FR-015's
@@ -135,65 +135,65 @@ the kind as this crate's `BackendKind`, and the node as the IR
 result selection, bound to its admitted source package. The driver converts its own routed value into it, as it
 already does for the FR-331 envelope.
 
-For that envelope, the driver projects each descriptor from QSL `Registry::descriptors()` once
+For that envelope, the driver projects each descriptor from FSL `Registry::descriptors()` once
 into CG's own `BackendDescriptor`, copying identity, advertised (kind, mode) pairs,
 optional manifest `bounds` and `origin()` without changing their meaning (FR-019-AC-15,
 FR-019-AC-20). In particular, absent and present-empty `bounds` remain distinct in the
 descriptor passed to routed construction; neither changes its backend-kind decision.
-QSL layer R owns the closed origin vocabulary (QSL FR-288, ADR-029 PV-1); CG's type is
+FSL layer R owns the closed origin vocabulary (FSL FR-288, ADR-029 PV-1); CG's type is
 its local projection under ADR-013 T-7. The
-driver's registration conversion supplies the origin to QSL's descriptor; its registry
+driver's registration conversion supplies the origin to FSL's descriptor; its registry
 holds and conflict-checks that value. Neither this routed-item conversion nor CG infers one from
 the backend identity, provider bytes or a side map. The current built-in
 Kani route remains linked. Process-kind classification and its empty generation
 output belong to IR-629; they do not change this crate boundary.
 
-- Not `quire-driver`: the driver depends on this crate, so the reverse edge is
+- Not `filament-driver`: the driver depends on this crate, so the reverse edge is
   a Cargo package cycle.
-- Not `qsl-route`'s `BackendId`: QSL ADR-011 §2.1 and ADR-013 T-7 put no
-  shared Rust crate between QSL and CG for these types; each side converts
-  its data at the driver boundary. Taking it would also widen this crate's one QSL edge
-  (`qsl-replay`) that quire-driver FR-001-AC-1 asserts.
+- Not `fsl-route`'s `BackendId`: FSL ADR-011 §2.1 and ADR-013 T-7 put no
+  shared Rust crate between FSL and CG for these types; each side converts
+  its data at the driver boundary. Taking it would also widen this crate's one FSL edge
+  (`fsl-replay`) that filament-driver FR-001-AC-1 asserts.
 - Not the IR model crate: the IR is target-neutral and cannot name a CG
   backend kind, and this crate depends on the IR, not the other way round.
 
 ### Per-occurrence requirement records (IR-304)
 
-One application node can carry several QSL occurrences, each with its own
-result bound and path condition (QSL FR-062, ADR-011 E7). The node id alone
+One application node can carry several FSL occurrences, each with its own
+result bound and path condition (FSL FR-062, ADR-011 E7). The node id alone
 therefore cannot say which claim an item makes. CG takes those facts from the
-QSL requirement record the driver projects, in CG-owned types:
+FSL requirement record the driver projects, in CG-owned types:
 
 - `RequirementOccurrence { node_id: CheckedNodeId, role:
-  CheckedOccurrenceRole, ordinal: u64 }` is CG's key for one QSL
+  CheckedOccurrenceRole, ordinal: u64 }` is CG's key for one FSL
   `OccurrenceKey`. `node_id` is in the authenticated V2 source frame, the frame
   of `RoutedGenerationItem.node_id` and of `ContractDriverResultSelection`'s
-  occurrences; the driver maps QSL's `NodeKey` into it as it already maps an
+  occurrences; the driver maps FSL's `NodeKey` into it as it already maps an
   item's node. Its three fields correspond to those of the IR
   `ContractOccurrenceKeyV1`. It derives `Ord` and `Serialize`, which the IR type
   does not, so it can key a map and appear in a persisted harness identity. It
   carries the key itself, never a hash or digest of it.
 - `RequirementGuard { occurrence: RequirementOccurrence, holds: bool }` is one
-  QSL `PathGuard`: the guard node's `expression` occurrence and its required
+  FSL `PathGuard`: the guard node's `expression` occurrence and its required
   outcome.
 - `RequirementRecordInput { result_bound: CheckedNodeId, conversion_context:
   Option<RequirementOccurrence>, path_condition: Vec<RequirementGuard> }` is
-  the projection of one QSL `RequirementRecord`. `result_bound` is QSL's
+  the projection of one FSL `RequirementRecord`. `result_bound` is FSL's
   `ResultBound` type node in the same V2 frame: the semantic type of the
   selected narrow, or of the application when there is none. The path
-  condition keeps QSL's outermost-first order.
+  condition keeps FSL's outermost-first order.
 - `RequirementRecords` wraps a `BTreeMap<RequirementOccurrence,
   RequirementRecordInput>` for the whole checked package. It is built with
   `RequirementRecords::new(map)`, so one key has at most one record by type.
   It is carried on `KaniGenerationContext.requirement_records`.
 - `RoutedRequirement { occurrence: RequirementOccurrence, result_bound:
   CheckedNodeId, conversion_context: Option<RequirementOccurrence>,
-  path_condition: Vec<RequirementGuard> }` is the projection of the QSL
+  path_condition: Vec<RequirementGuard> }` is the projection of the FSL
   `RequirementItem` at one request index, in the same frame. The driver
   attaches it with `RoutedGenerationItem::with_requirement(self, requirement)
   -> Self` into a private `requirement` field.
 
-The record carries these four QSL facts and no others. QSL's `requirements`
+The record carries these four FSL facts and no others. FSL's `requirements`
 labels, `references`, `owner`, `extent_roots` and the item's `unbounded`
 DomainKeys, `proof_bounds`, `kind` and `candidates` stay out of this input:
 FR-019 settles extent, mode and backend from them, and this generator takes
@@ -218,13 +218,13 @@ selection makes no result-context query, so in those cases `selected` is
 **Which items need a record.** An item *has records* when `requirement_records`
 holds a key whose `node_id` is the same source node as the item's `node_id`.
 An item with an `OwnResult` selection must carry a `RoutedRequirement`. So must
-an item with a `NotApplicable` selection that has records: QSL writes a record,
+an item with a `NotApplicable` selection that has records: FSL writes a record,
 with its path condition, for every scalar application occurrence, comparisons
 included. Only an `OwnResult` selection authenticates one occurrence of the
 node, so CG binds a requirement only through it. A `NotApplicable` item that
 has records, or that carries a requirement, is refused; the driver routes such
 an item with an `OwnResult` selection. A `NotApplicable` item with no records
-and no requirement (a node QSL wrote no claim for) keeps today's unguarded
+and no requirement (a node FSL wrote no claim for) keeps today's unguarded
 behaviour.
 
 A record mismatch is the whole-call
@@ -260,7 +260,7 @@ failure, so a `ScalarSelectionMismatch` at any index precedes a record
 refusal at a lower one. These checks compare against an already authenticated
 selection and do not replace it: `ScalarSelectionMismatch` still reports a
 selection that disagrees with the admitted lowering position (FR-022-AC-24);
-`RequirementRecord` reports a QSL record that disagrees with the authenticated
+`RequirementRecord` reports a FSL record that disagrees with the authenticated
 selection or with the item's projection.
 
 ### Path conditions in the scalar harness (IR-304)
@@ -281,13 +281,13 @@ A guard is lowerable in one of two forms:
 
 - a direct reference to a Boolean parameter (`if p`), whose guard node is the
   parameter node;
-- an IR-confirmed `quire.op.integer.{lt,le,gt,ge,eq,ne}` comparison whose two
+- an IR-confirmed `filament.op.integer.{lt,le,gt,ge,eq,ne}` comparison whose two
   operands are each a direct reference to an integer parameter typed by a
   bounded domain, or an integer literal that fits `i64`, with at least one
-  parameter reference. A literal that QSL widens through a
-  `quire.op.numeric.narrow` conversion (as it does for `=` and `!=`) is read
+  parameter reference. A literal that FSL widens through a
+  `filament.op.numeric.narrow` conversion (as it does for `=` and `!=`) is read
   as that literal, and a literal outside `i64` keeps its `GuardLiteralNotI64`
-  reason. QSL admits the conversion only after proving the literal lies in its
+  reason. FSL admits the conversion only after proving the literal lies in its
   target range, so no range check is repeated. A conversion over a parameter is
   not read as that parameter and refuses as `UnsupportedGuardForm`.
 
@@ -313,7 +313,7 @@ Otherwise the item settles `unsupported` with no harness, as
 CG never drops a guard instead, because a harness without the guard would
 test the claim off its path and misreport why it fails.
 
-The IR-304 guarded package is one QSL-checked package holding the
+The IR-304 guarded package is one FSL-checked package holding the
 functions the guard criteria route together:
 `f(p: Boolean, x: Int[0, 9]): Int[0, 10] { if p then x + 1 else x + 1 }`,
 `g(x: Int[0, 9]): Int[0, 10] { x + 1 }` (unguarded),
@@ -357,7 +357,7 @@ guard inputs in `guard_inputs` order: by first read in the path condition,
 outermost guard first, left operand before right.
 
 A narrowed harness keeps the replay body of the admitted claim: the retained body carries the
-admitted operand ranges QSL's operator parity runs over, and each narrowed operand range of the
+admitted operand ranges FSL's operator parity runs over, and each narrowed operand range of the
 harness lies inside the matching admitted range, so a falsifying witness of the guarded harness is
 an input of the admitted claim and reaches parity like an unguarded one. An unguarded harness
 keeps equal ranges.
@@ -387,7 +387,7 @@ guard input, and it is the input to FR-015's reachable-result check. The
 text states every guard whether or not narrowing captured it.
 
 If a parameter's domain becomes empty, the occurrence lies on a path no input
-reaches. QSL accepts such a dead branch, so CG neither proves its claim
+reaches. FSL accepts such a dead branch, so CG neither proves its claim
 vacuously nor reports `result_bound_unreachable`. It settles the item
 `unsupported` with no harness as `UnsupportedObligation::PathConditionUnsatisfiable
 { guard, parameter, declared }` (wire code `path_condition_unsatisfiable`).
@@ -442,11 +442,11 @@ IR-815.
   preceding bound driver item's contiguous context span. Driver indexes count
   bound driver items and excluded positions, but not context-only roots (FR-039).
 - For every routed Kani item with an `OwnResult` selection, the driver's
-  `RoutedRequirement` projection of QSL's `RequirementItem::{occurrence,
+  `RoutedRequirement` projection of FSL's `RequirementItem::{occurrence,
   result_bound, conversion_context, path_condition}` at that request index,
   and, in `KaniGenerationContext.requirement_records`, the originating
   checked package's `RequirementRecords` keyed by occurrence. The record map is
-  in-process E7 input (QSL ADR-011), not a member of v2 package bytes. Each
+  in-process E7 input (FSL ADR-011), not a member of v2 package bytes. Each
   path-condition guard's node is a `ContextRoot` in the item's context span.
   A `NotApplicable` item carries no requirement and is valid only when the map
   holds no record for its node.
@@ -507,8 +507,8 @@ IR-815.
     and `None` otherwise. A `Generated` claim's oracle symbol is
     defined in that `src/lib.rs`, which is the standalone FR-014 oracle crate
     source. Each harness embeds its own oracle's source (FR-015), including
-    that oracle's definition and a `use quire_contract_runtime::exact
-    as rt;` line, so it needs a crate that depends on `quire-contract-runtime`.
+    that oracle's definition and a `use filament_contract_runtime::exact
+    as rt;` line, so it needs a crate that depends on `filament-contract-runtime`.
     The load-bearing returned artifact is `Cargo.toml`, which carries that
     dependency (with `features = ["exact"]`) and
     `[workspace]`. To run a harness the driver writes the returned `Cargo.toml`
@@ -628,7 +628,7 @@ IR-815.
 - When generating for a process-provider kind, the generator shall return an
   empty `KindOutput::Process` for each routed item, with no CG artifact or CG
   adapter, execution or terminal-record call. The driver's plugin host owns
-  the process adapter and terminal result (QSL ADR-029 PV-4).
+  the process adapter and terminal result (FSL ADR-029 PV-4).
 - If a routed Kani item's requirement or its keyed record fails a check of
   "Per-occurrence requirement records", then the generator shall refuse the
   whole call with `RequirementRecord { request_index, occurrence, mismatch }`
@@ -683,12 +683,12 @@ IR-815.
 | FR-022-AC-7 | A Kani group containing an `invalid_request` item is listed in `rejected`, and every Kani item's record is returned with no harness. A `DuplicateItem` reported by FR-015 has `first_index` rewritten to the driver's request index of the first occurrence. On the FR-330 package path, an identical selected scalar occurrence pair also retains FR-039's earlier typed `DuplicateRequest` claim refusal at both positions. | Test (TC-033) |
 | FR-022-AC-8 | Every routed item appears exactly once in `items`, in ascending request index, under its routed backend and the `KindOutput` variant of its routed kind. An item the arm refuses at lowering keeps its typed FR-015 refusal and no harness. An empty routed set returns an empty result. | Test (TC-033) |
 | FR-022-AC-9 | Regeneration from equal inputs is byte-identical, and a permutation of the routed-item slice yields an identical result. The same node routed at a different request index or under another candidate of the same backend yields a byte-identical harness when the admitted FR-330 package and selected occurrence are the same. | Test (TC-033) |
-| FR-022-AC-10 | The Kani arm derives each item's operation and domain from the package alone; the caller supplies no claim map, and `x + 1` over a parameter `Int[0, 9]` routes to a supported `quire.op.integer.add` harness with arguments `[0, 9]` and `[1, 1]` (the literal at its own value, FR-015-AC-16). | Test (TC-033) |
+| FR-022-AC-10 | The Kani arm derives each item's operation and domain from the package alone; the caller supplies no claim map, and `x + 1` over a parameter `Int[0, 9]` routes to a supported `filament.op.integer.add` harness with arguments `[0, 9]` and `[1, 1]` (the literal at its own value, FR-015-AC-16). | Test (TC-033) |
 | FR-022-AC-11 | An item with no derivable descriptor keeps its typed refusal and no harness, and its siblings' records and harnesses are unaffected. On the FR-330 package path, an absent root retains its exact admitted `InvalidInput` accounting and `PackageRefused` output before Kani. On a direct FR-015 request, a node absent from the graph is `invalid_request` and rejects the group. A node that does not lower or has a refused bound keeps the FR-015 disposition it has when its claim is generated by FR-014 (`requires_bound`, `blocked_on_upstream`, `unsatisfiable_bound`). A repeated selected pair on the FR-330 path retains FR-039's earlier `DuplicateRequest` claim refusal at both positions, while FR-015 reports `duplicate_item` for the second item. | Test (TC-033) |
 | FR-022-AC-12 | `RoutedGeneration.claim_map` is `Some` after a Kani group and contains one claim per selected node/occurrence admitted past FR-039 accounting, retaining any earlier typed `DuplicateRequest` refusal; an underivable node has one refused claim of provenance `underived`, ordered by node id and then selected occurrence key. | Test (TC-033) |
 | FR-022-AC-13 | The Kani arm routes an integer node over bounded parameters to a supported harness whose arguments are one range per operand and whose result assertion uses the result bound: `a + b` over `[0, 9]` and `[10, 20]` with result `[0, 29]` has arguments `[0, 9]` and `[10, 20]`; `-e` over `[1, 9]` with result `[-9, -1]` and `e * f` over `[1, 9]` and `[100, 200]` with result `[100, 1800]` are supported; a node with a plain-typed `reference` operand beside bounded typing (FR-014-AC-25) settles `requires_bound` and has no harness. | Test (TC-033) |
 | FR-022-AC-14 | `RoutedGeneration.oracle_artifacts` is `Some` after a Kani group and `None` when nothing is routed. Its `claim-map.json` equals the complete package-derived claim map, including typed refused items; a group with no generated claim still returns its crate. For `x + 1` over a parameter `Int[0, 9]`, each `Generated` claim's oracle symbol is defined in the returned `src/lib.rs` and appears in the supported harness's Rust source. | Test (TC-033) |
-| FR-022-AC-15 | The Kani arm routes the packages QSL emits for `x + 1` over `x: Int[0, 9]` into `Int[0, 10]`, `x + y` over `Int[0, 9]` and `Int[10, 20]` into `Int[10, 29]`, and `-z` over `Int[0, 9]` into `Int[-9, 0]` (a literal as a reference to its own `value` node, the declared bound on a narrowing `conversion` consuming the plain-typed arithmetic node) to supported harnesses with arguments `[0, 9]` and `[1, 1]`; `[0, 9]` and `[10, 20]`; and `[0, 9]`, each asserting the result against the conversion's bound (`[0, 10]`, `[10, 29]`, `[-9, 0]`). In that shape a plain-Integer parameter beside a bounded one, and a reference to a `value` node whose body is not a literal, settle `requires_bound` without a harness. On the FR-330 package path, a node consumed by two distinct conversions uses the caller's exact selected conversion; the direct checked-package FR-014 path retains its `AmbiguousBound` refusal when no conversion is selected. | Test (TC-033) |
+| FR-022-AC-15 | The Kani arm routes the packages FSL emits for `x + 1` over `x: Int[0, 9]` into `Int[0, 10]`, `x + y` over `Int[0, 9]` and `Int[10, 20]` into `Int[10, 29]`, and `-z` over `Int[0, 9]` into `Int[-9, 0]` (a literal as a reference to its own `value` node, the declared bound on a narrowing `conversion` consuming the plain-typed arithmetic node) to supported harnesses with arguments `[0, 9]` and `[1, 1]`; `[0, 9]` and `[10, 20]`; and `[0, 9]`, each asserting the result against the conversion's bound (`[0, 10]`, `[10, 29]`, `[-9, 0]`). In that shape a plain-Integer parameter beside a bounded one, and a reference to a `value` node whose body is not a literal, settle `requires_bound` without a harness. On the FR-330 package path, a node consumed by two distinct conversions uses the caller's exact selected conversion; the direct checked-package FR-014 path retains its `AmbiguousBound` refusal when no conversion is selected. | Test (TC-033) |
 | FR-022-AC-16 | Two Kani harnesses with one `harness_symbol` refuse the call as `DuplicateHarness` naming the second harness's `module::harness` path, and no harness is overwritten or dropped. | Test (TC-033) |
 | FR-022-AC-17 | PLANNED (IR-629). A routed `Process(id)` item appears exactly once with its own identity and empty `KindOutput::Process`, without a generation context or membership in `BackendKind::ALL`. | Test (TC-046) |
 | FR-022-AC-18 | PLANNED (IR-629). A crate-internal routed `Process(id)` item whose private backend and kind disagree refuses the whole call as `BackendKindDisagrees` with `converted=Some(Process(item.backend.identity))` and no generated output. | Test (TC-046) |
@@ -697,17 +697,17 @@ IR-815.
 | FR-022-AC-21 | PLANNED (IR-629). `from_descriptor` constructs Kani for a linked `kani` descriptor and `Process(id)` for a process descriptor with the same identity text. An unknown linked identity never produces Process. | Test (TC-046) |
 | FR-022-AC-22 | PLANNED (IR-629). `from_descriptor` rejects a backend identity different from the descriptor identity as `DescriptorBackendMismatch`, naming both; it rejects an unknown linked identity as `UnknownLinkedBackend`, naming the backend. Neither refusal produces a routed item. | Test (TC-046) |
 | FR-022-AC-23 | After FR-019 authenticates two `integer.add` driver items on one admitted ContractPackage with distinct selected application/direct-`numeric.narrow` pairs, routed generation retains the pair for each item in its claim and harness identity and asserts against its own selected result bound. The two generated harnesses have distinct identities and expected ranges; a fresh settlement of a changed selection changes or refuses only that item, without borrowing the other bound. | Test (TC-033) |
-| FR-022-AC-24 | A routed scalar item's retained authenticated selection and its driver lowering position must name the same application/conversion pair in the same admitted ContractPackage. A changed pair, missing conversion context root or occurrence absent from that package refuses the whole call with a typed selection error before any harness. No package-wide bound search, source-text reparse or copied QSL context supplies a replacement. | Test (TC-033) |
+| FR-022-AC-24 | A routed scalar item's retained authenticated selection and its driver lowering position must name the same application/conversion pair in the same admitted ContractPackage. A changed pair, missing conversion context root or occurrence absent from that package refuses the whole call with a typed selection error before any harness. No package-wide bound search, source-text reparse or copied FSL context supplies a replacement. | Test (TC-033) |
 | FR-022-AC-25 | The public CG API exposes the concrete `ContractScalarError` carried by `RoutedGenerationError::ContractScalar`, so an external driver can match `ContractScalarError::Oracle(OracleGenerationError::SourceTooLarge { bytes, limit, setting })` and distinguish the scalar source ceiling from request-accounting and other oracle failures without parsing text or naming a private module. | Test (TC-033) |
-| FR-022-AC-26 | Given the checked QSL RR-16 package with two `x + 1` occurrences of one application node, directly narrowed to `Int[0, 10]` and `Int[0, 20]`, each routed item carries the `RoutedRequirement` projected from its QSL `RequirementItem` in the V2 frame, and `KaniGenerationContext.requirement_records` holds both records. Both items are `Supported` and each harness asserts its own result bound (`[0, 10]` at the first occurrence's request index, `[0, 20]` at the second); reversing the routed-item slice leaves every per-request-index result unchanged. In this fixture each admitted `ContractResultBoundV1.node` differs from the record's V2 `result_bound` until translated with `original_represented_node`, so a raw cross-frame comparison would refuse this valid input as `ResultBoundMismatch`. Exchanging only the two items' `RoutedRequirement` values refuses the whole call as `RequirementRecord` with `ApplicationMismatch` at the lower request index, so the pairing follows the occurrence key and not the node id or slice position. | Test (TC-033) |
-| FR-022-AC-27 | For QSL-emitted `if p then x + 1 else x + 1` over `p: Boolean` and `x: Int[0, 9]` into `Int[0, 10]`, the two `x + 1` occurrences of one application node have path conditions `[(p, holds=true)]` and `[(p, holds=false)]`. Each harness draws one Boolean guard input for `p` and contains exactly one `Statement::Assume` of it before the oracle call: `p` for the then item and `!p` for the else item. Each identity's `path_condition` and `guard_inputs` list that guard and input. A nested path `[(p, holds=true), (q, holds=true)]` assumes `p` before `q`. Exchanging the two records' path conditions together with the items' projections exchanges the two assumptions. An item with an empty path condition has no guard input and no guard assumption. | Test (TC-033) |
+| FR-022-AC-26 | Given the checked FSL RR-16 package with two `x + 1` occurrences of one application node, directly narrowed to `Int[0, 10]` and `Int[0, 20]`, each routed item carries the `RoutedRequirement` projected from its FSL `RequirementItem` in the V2 frame, and `KaniGenerationContext.requirement_records` holds both records. Both items are `Supported` and each harness asserts its own result bound (`[0, 10]` at the first occurrence's request index, `[0, 20]` at the second); reversing the routed-item slice leaves every per-request-index result unchanged. In this fixture each admitted `ContractResultBoundV1.node` differs from the record's V2 `result_bound` until translated with `original_represented_node`, so a raw cross-frame comparison would refuse this valid input as `ResultBoundMismatch`. Exchanging only the two items' `RoutedRequirement` values refuses the whole call as `RequirementRecord` with `ApplicationMismatch` at the lower request index, so the pairing follows the occurrence key and not the node id or slice position. | Test (TC-033) |
+| FR-022-AC-27 | For FSL-emitted `if p then x + 1 else x + 1` over `p: Boolean` and `x: Int[0, 9]` into `Int[0, 10]`, the two `x + 1` occurrences of one application node have path conditions `[(p, holds=true)]` and `[(p, holds=false)]`. Each harness draws one Boolean guard input for `p` and contains exactly one `Statement::Assume` of it before the oracle call: `p` for the then item and `!p` for the else item. Each identity's `path_condition` and `guard_inputs` list that guard and input. A nested path `[(p, holds=true), (q, holds=true)]` assumes `p` before `q`. Exchanging the two records' path conditions together with the items' projections exchanges the two assumptions. An item with an empty path condition has no guard input and no guard assumption. | Test (TC-033) |
 | FR-022-AC-28 | Starting from the valid FR-022-AC-26 input, each single change below refuses the whole call as `RequirementRecord` naming the changed item's request index and occurrence, with no `RoutedGeneration`, oracle artifact, claim map or harness: removing the item's `RoutedRequirement` (`RequirementMissing`, `occurrence: None`); removing its record from `requirement_records` (`RecordMissing`); changing the item's occurrence ordinal to one with a record but not the authenticated application (`ApplicationMismatch`); replacing the item's or the record's result bound with the other occurrence's (`ResultBoundMismatch`); replacing the item's or the record's conversion context with the other occurrence's (`ConversionContextMismatch`); and adding a guard to the record only (`PathConditionMismatch`). The other occurrence's record of the same node stays present throughout, so a lookup by node id would generate instead of refusing. With two items failing, the lower request index is reported. | Test (TC-033) |
 | FR-022-AC-29 | Given an admitted package whose complete lowering sequence has bound driver items at indexes 0 and 2 and an excluded accounting-only position at index 1, a routed item with `request_index` 1 and the excluded position's exact `node_id` refuses the whole call as `ExcludedDriverIndex { request_index: 1, node_id }` before any generation arm, oracle or harness. The same routed backend and descriptor at indexes 0 and 2 remain valid controls, and CG never substitutes an envelope position or the next bound item's selection for index 1. | Test (TC-033) |
 | FR-022-AC-30 | For a plain reader-admitted V1 package, a routed item requiring an operation mode, law-definition or member-target view whose accessor returns `NotAdmitted` makes `generate_routed` refuse the whole call as `UnauthenticatedOperationView { request_index, node_id }`, identifying the lowest `request_index` among such routed items regardless of routed-item slice permutation, with no oracle, settlement or harness output. A view-independent integer route over the plain read retains its existing result. The same view-dependent route over the matching source-authenticated V1 package retains its ordinary generated oracle and capability disposition (FR-014-AC-55), including integer division's admitted law profile and quantity conversion's exact oracle and `OperationNotRendered` settlement. | Test (TC-033) |
 | FR-022-AC-31 | Each routed scalar harness of FR-022-AC-26 has `ScalarObligationIdentity.requirement_occurrence` equal to its item's `RequirementOccurrence` node, role and ordinal, and the two identities and persisted records differ in that field. The record serializes the occurrence as those three fields, not a hash, digest or text rendering. A harness generated through direct `negotiate_kani_obligations` for `x + 1` over `x: Int[0, 9]` into `Int[0, 10]` has `requirement_occurrence: None`, and its persisted record equals byte for byte the committed golden `tests/fixtures/kani-scalar/direct-increment-record.json`, captured by slice (a) from the generator before the identity fields exist and updated by IR-1022 only in the option vectors: `options` is the proof vector and the new `witnessOptions` is the vector the golden recorded before (FR-015-AC-9). | Test (TC-033) |
 | FR-022-AC-32 | A routed item whose guard is a lowerable form (a Boolean parameter reference, or an integer `lt`/`le`/`gt`/`ge`/`eq`/`ne` comparison between bounded-integer parameter references or such a reference and an `i64` literal) generates a harness with that guard's `Statement::Assume`. Otherwise the item settles `unsupported` as `path_guard_not_lowered` naming the guard occurrence, with no harness and its sibling item unaffected, and with reason: `UnsupportedGuardForm` for `x + 1 > 5`; `UnboundedGuardOperand` naming `n` for `n >= 0` over a plain-Integer parameter `n` (which lowers, since the routed profile has `require_bounds: false`); `GuardLiteralNotI64` naming the value for `x < 10^23`; and `GuardRootNotLowered` for a guard root whose accounting record is not `lowered`, for a guard whose closure reaches a node tag outside the routed profile's `supported_tags`, such as a call to a function when `Function` is unsupported and so lowers as `unsupported`. A guard whose node is not a context root in the item's context span refuses the whole call as `RequirementRecord` with `GuardContextMissing` naming the guard. | Test (TC-033) |
-| FR-022-AC-33 | For QSL-emitted `if x > 5 then x + 100 else 0` over `x: Int[0, 9]` into `Int[0, 200]`, the guarded `x + 100` item is `Supported` with arguments `[6, 9]` and `[100, 100]`, a `Statement::Assume` of `x > 5`, and a result assertion against `[0, 200]`. The same item with the guard's `holds=false` has arguments `[0, 5]` and `[100, 100]`. For `if x < y then x + 1 else 0` over `x: Int[0, 9]` and `y: Int[0, 9]` into `Int[0, 10]`, a comparison between two parameters, the argument `x` keeps `[0, 9]`, `y` is a guard input over `[0, 9]`, and the harness assumes `x < y`. | Test (TC-033) |
-| FR-022-AC-34 | For QSL-emitted `f(x: Int[0, 9]): Int[0, 10] { if x > 20 then x + 100 else 0 }`, the guarded `x + 100` item settles `unsupported` as `path_condition_unsatisfiable` naming the `x > 20` guard occurrence, the parameter `x` and its declared `Integer { minimum: 0, maximum: 9 }`, with no harness; it is not `result_bound_unreachable`. The same `x + 100` into `Int[0, 10]` with an empty path condition still settles `result_bound_unreachable` with reachable `[100, 109]` (FR-015-AC-18). The literal-left guard `20 < x` gives the same outcome. For `f(p: Boolean, x: Int[0, 9]): Int[0, 10] { if p then (if p then 0 else x + 1) else 0 }`, the `x + 1` item settles `path_condition_unsatisfiable` naming the inner `p` guard, the parameter `p` and `Boolean`. | Test (TC-033) |
+| FR-022-AC-33 | For FSL-emitted `if x > 5 then x + 100 else 0` over `x: Int[0, 9]` into `Int[0, 200]`, the guarded `x + 100` item is `Supported` with arguments `[6, 9]` and `[100, 100]`, a `Statement::Assume` of `x > 5`, and a result assertion against `[0, 200]`. The same item with the guard's `holds=false` has arguments `[0, 5]` and `[100, 100]`. For `if x < y then x + 1 else 0` over `x: Int[0, 9]` and `y: Int[0, 9]` into `Int[0, 10]`, a comparison between two parameters, the argument `x` keeps `[0, 9]`, `y` is a guard input over `[0, 9]`, and the harness assumes `x < y`. | Test (TC-033) |
+| FR-022-AC-34 | For FSL-emitted `f(x: Int[0, 9]): Int[0, 10] { if x > 20 then x + 100 else 0 }`, the guarded `x + 100` item settles `unsupported` as `path_condition_unsatisfiable` naming the `x > 20` guard occurrence, the parameter `x` and its declared `Integer { minimum: 0, maximum: 9 }`, with no harness; it is not `result_bound_unreachable`. The same `x + 100` into `Int[0, 10]` with an empty path condition still settles `result_bound_unreachable` with reachable `[100, 109]` (FR-015-AC-18). The literal-left guard `20 < x` gives the same outcome. For `f(p: Boolean, x: Int[0, 9]): Int[0, 10] { if p then (if p then 0 else x + 1) else 0 }`, the `x + 1` item settles `path_condition_unsatisfiable` naming the inner `p` guard, the parameter `p` and `Boolean`. | Test (TC-033) |
 | FR-022-AC-35 | For a guarded item whose guards are jointly infeasible but not emptied by narrowing (`if x < y then x + 1 else 0` with `x: Int[5, 9]` and `y: Int[0, 4]` into `Int[0, 10]`), `generate_routed_native` (the native integer policy) emits a harness whose `completed` cover follows the guard assumptions, and FR-017 execution under installed Kani reports `CoverUnsatisfied`, not `Verified`. The same harness with the guard `x > y` reports `Verified`. That harness computes on native integers, never drops its meter or outcome, and ends with the one cover read as `let cover_reached: bool = completed;` after `core::mem::forget(meter); core::mem::forget(outcome);`. Ordinary `generate_routed` keeps the general `rt::Integer` route (AD-006) and its unchanged harness tail (the cover read directly from `completed`, nothing forgotten), and has no verdict for this scenario. | Test (TC-033) |
 | FR-022-AC-36 | A routed Kani item with a `NotApplicable` selection at a node with no record in `requirement_records` and no requirement keeps its existing result with no guard. A `NotApplicable` item at the FR-022-AC-27 `x + 1` node, whose two records carry the guards `(p, holds=true)` and `(p, holds=false)`, refuses the whole call as `RequirementRecord` with `OccurrenceNotSelected`, both without a requirement and when it carries the `RoutedRequirement` of one of that node's occurrences. Routing the same node with an `OwnResult` selection and its own requirement is accepted and reaches the guard handling of FR-022-AC-27. A check comparing only the requirement's `node_id` with the item's would accept both refused inputs. | Test (TC-033) |
 | FR-022-AC-37 | Over the RR-16 input of FR-022-AC-26: an input with a `ScalarSelectionMismatch` at the higher request index and a `RecordMissing` at the lower one refuses as `ScalarSelectionMismatch` naming the higher index; in the FR-022-AC-30 plain-read package, giving the view-independent integer item a requirement with no record, beside the view-dependent item that alone refuses as `UnauthenticatedOperationView`, refuses as `RequirementRecord` (`RecordMissing` for an `OwnResult` selection, `OccurrenceNotSelected` for `NotApplicable`). In one item, a wrong result bound together with a wrong path condition refuses with `ResultBoundMismatch`; an occurrence ordinal changed to the other recorded occurrence's ordinal together with a wrong conversion context refuses with `ApplicationMismatch`, while an ordinal with no record refuses with `RecordMissing`. Per item, in the IR-304 guarded package: `if p then x + m else 0` with a plain-Integer `m` settles `requires_bound`, and `if flag then true else n >= 0` (`n >= 0` under `(flag, holds=false)`) settles `operation_not_rendered`, rather than a guard reason; `j`'s `x + 100`, under `[(x > 20, holds=true), (x + 1 > 5, holds=true)]`, settles `path_guard_not_lowered` rather than `path_condition_unsatisfiable`. | Test (TC-033) |
@@ -724,13 +724,13 @@ IR-815.
   cover. [FR-002](../../strategy/functional/FR-002-tristate-proptest.md) AC-25/26 (IR-815) own the
   canonical occurrence text rendering this requirement does not wait for.
 - **Downstream**: [TC-033](../matrix/TC-033-routed-generation.md);
-  quire-driver FR-001 step 7, which calls this entry point with
+  filament-driver FR-001 step 7, which calls this entry point with
   `Driven::routed` converted to `RoutedGenerationItem`s.
 
 ## Out of Scope
 
 - Linked backend kinds other than Kani. The process-provider variant returns
-  empty output under QSL ADR-029 PV-4. The
+  empty output under FSL ADR-029 PV-4. The
   crate's other generators (FR-002 tri-state harnesses and strategies, FR-008
   to FR-013 bound strategies, and the FR-014, FR-018 and FR-021 oracles) are
   not selected by a backend kind. Callers invoke them directly, and this
@@ -750,20 +750,20 @@ IR-815.
 
 ## Open items
 
-1. **Whether FR-019's Kani arm should read the IR form.** QSL ADR-012 §7.2
+1. **Whether FR-019's Kani arm should read the IR form.** FSL ADR-012 §7.2
    step 3 has `negotiate_*` receive the IR form. FR-019's Kani arm reads only
    extent and advertised modes. So a `supported` item can still be refused at
    lowering, and it surfaces here as an FR-015 record. *Recommendation:* keep
    that for this version and file a separate FR-019 ticket. *Blocks:* nothing
    here. The driver reports both the settlement and the generation record.
 2. **Renaming `negotiate_kani_obligations`.** It settles no capability, but
-   its `negotiate_` prefix reads like an FR-019 settlement point, and QSL
+   its `negotiate_` prefix reads like an FR-019 settlement point, and FSL
    ADR-012 §5 cites it as one. *Recommendation:* leave the name in this
    ticket. A rename is churn and needs the owner's go-ahead. *Blocks:*
    nothing.
 3. **Where the driver gets the Kani context values** (subject path and
    unwind). *Recommendation:* they are driver or command inputs.
-   *Blocks:* the quire-driver step 7 wiring, not this crate.
+   *Blocks:* the filament-driver step 7 wiring, not this crate.
 
 ## Rationale (IR-304 decisions)
 
@@ -785,7 +785,7 @@ IR-815.
    interval. The rule removes only values that falsify an assumed guard, so it drops no execution
    the claim covers. Parameter-to-parameter comparisons are not narrowed, which keeps the rule
    exact and small; their assumption still constrains the proof.
-3. **A dead branch is its own outcome.** QSL accepts `if x > 20 then x + 100 else 0` because the
+3. **A dead branch is its own outcome.** FSL accepts `if x > 20 then x + 100 else 0` because the
    branch is unreachable. Reporting `result_bound_unreachable` would blame the bound, and a
    harness would pass vacuously. `PathConditionUnsatisfiable` names the empty guard, keeps the
    item visibly unproven under FR-015's closed `unsupported` disposition, and avoids a new
@@ -805,7 +805,7 @@ IR-815.
    `MissingKindContext`. The item projection uses a builder like `with_scalar_selection` so the
    private-field rule of FR-022-AC-20 holds. `RequirementOccurrence` mirrors the IR
    `ContractOccurrenceKeyV1` field for field because the IR type has no `Ord` or `Serialize`, and
-   using the IR vocabulary rather than `qsl_replay::OccurrenceKey` lets CG compare it with the
+   using the IR vocabulary rather than `fsl_replay::OccurrenceKey` lets CG compare it with the
    authenticated selection directly. The result bound is a `CheckedNodeId` because every other
    node on this path is. Record refusals are a separate whole-call variant, not an extension of
    `ScalarSelectionMismatch`, because they name the occurrence and the field that disagrees; they
@@ -813,8 +813,8 @@ IR-815.
    and dropping one request alone would silently change the claim map and oracle crate the group shares.
 6. **Only claim facts are carried.** The result bound, conversion context, path condition and
    occurrence change what the claim states. Extent roots, unbounded DomainKeys, owner, labels and
-   references feed FR-019's settlement or QSL bookkeeping, which this arm takes as given.
-7. **Only an authenticated occurrence binds a record.** QSL writes a guarded record for every
+   references feed FR-019's settlement or FSL bookkeeping, which this arm takes as given.
+7. **Only an authenticated occurrence binds a record.** FSL writes a guarded record for every
    scalar application occurrence. A `NotApplicable` selection authenticates no occurrence, so CG
    cannot tell which of a node's records applies. Refusing it (`OccurrenceNotSelected`) whenever
    the node has records closes the path to an unguarded harness or a mispaired record; the
@@ -848,7 +848,7 @@ FR-022-AC-38 is retired. FR-022-AC-35 is covered by the kani-lane tests `tc_033_
 docs/qualification/ir304-kani-guard-native-harness.md. The general `generate_routed` harness for the same
 scenario gave no verdict in 30 minutes (docs/qualification/ir304-kani-guard-cover-attempt.md) and is not covered. The harness shape is
 also asserted through FR-022-AC-27 and FR-022-AC-33. FR-032-AC-19 is covered (TC-047).
-IR-304 added the QSL occurrence requirement-record intake and the missing/wrong-keyed-record
+IR-304 added the FSL occurrence requirement-record intake and the missing/wrong-keyed-record
 refusals (slice (a)) and lowers ordered branch guards in proof obligations (slice (b)):
 
 - Slice (a), typed record input: `RequirementOccurrence`, `RequirementGuard`,
@@ -872,14 +872,14 @@ refusals (slice (a)) and lowers ordered branch guards in proof obligations (slic
   FR-022-AC-31 to AC-34, the two-guard case of FR-022-AC-37 and FR-032-AC-19, including the two
   IR-304 review cases (FR-022-AC-33 and FR-022-AC-34). FR-022-AC-35 is the native-harness Kani verdict pair, run by the kani-lane tests.
 
-Upstream prerequisites: none for either slice. The QSL record and route-item shapes exist on QSL
+Upstream prerequisites: none for either slice. The FSL record and route-item shapes exist on FSL
 `origin/main` (`RequirementRecord`, `PathGuard`, `RequirementItem.path_condition`). TC-033 builds
-the typed projection directly from those shapes for its fixtures, so CG adds no QSL dependency.
+the typed projection directly from those shapes for its fixtures, so CG adds no FSL dependency.
 Guard nodes need no Contract IR change. Reading `CheckedPackageV2::lower` at the locked IR
 revision and at IR `origin/main` shows that a root is restricted only by the profile's
 `supported_tags`, and the routed profile admits `Value` and `Expression` with
 `require_bounds: false` (see "Path conditions in the scalar harness"). IR-815 is not a
-prerequisite. The production driver projection (quire-driver FR-001 step 7: projecting the QSL
+prerequisite. The production driver projection (filament-driver FR-001 step 7: projecting the FSL
 records, choosing an `OwnResult` selection for every recorded scalar item, and passing guard nodes
 as context roots) is a downstream consumer of this API with no ticket yet.
 The routed matrix's existing Planned labels for the analysis rows need reconciliation; this

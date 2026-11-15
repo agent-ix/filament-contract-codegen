@@ -1,15 +1,15 @@
-//! FR-021 direct-function corpus from one QSL source and separate Contract IR admission.
+//! FR-021 direct-function corpus from one FSL source and separate Contract IR admission.
 
+use filament_contract_codegen::checked_function_key;
+use filament_contract_codegen::oracle::operator_catalog::IntegerOperator;
+use filament_contract_codegen::{
+    generate_exact_function_oracles, ClaimDisposition, EqualityOperatorKind, ExactFunctionBody,
+    ExactFunctionDeclaration, ExactFunctionItem, FunctionParameter,
+};
 use ix_trace_rs::trace;
 use qsl_replay::{
     acquire_checked_closure, ApplicationEnvironment, CompileUnit, DependencyInput, LibraryName,
     ReplayLimits, SourceIdentity, StageLimits, SuppliedLibrary,
-};
-use quire_contract_codegen::checked_function_key;
-use quire_contract_codegen::oracle::operator_catalog::IntegerOperator;
-use quire_contract_codegen::{
-    generate_exact_function_oracles, ClaimDisposition, EqualityOperatorKind, ExactFunctionBody,
-    ExactFunctionDeclaration, ExactFunctionItem, FunctionParameter,
 };
 use quire_contract_model::{
     CheckedNodeId, CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
@@ -32,7 +32,7 @@ use super::kani_obligations_state_frame::model;
 
 const SOURCE: &str = concat!(
     "language \"ix:native\" edition \"1-draft\";\n",
-    "profile v = \"quire.value.complete/v1\";\n",
+    "profile v = \"filament.value.complete/v1\";\n",
     "function add using v(x: Int[0, 9], y: Int[0, 9]): Integer pure { x + y }\n",
     "function eq using v(x: Int[0, 9], y: Int[0, 9]): Boolean pure { x = y }\n",
     "function nested using v(x: Int[0, 9], y: Int[0, 9]): Integer pure { add(x, y) }\n",
@@ -53,7 +53,7 @@ const SOURCE: &str = concat!(
 
 const LIBRARY_SOURCE: &str = concat!(
     "language \"ix:native\" edition \"1-draft\";\n",
-    "profile v = \"quire.value.complete/v1\";\n",
+    "profile v = \"filament.value.complete/v1\";\n",
     "function imported_base using v(x: Int[0, 9], y: Int[0, 9]): Integer pure { x + y }\n",
     "function imported using v(x: Int[0, 9], y: Int[0, 9]): Integer pure { imported_base(x, y) }\n",
     "function probe_imported using v(x: Int[0, 9], y: Int[0, 9]): Integer pure { imported(x, y) }\n",
@@ -61,7 +61,7 @@ const LIBRARY_SOURCE: &str = concat!(
 
 const IMPORTER_SOURCE: &str = concat!(
     "language \"ix:native\" edition \"1-draft\";\n",
-    "profile v = \"quire.value.complete/v1\";\n",
+    "profile v = \"filament.value.complete/v1\";\n",
     "import \"test/function-library\" as lib;\n",
     "function caller using v(x: Int[0, 9], y: Int[0, 9]): Integer pure { lib::imported(x, y) }\n",
 );
@@ -91,16 +91,16 @@ fn admitted_source_text(source: &str) -> CheckedPackageV2 {
         StageLimits::default(),
         ReplayLimits::default(),
     )
-    .expect("QSL admits the genuine function source");
+    .expect("FSL admits the genuine function source");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     let read = CheckedPackageV2::read(
         acquired.package().bytes(),
         CheckedPackageReadLimits::bounded(),
         &evidence,
     );
     let CheckedPackageV2ReadResult::Admitted(package) = read else {
-        panic!("Contract IR admits QSL's exact package bytes: {read:?}");
+        panic!("Contract IR admits FSL's exact package bytes: {read:?}");
     };
     *package
 }
@@ -193,7 +193,7 @@ fn item(package: &CheckedPackageV2, probe: &str, function: &str) -> ExactFunctio
 
 pub(super) fn genuine_corpus() -> (
     CheckedPackageV2,
-    quire_contract_codegen::ExactFunctionOracles,
+    filament_contract_codegen::ExactFunctionOracles,
 ) {
     genuine_corpus_request(false, false, None)
 }
@@ -202,14 +202,14 @@ pub(super) fn genuine_corpus_in_order(
     reverse: bool,
 ) -> (
     CheckedPackageV2,
-    quire_contract_codegen::ExactFunctionOracles,
+    filament_contract_codegen::ExactFunctionOracles,
 ) {
     genuine_corpus_request(reverse, false, None)
 }
 
 pub(super) fn genuine_corpus_with_unknown() -> (
     CheckedPackageV2,
-    quire_contract_codegen::ExactFunctionOracles,
+    filament_contract_codegen::ExactFunctionOracles,
 ) {
     genuine_corpus_request(false, true, None)
 }
@@ -218,14 +218,14 @@ pub(super) fn genuine_corpus_with_bad_nested(
     body: ExactFunctionBody,
 ) -> (
     CheckedPackageV2,
-    quire_contract_codegen::ExactFunctionOracles,
+    filament_contract_codegen::ExactFunctionOracles,
 ) {
     genuine_corpus_request(false, false, Some(body))
 }
 
 pub(super) fn genuine_ambiguous_and_healthy() -> (
-    quire_contract_codegen::ExactFunctionOracles,
-    quire_contract_codegen::ExactFunctionOracles,
+    filament_contract_codegen::ExactFunctionOracles,
+    filament_contract_codegen::ExactFunctionOracles,
     CheckedNodeId,
 ) {
     let package = admitted_source();
@@ -323,7 +323,7 @@ pub(super) fn genuine_ambiguous_and_healthy() -> (
     (combined, only, healthy_call_id)
 }
 
-pub(super) fn genuine_bad_arity() -> quire_contract_codegen::ExactFunctionOracles {
+pub(super) fn genuine_bad_arity() -> filament_contract_codegen::ExactFunctionOracles {
     let package = admitted_source();
     let integer = type_id(&package, "integer");
     let declaration = ExactFunctionDeclaration {
@@ -365,10 +365,11 @@ pub(super) fn genuine_bad_arity() -> quire_contract_codegen::ExactFunctionOracle
         &[item_position],
         &[item],
     )
-    .expect("QSL-authored call with caller-supplied bad arity is classified")
+    .expect("FSL-authored call with caller-supplied bad arity is classified")
 }
 
-pub(super) fn genuine_known_and_zz_unknown() -> [quire_contract_codegen::ExactFunctionOracles; 4] {
+pub(super) fn genuine_known_and_zz_unknown() -> [filament_contract_codegen::ExactFunctionOracles; 4]
+{
     let package = admitted_source();
     let integer = type_id(&package, "integer");
     let declaration = ExactFunctionDeclaration {
@@ -437,15 +438,15 @@ pub(super) fn genuine_known_and_zz_unknown() -> [quire_contract_codegen::ExactFu
 
 pub(super) fn genuine_case_and_healthy() -> (
     CheckedPackageV2,
-    quire_contract_codegen::ExactFunctionOracles,
-    quire_contract_codegen::ExactFunctionOracles,
+    filament_contract_codegen::ExactFunctionOracles,
+    filament_contract_codegen::ExactFunctionOracles,
     CheckedNodeId,
     CheckedNodeId,
     CheckedNodeId,
 ) {
     const CASE_SOURCE: &str = concat!(
         "language \"ix:native\" edition \"1-draft\";\n",
-        "profile v = \"quire.value.complete/v1\";\n",
+        "profile v = \"filament.value.complete/v1\";\n",
         "union Shape { Empty, Circle(Integer), Rect(Integer, Integer) }\n",
         "function area using v(s: Shape): Integer pure { case s { Empty: 0; Circle(r): r; Rect(w, h): w * h; } }\n",
         "function probe_area using v(s: Shape): Integer pure { area(s) }\n",
@@ -484,7 +485,7 @@ pub(super) fn genuine_case_and_healthy() -> (
         .find(|node| {
             node.semantic_form.as_ref() == "union" && node.node_tag.as_ref() == "composite_type"
         })
-        .expect("QSL emits the declared Shape union")
+        .expect("FSL emits the declared Shape union")
         .node_id
         .clone();
     let area_declaration = ExactFunctionDeclaration {
@@ -548,8 +549,8 @@ pub(super) fn genuine_temporal_and_healthy(
     form: &str,
 ) -> (
     CheckedPackageV2,
-    quire_contract_codegen::ExactFunctionOracles,
-    quire_contract_codegen::ExactFunctionOracles,
+    filament_contract_codegen::ExactFunctionOracles,
+    filament_contract_codegen::ExactFunctionOracles,
     CheckedNodeId,
     CheckedNodeId,
 ) {
@@ -570,7 +571,7 @@ pub(super) fn genuine_temporal_and_healthy(
     .expect("authored model package identity");
     let source = format!(
         "{language}\n{value_profile}\n\
-         profile t = \"quire.temporal.infinite-trace/v1\";\n\
+         profile t = \"filament.temporal.infinite-trace/v1\";\n\
          {model}\n\
          temporal ReachesTwo using t over (a: Bank::Account) clock \"model-steps\" on origin {{\n\
          fair weak each Bank::Account::deposit;\n\
@@ -590,9 +591,9 @@ pub(super) fn genuine_temporal_and_healthy(
         StageLimits::default(),
         ReplayLimits::default(),
     )
-    .expect("QSL admits the model-backed temporal and function source");
+    .expect("FSL admits the model-backed temporal and function source");
     let bytes = acquired.package().bytes();
-    let wire: serde_json::Value = serde_json::from_slice(bytes).expect("QSL V2 JSON");
+    let wire: serde_json::Value = serde_json::from_slice(bytes).expect("FSL V2 JSON");
     let mut evidence = CheckedPackageEvidence::new();
     for feature in wire["lock"]["required_features"]
         .as_array()
@@ -605,7 +606,7 @@ pub(super) fn genuine_temporal_and_healthy(
         .expect("one model document");
     let read = CheckedPackageV2::read(bytes, CheckedPackageReadLimits::bounded(), &evidence);
     let CheckedPackageV2ReadResult::Admitted(package) = read else {
-        panic!("Contract IR admits the exact QSL temporal bytes: {read:?}");
+        panic!("Contract IR admits the exact FSL temporal bytes: {read:?}");
     };
     let package = *package;
     let temporal_id = package
@@ -613,7 +614,7 @@ pub(super) fn genuine_temporal_and_healthy(
         .nodes
         .iter()
         .find(|node| node.node_tag.as_ref() == "temporal" && node.semantic_form.as_ref() == form)
-        .unwrap_or_else(|| panic!("QSL emitted temporal {form}"))
+        .unwrap_or_else(|| panic!("FSL emitted temporal {form}"))
         .node_id
         .clone();
     let body_id = body_id(&package, "healthy");
@@ -677,7 +678,7 @@ pub(super) fn genuine_temporal_and_healthy(
 
 fn imported_corpus() -> (
     CheckedPackageV2,
-    quire_contract_codegen::ExactFunctionOracles,
+    filament_contract_codegen::ExactFunctionOracles,
 ) {
     let compiled = acquire_checked_closure(
         CompileUnit {
@@ -691,16 +692,16 @@ fn imported_corpus() -> (
         StageLimits::default(),
         ReplayLimits::default(),
     )
-    .expect("QSL admits the genuine library source");
+    .expect("FSL admits the genuine library source");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     let read = CheckedPackageV2::read(
         compiled.package().bytes(),
         CheckedPackageReadLimits::bounded(),
         &evidence,
     );
     let CheckedPackageV2ReadResult::Admitted(library) = read else {
-        panic!("IR admits the exact QSL library bytes: {read:?}");
+        panic!("IR admits the exact FSL library bytes: {read:?}");
     };
     let library = *library;
     let imported_base = ExactFunctionDeclaration {
@@ -757,7 +758,7 @@ fn imported_corpus() -> (
         &[position(&item.call_node_id)],
         &[item],
     )
-    .expect("one imported library body and its QSL-authored call");
+    .expect("one imported library body and its FSL-authored call");
     (library, generated)
 }
 
@@ -789,7 +790,7 @@ fn generated_for_source_body(
     functions: &[ExactFunctionDeclaration],
     probe: &str,
     function: &str,
-) -> quire_contract_codegen::ExactFunctionOracles {
+) -> filament_contract_codegen::ExactFunctionOracles {
     let item = item(package, probe, function);
     generated_for_source_items(package, functions, &[item])
 }
@@ -798,7 +799,7 @@ fn generated_for_source_items(
     package: &CheckedPackageV2,
     functions: &[ExactFunctionDeclaration],
     items: &[ExactFunctionItem],
-) -> quire_contract_codegen::ExactFunctionOracles {
+) -> filament_contract_codegen::ExactFunctionOracles {
     let mut roots = functions
         .iter()
         .map(|declaration| declaration.node_id.clone())
@@ -844,7 +845,7 @@ fn tc_031_repeated_source_operand_refuses_positional_add_body() {
     assert!(matches!(
         &generated.claim_map.items[0].result,
         ClaimDisposition::Refused {
-            refusal: quire_contract_codegen::ExactFunctionRefusal::BodyMismatch
+            refusal: filament_contract_codegen::ExactFunctionRefusal::BodyMismatch
         }
     ));
     assert!(generated.location_map.is_empty());
@@ -878,7 +879,7 @@ fn tc_031_reordered_source_call_refuses_positional_nested_body() {
     assert!(matches!(
         &generated.claim_map.items[0].result,
         ClaimDisposition::Refused {
-            refusal: quire_contract_codegen::ExactFunctionRefusal::BodyMismatch
+            refusal: filament_contract_codegen::ExactFunctionRefusal::BodyMismatch
         }
     ));
     assert_eq!(generated.location_map.len(), 1, "only add may render");
@@ -920,13 +921,13 @@ fn tc_031_source_callee_refuses_requested_alternate_and_keeps_sibling() {
             .items
             .iter()
             .find(|claim| &claim.node_id == node_id)
-            .expect("both QSL call items retain a disposition")
+            .expect("both FSL call items retain a disposition")
             .result
     };
     assert!(matches!(
         disposition(&adverse.call_node_id),
         ClaimDisposition::Refused {
-            refusal: quire_contract_codegen::ExactFunctionRefusal::BodyMismatch
+            refusal: filament_contract_codegen::ExactFunctionRefusal::BodyMismatch
         }
     ));
     assert!(matches!(
@@ -955,7 +956,7 @@ fn tc_031_source_equal_refuses_requested_not_equal_body() {
     assert!(matches!(
         &generated.claim_map.items[0].result,
         ClaimDisposition::Refused {
-            refusal: quire_contract_codegen::ExactFunctionRefusal::BodyMismatch
+            refusal: filament_contract_codegen::ExactFunctionRefusal::BodyMismatch
         }
     ));
     assert!(generated.location_map.is_empty());
@@ -967,7 +968,7 @@ fn genuine_corpus_request(
     bad_nested: Option<ExactFunctionBody>,
 ) -> (
     CheckedPackageV2,
-    quire_contract_codegen::ExactFunctionOracles,
+    filament_contract_codegen::ExactFunctionOracles,
 ) {
     let package = admitted_source();
     let integer = type_id(&package, "integer");
@@ -1079,7 +1080,7 @@ fn genuine_corpus_request(
 
 #[trace("FR-021-AC-32", "FR-021-AC-35", "TC-031")]
 #[test]
-fn tc_031_genuine_qsl_source_generates_four_direct_function_claims() {
+fn tc_031_genuine_fsl_source_generates_four_direct_function_claims() {
     let (package, generated) = genuine_corpus();
     let claims = generated
         .claim_map
@@ -1154,7 +1155,7 @@ fn meter() -> Meter {
     })
 }
 
-/// This leg uses QSL's own
+/// This leg uses FSL's own
 /// interpreter through an unregistered facade registry.
 #[trace("FR-021-AC-2", "FR-021-AC-35", "TC-031")]
 #[test]
@@ -1172,7 +1173,7 @@ fn tc_031_independent_fr485_session_runs_all_four_functions_without_registration
         StageLimits::default(),
         ReplayLimits::default(),
     )
-    .expect("fresh QSL acquisition");
+    .expect("fresh FSL acquisition");
     let handle = acquired.handle();
     let owner = LibraryName::new(package.name().to_owned()).expect("admitted owner identity");
     for (name, expected) in [
@@ -1186,7 +1187,7 @@ fn tc_031_independent_fr485_session_runs_all_four_functions_without_registration
             checked_function_key(&package, &function).expect("admitted function wire identity");
         let selection = handle
             .lookup_callable(&owner, &wire)
-            .expect("QSL selection");
+            .expect("FSL selection");
         let mut registry = handle.registry();
         let environment = ApplicationEnvironment::new(ObjectClosure::default());
         let mut meter = meter();
@@ -1198,9 +1199,9 @@ fn tc_031_independent_fr485_session_runs_all_four_functions_without_registration
         ];
         let evaluation = registry
             .begin_call(&selection, arguments, &environment, &mut meter)
-            .expect("QSL accepts a direct call")
+            .expect("FSL accepts a direct call")
             .run()
-            .expect("QSL interpreter completes");
+            .expect("FSL interpreter completes");
         match (&evaluation.outcome, expected) {
             (
                 FamilyOutcome::Evaluated(Outcome::Completed(Value::Integer(actual))),
@@ -1244,10 +1245,10 @@ fn bounded_multiply_result_refuses_the_value_28() {
 }
 
 /// The static request origin is checked against
-/// a QSL-issued site in the retained source body, not emitted Rust text.
+/// a FSL-issued site in the retained source body, not emitted Rust text.
 #[trace("FR-021-AC-17", "TC-031")]
 #[test]
-fn tc_031_nested_static_origin_matches_the_qsl_checked_call_site() {
+fn tc_031_nested_static_origin_matches_the_fsl_checked_call_site() {
     let (package, generated) = genuine_corpus();
     let static_origin = &generated
         .location_map
@@ -1268,43 +1269,43 @@ fn tc_031_nested_static_origin_matches_the_qsl_checked_call_site() {
         StageLimits::default(),
         ReplayLimits::default(),
     )
-    .expect("fresh QSL checked closure");
+    .expect("fresh FSL checked closure");
     let handle = acquired.handle();
     let owner = LibraryName::new(package.name().to_owned()).expect("admitted owner");
     let wire = checked_function_key(&package, &function_id(&package, "nested"))
         .expect("source function wire id");
     let selection = handle
         .lookup_callable(&owner, &wire)
-        .expect("QSL nested selection");
-    let site = quire_contract_codegen::selected_nested_call_site(
+        .expect("FSL nested selection");
+    let site = filament_contract_codegen::selected_nested_call_site(
         &package,
         &body_id(&package, "nested"),
         &acquired,
         &selection,
     )
-    .expect("QSL issues the admitted nested call site");
+    .expect("FSL issues the admitted nested call site");
     let (
-        quire_contract_codegen::RecordedOrigin::Body {
+        filament_contract_codegen::RecordedOrigin::Body {
             function: static_name,
             index: static_index,
         },
         quire_semantic_value::location::ExpressionOwner::Body {
-            function: qsl_name,
-            index: qsl_index,
+            function: fsl_name,
+            index: fsl_index,
         },
     ) = (static_origin, &site.location().origin)
     else {
         panic!("different nested call origin kinds");
     };
-    assert_eq!(static_name, qsl_name);
-    assert_eq!(static_index, qsl_index);
+    assert_eq!(static_name, fsl_name);
+    assert_eq!(static_index, fsl_index);
 }
 
 /// The imported owner's static root-call origin
-/// is compared with the QSL-issued site from that same locked library.
+/// is compared with the FSL-issued site from that same locked library.
 #[trace("FR-021-AC-17", "TC-031")]
 #[test]
-fn tc_031_imported_static_origin_matches_the_qsl_checked_call_site() {
+fn tc_031_imported_static_origin_matches_the_fsl_checked_call_site() {
     let (library, generated) = imported_corpus();
     let imported_claim = generated
         .claim_map
@@ -1332,7 +1333,7 @@ fn tc_031_imported_static_origin_matches_the_qsl_checked_call_site() {
         path: "function-library.native".to_owned(),
         bytes: LIBRARY_SOURCE.as_bytes().to_vec(),
     }])
-    .expect("one genuine QSL library dependency");
+    .expect("one genuine FSL library dependency");
     let acquired = acquire_checked_closure(
         CompileUnit {
             source: importer_identity(),
@@ -1345,37 +1346,37 @@ fn tc_031_imported_static_origin_matches_the_qsl_checked_call_site() {
         StageLimits::default(),
         ReplayLimits::default(),
     )
-    .expect("QSL acquires importer and locked library");
+    .expect("FSL acquires importer and locked library");
     let handle = acquired.handle();
     let owner = LibraryName::new(library.name().to_owned()).expect("library owner");
     let wire = checked_function_key(&library, &function_id(&library, "imported"))
         .expect("imported function wire id");
     let selection = handle
         .lookup_callable(&owner, &wire)
-        .expect("QSL selects imported caller");
-    let site = quire_contract_codegen::selected_nested_call_site(
+        .expect("FSL selects imported caller");
+    let site = filament_contract_codegen::selected_nested_call_site(
         &library,
         &body_id(&library, "imported"),
         &acquired,
         &selection,
     )
-    .expect("QSL issues the imported owner's call site");
+    .expect("FSL issues the imported owner's call site");
     assert_eq!(site.owner_package_name(), &owner);
     let (
-        quire_contract_codegen::RecordedOrigin::Body {
+        filament_contract_codegen::RecordedOrigin::Body {
             function: static_name,
             index: static_index,
         },
         quire_semantic_value::location::ExpressionOwner::Body {
-            function: qsl_name,
-            index: qsl_index,
+            function: fsl_name,
+            index: fsl_index,
         },
     ) = (static_origin, &site.location().origin)
     else {
         panic!("different imported call origin kinds");
     };
-    assert_eq!(static_name, qsl_name);
-    assert_eq!(static_index, qsl_index);
+    assert_eq!(static_name, fsl_name);
+    assert_eq!(static_index, fsl_index);
 }
 
 #[trace("FR-021-AC-2", "FR-021-AC-32", "FR-021-AC-35", "TC-031")]
@@ -1395,18 +1396,18 @@ fn tc_031_generated_function_crate_matches_independent_fr485_session() {
         })
         .collect::<Vec<_>>();
     let names = super::exact_scalar_agreement::names_file(
-        quire_contract_codegen::EXACT_FUNCTION_CRATE_NAME,
+        filament_contract_codegen::EXACT_FUNCTION_CRATE_NAME,
         &aliases,
         &format!("pub const SOURCE: &str = {SOURCE:?};\n"),
     );
     let codegen_dependency = format!(
-        "quire-contract-codegen = {{ path = {:?} }}",
+        "filament-contract-codegen = {{ path = {:?} }}",
         env!("CARGO_MANIFEST_DIR"),
     );
     let artifacts = generated.artifacts.iter().map(|artifact| {
         let contents = if artifact.path == "Cargo.toml" {
             artifact.contents.replace(
-                "quire-contract-codegen = { git = \"https://github.com/agent-ix/quire-contract-codegen\", branch = \"main\" }",
+                "filament-contract-codegen = { git = \"https://github.com/agent-ix/filament-contract-codegen\", branch = \"main\" }",
                 &codegen_dependency,
             )
         } else {
@@ -1429,13 +1430,13 @@ fn tc_031_generated_function_crate_matches_independent_fr485_session() {
 #[trace("FR-021-AC-35", "FR-021-AC-36", "TC-031")]
 #[test]
 fn tc_031_generated_imported_owner_matches_independent_fr485_session() {
-    const IMPORTED_CRATE: &str = "quire-exact-function-imported-oracles";
+    const IMPORTED_CRATE: &str = "filament-exact-function-imported-oracles";
     let (_library, generated) = imported_corpus();
     let [claim] = generated.claim_map.items.as_slice() else {
         panic!("one imported claim");
     };
     let ClaimDisposition::Generated(claim) = &claim.result else {
-        panic!("QSL library call was not generated: {claim:?}");
+        panic!("FSL library call was not generated: {claim:?}");
     };
     let names = super::exact_scalar_agreement::names_file(
         IMPORTED_CRATE,
@@ -1446,16 +1447,16 @@ fn tc_031_generated_imported_owner_matches_independent_fr485_session() {
         ),
     );
     let codegen_dependency = format!(
-        "quire-contract-codegen = {{ path = {:?} }}",
+        "filament-contract-codegen = {{ path = {:?} }}",
         env!("CARGO_MANIFEST_DIR"),
     );
     let artifacts = generated.artifacts.iter().map(|artifact| {
         let contents = if artifact.path == "Cargo.toml" {
             artifact.contents.replace(
-                "quire-contract-codegen = { git = \"https://github.com/agent-ix/quire-contract-codegen\", branch = \"main\" }",
+                "filament-contract-codegen = { git = \"https://github.com/agent-ix/filament-contract-codegen\", branch = \"main\" }",
                 &codegen_dependency,
             ).replacen(
-                &format!("name = {:?}", quire_contract_codegen::EXACT_FUNCTION_CRATE_NAME),
+                &format!("name = {:?}", filament_contract_codegen::EXACT_FUNCTION_CRATE_NAME),
                 &format!("name = {IMPORTED_CRATE:?}"),
                 1,
             )
@@ -1491,7 +1492,7 @@ fn omitted_earlier_function_does_not_renumber_the_checked_origin() {
         panic!("the selected equality body must generate")
     };
     assert!(matches!(&claim.function_origin,
-        quire_contract_codegen::RecordedOrigin::Body { function, index: 1 } if function == "eq"));
+        filament_contract_codegen::RecordedOrigin::Body { function, index: 1 } if function == "eq"));
     assert_eq!(generated.location_map.len(), 1);
     assert_eq!(
         generated.location_map[0].location.origin,
@@ -1556,7 +1557,7 @@ fn operand_type_refusal_retains_the_original_v2_frame() {
     );
     assert!(
         matches!(&generated.claim_map.items[0].result,
-        ClaimDisposition::Refused { refusal: quire_contract_codegen::ExactFunctionRefusal::UnsupportedOperandType { type_node_id } }
+        ClaimDisposition::Refused { refusal: filament_contract_codegen::ExactFunctionRefusal::UnsupportedOperandType { type_node_id } }
         if type_node_id == &bounded),
         "original-frame refusal: {:?}",
         generated.claim_map.items[0].result
@@ -1576,7 +1577,7 @@ fn operand_type_refusal_retains_the_original_v2_frame() {
 fn tc_057_generated_checked_invariant_guards_use_checked_owner_inputs() {
     const SOURCE: &str = concat!(
         "language \"ix:native\" edition \"1-draft\";\n",
-        "profile v = \"quire.value.complete/v1\";\n",
+        "profile v = \"filament.value.complete/v1\";\n",
         "tuple Pair(Boolean, Integer);\n",
         "union Choice { Empty, Some(Pair) }\n",
         "record Holder { pair: Pair; shape: Choice; flag: Boolean?; }\n",
@@ -1663,12 +1664,12 @@ fn tc_057_generated_checked_invariant_guards_use_checked_owner_inputs() {
         })
         .collect::<String>();
     let codegen_dependency = format!(
-        "quire-contract-codegen = {{ path = {:?} }}",
+        "filament-contract-codegen = {{ path = {:?} }}",
         env!("CARGO_MANIFEST_DIR")
     );
     let mut artifacts = generated.artifacts.iter().map(|artifact| {
         let contents = if artifact.path == "Cargo.toml" {
-            artifact.contents.replace("quire-contract-codegen = { git = \"https://github.com/agent-ix/quire-contract-codegen\", branch = \"main\" }", &codegen_dependency)
+            artifact.contents.replace("filament-contract-codegen = { git = \"https://github.com/agent-ix/filament-contract-codegen\", branch = \"main\" }", &codegen_dependency)
         } else { artifact.contents.clone() };
         (artifact.path.clone(), contents)
     }).collect::<Vec<_>>();
@@ -1700,7 +1701,7 @@ fn tc_057_generated_checked_invariant_guards_use_checked_owner_inputs() {
             assert_eq!(contents.matches(assembly).count(), 1);
             contents = contents.replacen(assembly, &format!("        if let Some(declaration) = declarations.first().cloned() {{ declarations.push(declaration); }}\n{assembly}"), 1);
         }
-        // Only the test copy selects QSV's public reservation seam. The
+        // Only the test copy selects FSV's public reservation seam. The
         // constructor/membership implementation and emitted cause guards stay
         // unchanged, and production code gains no test-policy input.
         if label.starts_with("constructor_") {

@@ -3,7 +3,7 @@ id: TC-064
 title: "Verify bounded quantity scalar operation harnesses"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-050
+  - target: ix://agent-ix/filament-contract-codegen/FR-050
     type: verifies
 ---
 # TC-064: Verify bounded quantity scalar operation harnesses

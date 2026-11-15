@@ -13,7 +13,7 @@ fn literal_interval(lower: &CheckedTerm, upper: &CheckedTerm) -> Option<IntegerI
     IntegerInterval::new(literal_integer(lower)?, literal_integer(upper)?).ok()
 }
 
-/// The `integer_range` member names (QSpec `positive-operation-identities.json`).
+/// The `integer_range` member names (FSpec `positive-operation-identities.json`).
 pub(crate) const INTEGER_RANGE_MEMBERS: [&str; 2] = ["min", "max"];
 /// The `rational_range` member names.
 pub(crate) const RATIONAL_RANGE_MEMBERS: [&str; 4] = [

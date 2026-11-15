@@ -1,5 +1,8 @@
-//! FR-033/FR-030: bind public QSL composite reports before reading their terminal values.
+//! FR-033/FR-030: bind public FSL composite reports before reading their terminal values.
 
+use filament_contract_codegen::{
+    composite_parity_terminal_value, verified_shadow_terminal_value, CompositeReportError,
+};
 use ix_trace_rs::trace;
 use qsl_replay::{
     replay_composite_parity, settle_verified_shadow, Certification, CompositeEvidence,
@@ -9,9 +12,6 @@ use qsl_replay::{
     Refinement, ReplayLimits, ReplayRefusal, ReplayRequest, ReplayRequestRefusal,
     ReplayRequestWire, ReplaySource, RequestTargetWire, Role, ScalarLimits, StateEnvironment,
     TerminalValue, VerifiedShadow, VerifiedShadowResult, WitnessValue,
-};
-use quire_contract_codegen::{
-    composite_parity_terminal_value, verified_shadow_terminal_value, CompositeReportError,
 };
 use quire_contract_model::CheckedNodeId;
 use quire_exact::PathSegment;
@@ -78,7 +78,7 @@ fn public_composite_fixture() -> PublicCompositeFixture {
         CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
         CheckedPackageV2ReadResult,
     };
-    let source = b"language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nfunction f using v(a: Sequence<Int[0, 9]>[0, 3], b: Sequence<Int[0, 9]>[0, 3]): Boolean pure { a = b }\n";
+    let source = b"language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nfunction f using v(a: Sequence<Int[0, 9]>[0, 3], b: Sequence<Int[0, 9]>[0, 3]): Boolean pure { a = b }\n";
     let compiled = compile_package(
         qsl_replay::CompileUnit {
             source: SourceIdentity::new("test", "ir666"),
@@ -93,7 +93,7 @@ fn public_composite_fixture() -> PublicCompositeFixture {
     )
     .expect("compile package");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     let CheckedPackageV2ReadResult::Admitted(package) = CheckedPackageV2::read(
         compiled.bytes(),
         CheckedPackageReadLimits::bounded(),
@@ -141,7 +141,7 @@ fn public_composite_fixture() -> PublicCompositeFixture {
         .find(|node| {
             node.node_tag.as_ref() == "expression"
                 && matches!(&node.body, quire_contract_model::CheckedTerm::Application { operation, .. }
-                    if operation.identity() == Some("quire.op.structural.eq"))
+                    if operation.identity() == Some("filament.op.structural.eq"))
         })
         .expect("compiled structural equality");
     let node = graph
@@ -286,7 +286,7 @@ fn tc_041_f1_and_f2_preserve_precedence_and_native_causes() {
     }
 }
 
-/// F-3, F-4, F-5 and F-6 remain separate typed rows with the exact QSL terminal value.
+/// F-3, F-4, F-5 and F-6 remain separate typed rows with the exact FSL terminal value.
 #[trace("FR-029-AC-20", "FR-030-AC-16", "FR-033-AC-13", "TC-041", "TC-048")]
 #[test]
 fn tc_041_f3_to_f6_keep_operand_and_limit_stages_distinct() {
@@ -457,7 +457,7 @@ fn tc_041_f7_compares_verdict_and_pair_count_then_preserves_agreement() {
 /// The verified entry retains its distinct V-row outcomes through the same full-identity check.
 #[trace("TC-048")]
 #[test]
-fn tc_048_verified_public_rows_keep_their_qsl_terminal_values() {
+fn tc_048_verified_public_rows_keep_their_fsl_terminal_values() {
     let fixture = public_composite_fixture();
     for (verified, expected) in [
         (
@@ -539,7 +539,7 @@ fn tc_048_verified_public_rows_keep_their_qsl_terminal_values() {
     }
 }
 
-/// A real QSL prepare refusal remains a bound report and carries QSL's own code before F-1.
+/// A real FSL prepare refusal remains a bound report and carries FSL's own code before F-1.
 #[trace("FR-029-AC-28", "FR-030-AC-17", "TC-041", "TC-048")]
 #[test]
 fn tc_041_bound_prepare_refusal_precedes_disagreed() {
@@ -563,7 +563,7 @@ fn tc_041_bound_prepare_refusal_precedes_disagreed() {
     );
     let bound = composite_parity_terminal_value(&sent, Some(&report)).unwrap();
     let CompositeParityResult::Refused(refusal) = bound.result() else {
-        panic!("QSL prepare should refuse before F-1: {:?}", bound.result());
+        panic!("FSL prepare should refuse before F-1: {:?}", bound.result());
     };
     assert!(matches!(
         &**refusal,
@@ -576,7 +576,7 @@ fn tc_041_bound_prepare_refusal_precedes_disagreed() {
     assert_eq!(bound.terminal_value(), report.terminal_value());
 }
 
-/// A changed claim body keeps its structural obligation but QSL refuses the wrong operation.
+/// A changed claim body keeps its structural obligation but FSL refuses the wrong operation.
 #[trace("FR-033-AC-18", "TC-048")]
 #[test]
 fn structural_obligation_does_not_admit_a_changed_operator_body() {
@@ -599,7 +599,7 @@ fn structural_obligation_does_not_admit_a_changed_operator_body() {
     ));
 }
 
-/// Each retained identity member is checked against the real QSL report, including the native
+/// Each retained identity member is checked against the real FSL report, including the native
 /// cause and refinement. A missing report has no terminal value.
 #[trace("FR-033-AC-18", "TC-048")]
 #[test]
@@ -848,7 +848,7 @@ fn tc_048_native_cause_is_part_of_the_bound_observation() {
     );
 }
 
-/// Verified reports use their own observation shape and preserve QSL's settlement.
+/// Verified reports use their own observation shape and preserve FSL's settlement.
 #[trace("TC-048")]
 #[test]
 fn tc_048_verified_report_requires_success_count_and_refinement() {
@@ -906,7 +906,7 @@ fn tc_048_verified_report_requires_success_count_and_refinement() {
     );
 }
 
-/// A verified prepare refusal is a bound QSL report, with the same refusal code QSL emitted.
+/// A verified prepare refusal is a bound FSL report, with the same refusal code FSL emitted.
 #[trace("TC-048")]
 #[test]
 fn tc_048_verified_prepare_refusal_passes_through() {
@@ -928,7 +928,7 @@ fn tc_048_verified_prepare_refusal_passes_through() {
     );
     let bound = verified_shadow_terminal_value(&sent, Some(&report)).unwrap();
     let VerifiedShadowResult::Refused(refusal) = bound.result() else {
-        panic!("expected QSL prepare refusal, got {:?}", bound.result());
+        panic!("expected FSL prepare refusal, got {:?}", bound.result());
     };
     assert!(matches!(
         &**refusal,

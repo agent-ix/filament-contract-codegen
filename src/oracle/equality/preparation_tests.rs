@@ -10,7 +10,7 @@ use super::{
 use ix_trace_rs::trace;
 use std::{fs, process::Command};
 
-const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nrecord Point { x: Boolean; }\nrecord OtherPoint { x: Boolean; }\nfunction subject using v(a: Boolean, b: Boolean): Boolean pure { a = b }\n";
+const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nrecord Point { x: Boolean; }\nrecord OtherPoint { x: Boolean; }\nfunction subject using v(a: Boolean, b: Boolean): Boolean pure { a = b }\n";
 
 #[trace("TC-029", "FR-018-AC-48", "FR-018-AC-49")]
 #[test]
@@ -33,7 +33,7 @@ fn emitted_preparation_retains_native_errors_and_semantic_precedence() {
     let node_id = serde_json::from_value(
         nodes
             .iter()
-            .find(|node| node["body"]["operation"]["identity"] == "quire.op.boolean.eq")
+            .find(|node| node["body"]["operation"]["identity"] == "filament.op.boolean.eq")
             .unwrap()["node_id"]
             .clone(),
     )
@@ -100,7 +100,7 @@ fn emitted_preparation_retains_native_errors_and_semantic_precedence() {
     fs::write(&library, format!("{emitted}\n{NATIVE_CHECKS}")).unwrap();
     fs::write(scratch.join("source.native"), SOURCE).unwrap();
     fs::write(scratch.join("checked-package.json"), compiled.bytes()).unwrap();
-    let manifest = format!("{}\n[dev-dependencies]\nqsv-failing-allocator = {{ git = \"https://github.com/agent-ix/quire-semantic-value\", branch = \"main\" }}\nquire-exact = {{ {}, features = [\"test-support\"] }}\n", crate::core::profile::equality_oracle_crate_manifest("equality-native-preparation"), crate::core::profile::EXACT_DEPENDENCY_SOURCE);
+    let manifest = format!("{}\n[dev-dependencies]\nqsv-failing-allocator = {{ git = \"https://github.com/agent-ix/filament-semantic-value\", branch = \"main\" }}\nfilament-exact = {{ {}, features = [\"test-support\"] }}\n", crate::core::profile::equality_oracle_crate_manifest("equality-native-preparation"), crate::core::profile::EXACT_DEPENDENCY_SOURCE);
     fs::write(scratch.join("Cargo.toml"), manifest).unwrap();
     fs::copy(root.join("Cargo.lock"), scratch.join("Cargo.lock")).unwrap();
     let metadata = Command::new(env!("CARGO"))

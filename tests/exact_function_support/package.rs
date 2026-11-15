@@ -12,11 +12,11 @@
 //! bypasses the real V2 reader.
 //!
 //! FR-021 adds its own function-declaration and call-item nodes on top of
-//! that base. Scalar function roots carry a checked `quire.op.integer.add`
+//! that base. Scalar function roots carry a checked `filament.op.integer.add`
 //! operation and Integer result; the equality root retains its equality
 //! operation, and call-item roots retain their call form. The function
 //! classifier checks scalar operation identity and body arity against the
-//! caller-declared [`quire_contract_codegen::ExactFunctionBody`].
+//! caller-declared [`filament_contract_codegen::ExactFunctionBody`].
 
 #![allow(dead_code)]
 
@@ -24,7 +24,7 @@
 mod ce;
 pub use ce::*;
 
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     ContractRequestPosition, ExactFunctionBody, ExactFunctionDeclaration, ExactFunctionItem,
     FunctionParameter,
 };
@@ -43,7 +43,7 @@ pub fn admitted_function_contract(
     let profile = CompleteLoweringProfileV2 {
         reference: LoweringProfileRef {
             authority: "agent-ix".into(),
-            identity: "quire.codegen.exact-function/v1".into(),
+            identity: "filament.codegen.exact-function/v1".into(),
         },
         required_source_selections: Vec::new(),
         supported_tags: BTreeSet::from([
@@ -78,7 +78,8 @@ pub fn driver_positions(requested: &[CheckedNodeId]) -> Vec<ContractRequestPosit
         .cloned()
         .map(|node_id| ContractRequestPosition::DriverItem {
             node_id,
-            result_selection: quire_contract_codegen::ContractDriverResultSelection::NotApplicable,
+            result_selection:
+                filament_contract_codegen::ContractDriverResultSelection::NotApplicable,
         })
         .collect()
 }
@@ -219,7 +220,7 @@ fn integer_add_body(arguments: Vec<serde_json::Value>) -> serde_json::Value {
     application(
         "binary",
         serde_json::json!({
-            "identity": "quire.op.integer.add", "laws": [], "mode": null,
+            "identity": "filament.op.integer.add", "laws": [], "mode": null,
             "member": null, "leaves": []
         }),
         T_INTEGER,
@@ -231,7 +232,7 @@ fn call_body(function_code: u32, argument_codes: &[u32], result_type: u32) -> se
     application(
         "call",
         serde_json::json!({
-            "identity": "quire.op.function.call", "laws": [], "mode": null,
+            "identity": "filament.op.function.call", "laws": [], "mode": null,
             "member": null, "leaves": []
         }),
         result_type,
@@ -367,7 +368,7 @@ pub fn ext_corpus_package() -> PackageBuilder {
         let mut body = binary_body(T_INTEGER, T_INTEGER);
         body["arguments"][0] = reference_code(parameter);
         let result_type = if integer_result {
-            body["operation"]["identity"] = serde_json::json!("quire.op.integer.add");
+            body["operation"]["identity"] = serde_json::json!("filament.op.integer.add");
             body["result_type"] = serde_json::json!(code_id(T_INTEGER));
             T_INTEGER
         } else {
@@ -419,7 +420,7 @@ pub fn source_bound_call_package() -> PackageBuilder {
         );
     }
     let add_op = serde_json::json!({
-        "identity": "quire.op.integer.add", "laws": [], "mode": null,
+        "identity": "filament.op.integer.add", "laws": [], "mode": null,
         "member": null, "leaves": []
     });
     let body = serde_json::json!({
@@ -429,7 +430,7 @@ pub fn source_bound_call_package() -> PackageBuilder {
     });
     let other_body = serde_json::json!({
         "term": "application", "operator": "binary",
-        "operation": {"identity": "quire.op.integer.sub", "laws": [], "mode": null,
+        "operation": {"identity": "filament.op.integer.sub", "laws": [], "mode": null,
         "member": null, "leaves": []},
         "result_type": code_id(T_INTEGER),
         "arguments": [source_reference(SOURCE_PARAM_A), source_reference(SOURCE_PARAM_B)]
@@ -458,7 +459,7 @@ pub fn source_bound_call_package() -> PackageBuilder {
             declaration_body(SOURCE_OTHER_BODY),
         );
     let call_op = serde_json::json!({
-        "identity": "quire.op.function.call", "laws": [], "mode": null,
+        "identity": "filament.op.function.call", "laws": [], "mode": null,
         "member": null, "leaves": []
     });
     builder.application_node(
@@ -586,7 +587,7 @@ pub fn source_function(name: &str, body_code: u32) -> ExactFunctionDeclaration {
         parameters: vec![parameter("a", T_INTEGER), parameter("b", T_INTEGER)],
         result_type: code_id(T_INTEGER),
         body: ExactFunctionBody::Scalar {
-            operator: quire_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
+            operator: filament_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
         },
         capability_requirements: Vec::new(),
     }
@@ -618,7 +619,7 @@ pub fn function_add(name: &str) -> ExactFunctionDeclaration {
         parameters: vec![parameter("a", T_INTEGER), parameter("b", T_INTEGER)],
         result_type: code_id(T_INTEGER),
         body: ExactFunctionBody::Scalar {
-            operator: quire_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
+            operator: filament_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
         },
         capability_requirements: Vec::new(),
     }
@@ -631,7 +632,7 @@ pub fn function_eq(name: &str) -> ExactFunctionDeclaration {
         parameters: vec![parameter("a", T_INTEGER), parameter("b", T_INTEGER)],
         result_type: code_id(T_BOOLEAN),
         body: ExactFunctionBody::CompositeEquality {
-            operator: quire_contract_codegen::EqualityOperatorKind::Equal,
+            operator: filament_contract_codegen::EqualityOperatorKind::Equal,
         },
         capability_requirements: Vec::new(),
     }
@@ -659,7 +660,7 @@ pub fn function_form_mismatch(name: &str) -> ExactFunctionDeclaration {
         parameters: vec![parameter("a", T_INTEGER), parameter("b", T_INTEGER)],
         result_type: code_id(T_INTEGER),
         body: ExactFunctionBody::Scalar {
-            operator: quire_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
+            operator: filament_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
         },
         capability_requirements: Vec::new(),
     }
@@ -685,7 +686,7 @@ pub fn function_ref_param(name: &str) -> ExactFunctionDeclaration {
         parameters: vec![parameter("a", REF_TYPE)],
         result_type: code_id(T_INTEGER),
         body: ExactFunctionBody::Scalar {
-            operator: quire_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
+            operator: filament_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
         },
         capability_requirements: Vec::new(),
     }
@@ -698,7 +699,7 @@ pub fn function_model_root(name: &str) -> ExactFunctionDeclaration {
         parameters: vec![parameter("a", T_INTEGER), parameter("b", T_INTEGER)],
         result_type: code_id(T_INTEGER),
         body: ExactFunctionBody::Scalar {
-            operator: quire_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
+            operator: filament_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
         },
         capability_requirements: Vec::new(),
     }
@@ -711,7 +712,7 @@ pub fn function_state_root(name: &str) -> ExactFunctionDeclaration {
         parameters: vec![parameter("a", T_INTEGER), parameter("b", T_INTEGER)],
         result_type: code_id(T_INTEGER),
         body: ExactFunctionBody::Scalar {
-            operator: quire_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
+            operator: filament_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
         },
         capability_requirements: Vec::new(),
     }
@@ -724,9 +725,9 @@ pub fn function_capability(name: &str) -> ExactFunctionDeclaration {
         parameters: vec![parameter("a", T_INTEGER), parameter("b", T_INTEGER)],
         result_type: code_id(T_INTEGER),
         body: ExactFunctionBody::Scalar {
-            operator: quire_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
+            operator: filament_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
         },
-        capability_requirements: vec!["quire.capability.undischargeable-in-v1".to_owned()],
+        capability_requirements: vec!["filament.capability.undischargeable-in-v1".to_owned()],
     }
 }
 
@@ -737,7 +738,7 @@ pub fn function_unrelated(name: &str) -> ExactFunctionDeclaration {
         parameters: vec![parameter("a", T_INTEGER), parameter("b", T_INTEGER)],
         result_type: code_id(T_INTEGER),
         body: ExactFunctionBody::Scalar {
-            operator: quire_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
+            operator: filament_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
         },
         capability_requirements: Vec::new(),
     }
@@ -895,7 +896,7 @@ pub fn byte_ceiling_functions() -> Vec<ExactFunctionDeclaration> {
             parameters: vec![parameter("a", T_INTEGER), parameter("b", T_INTEGER)],
             result_type: code_id(T_INTEGER),
             body: ExactFunctionBody::Scalar {
-                operator: quire_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
+                operator: filament_contract_codegen::oracle::operator_catalog::IntegerOperator::Add,
             },
             capability_requirements: Vec::new(),
         })

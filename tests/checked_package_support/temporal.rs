@@ -53,9 +53,11 @@ pub(super) fn bind_clause(wire: &mut Value, declaration: CheckedNodeId) {
         .as_str()
         .expect("fixture temporal profile identity");
     let clock = match profile {
-        "quire.temporal.event-position.false-extension/v1" => ClockConfiguration::EventPosition {
-            sequence_authority: clock_name.into(),
-        },
+        "filament.temporal.event-position.false-extension/v1" => {
+            ClockConfiguration::EventPosition {
+                sequence_authority: clock_name.into(),
+            }
+        }
         other => panic!("fixture needs explicit clock parameters for profile {other}"),
     };
     let binding = TemporalBinding {

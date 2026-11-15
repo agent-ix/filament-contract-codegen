@@ -1,4 +1,4 @@
-//! Host controls for the Kani lane and QSpec fixture preflight.
+//! Host controls for the Kani lane and FSpec fixture preflight.
 
 mod kani_mutations;
 
@@ -24,7 +24,7 @@ fn main() {
 fn dispatch(mut args: Vec<String>) -> Result<(), String> {
     if args.is_empty() {
         return Err(
-            "usage: cg_gates kani-scope | kani-gate LOCK -- CARGO ... | kani-mutations ... | qspec-selftest".into(),
+            "usage: cg_gates kani-scope | kani-gate LOCK -- CARGO ... | kani-mutations ... | fspec-selftest".into(),
         );
     }
     match args.remove(0).as_str() {
@@ -38,7 +38,7 @@ fn dispatch(mut args: Vec<String>) -> Result<(), String> {
             }
             Err(kani_mutations::Stop::Failed(message)) => Err(message),
         },
-        "qspec-selftest" if args.is_empty() => qspec_selftest(),
+        "fspec-selftest" if args.is_empty() => fspec_selftest(),
         _ => Err("invalid cg_gates command".into()),
     }
 }
@@ -369,11 +369,11 @@ impl Drop for Scratch {
     }
 }
 
-fn qspec_selftest() -> Result<(), String> {
+fn fspec_selftest() -> Result<(), String> {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
     let temp = command_output(Command::new("/usr/bin/mktemp").arg("-d"))?;
     if !temp.status.success() {
-        return Err("qspec preflight selftest: mktemp failed".into());
+        return Err("fspec preflight selftest: mktemp failed".into());
     }
     let scratch = Scratch(PathBuf::from(String::from_utf8_lossy(&temp.stdout).trim()));
     let run_make = |args: &[&str]| -> Result<Output, String> {
@@ -383,7 +383,7 @@ fn qspec_selftest() -> Result<(), String> {
                 .arg(root)
                 .args(args)
                 .env_remove("MAKEFLAGS")
-                .env_remove("QSPEC_DIR"),
+                .env_remove("FSPEC_DIR"),
         )
     };
     let reject = |label: &str, args: &[&str]| -> Result<(), String> {
@@ -393,20 +393,20 @@ fn qspec_selftest() -> Result<(), String> {
             String::from_utf8_lossy(&output.stdout),
             String::from_utf8_lossy(&output.stderr)
         );
-        if output.status.success() || !message.contains("QSPEC_DIR") || message.contains("cargo") {
-            return Err(format!("qspec preflight selftest: {label} did not reject with a QSPEC_DIR diagnostic before Cargo (exit {}):\n{message}", output.status));
+        if output.status.success() || !message.contains("FSPEC_DIR") || message.contains("cargo") {
+            return Err(format!("fspec preflight selftest: {label} did not reject with a FSPEC_DIR diagnostic before Cargo (exit {}):\n{message}", output.status));
         }
         Ok(())
     };
-    let absent = format!("QSPEC_DIR={}/absent", scratch.0.display());
-    reject("unset root", &["qspec-preflight"])?;
-    reject("empty root", &["qspec-preflight", "QSPEC_DIR="])?;
-    reject("nonexistent root", &["qspec-preflight", &absent])?;
-    reject("test before Cargo", &["test", "QSPEC_DIR="])?;
-    reject("ci before Cargo", &["ci", "QSPEC_DIR="])?;
-    reject("ci -k before Cargo", &["-k", "ci", "QSPEC_DIR="])?;
+    let absent = format!("FSPEC_DIR={}/absent", scratch.0.display());
+    reject("unset root", &["fspec-preflight"])?;
+    reject("empty root", &["fspec-preflight", "FSPEC_DIR="])?;
+    reject("nonexistent root", &["fspec-preflight", &absent])?;
+    reject("test before Cargo", &["test", "FSPEC_DIR="])?;
+    reject("ci before Cargo", &["ci", "FSPEC_DIR="])?;
+    reject("ci -k before Cargo", &["-k", "ci", "FSPEC_DIR="])?;
     let fixtures = scratch.0.join("proposals/checked-package-v2/fixtures");
-    fs::create_dir_all(&fixtures).map_err(|error| format!("qspec fixture setup: {error}"))?;
+    fs::create_dir_all(&fixtures).map_err(|error| format!("fspec fixture setup: {error}"))?;
     let names = [
         "positive-union-nodes",
         "positive-clause-operations",
@@ -415,20 +415,20 @@ fn qspec_selftest() -> Result<(), String> {
     for name in names {
         fs::write(fixtures.join(format!("{name}.json")), "").map_err(|error| error.to_string())?;
     }
-    let fixture_arg = format!("QSPEC_DIR={}", scratch.0.display());
-    let accepted = run_make(&["qspec-preflight", &fixture_arg])?;
+    let fixture_arg = format!("FSPEC_DIR={}", scratch.0.display());
+    let accepted = run_make(&["fspec-preflight", &fixture_arg])?;
     if !accepted.status.success() {
-        return Err("qspec preflight selftest: complete fixture set refused".into());
+        return Err("fspec preflight selftest: complete fixture set refused".into());
     }
     for name in names {
         fs::remove_file(fixtures.join(format!("{name}.json")))
             .map_err(|error| error.to_string())?;
         reject(
             &format!("missing {name}"),
-            &["qspec-preflight", &fixture_arg],
+            &["fspec-preflight", &fixture_arg],
         )?;
         fs::write(fixtures.join(format!("{name}.json")), "").map_err(|error| error.to_string())?;
     }
-    println!("qspec preflight selftest passed");
+    println!("fspec preflight selftest passed");
     Ok(())
 }

@@ -24,7 +24,7 @@ use quire_exact::{
 use quire_semantic_value::declaration::{EqualityOperand, EqualityOperator, TypeEnvironment};
 
 fn compile_source() -> qsl_replay::AdmittedCompilation {
-    let source = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nfunction f using v(a: Int[0, 9],b: Integer): Boolean pure { convert<Integer>(a) = b }\n";
+    let source = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nfunction f using v(a: Int[0, 9],b: Integer): Boolean pure { convert<Integer>(a) = b }\n";
     qsl_replay::compile_admitted(
         qsl_replay::CompileUnit {
             source: qsl_replay::SourceIdentity::new("test", "admitted-enums.native"),
@@ -91,7 +91,7 @@ fn unbounded_right_values_outside_sibling_interval_still_complete() {
             EqualityOperand::typed(ValueType::Integer),
             &quire_semantic_value::enumeration::EnumMemberIndex::default(),
         )
-        .expect("QSpec admits Int[0,9] to unbounded Integer");
+        .expect("FSpec admits Int[0,9] to unbounded Integer");
     for left in [0_i64, 9] {
         for right in [-100_i64, -1, 0, 9, 10, 42, 100] {
             let l = Value::Integer(Integer::from(left));
@@ -138,7 +138,7 @@ fn context_free_constructor_rejects_explicit_wrong_context() {
             source: qsl_replay::SourceIdentity::new("test", "other.native"),
             package_name: "other".to_owned(),
             path: "other.native",
-            bytes: b"language \"ix:native\" edition \"1-draft\"; profile v = \"quire.value.complete/v1\"; function other using v(): Boolean pure { true }",
+            bytes: b"language \"ix:native\" edition \"1-draft\"; profile v = \"filament.value.complete/v1\"; function other using v(): Boolean pure { true }",
         },
         [],
         &qsl_replay::DependencyInput::default(), qsl_replay::StageLimits::default(),

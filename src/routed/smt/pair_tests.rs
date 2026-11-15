@@ -52,7 +52,7 @@ fn association(execution: &Execution) -> &Association {
     &execution.query().association
 }
 
-// Full AC-1 needs QSL FR-315's encoder; these are CG runner checks only.
+// Full AC-1 needs FSL FR-315's encoder; these are CG runner checks only.
 #[trace("TC-059", "FR-045-AC-2", "FR-045-AC-3")]
 #[test]
 fn two_real_unsat_processes_need_distinct_exact_associations() {

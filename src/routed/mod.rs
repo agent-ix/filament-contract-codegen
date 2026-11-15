@@ -22,5 +22,5 @@ mod scalar_native_private;
 #[cfg(all(test, target_os = "linux"))]
 #[path = "../../tests/it/scalar_replay_real_kani_private.rs"]
 mod scalar_replay_real_kani_private;
-// Solver run records and evidence mapping for QSL-authored queries.
+// Solver run records and evidence mapping for FSL-authored queries.
 pub mod smt;

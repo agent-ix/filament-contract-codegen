@@ -3,7 +3,7 @@
 //! The V2 transport names only an operator class (`binary`, `unary`,
 //! `convert`) for a scalar expression, not the operation law. Each request
 //! item therefore pairs a checked node with a typed [`ExactScalarOperation`]
-//! built from quire-exact values and runtime-owned residue, and this module cross-checks
+//! built from filament-exact values and runtime-owned residue, and this module cross-checks
 //! that descriptor against the lowered node before emitting anything.
 //!
 //! Every parameter the node can carry is checked against the IR: the
@@ -40,7 +40,7 @@
 //! | `float_rounding` | rounding |
 //! | `text_bounds` | minimum length, maximum length, profile |
 //!
-//! Generated functions call `quire-exact` scalar operators, `quire-semantic-value`
+//! Generated functions call `filament-exact` scalar operators, `filament-semantic-value`
 //! quantity and enumeration operators, or Runtime Boolean operators with a caller-supplied `Meter`. Each
 //! operator owns its charges; no amount is copied into the generated source.
 //! An item that fails any check receives a typed
@@ -115,13 +115,13 @@ impl ClaimDerivationRefusal {
 }
 
 /// The operation identity of a quantity conversion.
-pub(crate) const QUANTITY_CONVERT_IDENTITY: &str = "quire.op.quantity.convert";
+pub(crate) const QUANTITY_CONVERT_IDENTITY: &str = "filament.op.quantity.convert";
 
 /// Work budget for lowering one requested scalar node and its closure.
 pub const SCALAR_LOWERING_WORK_LIMIT: u64 = 65_536;
 
 /// Name of the generated crate.
-pub const EXACT_SCALAR_CRATE_NAME: &str = "quire-exact-scalar-oracles";
+pub const EXACT_SCALAR_CRATE_NAME: &str = "filament-exact-scalar-oracles";
 
 /// The `CheckedNodeTag` families `scalar_profile`'s `CompleteLoweringProfileV2` admits.
 ///
@@ -204,9 +204,9 @@ pub enum IeeeArithmeticOperator {
     Multiply,
     /// `a / b`.
     Divide,
-    /// `quire::value::ieee::sqrt(a)`, one rounding.
+    /// `filament::value::ieee::sqrt(a)`, one rounding.
     SquareRoot,
-    /// `quire::value::ieee::fma(a, b, c)`: `a * b + c` with a single rounding.
+    /// `filament::value::ieee::fma(a, b, c)`: `a * b + c` with a single rounding.
     FusedMultiplyAdd,
 }
 
@@ -500,7 +500,7 @@ pub enum OperationProvenance {
     /// against the descriptor's shape, then read the node's own catalogued
     /// operation identity from `body.operation.identity` -- confirmed by
     /// Contract IR's `validate_operations` against the closed
-    /// `quire.checked-operation-catalog/v1` at package admission, before
+    /// `filament.checked-operation-catalog/v1` at package admission, before
     /// this generator ever saw the package. A consumer may treat the
     /// operation identity as checked.
     IrConfirmed,
@@ -751,7 +751,7 @@ pub struct GeneratedScalarClaim {
     pub dependencies: Vec<CheckedNodeId>,
     /// This oracle's function, self-contained (its own preamble and any
     /// helper it needs) for direct embedding in a generated Kani harness
-    /// file. Process-internal: not part of the `quire.codegen.exact-scalar-
+    /// file. Process-internal: not part of the `filament.codegen.exact-scalar-
     /// claim-map/v1` wire schema (this struct has no `Deserialize`, so
     /// nothing round-trips it through `claim-map.json`), consumed only by
     /// `kani::generate::scalar::render_scalar` from the live claim map this
@@ -784,7 +784,7 @@ pub struct ExactScalarOracles {
     /// `blocked` lists the upstream gaps every
     /// entry is subject to. A `Generated` disposition means one oracle
     /// function was emitted. The blockers this generator records are
-    /// `QuireSpecLanguage120`, `QuireContractRuntime34` and
+    /// `FilamentSpecLanguage120`, `FilamentContractRuntime34` and
     /// `OperationIdentityNotConsumed`.
     pub claim_map: ClaimMap<ExactScalarClaim>,
 }

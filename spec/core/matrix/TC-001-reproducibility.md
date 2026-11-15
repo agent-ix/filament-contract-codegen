@@ -3,11 +3,11 @@ id: TC-001
 title: "Verify deterministic derivation and generated headers"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-005
+  - target: ix://agent-ix/filament-contract-codegen/FR-005
     type: verifies
-  - target: ix://agent-ix/quire-contract-codegen/NFR-001
+  - target: ix://agent-ix/filament-contract-codegen/NFR-001
     type: verifies
-  - target: ix://agent-ix/quire-contract-codegen/NFR-002
+  - target: ix://agent-ix/filament-contract-codegen/NFR-002
     type: verifies
 ---
 # TC-001: Verify deterministic derivation and generated headers
@@ -31,7 +31,7 @@ optional identifiers; do not infer them from output names. Check the SPDX line o
 ## Expected Results
 
 Bundles are byte-identical; every generated `.rs` artifact, including package `src/lib.rs` and
-module part files, has a header naming `quire-contract-codegen`, every input-carried subject it
+module part files, has a header naming `filament-contract-codegen`, every input-carried subject it
 renders and each requirement, revision and clause identifier present in its input. Every such
 artifact has the `MIT OR Apache-2.0` SPDX line (NFR-002-AC-2). No environmental path or
 nondeterministic order enters the output.

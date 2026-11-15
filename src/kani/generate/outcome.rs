@@ -85,7 +85,7 @@ pub enum ObligationItem<'a> {
         package: &'a CheckedPackageV2,
         /// The selected state clause.
         clause: &'a CheckedNodeId,
-        /// QSL's producer-issued identity and the separately selected obligation record
+        /// FSL's producer-issued identity and the separately selected obligation record
         /// (FR-015-AC-48).
         claim: &'a V2ClauseObligationClaim,
         /// Optional caller-declared proof-dependency census for this clause.
@@ -102,7 +102,7 @@ pub enum ObligationItem<'a> {
         clause: &'a CheckedNodeId,
         /// The harness asked for.
         role: StateFrameRole,
-        /// QSL's producer-issued identity of this item's own role, carried unchanged into the
+        /// FSL's producer-issued identity of this item's own role, carried unchanged into the
         /// harness (FR-015-AC-141). Negotiation compares no identity across items and
         /// classification does not read it.
         obligation: &'a ObligationIdentity,
@@ -129,7 +129,7 @@ pub enum ObligationItem<'a> {
         result_selection: &'a ContractDriverResultSelection,
         /// The occurrence's path condition, outermost guard first; empty for a direct claim.
         path_condition: &'a [RequirementGuard],
-        /// The routed item's QSL occurrence key; `None` for a direct claim.
+        /// The routed item's FSL occurrence key; `None` for a direct claim.
         requirement_occurrence: Option<&'a RequirementOccurrence>,
     },
     /// One reachability application of an admitted `state_clause`, located by its argument path.
@@ -200,7 +200,7 @@ pub enum ObligationSubject {
     CheckedNode {
         /// The node.
         node_id: CheckedNodeId,
-        /// Its QSL source correspondence.
+        /// Its FSL source correspondence.
         source_map: Vec<CheckedSourceMapEntry>,
     },
 }
@@ -720,7 +720,7 @@ pub enum GraphUnsupportedReason {
 pub enum GraphAccessorRefusal {
     /// The application node is absent from the graph.
     UnknownNode,
-    /// The node is not a `quire.op.model.reaches` or `quire.op.model.reaches_field`
+    /// The node is not a `filament.op.model.reaches` or `filament.op.model.reaches_field`
     /// application.
     NotReachesApplication,
     /// The application's population no longer resolves.
@@ -1002,7 +1002,7 @@ pub enum StateFrameRefusal {
         /// The clause kind the node names.
         clause: String,
     },
-    /// A node does not have the shape QSpec FR-341 and FR-342 fix, a field name read from the
+    /// A node does not have the shape FSpec FR-341 and FR-342 fix, a field name read from the
     /// graph is not a Rust identifier, or an operand names a node the graph does not hold.
     MalformedClause {
         /// The node that failed to decode.

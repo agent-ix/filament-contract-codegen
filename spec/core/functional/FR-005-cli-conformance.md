@@ -3,13 +3,13 @@ id: FR-005
 title: "Provide atomic CLI and cross-backend conformance"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-002
+  - target: ix://agent-ix/filament-contract-codegen/FR-002
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-015
+  - target: ix://agent-ix/filament-contract-codegen/FR-015
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/FR-004
+  - target: ix://agent-ix/filament-contract-codegen/FR-004
     type: depends_on
-  - target: ix://agent-ix/quire-contract-codegen/interface-001
+  - target: ix://agent-ix/filament-contract-codegen/interface-001
     type: implements
 ---
 # FR-005: Provide atomic CLI and cross-backend conformance

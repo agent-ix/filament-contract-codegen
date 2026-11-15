@@ -47,7 +47,7 @@ mod tests {
     static NO_RECORDS: RequirementRecords =
         RequirementRecords::new(std::collections::BTreeMap::new());
 
-    /// The QSL requirement item and record for every `OwnResult` driver position: the result
+    /// The FSL requirement item and record for every `OwnResult` driver position: the result
     /// bound is the semantic type of the selected conversion, or of the application when there is
     /// none, and the path condition is empty.
     fn projected_requirements(
@@ -280,7 +280,7 @@ mod tests {
     fn imported_integer_function_case(
     ) -> (Box<CheckedPackageV2>, Vec<CheckedNodeId>, CheckedPackageV2) {
         let library_source = "language \"ix:native\" edition \"1-draft\";\n\
-            profile v = \"quire.value.complete/v1\";\n\
+            profile v = \"filament.value.complete/v1\";\n\
             function add using v(a: Integer): Integer pure { a + a }\n";
         let library_source_id = SourceIdentity::new("test", "reader-library");
         let library_compiled = compile_package(
@@ -297,7 +297,7 @@ mod tests {
         )
         .expect("integer library compiles");
         let mut library_evidence = CheckedPackageEvidence::new();
-        library_evidence.support_feature("quire.value.complete/v1");
+        library_evidence.support_feature("filament.value.complete/v1");
         let library = match CheckedPackageV2::read(
             library_compiled.bytes(),
             CheckedPackageReadLimits::bounded(),
@@ -307,7 +307,7 @@ mod tests {
             other => panic!("integer library must admit: {other:?}"),
         };
         let program_source = "language \"ix:native\" edition \"1-draft\";\n\
-            profile v = \"quire.value.complete/v1\";\n\
+            profile v = \"filament.value.complete/v1\";\n\
             import \"test/reader-library\" as g;\n\
             function q using v(a: Integer): Integer pure { a + g::add(a) }\n\
             function r using v(a: Integer): Integer pure { q(a) }\n";
@@ -332,7 +332,7 @@ mod tests {
         )
         .expect("imported integer call compiles");
         let mut evidence = CheckedPackageEvidence::new();
-        evidence.support_feature("quire.value.complete/v1");
+        evidence.support_feature("filament.value.complete/v1");
         let library_copy = (*library).clone();
         evidence
             .insert_dependency_package("test/reader-library", std::sync::Arc::new(*library))
@@ -377,7 +377,7 @@ mod tests {
             .nodes
             .iter()
             .find(|node| {
-                application_identity(node) == Some("quire.op.function.call")
+                application_identity(node) == Some("filament.op.function.call")
                     && argument_target(node, 0) == Some(&function_id)
             })
             .expect("r calls q");
@@ -522,7 +522,7 @@ mod tests {
     }
 
     const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\n\
-        profile v = \"quire.value.complete/v1\";\n\
+        profile v = \"filament.value.complete/v1\";\n\
         function f using v(a: Int[0, 9]): Boolean pure { a = a }\n";
 
     /// A lowered package's own node identities. Package identity is structural: the source name
@@ -561,23 +561,23 @@ mod tests {
             StageLimits::default(),
             ReplayLimits::default(),
         )
-        .expect("QSL compiles the source");
+        .expect("FSL compiles the source");
         let mut evidence = CheckedPackageEvidence::new();
-        evidence.support_feature("quire.value.complete/v1");
+        evidence.support_feature("filament.value.complete/v1");
         match CheckedPackageV2::read(
             compiled.bytes(),
             CheckedPackageReadLimits::bounded(),
             &evidence,
         ) {
             CheckedPackageV2ReadResult::Admitted(package) => *package,
-            other => panic!("IR must admit QSL output: {other:?}"),
+            other => panic!("IR must admit FSL output: {other:?}"),
         }
     }
 
     fn profile() -> CompleteLoweringProfileV2 {
         CompleteLoweringProfileV2 {
             reference: LoweringProfileRef {
-                authority: "quire".into(),
+                authority: "filament".into(),
                 identity: "complete-v1".into(),
             },
             required_source_selections: Vec::new(),
@@ -1537,7 +1537,7 @@ mod tests {
             })
             .collect::<Vec<_>>();
         let [source] = sources.as_slice() else {
-            panic!("one QSL expression occurrence required for selected key");
+            panic!("one FSL expression occurrence required for selected key");
         };
         ContractOccurrenceKeyV1 {
             node_id: node_id.clone(),
@@ -1610,7 +1610,7 @@ mod tests {
 
     /// Controls exact positions and source occurrences for FR-039-AC-2.
     #[test]
-    fn admitted_qsl_positions_keep_repeated_keys_and_absent_sibling_sources() {
+    fn admitted_fsl_positions_keep_repeated_keys_and_absent_sibling_sources() {
         let source = admitted_source(SOURCE);
         let function = source
             .resolved_graph()
@@ -1622,7 +1622,7 @@ mod tests {
                         && declaration.qualified_name[0].as_ref() == "f"
                 })
             })
-            .expect("QSL function node")
+            .expect("FSL function node")
             .node_id
             .clone();
         let absent = CheckedNodeId {
@@ -1775,7 +1775,7 @@ mod tests {
                     );
                     assert!(
                         !occurrences.is_empty(),
-                        "QSL function has a source occurrence"
+                        "FSL function has a source occurrence"
                     );
                 }
                 PackageItem::Refused { .. } => panic!("function must lower"),
@@ -1830,11 +1830,11 @@ mod tests {
 
     /// Controls the independently admitted operation input for FR-039-AC-1.
     #[test]
-    fn independently_admitted_qsl_operations_reach_distinct_package_nodes() {
+    fn independently_admitted_fsl_operations_reach_distinct_package_nodes() {
         let not_equal = SOURCE.replace("a = a", "a != a");
         let variants = [
-            (SOURCE, "quire.op.integer.eq"),
-            (&not_equal, "quire.op.integer.ne"),
+            (SOURCE, "filament.op.integer.eq"),
+            (&not_equal, "filament.op.integer.ne"),
         ];
         let mut identities = Vec::new();
         for (source_text, operation) in variants {
@@ -1847,7 +1847,7 @@ mod tests {
                     node.node_tag.as_ref() == "expression"
                         && node.semantic_form.as_ref() == "binary"
                 })
-                .expect("QSL comparison expression")
+                .expect("FSL comparison expression")
                 .node_id
                 .clone();
             let lowered = source.lower(std::slice::from_ref(&expression), &profile());
@@ -1886,8 +1886,12 @@ mod tests {
     fn admitted_ordering_variants_change_routed_oracle_bytes_and_keep_refused_sibling() {
         let mut emitted = Vec::new();
         for (symbol, operation, rendered) in [
-            ("<", "quire.op.integer.lt", "rt::OrderingOperator::Less"),
-            (">", "quire.op.integer.gt", "rt::OrderingOperator::Greater"),
+            ("<", "filament.op.integer.lt", "rt::OrderingOperator::Less"),
+            (
+                ">",
+                "filament.op.integer.gt",
+                "rt::OrderingOperator::Greater",
+            ),
         ] {
             let source = SOURCE.replace("a = a", &format!("a {symbol} a"));
             let checked = admitted_source(&source);
@@ -1896,7 +1900,7 @@ mod tests {
                 .nodes
                 .iter()
                 .find(|node| application_identity(node) == Some(operation))
-                .expect("QSL integer ordering node")
+                .expect("FSL integer ordering node")
                 .node_id
                 .clone();
             let absent = CheckedNodeId {
@@ -2033,8 +2037,8 @@ mod tests {
             .resolved_graph()
             .nodes
             .iter()
-            .find(|node| application_identity(node) == Some("quire.op.integer.lt"))
-            .expect("QSL ordering application")
+            .find(|node| application_identity(node) == Some("filament.op.integer.lt"))
+            .expect("FSL ordering application")
             .node_id
             .clone();
         let lowered = checked.lower(
@@ -2082,7 +2086,7 @@ mod tests {
         assert!(header.contains(&"// SPDX-License-Identifier: MIT OR Apache-2.0"));
         assert!(header
             .iter()
-            .any(|line| line.starts_with("// @generated by quire-contract-codegen")));
+            .any(|line| line.starts_with("// @generated by filament-contract-codegen")));
         assert!(header.contains(&format!("// Subject: {subject}").as_str()));
         assert!(matches!(
             &generated.claim_map.items[0].result,
@@ -2109,7 +2113,7 @@ mod tests {
 
         let checked = admitted_source(
             "language \"ix:native\" edition \"1-draft\";\n\
-             profile v = \"quire.value.complete/v1\";\n\
+             profile v = \"filament.value.complete/v1\";\n\
              function g using v(p: Int[0, 10]): Boolean pure { true }\n\
              function h using v(q: Int[0, 20]): Boolean pure { true }\n\
              function f using v(x: Int[0, 9]): Boolean pure { g(x + 1) and h(x + 1) }\n",
@@ -2118,7 +2122,7 @@ mod tests {
             .resolved_graph()
             .nodes
             .iter()
-            .filter(|node| application_identity(node) == Some("quire.op.integer.add"))
+            .filter(|node| application_identity(node) == Some("filament.op.integer.add"))
             .collect::<Vec<_>>();
         let [add] = adds.as_slice() else {
             panic!("RR-16 must share one addition node");
@@ -2143,7 +2147,7 @@ mod tests {
             .nodes
             .iter()
             .filter(|node| {
-                application_identity(node) == Some("quire.op.numeric.narrow")
+                application_identity(node) == Some("filament.op.numeric.narrow")
                     && argument_target(node, 0) == Some(&add)
             })
             .map(|node| {
@@ -2664,8 +2668,8 @@ mod tests {
             .resolved_graph()
             .nodes
             .iter()
-            .find(|node| application_identity(node) == Some("quire.op.integer.add"))
-            .expect("QSL integer addition")
+            .find(|node| application_identity(node) == Some("filament.op.integer.add"))
+            .expect("FSL integer addition")
             .node_id
             .clone();
         let conversions = checked
@@ -2673,12 +2677,12 @@ mod tests {
             .nodes
             .iter()
             .filter(|node| {
-                application_identity(node) == Some("quire.op.numeric.narrow")
+                application_identity(node) == Some("filament.op.numeric.narrow")
                     && argument_target(node, 0) == Some(&expression)
             })
             .collect::<Vec<_>>();
         let [conversion] = conversions.as_slice() else {
-            panic!("QSL must select one direct narrow for bounded result");
+            panic!("FSL must select one direct narrow for bounded result");
         };
         let conversion = conversion.node_id.clone();
         let roots = [expression.clone(), conversion.clone()];
@@ -2758,8 +2762,8 @@ mod tests {
             .resolved_graph()
             .nodes
             .iter()
-            .find(|node| application_identity(node) == Some("quire.op.integer.add"))
-            .expect("QSL integer addition")
+            .find(|node| application_identity(node) == Some("filament.op.integer.add"))
+            .expect("FSL integer addition")
             .node_id
             .clone();
         let conversions = checked
@@ -2767,12 +2771,12 @@ mod tests {
             .nodes
             .iter()
             .filter(|node| {
-                application_identity(node) == Some("quire.op.numeric.narrow")
+                application_identity(node) == Some("filament.op.numeric.narrow")
                     && argument_target(node, 0) == Some(&expression)
             })
             .collect::<Vec<_>>();
         let [conversion] = conversions.as_slice() else {
-            panic!("QSL must retain one direct result narrow");
+            panic!("FSL must retain one direct result narrow");
         };
         let pair = [
             ContractRequestPosition::DriverItem {
@@ -2969,8 +2973,8 @@ mod tests {
             .resolved_graph()
             .nodes
             .iter()
-            .find(|node| application_identity(node) == Some("quire.op.integer.eq"))
-            .expect("QSL equality expression")
+            .find(|node| application_identity(node) == Some("filament.op.integer.eq"))
+            .expect("FSL equality expression")
             .node_id
             .clone();
         let mut limited = profile();
@@ -3016,7 +3020,7 @@ mod tests {
 
     #[trace("FR-039-AC-7", "FR-039-AC-8", "FR-039-AC-11", "TC-053")]
     #[test]
-    fn genuine_qsl_function_claim_uses_admitted_package_identity_and_reached_keys() {
+    fn genuine_fsl_function_claim_uses_admitted_package_identity_and_reached_keys() {
         use crate::oracle::function::{
             generate_exact_function_oracles, ExactFunctionBody, ExactFunctionDeclaration,
             ExactFunctionItem, FunctionParameter,
@@ -3024,7 +3028,7 @@ mod tests {
         use crate::oracle::operator_catalog::IntegerOperator;
 
         let source = "language \"ix:native\" edition \"1-draft\";\n\
-            profile v = \"quire.value.complete/v1\";\n\
+            profile v = \"filament.value.complete/v1\";\n\
             function add using v(a: Integer, b: Integer): Integer pure { a + b }\n\
             function caller using v(a: Integer, b: Integer): Integer pure { add(a, b) }\n";
         let checked = admitted_source(source);
@@ -3032,8 +3036,8 @@ mod tests {
             .resolved_graph()
             .nodes
             .iter()
-            .find(|node| application_identity(node) == Some("quire.op.integer.add"))
-            .expect("QSL addition body")
+            .find(|node| application_identity(node) == Some("filament.op.integer.add"))
+            .expect("FSL addition body")
             .node_id
             .clone();
         let call = checked
@@ -3043,7 +3047,7 @@ mod tests {
             .find(|node| {
                 node.node_tag.as_ref() == "expression" && node.semantic_form.as_ref() == "call"
             })
-            .expect("QSL function call")
+            .expect("FSL function call")
             .node_id
             .clone();
         let integer = checked
@@ -3053,7 +3057,7 @@ mod tests {
             .find(|node| {
                 node.node_tag.as_ref() == "scalar_type" && node.semantic_form.as_ref() == "integer"
             })
-            .expect("QSL Integer type")
+            .expect("FSL Integer type")
             .node_id
             .clone();
         let call_arguments = source_call_arguments(&checked, &call);
@@ -3175,7 +3179,7 @@ mod tests {
         use crate::oracle::scalar::{generate_contract_scalar_oracles, ExactScalarRefusal};
 
         let source = "language \"ix:native\" edition \"1-draft\";\n\
-            profile v = \"quire.value.complete/v1\";\n\
+            profile v = \"filament.value.complete/v1\";\n\
             function add using v(a: Integer, b: Integer): Integer pure { a + b }\n\
             function caller using v(a: Integer, b: Integer): Integer pure { add(a, b) }\n\
             function same using v(a: Integer): Boolean pure { a = a }\n\
@@ -3195,7 +3199,7 @@ mod tests {
         )
         .expect("same original source supplies the admitted context");
         let mut evidence = CheckedPackageEvidence::new();
-        evidence.support_feature("quire.value.complete/v1");
+        evidence.support_feature("filament.value.complete/v1");
         let recompiled = match CheckedPackageV2::read(
             genuine.package().bytes(),
             CheckedPackageReadLimits::bounded(),
@@ -3226,7 +3230,7 @@ mod tests {
             .nodes
             .iter()
             .find(|node| {
-                application_identity(node) == Some("quire.op.integer.add")
+                application_identity(node) == Some("filament.op.integer.add")
                     && argument_target(node, 1)
                         .and_then(|target| {
                             checked
@@ -3255,8 +3259,8 @@ mod tests {
             .resolved_graph()
             .nodes
             .iter()
-            .find(|node| application_identity(node) == Some("quire.op.integer.eq"))
-            .expect("QSL integer equality")
+            .find(|node| application_identity(node) == Some("filament.op.integer.eq"))
+            .expect("FSL integer equality")
             .node_id
             .clone();
         let requested = vec![
@@ -3457,7 +3461,7 @@ mod tests {
         )
         .expect("library compiles with its own identity");
         let mut library_evidence = CheckedPackageEvidence::new();
-        library_evidence.support_feature("quire.value.complete/v1");
+        library_evidence.support_feature("filament.value.complete/v1");
         let library = match CheckedPackageV2::read(
             library_compiled.bytes(),
             CheckedPackageReadLimits::bounded(),
@@ -3495,7 +3499,7 @@ mod tests {
         let import = "import \"test/geometry\" as g;\n";
         let program_source = format!(
             "language \"ix:native\" edition \"1-draft\";\n\
-             profile v = \"quire.value.complete/v1\";\n\
+             profile v = \"filament.value.complete/v1\";\n\
              {import}\
              function f using v(a: Int[0, 9]): Boolean pure {{ a < 5 }}\n\
              function p using v(a: Int[0, 9]): Boolean pure {{ g::f(a) and g::h(a) }}\n"
@@ -3521,7 +3525,7 @@ mod tests {
         )
         .expect("imported call compiles");
         let mut evidence = CheckedPackageEvidence::new();
-        evidence.support_feature("quire.value.complete/v1");
+        evidence.support_feature("filament.value.complete/v1");
         evidence
             .insert_dependency_package("test/geometry", std::sync::Arc::new(library.clone()))
             .expect("retain imported geometry package");
@@ -3698,7 +3702,7 @@ mod tests {
             .clone();
         assert_ne!(local, target);
         let mut collision: serde_json::Value =
-            serde_json::from_slice(&checked_bytes).expect("QSL checked wire");
+            serde_json::from_slice(&checked_bytes).expect("FSL checked wire");
         replace_exact_node(
             &mut collision,
             &serde_json::to_value(&local).expect("local key"),

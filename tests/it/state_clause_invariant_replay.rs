@@ -1,27 +1,27 @@
 //! FR-024-AC-57 to FR-024-AC-64 (IR-1505): the playback of a Falsified V2 invariant harness is put
-//! before QSL's `replay_state_clause` as a `Current` observation built by
+//! before FSL's `replay_state_clause` as a `Current` observation built by
 //! `StateClauseReplay::new_invariant`.
 //!
 //! Every playback is hand-authored text in Kani's concrete-playback format for the harness CG
 //! generates for the fixture (no installed Kani run), parsed by `parse_assertion_playback` and
 //! decoded by the shared decoder against that harness's identity and state fields. The package is
-//! QSL's own emission for the twin's unit, so the node identities are QSL's.
+//! FSL's own emission for the twin's unit, so the node identities are FSL's.
 
 // `StateClauseReplay` and the decoded inputs are not `Debug`, so `expect_err` is unavailable.
 #![allow(clippy::err_expect)]
 
 use std::cell::Cell;
 
-use qsl_replay::{
-    replay_state_clause, AnchorKind, ClauseName, ClauseSelectionInput, DisagreementCause,
-    Identifier, ModelIdentity, ObligationIdentity, ReplayRefusal, ReplayResult,
-    StateClauseReplayResult, WitnessSettlement,
-};
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     negotiate_kani_native_obligations, negotiate_kani_obligations, parse_assertion_playback,
     KaniObligationOutcome, KaniObligationRequest, KaniV2ClauseObligationHarness, ObligationItem,
     ReplaySettlement, StateClauseHarness, StateClauseHarnessMember, StateClauseReplay,
     StateClauseReplayError, StateFrameObligations, StateFrameRequest,
+};
+use qsl_replay::{
+    replay_state_clause, AnchorKind, ClauseName, ClauseSelectionInput, DisagreementCause,
+    Identifier, ModelIdentity, ObligationIdentity, ReplayRefusal, ReplayResult,
+    StateClauseReplayResult, WitnessSettlement,
 };
 use quire_contract_model::{CheckedNodeId, CheckedPackageV2};
 use quire_semantic_value::catalog::Category;
@@ -35,7 +35,7 @@ use ix_trace_rs::trace;
 const ASSERTION: &str = "\"the V2 invariant holds for every admitted state\"";
 const SUBJECT: &str = "crate::request::unrelated";
 
-/// A generated V2 clause harness over a QSL-emitted package.
+/// A generated V2 clause harness over a FSL-emitted package.
 struct Fixture {
     package: CheckedPackageV2,
     clause: CheckedNodeId,
@@ -136,10 +136,10 @@ impl Fixture {
         clause: &str,
         text: &str,
         harness: StateClauseHarness<'_>,
-    ) -> Result<quire_contract_codegen::InvariantReplayInputs<'a>, StateClauseReplayError> {
+    ) -> Result<filament_contract_codegen::InvariantReplayInputs<'a>, StateClauseReplayError> {
         let mut inputs =
             twin.invariant_inputs(&self.package, &self.clause, object, clause, &["balance"]);
-        // The inputs hold QSL's own call-site identity, which equals the harness's now that a
+        // The inputs hold FSL's own call-site identity, which equals the harness's now that a
         // claim's NodeKey is the clause's resolved key (FR-024-AC-65).
         assert_eq!(inputs.obligation_identity, self.harness.obligation);
         let identity = &self.harness.identity;
@@ -212,7 +212,7 @@ fn snapshot_document(replay: &StateClauseReplay) -> Value {
         .documents
         .iter()
         .filter_map(|bytes| serde_json::from_slice::<Value>(bytes).ok())
-        .filter(|document| document["format"] == "quire.state.snapshot/v1")
+        .filter(|document| document["format"] == "filament.state.snapshot/v1")
         .collect::<Vec<_>>();
     assert_eq!(snapshots.len(), 1, "exactly one state document");
     snapshots.into_iter().next().expect("one snapshot")
@@ -267,7 +267,7 @@ fn tc_035_invariant_playback_builds_the_current_envelope() {
         .filter_map(|bytes| serde_json::from_slice::<Value>(bytes).ok())
         .filter_map(|document| document["format"].as_str().map(str::to_owned))
         .collect::<Vec<_>>();
-    assert_eq!(formats, ["quire.state.snapshot/v1"]);
+    assert_eq!(formats, ["filament.state.snapshot/v1"]);
     let document = snapshot_document(&replay);
     assert_eq!(document["observation"], "current");
     assert_eq!(
@@ -316,7 +316,7 @@ impl Fixture {
         object: &'a CheckedNodeId,
         value: i64,
         unread: &[(&str, i64)],
-    ) -> quire_contract_codegen::InvariantReplayInputs<'a> {
+    ) -> filament_contract_codegen::InvariantReplayInputs<'a> {
         let mut inputs = self
             .decoded(
                 twin,
@@ -335,7 +335,7 @@ impl Fixture {
 }
 
 /// Step 48 (FR-024-AC-58, FR-024-AC-69): the snapshot binds every declared field, the drawn
-/// `balance` from the playback and the unread `audit` from the caller; the result is QSL's own;
+/// `balance` from the playback and the unread `audit` from the caller; the result is FSL's own;
 /// the transcript holds only the playback's binding.
 #[trace("TC-035", "FR-024-AC-58", "FR-024-AC-69")]
 #[test]
@@ -379,7 +379,7 @@ fn tc_035_unread_declared_field_is_completed_from_the_supplied_value() {
         assert_eq!(
             result,
             direct.replay().expect("the replay settles"),
-            "the result is QSL's own"
+            "the result is FSL's own"
         );
         assert!(
             matches!(
@@ -437,7 +437,7 @@ fn tc_035_unread_declared_field_is_completed_from_the_supplied_value() {
 
 /// Runs `replay` through `replay_through`, decoding the snapshot document and the transcript from
 /// the request the executor receives, and returns the snapshot's field object, the transcript and
-/// QSL's result for that request.
+/// FSL's result for that request.
 fn through(replay: StateClauseReplay) -> (Value, String, StateClauseReplayResult) {
     let limits = replay.replay_limits();
     let captured = std::cell::RefCell::new(None);
@@ -447,7 +447,7 @@ fn through(replay: StateClauseReplay) -> (Value, String, StateClauseReplayResult
                 .documents
                 .iter()
                 .filter_map(|bytes| serde_json::from_slice::<Value>(bytes).ok())
-                .filter(|document| document["format"] == "quire.state.snapshot/v1")
+                .filter(|document| document["format"] == "filament.state.snapshot/v1")
                 .collect::<Vec<_>>();
             assert_eq!(snapshots.len(), 1, "exactly one state document");
             let qsl_replay::ReplaySource::Witness(witness) = &wire.source else {
@@ -459,13 +459,13 @@ fn through(replay: StateClauseReplay) -> (Value, String, StateClauseReplayResult
             ));
             replay_state_clause(wire, envelope, limits)
         })
-        .expect("QSL settles the replay");
+        .expect("FSL settles the replay");
     let (fields, transcript) = captured.into_inner().expect("the executor ran");
     (fields, transcript, result)
 }
 
 /// The error of a replay that must be refused, the executor asserted uncalled.
-fn refuse(inputs: quire_contract_codegen::InvariantReplayInputs<'_>) -> StateClauseReplayError {
+fn refuse(inputs: filament_contract_codegen::InvariantReplayInputs<'_>) -> StateClauseReplayError {
     let called = Cell::new(false);
     let error = match StateClauseReplay::new_invariant(inputs) {
         Ok(replay) => replay
@@ -829,7 +829,7 @@ fn tc_035_each_playback_refusal_is_a_distinct_variant_before_any_document() {
     }
 }
 
-/// Step 44 (FR-024-AC-62): the closed refusal set; the wrong-anchor refusal is QSL's.
+/// Step 44 (FR-024-AC-62): the closed refusal set; the wrong-anchor refusal is FSL's.
 #[trace("TC-035", "FR-024-AC-62")]
 #[test]
 fn tc_035_the_refusal_set_is_closed_and_typed() {
@@ -871,19 +871,20 @@ fn tc_035_the_refusal_set_is_closed_and_typed() {
     }
     let frame_twin = Twin::new();
     let (frame_package, frame_clause) = frame_twin.emitted_package("BalanceNeverDrops");
-    let frames: StateFrameObligations = quire_contract_codegen::generate_state_frame_obligations(
-        &StateFrameRequest {
-            ceilings: crate::common::proof_ceilings::proof_ceilings(),
-            package: &frame_package,
-            clause: &frame_clause,
-            state_path: "crate::subject::Account",
-            state_fields: &["balance", "audit"],
-            subject_path: "crate::subject::deposit_debiting_within_range",
-            unwind: 4,
-        },
-        crate::common::state_frame_identities::roles(),
-    )
-    .expect("state-frame harnesses generate");
+    let frames: StateFrameObligations =
+        filament_contract_codegen::generate_state_frame_obligations(
+            &StateFrameRequest {
+                ceilings: crate::common::proof_ceilings::proof_ceilings(),
+                package: &frame_package,
+                clause: &frame_clause,
+                state_path: "crate::subject::Account",
+                state_fields: &["balance", "audit"],
+                subject_path: "crate::subject::deposit_debiting_within_range",
+                unwind: 4,
+            },
+            crate::common::state_frame_identities::roles(),
+        )
+        .expect("state-frame harnesses generate");
     for harness in [&frames.postcondition.identity, &frames.frame.identity] {
         let error = fixture
             .decoded(
@@ -1029,7 +1030,7 @@ fn tc_035_the_refusal_set_is_closed_and_typed() {
         StateClauseReplayError::CallSite(_)
     ));
 
-    // A clause node other than the one QSL names for the clause.
+    // A clause node other than the one FSL names for the clause.
     let multi = Twin::with_bank_invariants(
         &[
             ("NonNegative", "self.balance >= 1"),
@@ -1053,8 +1054,8 @@ fn tc_035_the_refusal_set_is_closed_and_typed() {
         StateClauseReplayError::ClauseSelectionMismatch
     ));
 
-    // A snapshot anchored elsewhere than the selection is QSL's refusal, not CG's: replace the
-    // snapshot in the built request and call QSL.
+    // A snapshot anchored elsewhere than the selection is FSL's refusal, not CG's: replace the
+    // snapshot in the built request and call FSL.
     let replay = fixture.built(&twin, CLAUSE, &[0]);
     let limits = replay.replay_limits();
     let error = replay
@@ -1063,7 +1064,7 @@ fn tc_035_the_refusal_set_is_closed_and_typed() {
                 let Ok(mut document) = serde_json::from_slice::<Value>(bytes) else {
                     continue;
                 };
-                if document["format"] == "quire.state.snapshot/v1" {
+                if document["format"] == "filament.state.snapshot/v1" {
                     document["anchor"] = json!({"kind": "handler", "name": "withdraw"});
                     *bytes = document.to_string().into_bytes();
                 }
@@ -1071,9 +1072,9 @@ fn tc_035_the_refusal_set_is_closed_and_typed() {
             replay_state_clause(wire, envelope, limits)
         })
         .err()
-        .expect("QSL refuses the wrong anchor");
+        .expect("FSL refuses the wrong anchor");
     let StateClauseReplayError::Refused(refusal) = error else {
-        panic!("QSL's refusal comes back as Refused: {error}");
+        panic!("FSL's refusal comes back as Refused: {error}");
     };
     assert_eq!(refusal.code().as_str(), "wrong_snapshot");
     assert_eq!(refusal.cause(), Some("wrong-anchor"));
@@ -1317,7 +1318,7 @@ fn tc_035_the_remaining_invariant_refusals_are_typed() {
     absent.state_fields = vec!["ghost".to_owned()];
     assert!(matches!(
         StateClauseReplay::new_invariant(absent).err().expect("refused"),
-        StateClauseReplayError::ModelFields { cause: quire_contract_codegen::StateClauseModelFieldsCause::Absent { field }, .. }
+        StateClauseReplayError::ModelFields { cause: filament_contract_codegen::StateClauseModelFieldsCause::Absent { field }, .. }
             if field == "ghost"
     ));
 }
@@ -1507,7 +1508,7 @@ fn tc_035_a_different_obligation_identity_is_refused_before_the_harness_members(
     // `NotInvariantHarness`.
     let frame_twin = Twin::new();
     let (frame_package, frame_clause) = frame_twin.emitted_package("BalanceNeverDrops");
-    let frames = quire_contract_codegen::generate_state_frame_obligations(
+    let frames = filament_contract_codegen::generate_state_frame_obligations(
         &StateFrameRequest {
             ceilings: crate::common::proof_ceilings::proof_ceilings(),
             package: &frame_package,

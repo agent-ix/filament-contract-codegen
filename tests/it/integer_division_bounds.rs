@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Agent-IX
 
-//! Genuine QSL operand bounds at the scalar derivation/generation boundary.
+//! Genuine FSL operand bounds at the scalar derivation/generation boundary.
 
 use std::{fmt::Write as _, fs, process::Command};
 
+use filament_contract_codegen::{
+    derive_exact_scalar_items, generate_exact_scalar_oracles, ClaimDisposition, ExactScalarItem,
+    ExactScalarOperation, ExactScalarRefusal, OperationProvenance, EXACT_DEPENDENCY_SOURCE,
+};
 use ix_trace_rs::trace;
 use qsl_replay::{
     admit_integer_division, compile_package, compile_package_with_integer_division, CompileUnit,
     DefinitionRole, DependencyInput, ReplayLimits, SourceIdentity, StageLimits,
-};
-use quire_contract_codegen::{
-    derive_exact_scalar_items, generate_exact_scalar_oracles, ClaimDisposition, ExactScalarItem,
-    ExactScalarOperation, ExactScalarRefusal, OperationProvenance, EXACT_DEPENDENCY_SOURCE,
 };
 use quire_contract_model::{
     CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2, CheckedPackageV2ReadResult,
@@ -35,7 +35,7 @@ fn compiled_with_profile(
     profile: Option<DivisionProfile>,
 ) -> CheckedPackageV2 {
     let source = format!(
-        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nfunction subject using v({parameters}): {result} pure {{ {expression} }}\n"
+        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nfunction subject using v({parameters}): {result} pure {{ {expression} }}\n"
     );
     let unit = CompileUnit {
         source: SourceIdentity::new("test", "integer-division-bounds"),
@@ -68,16 +68,16 @@ fn compiled_with_profile(
             ReplayLimits::default(),
         )
     }
-    .expect("QSL compiles genuine integer source under the supplied owner selection");
+    .expect("FSL compiles genuine integer source under the supplied owner selection");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     match CheckedPackageV2::read(
         compiled.bytes(),
         CheckedPackageReadLimits::bounded(),
         &evidence,
     ) {
         CheckedPackageV2ReadResult::Admitted(package) => *package,
-        other => panic!("IR admits the QSL-emitted bytes: {other:?}"),
+        other => panic!("IR admits the FSL-emitted bytes: {other:?}"),
     }
 }
 
@@ -344,7 +344,7 @@ fn case_{index}() {{
 
 fn run_generated_native(native: &str, count: usize, label: &str) {
     let scratch = scratch_crate::TemporaryDirectory::new(label);
-    let manifest = format!("[package]\nname=\"integer-division-derived-native\"\nversion=\"0.0.0\"\nedition=\"2021\"\n[dependencies]\nquire-exact = {{ {EXACT_DEPENDENCY_SOURCE} }}\n[workspace]\n");
+    let manifest = format!("[package]\nname=\"integer-division-derived-native\"\nversion=\"0.0.0\"\nedition=\"2021\"\n[dependencies]\nfilament-exact = {{ {EXACT_DEPENDENCY_SOURCE} }}\n[workspace]\n");
     scratch_crate::write_manifest(&scratch.path, &manifest);
     fs::write(scratch.path.join("src/lib.rs"), native).unwrap();
     scratch_crate::resolve_seeded_lock(&scratch.path);
@@ -465,8 +465,8 @@ fn meter() -> rt::Meter {
 }
 "#;
 
-/// This is a reader-admitted CG fixture, separate from the genuine QSL producer
-/// cases above. It also admits explicit narrowing shapes that QSL's source
+/// This is a reader-admitted CG fixture, separate from the genuine FSL producer
+/// cases above. It also admits explicit narrowing shapes that FSL's source
 /// range prover may reject before emission.
 fn reader_integer_operation(
     code: u32,
@@ -497,11 +497,11 @@ fn reader_integer_operation(
         let definition = fixture::integer_division_definition(profile);
         builder.select_definition(definition.clone());
         (
-            "quire.op.integer.div",
+            "filament.op.integer.div",
             vec![fixture::law("integer_division", definition)],
         )
     } else {
-        ("quire.op.integer.mod", Vec::new())
+        ("filament.op.integer.mod", Vec::new())
     };
     builder.application_bounded(
         code + 2,

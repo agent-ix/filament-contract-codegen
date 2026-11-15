@@ -5,8 +5,7 @@
 
 use std::sync::OnceLock;
 
-use ix_trace_rs::trace;
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     generate_exact_scalar_oracles, generate_routed as generate_routed_impl,
     negotiate_kani_obligations, routed_contract_lowering_profile, BackendDescriptor, BackendKind,
     Candidate, ClaimDerivationRefusal, ClaimDisposition, ContractDriverResultSelection,
@@ -16,6 +15,7 @@ use quire_contract_codegen::{
     ObligationItem, ObligationRecord, OracleGenerationError, ProviderOrigin, RoutedGeneration,
     RoutedGenerationError, RoutedGenerationItem, UnsupportedObligation,
 };
+use ix_trace_rs::trace;
 use quire_contract_model::{
     CheckedNodeId, CheckedOccurrenceRole, CheckedPackageEvidence, CheckedPackageReadLimits,
     CheckedPackageV2, CheckedPackageV2ReadResult, CheckedTerm, ContractDependencies,
@@ -50,9 +50,9 @@ fn operation_identity(body: &CheckedTerm) -> Option<&str> {
 }
 
 const RENDERED: [&str; 3] = [
-    "quire.op.integer.add",
-    "quire.op.integer.sub",
-    "quire.op.integer.negate",
+    "filament.op.integer.add",
+    "filament.op.integer.sub",
+    "filament.op.integer.negate",
 ];
 
 /// An external driver can name the scalar rendering envelope's typed source
@@ -195,7 +195,7 @@ fn admitted_routing_input_with_limits<'a>(
             source.node_id == node_id && source.role == CheckedOccurrenceRole::Expression
         });
         let conversion = checked.resolved_graph().nodes.iter().find(|node| {
-            operation_identity(&node.body) == Some("quire.op.numeric.narrow")
+            operation_identity(&node.body) == Some("filament.op.numeric.narrow")
                 && application_arguments(&node.body)
                     .and_then(|arguments| arguments.first())
                     .and_then(reference_target)
@@ -292,7 +292,7 @@ fn build_fixture() -> Fixture {
         .iter()
         .find(|claim| {
             !RENDERED.contains(&claim.operation.identity.as_str())
-                && claim.operation.identity != "quire.op.integer.mul"
+                && claim.operation.identity != "filament.op.integer.mul"
         })
         .map(|claim| claim.node_id.clone())
         .expect("the corpus generates a family Kani does not render");
@@ -544,7 +544,7 @@ fn routed_item_constructor_refuses_mismatched_and_unknown_linked_descriptors() {
     assert_eq!(
         mismatch,
         Err(
-            quire_contract_codegen::RoutedItemConstructionError::DescriptorBackendMismatch {
+            filament_contract_codegen::RoutedItemConstructionError::DescriptorBackendMismatch {
                 backend: kani_backend(),
                 descriptor: "solver".to_owned(),
             }
@@ -564,7 +564,7 @@ fn routed_item_constructor_refuses_mismatched_and_unknown_linked_descriptors() {
     assert_eq!(
         unknown,
         Err(
-            quire_contract_codegen::RoutedItemConstructionError::UnknownLinkedBackend {
+            filament_contract_codegen::RoutedItemConstructionError::UnknownLinkedBackend {
                 backend: Candidate {
                     identity: "solver".to_owned()
                 },
@@ -715,7 +715,7 @@ fn routed_scalar_identity_records_both_required_ceilings() {
 /// the oracles the obligations embed.
 fn fr015(
     fixture: &Fixture,
-    claim_map: &quire_contract_codegen::ClaimMap<quire_contract_codegen::ExactScalarClaim>,
+    claim_map: &filament_contract_codegen::ClaimMap<filament_contract_codegen::ExactScalarClaim>,
     nodes: &[&CheckedNodeId],
 ) -> (Vec<ObligationRecord>, Vec<KaniScalarObligationHarness>) {
     let routed = nodes
@@ -727,7 +727,7 @@ fn fr015(
     // The routed fixture's requirement occurrence is its node's first expression occurrence.
     let occurrences = nodes
         .iter()
-        .map(|node_id| quire_contract_codegen::RequirementOccurrence {
+        .map(|node_id| filament_contract_codegen::RequirementOccurrence {
             node_id: (*node_id).clone(),
             role: quire_contract_model::CheckedOccurrenceRole::Expression,
             ordinal: 0,
@@ -1212,7 +1212,7 @@ fn tc_033_nodes_sharing_a_stem_take_stable_ordinals_in_node_order() {
     );
 }
 
-/// `x + 1` over `Int[0, 9]`, QSL's shape (a parameter typed by an `integer_range`
+/// `x + 1` over `Int[0, 9]`, FSL's shape (a parameter typed by an `integer_range`
 /// `bounded_domain` with binding-shaped `min`/`max` members), routes to Kani and is Supported
 /// with a scalar harness ranging `x` over the inclusive `[0, 9]` domain (IR-297 with IR-296) and
 /// the literal `1` at its own value (IR-302). No claim map
@@ -1248,7 +1248,10 @@ fn tc_033_bounded_increment_over_a_bounded_parameter_is_supported_with_a_scalar_
         "{record:#?}"
     );
     let harness = harness.expect("a supported item carries its harness");
-    assert_eq!(harness.identity.operation_identity, "quire.op.integer.add");
+    assert_eq!(
+        harness.identity.operation_identity,
+        "filament.op.integer.add"
+    );
     assert_eq!(
         harness
             .identity
@@ -1306,31 +1309,31 @@ fn tc_033_bounded_parameters_are_supported_with_a_per_operand_scalar_harness() {
     for (code, identity, expected, result) in [
         (
             package::TWO_PARAMETER_SUM,
-            "quire.op.integer.add",
+            "filament.op.integer.add",
             vec![(0, 9), (10, 20)],
             (0, 29),
         ),
         (
             package::TWO_PARAMETER_LITERAL,
-            "quire.op.integer.add",
+            "filament.op.integer.add",
             vec![(0, 9), (1, 1)],
             (0, 29),
         ),
         (
             package::BOUNDED_NEGATE,
-            "quire.op.integer.negate",
+            "filament.op.integer.negate",
             vec![(1, 9)],
             (-9, -1),
         ),
         (
             package::BOUNDED_PRODUCT,
-            "quire.op.integer.mul",
+            "filament.op.integer.mul",
             vec![(1, 9), (100, 200)],
             (100, 1800),
         ),
         (
             package::TWO_PARAMETER_WIDE,
-            "quire.op.integer.add",
+            "filament.op.integer.add",
             vec![(0, 9), (0, 50)],
             (0, 29),
         ),
@@ -1393,14 +1396,14 @@ fn tc_033_a_plain_typed_reference_operand_is_requires_bound_with_no_harness() {
     }
 }
 
-fn route_qsl_shaped(code: u32) -> (ObligationRecord, Option<KaniScalarObligationHarness>) {
-    let mut builder = package::qsl_shaped_package();
+fn route_fsl_shaped(code: u32) -> (ObligationRecord, Option<KaniScalarObligationHarness>) {
+    let mut builder = package::fsl_shaped_package();
     builder.expression_occurrences();
     let (package, ids) = builder.admit_resolved();
-    route_qsl_shaped_in(&package, &ids, code)
+    route_fsl_shaped_in(&package, &ids, code)
 }
 
-fn route_qsl_shaped_in(
+fn route_fsl_shaped_in(
     package: &CheckedPackageV2,
     ids: &package::FixtureIds,
     code: u32,
@@ -1423,7 +1426,7 @@ fn route_qsl_shaped_in(
     (record.clone(), harness.cloned())
 }
 
-fn qsl_shaped_routing_input_in<'a>(
+fn fsl_shaped_routing_input_in<'a>(
     package: &'a CheckedPackageV2,
     ids: &package::FixtureIds,
     requests: &[(usize, u32)],
@@ -1446,7 +1449,7 @@ fn tc_033_routed_operand_refusals_leave_healthy_sibling_unchanged() {
     const NESTED: u32 = 9_300_002;
     const NESTED_NARROW: u32 = 9_300_003;
 
-    let mut builder = package::qsl_shaped_package();
+    let mut builder = package::fsl_shaped_package();
     let integer = package::key(package::T_INTEGER);
     let division_law =
         package::integer_division_definition(quire_exact::DivisionProfile::Truncating);
@@ -1454,25 +1457,25 @@ fn tc_033_routed_operand_refusals_leave_healthy_sibling_unchanged() {
     let division = package::application(
         "binary",
         package::op_full(
-            "quire.op.integer.div",
+            "filament.op.integer.div",
             vec![package::law("integer_division", division_law)],
             None,
             None,
         ),
         &integer,
         vec![
-            package::reference(&package::key(package::QSL_PARAM_X)),
-            package::reference(&package::key(package::QSL_LITERAL_TWO)),
+            package::reference(&package::key(package::FSL_PARAM_X)),
+            package::reference(&package::key(package::FSL_LITERAL_TWO)),
         ],
     );
     builder.application_bounded(DIVISION, "expression", "binary", &integer, division, &[]);
     let nested = package::application(
         "binary",
-        package::op("quire.op.integer.add"),
+        package::op("filament.op.integer.add"),
         &integer,
         vec![
             package::reference(&package::key(DIVISION)),
-            package::reference(&package::key(package::QSL_LITERAL_TWO)),
+            package::reference(&package::key(package::FSL_LITERAL_TWO)),
         ],
     );
     builder.application_bounded(NESTED, "expression", "binary", &integer, nested, &[]);
@@ -1481,13 +1484,13 @@ fn tc_033_routed_operand_refusals_leave_healthy_sibling_unchanged() {
     builder.expression_occurrences();
     let (checked, ids) = builder.admit_resolved();
 
-    let (routed, input) = qsl_shaped_routing_input_in(
+    let (routed, input) = fsl_shaped_routing_input_in(
         &checked,
         &ids,
         &[
             (0, NESTED),
-            (1, package::QSL_PLUS_TEXT),
-            (2, package::QSL_SHARED),
+            (1, package::FSL_PLUS_TEXT),
+            (2, package::FSL_SHARED),
         ],
     );
     let combined = generate_routed(
@@ -1497,7 +1500,7 @@ fn tc_033_routed_operand_refusals_leave_healthy_sibling_unchanged() {
         &routed,
         &kani_context("crate::subject", 1),
     )
-    .expect("the routed QSL-shaped batch is admitted");
+    .expect("the routed FSL-shaped batch is admitted");
     let (division_record, division_harness) = kani_parts(&combined.items[0].output);
     assert!(
         matches!(
@@ -1529,7 +1532,7 @@ fn tc_033_routed_operand_refusals_leave_healthy_sibling_unchanged() {
     );
     assert!(type_harness.is_none(), "type mismatch emits no harness");
 
-    let sibling_node = ids.resolve(&package::code_id(package::QSL_SHARED));
+    let sibling_node = ids.resolve(&package::code_id(package::FSL_SHARED));
     let (sibling_record, sibling_harness) = kani_parts(&combined.items[2].output);
     assert!(matches!(
         sibling_record.disposition,
@@ -1575,7 +1578,7 @@ fn tc_033_routed_operand_refusals_leave_healthy_sibling_unchanged() {
     );
 }
 
-/// The three functions the driver compiles through real QSL, in the shape QSL emits them (a
+/// The three functions the driver compiles through real FSL, in the shape FSL emits them (a
 /// literal as a reference to its own `value` node, the declared bounded result on a narrowing
 /// `conversion` that consumes the plain-typed arithmetic node), each route to Kani and are
 /// Supported: `x + 1` over `x: Int[0, 9]` into `Int[0, 10]` ranges `x` over `[0, 9]` and the
@@ -1590,28 +1593,28 @@ fn tc_033_routed_operand_refusals_leave_healthy_sibling_unchanged() {
     "TC-033"
 )]
 #[test]
-fn tc_033_qsl_shaped_increment_sum_and_negation_are_supported() {
+fn tc_033_fsl_shaped_increment_sum_and_negation_are_supported() {
     for (code, identity, expected, result) in [
         (
-            package::QSL_INC,
-            "quire.op.integer.add",
+            package::FSL_INC,
+            "filament.op.integer.add",
             vec![(0, 9), (1, 1)],
             (0, 10),
         ),
         (
-            package::QSL_ADD,
-            "quire.op.integer.add",
+            package::FSL_ADD,
+            "filament.op.integer.add",
             vec![(0, 9), (10, 20)],
             (10, 29),
         ),
         (
-            package::QSL_NEGATE,
-            "quire.op.integer.negate",
+            package::FSL_NEGATE,
+            "filament.op.integer.negate",
             vec![(0, 9)],
             (-9, 0),
         ),
     ] {
-        let (record, harness) = route_qsl_shaped(code);
+        let (record, harness) = route_fsl_shaped(code);
         assert!(
             matches!(record.disposition, ObligationDisposition::Supported { .. }),
             "node {code}: {record:#?}"
@@ -1631,7 +1634,7 @@ fn tc_033_qsl_shaped_increment_sum_and_negation_are_supported() {
     }
 }
 
-/// In the same QSL shape, a plain-Integer parameter beside a bounded one (`x + p`) and a reference
+/// In the same FSL shape, a plain-Integer parameter beside a bounded one (`x + p`) and a reference
 /// to a `value` node whose body is not a literal each settle `requires_bound` with no harness.
 /// With two represented conversions, the routed package uses the caller's selected first
 /// conversion rather than inferring an ambiguous result from the shared expression node.
@@ -1643,9 +1646,9 @@ fn tc_033_qsl_shaped_increment_sum_and_negation_are_supported() {
     "TC-033"
 )]
 #[test]
-fn tc_033_qsl_shaped_plain_operands_refuse_and_selected_narrowing_generates() {
-    for code in [package::QSL_PLAIN_OPERAND, package::QSL_NOT_LITERAL_OPERAND] {
-        let (record, harness) = route_qsl_shaped(code);
+fn tc_033_fsl_shaped_plain_operands_refuse_and_selected_narrowing_generates() {
+    for code in [package::FSL_PLAIN_OPERAND, package::FSL_NOT_LITERAL_OPERAND] {
+        let (record, harness) = route_fsl_shaped(code);
         assert!(
             matches!(
                 record.disposition,
@@ -1655,7 +1658,7 @@ fn tc_033_qsl_shaped_plain_operands_refuse_and_selected_narrowing_generates() {
         );
         assert!(harness.is_none(), "node {code}: no harness");
     }
-    let (record, harness) = route_qsl_shaped(package::QSL_TWICE_NARROWED);
+    let (record, harness) = route_fsl_shaped(package::FSL_TWICE_NARROWED);
     assert!(
         matches!(record.disposition, ObligationDisposition::Supported { .. }),
         "{record:#?}"
@@ -1668,7 +1671,7 @@ fn tc_033_qsl_shaped_plain_operands_refuse_and_selected_narrowing_generates() {
 }
 
 const NESTED_QSL_SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\n\
-profile v = \"quire.value.complete/v1\";\n\
+profile v = \"filament.value.complete/v1\";\n\
 function add_nested using v(x: Int[0, 9]): Int[0, 20] pure { (x + 1) + 1 }\n\
 function multiply_negative using v(x: Int[1, 9]): Int[-9, -1] pure { x * -1 }\n\
 function negate_nested using v(x: Int[0, 9]): Int[-10, -1] pure { -(x + 1) }\n\
@@ -1676,7 +1679,7 @@ function plain_add_nested using v(x: Int[0, 9], p: Integer): Integer pure { (x +
 function plain_negate_nested using v(x: Int[0, 9], p: Integer): Integer pure { -(x + p) }\n\
 function huge_nested using v(x: Int[0, 9]): Int[0, 9] pure { (x + 100000000000000000000000) + -100000000000000000000000 }\n";
 
-fn nested_qsl_package() -> CheckedPackageV2 {
+fn nested_fsl_package() -> CheckedPackageV2 {
     let compiled = compile_package(
         qsl_replay::CompileUnit {
             source: SourceIdentity::new("test", "ir306-nested.native"),
@@ -1689,23 +1692,23 @@ fn nested_qsl_package() -> CheckedPackageV2 {
         StageLimits::default(),
         ReplayLimits::default(),
     )
-    .expect("nested operand fixture compiles through QSL's public facade");
+    .expect("nested operand fixture compiles through FSL's public facade");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     match CheckedPackageV2::read(
         compiled.bytes(),
         CheckedPackageReadLimits::bounded(),
         &evidence,
     ) {
         CheckedPackageV2ReadResult::Admitted(package) => *package,
-        other => panic!("QSL-emitted nested operand package is admitted by IR: {other:?}"),
+        other => panic!("FSL-emitted nested operand package is admitted by IR: {other:?}"),
     }
 }
 
-fn deep_qsl_package() -> CheckedPackageV2 {
+fn deep_fsl_package() -> CheckedPackageV2 {
     let expression = (0..66).fold("x".to_owned(), |value, _| format!("({value} + 0)"));
     let source = format!(
-        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nfunction deep_nested using v(x: Int[0, 9]): Int[0, 9] pure {{ {expression} }}\nfunction sibling using v(x: Int[0, 9]): Int[0, 10] pure {{ x + 1 }}\n"
+        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nfunction deep_nested using v(x: Int[0, 9]): Int[0, 9] pure {{ {expression} }}\nfunction sibling using v(x: Int[0, 9]): Int[0, 10] pure {{ x + 1 }}\n"
     );
     let compiled = compile_package(
         qsl_replay::CompileUnit {
@@ -1719,20 +1722,20 @@ fn deep_qsl_package() -> CheckedPackageV2 {
         StageLimits::default(),
         ReplayLimits::default(),
     )
-    .expect("deep operand fixture compiles through QSL's public facade");
+    .expect("deep operand fixture compiles through FSL's public facade");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     match CheckedPackageV2::read(
         compiled.bytes(),
         CheckedPackageReadLimits::bounded(),
         &evidence,
     ) {
         CheckedPackageV2ReadResult::Admitted(package) => *package,
-        other => panic!("QSL-emitted deep operand package is admitted by IR: {other:?}"),
+        other => panic!("FSL-emitted deep operand package is admitted by IR: {other:?}"),
     }
 }
 
-fn wide_qsl_package() -> CheckedPackageV2 {
+fn wide_fsl_package() -> CheckedPackageV2 {
     fn product_tree(start: u128, count: u128) -> String {
         if count == 1 {
             return format!("(x * {})", 10_u128.pow(38) - start);
@@ -1746,7 +1749,7 @@ fn wide_qsl_package() -> CheckedPackageV2 {
     }
     let wide_product = product_tree(0, 40);
     let source = format!(
-        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nfunction wide_nested using v(x: Int[1, 1]): Int[0, 0] pure {{ ({wide_product}) - ({wide_product}) }}\n"
+        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nfunction wide_nested using v(x: Int[1, 1]): Int[0, 0] pure {{ ({wide_product}) - ({wide_product}) }}\n"
     );
     let compiled = compile_package(
         qsl_replay::CompileUnit {
@@ -1760,24 +1763,24 @@ fn wide_qsl_package() -> CheckedPackageV2 {
         StageLimits::default(),
         ReplayLimits::default(),
     )
-    .expect("wide endpoint fixture compiles through QSL's public facade");
+    .expect("wide endpoint fixture compiles through FSL's public facade");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     match CheckedPackageV2::read(
         compiled.bytes(),
         CheckedPackageReadLimits::bounded(),
         &evidence,
     ) {
         CheckedPackageV2ReadResult::Admitted(package) => *package,
-        other => panic!("QSL-emitted wide operand package is admitted by IR: {other:?}"),
+        other => panic!("FSL-emitted wide operand package is admitted by IR: {other:?}"),
     }
 }
 
-fn work_qsl_package() -> CheckedPackageV2 {
+fn work_fsl_package() -> CheckedPackageV2 {
     fn balanced(start: u64, count: u64) -> String {
         if count == 1 {
             // Internal groups preserve the balanced shape; additive leaves need no extra
-            // parentheses, keeping the source inside QSL's default syntax-node limit.
+            // parentheses, keeping the source inside FSL's default syntax-node limit.
             return format!("x + {start}");
         }
         let half = count / 2;
@@ -1789,7 +1792,7 @@ fn work_qsl_package() -> CheckedPackageV2 {
     }
     let expression = format!("({}) + 0", balanced(0, 2049));
     let source = format!(
-        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nfunction work_nested using v(x: Int[0, 0]): Int[0, 2098176] pure {{ {expression} }}\nfunction sibling using v(x: Int[0, 9]): Int[0, 10] pure {{ x + 1 }}\n"
+        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nfunction work_nested using v(x: Int[0, 0]): Int[0, 2098176] pure {{ {expression} }}\nfunction sibling using v(x: Int[0, 9]): Int[0, 10] pure {{ x + 1 }}\n"
     );
     let compiled = compile_package(
         qsl_replay::CompileUnit {
@@ -1803,9 +1806,9 @@ fn work_qsl_package() -> CheckedPackageV2 {
         StageLimits::default(),
         ReplayLimits::default(),
     )
-    .expect("high-work operand fixture compiles through QSL's public facade");
+    .expect("high-work operand fixture compiles through FSL's public facade");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     match CheckedPackageV2::read(
         compiled.bytes(),
         CheckedPackageReadLimits {
@@ -1815,11 +1818,11 @@ fn work_qsl_package() -> CheckedPackageV2 {
         &evidence,
     ) {
         CheckedPackageV2ReadResult::Admitted(package) => *package,
-        other => panic!("QSL-emitted high-work operand package is admitted by IR: {other:?}"),
+        other => panic!("FSL-emitted high-work operand package is admitted by IR: {other:?}"),
     }
 }
 
-fn qsl_function_application(package: &CheckedPackageV2, function: &str) -> CheckedNodeId {
+fn fsl_function_application(package: &CheckedPackageV2, function: &str) -> CheckedNodeId {
     let declaration = package
         .resolved_graph()
         .nodes
@@ -1830,9 +1833,9 @@ fn qsl_function_application(package: &CheckedPackageV2, function: &str) -> Check
                     && declaration.qualified_name[0].as_ref() == function
             })
         })
-        .unwrap_or_else(|| panic!("QSL output declares {function}"));
+        .unwrap_or_else(|| panic!("FSL output declares {function}"));
     let CheckedTerm::Aggregate { members } = &declaration.body else {
-        panic!("QSL function {function} has aggregate members");
+        panic!("FSL function {function} has aggregate members");
     };
     let body_id = members
         .iter()
@@ -1842,26 +1845,26 @@ fn qsl_function_application(package: &CheckedPackageV2, function: &str) -> Check
             }
             _ => None,
         })
-        .unwrap_or_else(|| panic!("QSL function {function} has a body binding"))
+        .unwrap_or_else(|| panic!("FSL function {function} has a body binding"))
         .clone();
     let body_node = package
         .resolved_graph()
         .nodes
         .iter()
         .find(|node| node.node_id == body_id)
-        .unwrap_or_else(|| panic!("QSL function {function} body is in the graph"));
+        .unwrap_or_else(|| panic!("FSL function {function} body is in the graph"));
     if body_node.semantic_form.as_ref() == "conversion" {
         application_arguments(&body_node.body)
             .and_then(|arguments| arguments.first())
             .and_then(reference_target)
-            .unwrap_or_else(|| panic!("QSL narrowing references its application"))
+            .unwrap_or_else(|| panic!("FSL narrowing references its application"))
             .clone()
     } else {
         body_id
     }
 }
 
-fn route_qsl_function(
+fn route_fsl_function(
     package: &CheckedPackageV2,
     function: &str,
 ) -> (
@@ -1869,7 +1872,7 @@ fn route_qsl_function(
     Option<KaniScalarObligationHarness>,
     RoutedGeneration,
 ) {
-    let node_id = qsl_function_application(package, function);
+    let node_id = fsl_function_application(package, function);
     let routed = [route(0, &node_id)];
     let input = admitted_routing_input(package, &routed);
     let generation = generate_routed(
@@ -1879,15 +1882,15 @@ fn route_qsl_function(
         &routed,
         &kani_context("crate::subject", 1),
     )
-    .expect("QSL-emitted application routes through public generation");
+    .expect("FSL-emitted application routes through public generation");
     let [item] = generation.items.as_slice() else {
-        panic!("one routed QSL application, got {:?}", generation.items);
+        panic!("one routed FSL application, got {:?}", generation.items);
     };
     let (record, harness) = kani_parts(&item.output);
     (record.clone(), harness.cloned(), generation)
 }
 
-fn route_qsl_functions(
+fn route_fsl_functions(
     package: &CheckedPackageV2,
     functions: &[&str],
     read_limits: CheckedPackageReadLimits,
@@ -1895,7 +1898,7 @@ fn route_qsl_functions(
     let routed = functions
         .iter()
         .enumerate()
-        .map(|(index, function)| route(index, &qsl_function_application(package, function)))
+        .map(|(index, function)| route(index, &fsl_function_application(package, function)))
         .collect::<Vec<_>>();
     let input = admitted_routing_input_with_limits(package, &routed, read_limits, &[]);
     generate_routed(
@@ -1905,10 +1908,10 @@ fn route_qsl_functions(
         &routed,
         &kani_context("crate::subject", 1),
     )
-    .expect("QSL-emitted applications route through public generation")
+    .expect("FSL-emitted applications route through public generation")
 }
 
-/// The QSL compiler emits nested applications as references to plain-Integer expression nodes;
+/// The FSL compiler emits nested applications as references to plain-Integer expression nodes;
 /// only leaves carry the authored bounded parameter or literal. Each routed outer operation must
 /// infer a finite range through that graph, while a plain-Integer parameter at any nested depth
 /// remains a typed refusal.
@@ -1921,32 +1924,32 @@ fn route_qsl_functions(
     "TC-033"
 )]
 #[test]
-fn tc_033_qsl_emitted_nested_integer_operands_are_bounded_or_require_bounds() {
-    let package = nested_qsl_package();
+fn tc_033_fsl_emitted_nested_integer_operands_are_bounded_or_require_bounds() {
+    let package = nested_fsl_package();
     for (function, identity, expected, result) in [
         (
             "add_nested",
-            "quire.op.integer.add",
+            "filament.op.integer.add",
             vec![(1, 10), (1, 1)],
             (0, 20),
         ),
         (
             "multiply_negative",
-            "quire.op.integer.mul",
+            "filament.op.integer.mul",
             vec![(1, 9), (-1, -1)],
             (-9, -1),
         ),
         (
             "negate_nested",
-            "quire.op.integer.negate",
+            "filament.op.integer.negate",
             vec![(1, 10)],
             (-10, -1),
         ),
     ] {
-        let (record, harness, generation) = route_qsl_function(&package, function);
+        let (record, harness, generation) = route_fsl_function(&package, function);
         assert!(
             matches!(record.disposition, ObligationDisposition::Supported { .. }),
-            "QSL function {function} must be Supported: {record:#?}"
+            "FSL function {function} must be Supported: {record:#?}"
         );
         let harness = harness.expect("Supported nested operation carries a harness");
         assert_eq!(harness.identity.operation_identity, identity, "{function}");
@@ -2002,14 +2005,14 @@ fn tc_033_qsl_emitted_nested_integer_operands_are_bounded_or_require_bounds() {
         assert!(
             matches!(
                 claim.operation.provenance,
-                quire_contract_codegen::OperationProvenance::IrConfirmed
+                filament_contract_codegen::OperationProvenance::IrConfirmed
             ),
             "{function} claim is IR-confirmed: {claim:#?}"
         );
     }
 
     for function in ["plain_add_nested", "plain_negate_nested"] {
-        let (record, harness, _) = route_qsl_function(&package, function);
+        let (record, harness, _) = route_fsl_function(&package, function);
         assert!(
             matches!(
                 record.disposition,
@@ -2020,12 +2023,12 @@ fn tc_033_qsl_emitted_nested_integer_operands_are_bounded_or_require_bounds() {
         assert!(harness.is_none(), "{function} emits no harness");
     }
 
-    let (huge, harness, _) = route_qsl_function(&package, "huge_nested");
+    let (huge, harness, _) = route_fsl_function(&package, "huge_nested");
     assert_eq!(
         huge.disposition,
         ObligationDisposition::Unsupported {
             reason: UnsupportedObligation::DomainNotRepresentableInI64 {
-                operation_identity: "quire.op.integer.add".to_owned(),
+                operation_identity: "filament.op.integer.add".to_owned(),
                 lower: "100000000000000000000000".to_owned(),
                 upper: "100000000000000000000009".to_owned(),
             }
@@ -2039,15 +2042,15 @@ fn tc_033_qsl_emitted_nested_integer_operands_are_bounded_or_require_bounds() {
 
 #[trace("FR-014-AC-46", "FR-015-AC-104", "TC-024", "TC-033")]
 #[test]
-fn tc_033_qsl_nested_operand_depth_limit_is_typed_and_keeps_sibling_supported() {
-    let package = deep_qsl_package();
-    let (record, harness, _) = route_qsl_function(&package, "deep_nested");
+fn tc_033_fsl_nested_operand_depth_limit_is_typed_and_keeps_sibling_supported() {
+    let package = deep_fsl_package();
+    let (record, harness, _) = route_fsl_function(&package, "deep_nested");
     assert!(matches!(
         record.disposition,
         ObligationDisposition::Unsupported {
             reason: UnsupportedObligation::OracleRefused {
                 refusal: ExactScalarRefusal::OperandRangeLimitExceeded {
-                    resource_kind: quire_contract_codegen::OperandRangeLimitKind::Depth,
+                    resource_kind: filament_contract_codegen::OperandRangeLimitKind::Depth,
                     limit: 64,
                     consumed: 65,
                     ..
@@ -2057,15 +2060,16 @@ fn tc_033_qsl_nested_operand_depth_limit_is_typed_and_keeps_sibling_supported() 
     ));
     assert!(harness.is_none(), "a limit refusal emits no harness");
 
-    let package = wide_qsl_package();
-    let (record, harness, _) = route_qsl_function(&package, "wide_nested");
+    let package = wide_fsl_package();
+    let (record, harness, _) = route_fsl_function(&package, "wide_nested");
     assert!(
         matches!(
             record.disposition,
             ObligationDisposition::Unsupported {
                 reason: UnsupportedObligation::OracleRefused {
                     refusal: ExactScalarRefusal::OperandRangeLimitExceeded {
-                        resource_kind: quire_contract_codegen::OperandRangeLimitKind::EndpointBits,
+                        resource_kind:
+                            filament_contract_codegen::OperandRangeLimitKind::EndpointBits,
                         limit: 4096,
                         consumed: 5050,
                         ..
@@ -2081,11 +2085,11 @@ fn tc_033_qsl_nested_operand_depth_limit_is_typed_and_keeps_sibling_supported() 
         "an endpoint-width refusal emits no harness"
     );
 
-    let package = work_qsl_package();
+    let package = work_fsl_package();
     // Count the genuine producer's referenced operand graph, excluding inline literals and
     // type metadata. The fixture must cross the inference budget even when literals have no
     // graph nodes. Its balanced shape stays below the independent depth/endpoint ceilings.
-    let work_node = qsl_function_application(&package, "work_nested");
+    let work_node = fsl_function_application(&package, "work_nested");
     let graph = package
         .resolved_graph()
         .nodes
@@ -2127,7 +2131,7 @@ fn tc_033_qsl_nested_operand_depth_limit_is_typed_and_keeps_sibling_supported() 
         bytes: 16 << 20,
         ..CheckedPackageReadLimits::bounded()
     };
-    let generation = route_qsl_functions(&package, &["work_nested", "sibling"], work_read_limits);
+    let generation = route_fsl_functions(&package, &["work_nested", "sibling"], work_read_limits);
     let (record, harness) = kani_parts(&generation.items[0].output);
     assert!(
         matches!(
@@ -2135,7 +2139,7 @@ fn tc_033_qsl_nested_operand_depth_limit_is_typed_and_keeps_sibling_supported() 
             ObligationDisposition::Unsupported {
                 reason: UnsupportedObligation::OracleRefused {
                     refusal: ExactScalarRefusal::OperandRangeLimitExceeded {
-                        resource_kind: quire_contract_codegen::OperandRangeLimitKind::Nodes,
+                        resource_kind: filament_contract_codegen::OperandRangeLimitKind::Nodes,
                         limit: 4096,
                         consumed: 4097,
                         ..
@@ -2152,14 +2156,14 @@ fn tc_033_qsl_nested_operand_depth_limit_is_typed_and_keeps_sibling_supported() 
         sibling_record.disposition,
         ObligationDisposition::Supported { .. }
     ));
-    let isolated = route_qsl_functions(&package, &["sibling"], work_read_limits);
+    let isolated = route_fsl_functions(&package, &["sibling"], work_read_limits);
     let (isolated_record, isolated_harness) = kani_parts(&isolated.items[0].output);
     assert_eq!(
         sibling_record.disposition, isolated_record.disposition,
         "work refusal leaves sibling disposition unchanged"
     );
     assert_eq!(sibling_record.subject, isolated_record.subject);
-    let sibling_node = qsl_function_application(&package, "sibling");
+    let sibling_node = fsl_function_application(&package, "sibling");
     let combined_claim = generation
         .claim_map
         .as_ref()
@@ -2202,8 +2206,8 @@ fn tc_033_qsl_nested_operand_depth_limit_is_typed_and_keeps_sibling_supported() 
         "work refusal leaves sibling harness unchanged"
     );
 
-    let package = nested_qsl_package();
-    let (supported, harness, _) = route_qsl_function(&package, "add_nested");
+    let package = nested_fsl_package();
+    let (supported, harness, _) = route_fsl_function(&package, "add_nested");
     assert!(matches!(
         supported.disposition,
         ObligationDisposition::Supported { .. }
@@ -2214,7 +2218,7 @@ fn tc_033_qsl_nested_operand_depth_limit_is_typed_and_keeps_sibling_supported() 
     );
 }
 
-/// A literal operand is constrained to its own value, so a QSL-shaped node the literal pushes
+/// A literal operand is constrained to its own value, so a FSL-shaped node the literal pushes
 /// outside the result bound for every `x` has no harness: `x + 100` over `x: Int[0, 9]` into
 /// `Int[0, 10]` reaches only `[100, 109]` and is `result_bound_unreachable`, and `x + 10^23`,
 /// whose literal does not fit `i64`, is `domain_not_representable_in_i64` naming it. `x + "a"`
@@ -2229,17 +2233,17 @@ fn tc_033_qsl_nested_operand_depth_limit_is_typed_and_keeps_sibling_supported() 
     "TC-033"
 )]
 #[test]
-fn tc_033_qsl_shaped_literal_and_consumer_refusals_have_no_harness() {
-    let mut builder = package::qsl_shaped_package();
+fn tc_033_fsl_shaped_literal_and_consumer_refusals_have_no_harness() {
+    let mut builder = package::fsl_shaped_package();
     builder.expression_occurrences();
     let (package, ids) = builder.admit_resolved();
-    let routed = |code| route_qsl_shaped_in(&package, &ids, code);
-    let (record, harness) = routed(package::QSL_PLUS_HUNDRED);
+    let routed = |code| route_fsl_shaped_in(&package, &ids, code);
+    let (record, harness) = routed(package::FSL_PLUS_HUNDRED);
     assert_eq!(
         record.disposition,
         ObligationDisposition::Unsupported {
             reason: UnsupportedObligation::ResultBoundUnreachable {
-                operation_identity: "quire.op.integer.add".to_owned(),
+                operation_identity: "filament.op.integer.add".to_owned(),
                 lower: 0,
                 upper: 10,
                 reachable_lower: "100".to_owned(),
@@ -2249,33 +2253,33 @@ fn tc_033_qsl_shaped_literal_and_consumer_refusals_have_no_harness() {
     );
     assert!(harness.is_none());
     let huge = "100000000000000000000000".to_owned();
-    let (record, harness) = routed(package::QSL_PLUS_HUGE);
+    let (record, harness) = routed(package::FSL_PLUS_HUGE);
     assert_eq!(
         record.disposition,
         ObligationDisposition::Unsupported {
             reason: UnsupportedObligation::DomainNotRepresentableInI64 {
-                operation_identity: "quire.op.integer.add".to_owned(),
+                operation_identity: "filament.op.integer.add".to_owned(),
                 lower: huge.clone(),
                 upper: huge,
             }
         }
     );
     assert!(harness.is_none());
-    let (record, harness) = routed(package::QSL_PLUS_TEXT);
+    let (record, harness) = routed(package::FSL_PLUS_TEXT);
     assert_eq!(
         record.disposition,
         ObligationDisposition::Unsupported {
             reason: UnsupportedObligation::OracleRefused {
                 refusal: ExactScalarRefusal::OperandTypeMismatch {
                     position: 1,
-                    expected: quire_contract_codegen::ScalarForm::Integer,
+                    expected: filament_contract_codegen::ScalarForm::Integer,
                     found: Some("text".to_owned()),
                 },
             },
         }
     );
     assert!(harness.is_none());
-    let (record, harness) = routed(package::QSL_SHARED);
+    let (record, harness) = routed(package::FSL_SHARED);
     assert!(matches!(
         record.disposition,
         ObligationDisposition::Supported { .. }
@@ -2371,7 +2375,7 @@ fn tc_033_an_underivable_item_keeps_its_refusal_and_its_siblings_are_unaffected(
         .enumerate()
         .map(|(index, node)| route(index, node))
         .collect::<Vec<_>>();
-    let (refused, identity) = (&derived.rem, "quire.op.integer.rem");
+    let (refused, identity) = (&derived.rem, "filament.op.integer.rem");
     let mut routed = with_siblings.clone();
     routed.push(route(9, refused));
     let mixed_input = admitted_routing_input(&derived.package, &routed);
@@ -2474,7 +2478,7 @@ fn tc_033_quantity_conversion_has_an_oracle_and_no_harness() {
         assert!(
             matches!(&record.disposition, ObligationDisposition::Unsupported {
             reason: UnsupportedObligation::OperationNotRendered { operation_identity, .. }
-        } if operation_identity == "quire.op.quantity.convert")
+        } if operation_identity == "filament.op.quantity.convert")
         );
         let wire = serde_json::to_value(&record.disposition).expect("serializes");
         assert_eq!(wire["reason"]["code"], "operation_not_rendered");
@@ -2541,7 +2545,7 @@ fn tc_033_quantity_conversion_requires_authenticated_operation_views() {
         .expect("routed quantity claim");
     assert_eq!(
         claim.operation.provenance,
-        quire_contract_codegen::OperationProvenance::IrConfirmed
+        filament_contract_codegen::OperationProvenance::IrConfirmed
     );
     let ClaimDisposition::Generated(oracle) = &claim.result else {
         panic!("source-backed quantity conversion must generate: {claim:?}");
@@ -2580,7 +2584,7 @@ fn tc_033_unauthenticated_view_refusal_uses_lowest_request_index() {
         .resolved_graph()
         .nodes
         .iter()
-        .find(|node| operation_identity(&node.body) == Some("quire.op.integer.div"))
+        .find(|node| operation_identity(&node.body) == Some("filament.op.integer.div"))
         .expect("genuine integer division")
         .node_id;
     let integer = derived.generated.first().expect("genuine integer add");
@@ -2640,7 +2644,7 @@ fn tc_033_record_refusals_precede_the_unauthenticated_view_refusal() {
         .resolved_graph()
         .nodes
         .iter()
-        .find(|node| operation_identity(&node.body) == Some("quire.op.integer.div"))
+        .find(|node| operation_identity(&node.body) == Some("filament.op.integer.div"))
         .expect("genuine integer division")
         .node_id;
     let integer = derived.generated.first().expect("genuine integer add");
@@ -2701,7 +2705,7 @@ fn tc_033_record_refusals_precede_the_unauthenticated_view_refusal() {
         Err(RoutedGenerationError::RequirementRecord {
             request_index: 0,
             occurrence: Some(requirement.occurrence.clone()),
-            mismatch: Box::new(quire_contract_codegen::RequirementRecordMismatch::RecordMissing),
+            mismatch: Box::new(filament_contract_codegen::RequirementRecordMismatch::RecordMissing),
         })
     );
 
@@ -2753,7 +2757,7 @@ fn tc_033_record_refusals_precede_the_unauthenticated_view_refusal() {
             request_index: 0,
             occurrence: Some(requirement.occurrence.clone()),
             mismatch: Box::new(
-                quire_contract_codegen::RequirementRecordMismatch::OccurrenceNotSelected
+                filament_contract_codegen::RequirementRecordMismatch::OccurrenceNotSelected
             ),
         })
     );
@@ -2932,7 +2936,7 @@ fn tc_033_lowering_and_bound_refusals_keep_their_fr015_dispositions() {
         UnsupportedObligation::BlockedOnUpstream {
             node_id: node(package::FUNCTION),
             node_tag: "function",
-            issue: quire_contract_codegen::UpstreamBlocker::QuireContractRuntime34,
+            issue: filament_contract_codegen::UpstreamBlocker::FilamentContractRuntime34,
         }
     );
     assert!(matches!(
@@ -3019,10 +3023,10 @@ fn tc_033_an_underivable_claim_is_underived_and_carries_the_nodes_identity() {
         .iter()
         .find(|claim| claim.node_id == derived.rem)
         .expect("the rem node has a claim");
-    assert_eq!(claim.operation.identity, "quire.op.integer.rem");
+    assert_eq!(claim.operation.identity, "filament.op.integer.rem");
     assert_eq!(
         claim.operation.provenance,
-        quire_contract_codegen::OperationProvenance::Underived
+        filament_contract_codegen::OperationProvenance::Underived
     );
     assert!(
         matches!(claim.result, ClaimDisposition::Refused { .. }),
@@ -3036,7 +3040,7 @@ fn tc_033_an_underivable_claim_is_underived_and_carries_the_nodes_identity() {
             reason: UnsupportedObligation::NoDerivableClaim {
                 node_id: derived.rem.clone(),
                 reason: ClaimDerivationRefusal::OperationNotDerivable {
-                    operation_identity: "quire.op.integer.rem".to_owned(),
+                    operation_identity: "filament.op.integer.rem".to_owned(),
                 },
             },
         }

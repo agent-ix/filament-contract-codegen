@@ -3,7 +3,7 @@ id: TC-051
 title: "Source census is independent of attempts and preserves producer facts"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-036
+  - target: ix://agent-ix/filament-contract-codegen/FR-036
     type: verifies
 ---
 # TC-051: Source census is independent of attempts and preserves producer facts

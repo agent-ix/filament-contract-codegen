@@ -3,7 +3,7 @@ id: TC-021
 title: "Verify shrinking preserves numeric constraints"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-012
+  - target: ix://agent-ix/filament-contract-codegen/FR-012
     type: verifies
 ---
 # TC-021: Verify shrinking preserves numeric constraints

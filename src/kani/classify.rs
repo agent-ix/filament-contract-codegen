@@ -150,8 +150,8 @@ pub struct ClassifiedRun {
 ///
 /// Before consulting the covers, a report listing no successful check is routed through
 /// [`KaniOutcome::proved_from_checks`] -- the one implementation of "a proof backed by zero
-/// checks proved nothing" that this module and `quire-contract-ir` share
-/// (agent-ix/quire-contract-codegen#99). A verdict of `Inconclusive` under
+/// checks proved nothing" that this module and `filament-contract-ir` share
+/// (agent-ix/filament-contract-codegen#99). A verdict of `Inconclusive` under
 /// [`KaniOutcomeKind::Inconclusive`]'s `kani_vacuous_proof` cause is not reported as-is — that
 /// would violate FR-017-CON-2, which forbids reporting a generation-time classification as an
 /// execution outcome — it is mapped into this module's own [`KaniInconclusiveReason::VacuousProof`].

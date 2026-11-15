@@ -1,13 +1,13 @@
-//! Private installed-Kani controls for field-edge reachability claims, `quire.op.model.reaches_field`
+//! Private installed-Kani controls for field-edge reachability claims, `filament.op.model.reaches_field`
 //! over `Reference`, `Option` and bounded `Collection` fields (FR-015-AC-98, -105, -106, TC-025,
 //! IR-805 slice D). Run explicitly and serially: `cargo test --lib kani_graph_field_private --
 //! --ignored --test-threads=1`.
 //!
-//! The Kani controls need QSL to link `reaches_field` to the population of the edge type
+//! The Kani controls need FSL to link `reaches_field` to the population of the edge type
 //! (QSL-1904): without that link the generator refuses the claim and `harness` below panics, so
 //! they are `#[ignore]` with the rest of the installed-Kani lane. The seeded mutants edit the
 //! generated reachability helper like slice B's and are sealed with the same crate-private
-//! constructor. Each Falsified playback is decoded into the graph Kani drew and put before QSL's
+//! constructor. Each Falsified playback is decoded into the graph Kani drew and put before FSL's
 //! `replay_state_clause` over the AUTHORED clause: the graph is carried as the field's own value
 //! on each object (`{"reference": ..}`, `{"present": ..}` or `{"absent": {}}`, a collection
 //! literal), the form the field's member type states, not a relationship entry.
@@ -65,8 +65,8 @@ fn domain_value() -> Value {
         "source": {"identity": SOURCE, "version": "1.0.0", "dialect": "spec-bundle"},
         "package": {"identity": DOMAIN, "version": "1.0.0", "mappingVersions": [], "profileVersions": []},
         "constructs": [
-            construct("entity", "quire.meaning.model.object-type/v1"),
-            construct("population", "quire.meaning.model.population/v1")
+            construct("entity", "filament.meaning.model.object-type/v1"),
+            construct("population", "filament.meaning.model.population/v1")
         ],
         "occurrences": [], "extensions": [],
         "types": [{
@@ -84,7 +84,7 @@ fn domain_value() -> Value {
             "operations": [{
                 "identity": format!("{NODE}/visit"), "name": "visit",
                 "params": [], "pre": [], "post": [],
-                "origin": {"source": {"sourceIdentity": SOURCE, "path": "spec.qspec", "startLine": 1, "startColumn": 1}},
+                "origin": {"source": {"sourceIdentity": SOURCE, "path": "spec.fspec", "startLine": 1, "startColumn": 1}},
                 "frame": {"modifies": [], "creates": [], "deletes": []}
             }]
         }],
@@ -105,7 +105,7 @@ fn declaring_type(authored: &Authored) -> CheckedNodeId {
         .iter()
         .find_map(|node| match &node.body {
             CheckedTerm::Application { operation, .. }
-                if operation.identity() == Some("quire.op.model.reaches_field") =>
+                if operation.identity() == Some("filament.op.model.reaches_field") =>
             {
                 operation.member_declaration().ok().flatten().cloned()
             }
@@ -114,7 +114,7 @@ fn declaring_type(authored: &Authored) -> CheckedNodeId {
         .expect("the field member's declaring type")
 }
 
-/// The generated harness of a field-edge claim. The generator needs QSL to link the
+/// The generated harness of a field-edge claim. The generator needs FSL to link the
 /// `reaches_field` application to its population (QSL-1904); on a package without the link it
 /// refuses, so these installed-Kani controls stop here with that reason instead of an opaque
 /// "claim is supported" failure.
@@ -126,7 +126,7 @@ fn harness(authored: &Authored, path: &[usize]) -> crate::KaniGraphObligationHar
         .iter()
         .find(|node| {
             matches!(&node.body, CheckedTerm::Application { operation, .. }
-                if operation.identity() == Some("quire.op.model.reaches_field"))
+                if operation.identity() == Some("filament.op.model.reaches_field"))
         })
         .expect("a field-edge application")
         .node_id
@@ -136,7 +136,7 @@ fn harness(authored: &Authored, path: &[usize]) -> crate::KaniGraphObligationHar
             authored.package.reaches_population(&application),
             Ok(Some(_))
         ),
-        "this control needs QSL to link reaches_field to its population (QSL-1904)"
+        "this control needs FSL to link reaches_field to its population (QSL-1904)"
     );
     super::kani_graph_private::harness(authored, path)
 }
@@ -167,13 +167,13 @@ fn assert_verified(authored: &Authored, path: &[usize], label: &str) {
     );
 }
 
-/// The authored clause over each drawn graph, no Kani: a hand-authored graph is put before QSL
+/// The authored clause over each drawn graph, no Kani: a hand-authored graph is put before FSL
 /// and the clause judges it, for each member type's own snapshot form. A forced `Reference` to
 /// itself violates `not reaches(self, self, next)`, an absent `Option` satisfies it, a present
 /// `Option` self edge violates it and a `Sequence` of two edges has one of each target.
 #[trace("TC-025", "FR-015-AC-106")]
 #[test]
-fn qsl_replay_judges_a_concrete_field_graph_by_the_authored_clause() {
+fn fsl_replay_judges_a_concrete_field_graph_by_the_authored_clause() {
     let object = |_: &str, authored: &Authored| declaring_type(authored);
     for (field, edges, violated) in [
         ("next", vec![vec![0]], true),
@@ -197,7 +197,7 @@ fn qsl_replay_judges_a_concrete_field_graph_by_the_authored_clause() {
         let result = StateClauseReplay::new_graph_invariant(inputs)
             .expect("the replay is built")
             .replay()
-            .expect("QSL settles the graph replay");
+            .expect("FSL settles the graph replay");
         if violated {
             assert_reproduced(&result);
         } else {
@@ -208,11 +208,11 @@ fn qsl_replay_judges_a_concrete_field_graph_by_the_authored_clause() {
 
 /// The negated claim: `not reaches(self, self, next)` over a forced single `Reference` at
 /// population 1 is false on the only admitted graph. Kani falsifies the unmutated harness, and
-/// QSL replays the same authored clause on the decoded graph and reproduces the violation.
+/// FSL replays the same authored clause on the decoded graph and reproduces the violation.
 #[trace("TC-025", "FR-015-AC-106")]
 #[test]
 #[ignore = "real Kani qualification: run serially inside the flock and the 24G scope"]
-fn real_kani_negated_field_claim_falsifies_and_qsl_replay_reproduces_it() {
+fn real_kani_negated_field_claim_falsifies_and_fsl_replay_reproduces_it() {
     let authored = authored("not reaches(self, self, next)", 1);
     let healthy = harness(&authored, &[0]);
     let counterexample = run_falsified(&healthy, "field-negated");
@@ -224,8 +224,8 @@ fn real_kani_negated_field_claim_falsifies_and_qsl_replay_reproduces_it() {
 /// Healthy: a forced `Reference` makes every object reach some object, over every population of
 /// zero to three. The same claim over the `Option` field `maybe` is false (an object with no
 /// edge), which is the member type's multiplicity being read, not assumed: Kani falsifies it and
-/// QSL reaches the same `Violation` verdict on the decoded graph (the claim is quantified, so
-/// QSL's settlement is `Inconclusive` with only the derived witness).
+/// FSL reaches the same `Violation` verdict on the decoded graph (the claim is quantified, so
+/// FSL's settlement is `Inconclusive` with only the derived witness).
 #[trace("TC-025", "FR-015-AC-106")]
 #[test]
 #[ignore = "real Kani qualification: run serially inside the flock and the 24G scope"]
@@ -265,7 +265,7 @@ fn real_kani_the_field_multiplicity_decides_the_every_object_claim() {
 #[trace("TC-025", "FR-015-AC-106")]
 #[test]
 #[ignore = "real Kani qualification: run serially inside the flock and the 24G scope"]
-fn real_kani_zero_length_path_mutant_falsifies_a_field_claim_and_qsl_replay_disagrees() {
+fn real_kani_zero_length_path_mutant_falsifies_a_field_claim_and_fsl_replay_disagrees() {
     let authored = authored("not reaches(self, self, empty)", 3);
     let healthy = harness(&authored, &[0]);
     assert_verified(&authored, &[0], "field-empty-healthy");
@@ -286,7 +286,7 @@ fn real_kani_zero_length_path_mutant_falsifies_a_field_claim_and_qsl_replay_disa
 #[trace("TC-025", "FR-015-AC-106")]
 #[test]
 #[ignore = "real Kani qualification: run serially inside the flock and the 24G scope"]
-fn real_kani_rejected_self_loop_mutant_falsifies_a_field_claim_and_qsl_replay_disagrees() {
+fn real_kani_rejected_self_loop_mutant_falsifies_a_field_claim_and_fsl_replay_disagrees() {
     let authored = authored("reaches(self, self, next)", 1);
     assert_verified(&authored, &[], "field-self-loop-healthy");
     let healthy = harness(&authored, &[]);
@@ -321,7 +321,7 @@ fn real_kani_healthy_transitivity_verifies_over_each_field_member_type() {
 #[trace("TC-025", "FR-015-AC-106")]
 #[test]
 #[ignore = "real Kani qualification: run serially inside the flock and the 24G scope"]
-fn real_kani_transitivity_without_closure_mutant_falsifies_a_field_claim_and_qsl_replay_disagrees()
+fn real_kani_transitivity_without_closure_mutant_falsifies_a_field_claim_and_fsl_replay_disagrees()
 {
     let authored = authored(&transitivity("many"), 3);
     let healthy = harness(&authored, &CONCLUSION);
@@ -333,7 +333,7 @@ fn real_kani_transitivity_without_closure_mutant_falsifies_a_field_claim_and_qsl
 
 fn scalar(name: &str, lower: u64, upper: u64, ordered: bool, presence: &str) -> Value {
     let mut member = field(name, lower, upper, ordered, false, presence);
-    member["typeRef"] = json!("ix://quire/native/Boolean");
+    member["typeRef"] = json!("ix://filament/native/Boolean");
     member
 }
 
@@ -383,8 +383,8 @@ fn edge_of(authored: &Authored, name: &str) -> Result<Shape, GraphRefusal> {
     })
 }
 
-/// The pure field-edge mapping over a QSL-emitted, IR-admitted package, with the declaring type
-/// and name read from the claim's own `reaches_field` member: it runs with or without QSL's
+/// The pure field-edge mapping over a FSL-emitted, IR-admitted package, with the declaring type
+/// and name read from the claim's own `reaches_field` member: it runs with or without FSL's
 /// population link, which `field_edge` does not read.
 #[trace("TC-025", "FR-015-AC-98")]
 #[trace("TC-025", "FR-015-AC-105")]
@@ -473,23 +473,23 @@ fn a_reaches_field_without_a_field_member_is_refused_not_read_as_another_form() 
     };
     let refused = Err(GraphRefusal::Unsupported(Reason::FieldNotAdmitted));
     assert_eq!(
-        field_of(Some("quire.op.model.reaches_field"), Some(&end)),
+        field_of(Some("filament.op.model.reaches_field"), Some(&end)),
         refused
     );
     assert_eq!(
-        field_of(Some("quire.op.model.reaches_field"), None),
+        field_of(Some("filament.op.model.reaches_field"), None),
         refused
     );
     assert_eq!(
-        field_of(Some("quire.op.model.reaches_field"), Some(&field)),
+        field_of(Some("filament.op.model.reaches_field"), Some(&field)),
         Ok(Some((&node, "next")))
     );
     assert_eq!(
-        field_of(Some("quire.op.model.reaches"), Some(&end)),
+        field_of(Some("filament.op.model.reaches"), Some(&end)),
         Ok(None)
     );
     assert_eq!(
-        field_of(Some("quire.op.model.reaches"), Some(&field)),
+        field_of(Some("filament.op.model.reaches"), Some(&field)),
         Ok(None)
     );
 }

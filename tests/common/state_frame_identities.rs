@@ -1,8 +1,8 @@
-//! Hand-written QSL obligation identities for the state-frame lane (FR-015-AC-137). Each is a
+//! Hand-written FSL obligation identities for the state-frame lane (FR-015-AC-137). Each is a
 //! literal the tests compare against, never derived from the code under test.
 
+use filament_contract_codegen::StateFrameRoleIdentities;
 use qsl_replay::{ModelIdentity, NodeKey, ObligationIdentity};
-use quire_contract_codegen::StateFrameRoleIdentities;
 use quire_exact::PathSegment;
 
 fn key(package: &str, path: &str, ordinal: u64) -> NodeKey {
@@ -88,9 +88,9 @@ pub fn roles() -> StateFrameRoleIdentities {
 static ROLES: std::sync::LazyLock<StateFrameRoleIdentities> = std::sync::LazyLock::new(roles);
 
 /// The identity of `role` in [`roles`], for a `StateFrame` item that borrows it.
-pub fn for_role(role: quire_contract_codegen::StateFrameRole) -> &'static ObligationIdentity {
+pub fn for_role(role: filament_contract_codegen::StateFrameRole) -> &'static ObligationIdentity {
     match role {
-        quire_contract_codegen::StateFrameRole::Contract => ROLES.contract(),
-        quire_contract_codegen::StateFrameRole::Frame => ROLES.frame(),
+        filament_contract_codegen::StateFrameRole::Contract => ROLES.contract(),
+        filament_contract_codegen::StateFrameRole::Frame => ROLES.frame(),
     }
 }

@@ -3,7 +3,7 @@ id: TC-043
 title: "Verify Kani harness batching, the output cap and launcher cleanup"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-017
+  - target: ix://agent-ix/filament-contract-codegen/FR-017
     type: verifies
 ---
 # TC-043: Verify Kani harness batching, the output cap and launcher cleanup

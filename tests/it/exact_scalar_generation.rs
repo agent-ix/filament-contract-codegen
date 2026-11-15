@@ -1,8 +1,8 @@
 //! FR-014: exact complete-V1 scalar oracle generation over admitted
 //! CheckedPackage V2 input.
 
+use filament_contract_codegen as scalar_fixture_types;
 use ix_trace_rs::trace;
-use quire_contract_codegen as scalar_fixture_types;
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs,
@@ -13,8 +13,8 @@ use std::{
 
 use crate::common::panic_scan::{comments_stripped, non_test_code, panic_tokens_in};
 use crate::scratch_crate::{seed_lock, TemporaryDirectory};
-use quire_contract_codegen::oracle::operator_catalog::IntegerOperator;
-use quire_contract_codegen::{
+use filament_contract_codegen::oracle::operator_catalog::IntegerOperator;
+use filament_contract_codegen::{
     derive_exact_scalar_items, generate_exact_scalar_oracles, plan_exact_scalar_oracles, BoundForm,
     ClaimDerivationRefusal, ClaimDisposition, DecimalOperator, ExactScalarItem,
     ExactScalarOperation, ExactScalarOracles, ExactScalarRefusal, GeneratedScalarClaim,
@@ -153,8 +153,8 @@ fn resolved_items(items: &[ExactScalarItem], ids: &FixtureIds) -> Vec<ExactScala
 
 /// UNBACKED today: the six text admissions (FR-014-AC-2's text
 /// admission case) are refused by Contract IR at admission, so no oracle is generated for them
-/// and no agreement or generation test can run over them. `quire.op.numeric.convert` takes
-/// `exact_numeric`, no catalogued `convert` identity takes `text`, and QSL lowers no text
+/// and no agreement or generation test can run over them. `filament.op.numeric.convert` takes
+/// `exact_numeric`, no catalogued `convert` identity takes `text`, and FSL lowers no text
 /// admission; it is unblocked by a catalogued text-admission operation. This test pins the exact
 /// refusal of each node (code, cause, pointer, locus), so the behaviour is recorded and a change
 /// in either IR or the corpus shows up here.
@@ -783,7 +783,7 @@ fn tc_024_refused_items_are_typed_emit_no_code_and_leave_siblings_unchanged() {
             blocked(
                 FUNCTION,
                 "function",
-                UpstreamBlocker::QuireContractRuntime34,
+                UpstreamBlocker::FilamentContractRuntime34,
             ),
         ),
         (
@@ -791,16 +791,20 @@ fn tc_024_refused_items_are_typed_emit_no_code_and_leave_siblings_unchanged() {
             blocked(
                 FUNCTION,
                 "function",
-                UpstreamBlocker::QuireContractRuntime34,
+                UpstreamBlocker::FilamentContractRuntime34,
             ),
         ),
         (
             MODEL,
-            blocked(MODEL, "model", UpstreamBlocker::QuireSpecLanguage120),
+            blocked(MODEL, "model", UpstreamBlocker::FilamentSpecLanguage120),
         ),
         (
             RELATION,
-            blocked(RELATION, "relation", UpstreamBlocker::QuireSpecLanguage120),
+            blocked(
+                RELATION,
+                "relation",
+                UpstreamBlocker::FilamentSpecLanguage120,
+            ),
         ),
         (STATE, unsupported(STATE, "state")),
         (TEMPORAL, unsupported(TEMPORAL, "temporal")),
@@ -1084,7 +1088,7 @@ fn tc_024_claim_map_carries_identity_source_bounds_and_operation_per_item() {
         let profile = quire_contract_model::CompleteLoweringProfileV2 {
             reference: quire_contract_model::LoweringProfileRef {
                 authority: "agent-ix".into(),
-                identity: "quire.codegen.exact-scalar/v1".into(),
+                identity: "filament.codegen.exact-scalar/v1".into(),
             },
             required_source_selections: Vec::new(),
             supported_tags: claim_supported_tags,
@@ -1178,7 +1182,7 @@ fn tc_024_claim_map_carries_identity_source_bounds_and_operation_per_item() {
         // codes 1011 and 1014 are both `division(_, Truncating, ...)`, differing only in bound
         // (`[-1000,1000]` vs `[-5,5]`) -- codegen's own descriptor-derived string used to embed the
         // bound and so differed between them; the catalog does not, and both now report the same
-        // `quire.op.integer.div`.
+        // `filament.op.integer.div`.
         for code in [1011, 1014] {
             if let Some(claim) = map
                 .items
@@ -1190,8 +1194,8 @@ fn tc_024_claim_map_carries_identity_source_bounds_and_operation_per_item() {
         }
     }
     assert_eq!(operation_identities.len(), 2);
-    assert_eq!(operation_identities[&1011], "quire.op.integer.div");
-    assert_eq!(operation_identities[&1014], "quire.op.integer.div");
+    assert_eq!(operation_identities[&1011], "filament.op.integer.div");
+    assert_eq!(operation_identities[&1014], "filament.op.integer.div");
 }
 
 /// Operations whose parameters the IR carries no bound for.
@@ -1248,7 +1252,7 @@ fn tc_024_claim_map_entries_ascend_by_structural_node_key() {
 }
 
 /// Node 1011 is a truncating division whose own `operation.laws` does not name the floor
-/// definition. A floor descriptor implies the same catalogued identity (`quire.op.integer.div`),
+/// definition. A floor descriptor implies the same catalogued identity (`filament.op.integer.div`),
 /// so this is not AC-12's different-operation case, and the item's disposition is `Generated`, so
 /// it is neither half of AC-14's never-inspected-or-refused case. It is the third state: the item
 /// generates the oracle its descriptor
@@ -1311,13 +1315,13 @@ fn tc_024_a_mislabelled_descriptor_is_refused_where_bounds_disagree_and_marked_o
 /// `Shape::of` gives `Add`, `Subtract`, `Multiply`, `IntegerDivision` and `IntegerModulo` the
 /// identical binary `&rt::Integer` shape, so `check_item`'s shape checks alone cannot distinguish
 /// an `Add` descriptor from a `Multiply` one over the same bounds. Node 1004 is
-/// `quire.op.integer.mul` over `[-1000,1000]`; naming `Add` against it, with the identical
+/// `filament.op.integer.mul` over `[-1000,1000]`; naming `Add` against it, with the identical
 /// `[-1000,1000]` domain, passes every shape and bound check `check_item` makes. Confirming it
 /// anyway -- the defect this ticket exists to close -- would render an oracle that adds where the
 /// catalog says multiply and a harness whose `operation_identity` says `mul`.
 ///
 ///
-/// Backs AC-12: an `Add` descriptor against node 1004's catalogued `quire.op.integer.mul`, over
+/// Backs AC-12: an `Add` descriptor against node 1004's catalogued `filament.op.integer.mul`, over
 /// the identical `[-1000,1000]` bound and the identical binary `&rt::Integer` shape, is not
 /// confirmed. The mismatched case is asserted first; the agreeing case second, which is AC-11
 /// for that one node. AC-11 over the whole corpus is discharged by
@@ -1364,7 +1368,7 @@ fn tc_024_operator_confusion_within_one_shape_is_not_silently_confirmed() {
         }],
     );
     let matched_claim = &matched.claim_map.items[0];
-    assert_eq!(matched_claim.operation.identity, "quire.op.integer.mul");
+    assert_eq!(matched_claim.operation.identity, "filament.op.integer.mul");
     assert_eq!(
         matched_claim.operation.provenance,
         OperationProvenance::IrConfirmed
@@ -1483,7 +1487,7 @@ fn work_exhausted_builder(references: usize) -> PackageBuilder {
         &key(T_INTEGER),
         application(
             "binary",
-            op("quire.op.integer.add"),
+            op("filament.op.integer.add"),
             &key(T_INTEGER),
             vec![reference(&key(3003)), reference(&key(V_INTEGER))],
         ),
@@ -1517,7 +1521,7 @@ fn tc_052_aggregate_integer_operand_is_refused_by_reader() {
         &key(T_INTEGER),
         application(
             "binary",
-            op("quire.op.integer.add"),
+            op("filament.op.integer.add"),
             &key(T_INTEGER),
             vec![
                 reference(&key(V_INTEGER)),
@@ -1586,7 +1590,10 @@ fn tc_024_lowering_work_exhaustion_is_a_typed_refusal() {
     else {
         panic!("expected exhaustion: {:?}", oracles.claim_map.items[0]);
     };
-    assert_eq!(*limit, quire_contract_codegen::SCALAR_LOWERING_WORK_LIMIT);
+    assert_eq!(
+        *limit,
+        filament_contract_codegen::SCALAR_LOWERING_WORK_LIMIT
+    );
     assert!(consumed > limit);
     assert!(!contents(&oracles, "src/lib.rs").contains(&subject_header(&code_id(3001))));
 }
@@ -1660,7 +1667,7 @@ fn tc_024_a_byte_ceiling_lowering_failure_is_refused_per_item_as_its_own_refusal
     let lowered_length = lowered_package_length(
         &measured,
         &requested,
-        &measuring_profile(true, "quire.codegen.exact-scalar/v1"),
+        &measuring_profile(true, "filament.codegen.exact-scalar/v1"),
     );
     let ceiling = lowered_length - 1;
     assert!(
@@ -1990,7 +1997,7 @@ fn tc_024_anonymous_integer_range_generates_one_addition() {
         &integer,
         application(
             "binary",
-            op("quire.op.integer.add"),
+            op("filament.op.integer.add"),
             &integer,
             vec![reference(&key(OPERAND)), typed_literal("2")],
         ),
@@ -2122,7 +2129,7 @@ fn tc_024_generated_source_over_the_ceiling_is_refused_whole() {
             &key(T_INTEGER),
             application(
                 "binary",
-                op("quire.op.integer.add"),
+                op("filament.op.integer.add"),
                 &key(T_INTEGER),
                 vec![
                     reference(&key(V_INTEGER)),
@@ -2153,7 +2160,7 @@ fn tc_024_generated_source_over_the_ceiling_is_refused_whole() {
     assert!(matches!(
         generate_exact_scalar_oracles(&package, &items),
         Err(OracleGenerationError::SourceTooLarge { bytes, .. })
-            if bytes > quire_contract_codegen::MAX_GENERATED_SOURCE_BYTES
+            if bytes > filament_contract_codegen::MAX_GENERATED_SOURCE_BYTES
     ));
 }
 
@@ -2193,7 +2200,7 @@ fn tc_024_literal_operands_are_classified_by_value_kind_and_constants_stop_typed
         &key(T_INTEGER),
         application(
             "binary",
-            op("quire.op.integer.add"),
+            op("filament.op.integer.add"),
             &key(T_INTEGER),
             vec![
                 reference(&key(V_INTEGER)),
@@ -2291,7 +2298,7 @@ fn tc_024_generated_crate_is_unpublished_charge_free_and_compiles() {
         );
     }
 
-    let directory = TemporaryDirectory::new("quire-exact-scalar-oracles");
+    let directory = TemporaryDirectory::new("filament-exact-scalar-oracles");
     fs::create_dir_all(directory.path.join("src")).unwrap();
     for artifact in &oracles.artifacts {
         fs::create_dir_all(
@@ -2320,7 +2327,7 @@ fn tc_024_generated_crate_is_unpublished_charge_free_and_compiles() {
     );
 }
 
-/// A `reference` operand typed by an `integer_range` `bounded_domain` (QSL's `Int[0, 9]`
+/// A `reference` operand typed by an `integer_range` `bounded_domain` (FSL's `Int[0, 9]`
 /// parameter) is an Integer operand and generates; before IR-297 it was refused as
 /// `OperandTypeMismatch { found: None }`.
 #[trace("FR-014-AC-17", "TC-024")]
@@ -2355,7 +2362,7 @@ fn add_over(low: i64, high: i64) -> ExactScalarOperation {
 #[trace("FR-014-AC-44", "TC-024")]
 #[test]
 fn tc_024_ac44_direct_temporal_formula_is_unsupported() {
-    let package = qspec_package("positive-all-families.json");
+    let package = fspec_package("positive-all-families.json");
     let node = package
         .resolved_graph()
         .nodes
@@ -2370,7 +2377,7 @@ fn tc_024_ac44_direct_temporal_formula_is_unsupported() {
                     }
                 )
         })
-        .expect("QSpec fixture has an admitted temporal_formula root");
+        .expect("FSpec fixture has an admitted temporal_formula root");
     let requested_id = node.node_id.clone();
     let oracles = generate_exact_scalar_oracles(
         &package,
@@ -2404,13 +2411,13 @@ fn tc_024_ac44_direct_temporal_formula_is_unsupported() {
 #[trace("FR-014-AC-7", "TC-024")]
 #[test]
 fn tc_024_admitted_protocol_node_is_unsupported() {
-    let package = qspec_package("positive-all-families.json");
+    let package = fspec_package("positive-all-families.json");
     let node = package
         .resolved_graph()
         .nodes
         .iter()
         .find(|node| node.semantic_form.as_ref() == "obligation")
-        .expect("QSpec fixture has an admitted protocol obligation");
+        .expect("FSpec fixture has an admitted protocol obligation");
     let requested_id = node.node_id.clone();
     let oracles = generate_exact_scalar_oracles(
         &package,
@@ -2453,24 +2460,24 @@ fn tc_024_admitted_protocol_node_is_unsupported() {
     assert!(!contents(&oracles, "src/lib.rs").contains(&subject_header(&requested_id)));
 }
 
-fn qspec_package(fixture: &str) -> CheckedPackageV2 {
+fn fspec_package(fixture: &str) -> CheckedPackageV2 {
     let root =
-        PathBuf::from(std::env::var_os("QSPEC_DIR").expect("QSPEC_DIR points at published QSpec"));
+        PathBuf::from(std::env::var_os("FSPEC_DIR").expect("FSPEC_DIR points at published FSpec"));
     let bytes = fs::read(
         root.join("proposals/checked-package-v2/fixtures")
             .join(fixture),
     )
-    .expect("read authoritative QSpec fixture");
-    let wire: Value = serde_json::from_slice(&bytes).expect("QSpec fixture JSON");
-    let canonical = serde_json::to_vec(&wire).expect("canonical QSpec fixture bytes");
+    .expect("read authoritative FSpec fixture");
+    let wire: Value = serde_json::from_slice(&bytes).expect("FSpec fixture JSON");
+    let canonical = serde_json::to_vec(&wire).expect("canonical FSpec fixture bytes");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     crate::checked_package_evidence::retain_selected_extensions(&root, &wire, &mut evidence);
-    // The domain document QSpec publishes for this fixture, if any, resolves its selected model owner.
+    // The domain document FSpec publishes for this fixture, if any, resolves its selected model owner.
     crate::checked_package_evidence::retain_selected_document(&root, fixture, &mut evidence);
     match CheckedPackageV2::read(&canonical, CheckedPackageReadLimits::bounded(), &evidence) {
         CheckedPackageV2ReadResult::Admitted(package) => *package,
-        other => panic!("authoritative QSpec fixture must be admitted: {other:?}"),
+        other => panic!("authoritative FSpec fixture must be admitted: {other:?}"),
     }
 }
 
@@ -2479,7 +2486,7 @@ fn qspec_package(fixture: &str) -> CheckedPackageV2 {
 #[trace("FR-014-AC-44", "TC-024")]
 #[test]
 fn tc_024_ac44_direct_control_case_is_unsupported() {
-    let package = qspec_package("positive-union-nodes.json");
+    let package = fspec_package("positive-union-nodes.json");
     let node = package
         .resolved_graph()
         .nodes
@@ -2494,7 +2501,7 @@ fn tc_024_ac44_direct_control_case_is_unsupported() {
                     }
                 )
         })
-        .expect("QSpec fixture has an admitted case root");
+        .expect("FSpec fixture has an admitted case root");
     let requested_id = node.node_id.clone();
     let oracles = generate_exact_scalar_oracles(
         &package,
@@ -2527,15 +2534,15 @@ fn tc_024_ac44_direct_control_case_is_unsupported() {
 #[trace("FR-021-AC-33", "TC-031")]
 #[test]
 fn tc_031_ac33_direct_control_case_is_unsupported() {
-    use quire_contract_codegen::ContractRequestPosition;
-    use quire_contract_codegen::{
+    use filament_contract_codegen::ContractRequestPosition;
+    use filament_contract_codegen::{
         generate_exact_function_oracles, ExactFunctionItem, ExactFunctionRefusal,
     };
     use quire_contract_model::{
         CheckedNodeTag, CompleteLoweringProfileV2, ContractDependencies, ContractPackageReadResult,
         ContractPackageWireV1, LoweringProfileRef,
     };
-    let package = qspec_package("positive-union-nodes.json");
+    let package = fspec_package("positive-union-nodes.json");
     let case = package
         .resolved_graph()
         .nodes
@@ -2557,7 +2564,7 @@ fn tc_031_ac33_direct_control_case_is_unsupported() {
         &CompleteLoweringProfileV2 {
             reference: LoweringProfileRef {
                 authority: "agent-ix".into(),
-                identity: "quire.codegen.exact-function/v1".into(),
+                identity: "filament.codegen.exact-function/v1".into(),
             },
             required_source_selections: Vec::new(),
             supported_tags: [
@@ -2587,7 +2594,8 @@ fn tc_031_ac33_direct_control_case_is_unsupported() {
         &contract,
         &[ContractRequestPosition::DriverItem {
             node_id: id.clone(),
-            result_selection: quire_contract_codegen::ContractDriverResultSelection::NotApplicable,
+            result_selection:
+                filament_contract_codegen::ContractDriverResultSelection::NotApplicable,
         }],
         &[],
         &[],
@@ -2871,16 +2879,16 @@ fn tc_024_ac25_a_plain_typed_reference_operand_beside_bounded_typing_requires_a_
     );
 }
 
-fn qsl_admitted() -> &'static (CheckedPackageV2, FixtureIds) {
+fn fsl_admitted() -> &'static (CheckedPackageV2, FixtureIds) {
     static ADMITTED: OnceLock<(CheckedPackageV2, FixtureIds)> = OnceLock::new();
-    ADMITTED.get_or_init(|| qsl_shaped_package().admit_resolved())
+    ADMITTED.get_or_init(|| fsl_shaped_package().admit_resolved())
 }
 
-fn qsl_disposition(
+fn fsl_disposition(
     code: u32,
     operation: ExactScalarOperation,
 ) -> ClaimDisposition<GeneratedScalarClaim, ExactScalarRefusal> {
-    let (package, ids) = qsl_admitted();
+    let (package, ids) = fsl_admitted();
     let node_id = ids.resolve(&code_id(code));
     let oracles = generate(
         package,
@@ -2905,12 +2913,12 @@ fn derive_one_resolved(
         .expect("one result per node id")
 }
 
-/// The checked bounds of a QSL-shaped node that generates.
-fn qsl_checked_bounds(
+/// The checked bounds of a FSL-shaped node that generates.
+fn fsl_checked_bounds(
     code: u32,
     operation: ExactScalarOperation,
 ) -> (Vec<quire_contract_model::CheckedNodeId>, FixtureIds) {
-    let (package, ids) = qsl_admitted();
+    let (package, ids) = fsl_admitted();
     let item = ExactScalarItem {
         node_id: ids.resolve(&code_id(code)),
         operation,
@@ -2931,10 +2939,10 @@ fn bound_ids(bounds: &[Bound], ids: &FixtureIds) -> Vec<quire_contract_model::Ch
         .collect()
 }
 
-/// Generation and derivation over a QSL-shaped node both refuse it with `expected`.
-fn assert_qsl_refused(code: u32, operation: ExactScalarOperation, expected: ExactScalarRefusal) {
-    let (package, ids) = qsl_admitted();
-    match qsl_disposition(code, operation) {
+/// Generation and derivation over a FSL-shaped node both refuse it with `expected`.
+fn assert_fsl_refused(code: u32, operation: ExactScalarOperation, expected: ExactScalarRefusal) {
+    let (package, ids) = fsl_admitted();
+    match fsl_disposition(code, operation) {
         ClaimDisposition::Refused { refusal } => assert_refusal_with_ids(&refusal, &expected, ids),
         other => panic!("node {code} is not refused: {other:?}"),
     }
@@ -2957,28 +2965,28 @@ fn ambiguous_integer_bound() -> ExactScalarRefusal {
     }
 }
 
-/// QSL emits the literal of `x + 1` as a `reference` to its own `value` node, whose body is the
+/// FSL emits the literal of `x + 1` as a `reference` to its own `value` node, whose body is the
 /// literal and whose type is the plain Integer type: that operand is a literal, so `x + 1` over
 /// `x: Int[0, 9]` narrowed to `Int[0, 10]` generates with checked bounds `[0, 10]` then `[0, 9]`
 /// and derives the descriptor over `[0, 10]`.
 #[trace("FR-014-AC-26", "TC-024")]
 #[test]
 fn tc_024_ac26_a_reference_to_a_literal_value_node_is_a_literal_operand() {
-    let (checked, ids) = qsl_checked_bounds(QSL_INC, add_over(0, 10));
+    let (checked, ids) = fsl_checked_bounds(FSL_INC, add_over(0, 10));
     assert_eq!(
         checked,
         bound_ids(&[Bound::Integer(0, 10), Bound::Integer(0, 9)], &ids)
     );
-    let (package, ids) = qsl_admitted();
+    let (package, ids) = fsl_admitted();
     assert_eq!(
-        derive_one_resolved(package, ids, QSL_INC)
+        derive_one_resolved(package, ids, FSL_INC)
             .expect("derives")
             .operation,
         add_over(0, 10)
     );
 }
 
-/// QSL wraps arithmetic in a bounded context in a narrowing `conversion` typed by the declared
+/// FSL wraps arithmetic in a bounded context in a narrowing `conversion` typed by the declared
 /// bound, and the arithmetic node's own result type is the plain Integer type: its result bound is
 /// the conversion's. `x + y` over `[0, 9]` and `[10, 20]` narrowed to `[10, 29]` checks `[10, 29]`,
 /// `[0, 9]`, `[10, 20]`, and a descriptor over an operand's bound is a mismatch against `[10, 29]`;
@@ -2986,14 +2994,14 @@ fn tc_024_ac26_a_reference_to_a_literal_value_node_is_a_literal_operand() {
 #[trace("FR-014-AC-27", "TC-024")]
 #[test]
 fn tc_024_ac27_a_scalar_typed_result_takes_the_bound_of_its_narrowing_conversion() {
-    let (package, ids) = qsl_admitted();
+    let (package, ids) = fsl_admitted();
     let negate = ExactScalarOperation::IntegerArithmetic {
         operator: IntegerOperator::Negate,
         domain: bounded(-9, 0),
     };
     for (code, operation, expected) in [
         (
-            QSL_ADD,
+            FSL_ADD,
             add_over(10, 29),
             vec![
                 Bound::Integer(10, 29),
@@ -3002,7 +3010,7 @@ fn tc_024_ac27_a_scalar_typed_result_takes_the_bound_of_its_narrowing_conversion
             ],
         ),
         (
-            QSL_NEGATE,
+            FSL_NEGATE,
             negate,
             vec![Bound::Integer(-9, 0), Bound::Integer(0, 9)],
         ),
@@ -3014,10 +3022,10 @@ fn tc_024_ac27_a_scalar_typed_result_takes_the_bound_of_its_narrowing_conversion
             operation,
             "node {code}"
         );
-        let (checked, ids) = qsl_checked_bounds(code, operation);
+        let (checked, ids) = fsl_checked_bounds(code, operation);
         assert_eq!(checked, bound_ids(&expected, &ids), "node {code}");
     }
-    match qsl_disposition(QSL_ADD, add_over(0, 9)) {
+    match fsl_disposition(FSL_ADD, add_over(0, 9)) {
         ClaimDisposition::Refused { refusal } => assert_refusal_with_ids(
             &refusal,
             &ExactScalarRefusal::BoundMismatch {
@@ -3036,8 +3044,8 @@ fn tc_024_ac27_a_scalar_typed_result_takes_the_bound_of_its_narrowing_conversion
 #[trace("FR-014-AC-28", "TC-024")]
 #[test]
 fn tc_024_ac28_an_unbounded_parameter_body_is_not_a_literal() {
-    assert_qsl_refused(
-        QSL_NOT_LITERAL_OPERAND,
+    assert_fsl_refused(
+        FSL_NOT_LITERAL_OPERAND,
         add_over(0, 29),
         requires_integer_bound(),
     );
@@ -3047,7 +3055,7 @@ fn tc_024_ac28_an_unbounded_parameter_body_is_not_a_literal() {
 #[trace("FR-014-AC-29", "TC-024")]
 #[test]
 fn tc_024_ac29_a_plain_parameter_beside_a_bounded_one_requires_a_bound() {
-    assert_qsl_refused(QSL_PLAIN_OPERAND, add_over(0, 29), requires_integer_bound());
+    assert_fsl_refused(FSL_PLAIN_OPERAND, add_over(0, 29), requires_integer_bound());
 }
 
 /// `q + q` narrowed to `Int[0, 29]`, no operand owning a bound, is `RequiresBound`: the narrowing
@@ -3055,7 +3063,7 @@ fn tc_024_ac29_a_plain_parameter_beside_a_bounded_one_requires_a_bound() {
 #[trace("FR-014-AC-30", "TC-024")]
 #[test]
 fn tc_024_ac30_plain_operands_under_a_narrowing_require_a_bound() {
-    assert_qsl_refused(QSL_PLAIN_PAIR, add_over(0, 29), requires_integer_bound());
+    assert_fsl_refused(FSL_PLAIN_PAIR, add_over(0, 29), requires_integer_bound());
 }
 
 /// A literal operand of an integer operation that is not an `integer` literal is refused by its
@@ -3064,8 +3072,8 @@ fn tc_024_ac30_plain_operands_under_a_narrowing_require_a_bound() {
 #[trace("FR-014-AC-31", "TC-024")]
 #[test]
 fn tc_024_ac31_a_non_integer_literal_operand_is_an_operand_type_mismatch() {
-    assert_qsl_refused(
-        QSL_PLUS_TEXT,
+    assert_fsl_refused(
+        FSL_PLUS_TEXT,
         add_over(0, 10),
         ExactScalarRefusal::OperandTypeMismatch {
             position: 1,
@@ -3079,8 +3087,8 @@ fn tc_024_ac31_a_non_integer_literal_operand_is_an_operand_type_mismatch() {
 #[trace("FR-014-AC-32", "TC-024")]
 #[test]
 fn tc_024_ac32_two_distinct_narrowings_are_ambiguous() {
-    assert_qsl_refused(
-        QSL_TWICE_NARROWED,
+    assert_fsl_refused(
+        FSL_TWICE_NARROWED,
         add_over(10, 29),
         ambiguous_integer_bound(),
     );
@@ -3092,10 +3100,10 @@ fn tc_024_ac32_two_distinct_narrowings_are_ambiguous() {
 #[test]
 fn tc_024_ac33_a_narrowing_of_another_form_or_base_type_is_missing_bound() {
     assert!(matches!(
-        qsl_wrong_form_package().read().0,
+        fsl_wrong_form_package().read().0,
         CheckedPackageV2ReadResult::Refused(_)
     ));
-    let (result, wire, _) = qsl_wrong_base_package().read_resolved();
+    let (result, wire, _) = fsl_wrong_base_package().read_resolved();
     let invalid = id(&wrong_base_bound().key());
     let position = wire["semantic_graph"]["nodes"]
         .as_array()
@@ -3125,9 +3133,9 @@ fn tc_024_ac33_a_narrowing_of_another_form_or_base_type_is_missing_bound() {
 #[trace("FR-014-AC-34", "TC-024")]
 #[test]
 fn tc_024_ac34_a_node_narrowed_and_consumed_otherwise_is_ambiguous() {
-    assert_qsl_refused(QSL_SHARED, add_over(0, 11), ambiguous_integer_bound());
+    assert_fsl_refused(FSL_SHARED, add_over(0, 11), ambiguous_integer_bound());
     assert!(matches!(
-        qsl_disposition(QSL_INC, add_over(0, 10)),
+        fsl_disposition(FSL_INC, add_over(0, 10)),
         ClaimDisposition::Generated(_)
     ));
 }
@@ -3222,7 +3230,7 @@ fn tc_024_each_overloaded_identity_derives_by_its_own_selector() {
     assert_eq!(
         operation(DERIVE_MIXED_DIV),
         Err(no_claim(ClaimDerivationRefusal::OperandFormsNotDerivable {
-            operation_identity: "quire.op.rational.div".to_owned()
+            operation_identity: "filament.op.rational.div".to_owned()
         }))
     );
     // numeric.convert_rounding to a decimal is a rounding conversion.
@@ -3239,7 +3247,7 @@ fn tc_024_each_overloaded_identity_derives_by_its_own_selector() {
     assert_eq!(
         operation(DERIVE_CONVERT_TO_INTEGER),
         Err(no_claim(ClaimDerivationRefusal::OperandFormsNotDerivable {
-            operation_identity: "quire.op.numeric.convert".to_owned()
+            operation_identity: "filament.op.numeric.convert".to_owned()
         }))
     );
     // integer.div takes its profile from the laws: the three corpus nodes differ only by it.
@@ -3266,7 +3274,7 @@ fn tc_024_derivation_refuses_what_it_cannot_derive_with_a_typed_reason() {
     assert_eq!(
         derive_one(&package, DERIVE_REM),
         Err(no_claim(ClaimDerivationRefusal::OperationNotDerivable {
-            operation_identity: "quire.op.integer.rem".to_owned()
+            operation_identity: "filament.op.integer.rem".to_owned()
         }))
     );
     assert!(
@@ -3358,7 +3366,7 @@ fn tc_024_boolean_descriptor_rejects_a_wrong_right_evaluation_mode() {
     let package = derivation_package().admit();
     let mut item = derive_one(&package, DERIVE_BOOLEAN_AND).expect("derives");
     item.operation = ExactScalarOperation::Boolean {
-        operator: quire_contract_codegen::BooleanOperator::And,
+        operator: filament_contract_codegen::BooleanOperator::And,
         right_may_stop: true,
     };
     let oracles = generate(&package, &[item]);
@@ -3466,7 +3474,7 @@ fn tc_024_boolean_oracle_source_map_probes_the_entry_and_implication_consequent(
 
     let mut mismatched = derive_one(&package, DERIVE_BOOLEAN_AND).expect("and derives");
     mismatched.operation = ExactScalarOperation::Boolean {
-        operator: quire_contract_codegen::BooleanOperator::Implies,
+        operator: filament_contract_codegen::BooleanOperator::Implies,
         right_may_stop: false,
     };
     let caller_declared = generate(&package, &[mismatched]);
@@ -3976,7 +3984,7 @@ fn contract_request(
     nodes: &[quire_contract_model::CheckedNodeId],
 ) -> (
     quire_contract_model::ContractPackageV1,
-    Vec<quire_contract_codegen::ContractRequestPosition>,
+    Vec<filament_contract_codegen::ContractRequestPosition>,
 ) {
     use quire_contract_model::{
         CheckedNodeTag, CompleteLoweringProfileV2, ContractDependencies, ContractPackageReadResult,
@@ -3987,7 +3995,7 @@ fn contract_request(
         &CompleteLoweringProfileV2 {
             reference: LoweringProfileRef {
                 authority: "agent-ix".into(),
-                identity: "quire.codegen.exact-function/v1".into(),
+                identity: "filament.codegen.exact-function/v1".into(),
             },
             required_source_selections: Vec::new(),
             supported_tags: [
@@ -4016,10 +4024,10 @@ fn contract_request(
     let positions = nodes
         .iter()
         .map(
-            |node_id| quire_contract_codegen::ContractRequestPosition::DriverItem {
+            |node_id| filament_contract_codegen::ContractRequestPosition::DriverItem {
                 node_id: node_id.clone(),
                 result_selection:
-                    quire_contract_codegen::ContractDriverResultSelection::NotApplicable,
+                    filament_contract_codegen::ContractDriverResultSelection::NotApplicable,
             },
         )
         .collect();
@@ -4030,7 +4038,7 @@ fn contract_request(
 #[trace("FR-014-AC-2", "TC-024")]
 #[test]
 fn tc_024_function_generator_refuses_a_function_whose_body_is_a_quantity_conversion() {
-    use quire_contract_codegen::{
+    use filament_contract_codegen::{
         generate_exact_function_oracles, ExactFunctionBody, ExactFunctionDeclaration,
         ExactFunctionItem, ExactFunctionRefusal,
     };
@@ -4044,7 +4052,7 @@ fn tc_024_function_generator_refuses_a_function_whose_body_is_a_quantity_convers
             operator: IntegerOperator::Add,
         },
         ExactFunctionBody::CompositeEquality {
-            operator: quire_contract_codegen::EqualityOperatorKind::Equal,
+            operator: filament_contract_codegen::EqualityOperatorKind::Equal,
         },
     ] {
         let output = generate_exact_function_oracles(
@@ -4088,7 +4096,7 @@ fn tc_024_function_generator_refuses_a_function_whose_body_is_a_quantity_convers
 #[trace("FR-014-AC-2", "TC-024")]
 #[test]
 fn tc_024_equality_generator_refuses_a_quantity_conversion_node_before_any_artifact() {
-    use quire_contract_codegen::{
+    use filament_contract_codegen::{
         generate_composite_equality_oracles, CompositeEqualityItem, CompositeEqualityRefusal,
         EqualityOperandDescriptor, EqualityOperatorKind,
     };
@@ -4143,7 +4151,7 @@ fn tc_024_equality_generator_refuses_a_quantity_conversion_node_before_any_artif
 #[trace("FR-014-AC-2", "TC-024")]
 #[test]
 fn tc_024_function_schedules_refuse_quantity_bodies_per_function() {
-    use quire_contract_codegen::{
+    use filament_contract_codegen::{
         generate_function_schedules, generate_function_schedules_with_limits,
         FunctionScheduleDeclaration, FunctionScheduleLimits, FunctionScheduleRefusal,
     };
@@ -4198,7 +4206,7 @@ fn tc_024_function_schedules_refuse_quantity_bodies_per_function() {
 #[trace("FR-014-AC-2", "TC-024")]
 #[test]
 fn tc_024_function_generator_refuses_a_call_passing_a_quantity_conversion_as_an_argument() {
-    use quire_contract_codegen::{
+    use filament_contract_codegen::{
         generate_exact_function_oracles, ExactFunctionBody, ExactFunctionDeclaration,
         ExactFunctionItem, ExactFunctionRefusal, FunctionParameter,
     };
@@ -4262,7 +4270,7 @@ fn tc_024_function_generator_refuses_a_call_passing_a_quantity_conversion_as_an_
 #[trace("FR-014-AC-2", "TC-024")]
 #[test]
 fn tc_024_function_schedule_item_with_a_conversion_argument_is_refused() {
-    use quire_contract_codegen::{
+    use filament_contract_codegen::{
         generate_function_schedules, FunctionScheduleDeclaration, FunctionScheduleDisposition,
         FunctionScheduleItem, FunctionScheduleParameter, FunctionScheduleRefusal,
     };
@@ -4317,7 +4325,7 @@ fn tc_024_function_schedule_item_with_a_conversion_argument_is_refused() {
 #[trace("FR-014-AC-2", "FR-018-AC-15", "TC-024")]
 #[test]
 fn tc_024_equality_over_a_conversion_operand_is_refused_as_an_unsupported_quantity() {
-    use quire_contract_codegen::{
+    use filament_contract_codegen::{
         generate_composite_equality_oracles, CompositeEqualityItem, CompositeEqualityRefusal,
         EqualityOperandDescriptor, EqualityOperatorKind,
     };
@@ -4448,7 +4456,7 @@ fn admitted_quantity_multiply_with_bare_parameter_requires_bound_without_oracle(
         &[ExactScalarItem {
             node_id: expression.clone(),
             operation: ExactScalarOperation::QuantityArithmetic {
-                operator: quire_contract_codegen::QuantityOperator::Multiply,
+                operator: filament_contract_codegen::QuantityOperator::Multiply,
             },
         }],
     )
@@ -4466,7 +4474,7 @@ fn admitted_quantity_multiply_with_bare_parameter_requires_bound_without_oracle(
 #[trace("FR-014-AC-2", "FR-014-AC-50", "TC-024")]
 #[test]
 fn unit_function_signatures_refuse_per_function_and_preserve_supported_siblings() {
-    use quire_contract_codegen::{
+    use filament_contract_codegen::{
         generate_function_schedules, FunctionScheduleDeclaration, FunctionScheduleParameter,
         FunctionScheduleRefusal,
     };

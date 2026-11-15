@@ -5,7 +5,7 @@
 mod support;
 
 mod generated {
-    pub use quire_exact_scalar_oracles::*;
+    pub use filament_exact_scalar_oracles::*;
     include!(concat!(env!("CARGO_MANIFEST_DIR"), "/names.rs"));
 }
 

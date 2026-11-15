@@ -1,16 +1,16 @@
 ---
 id: TC-040
-title: "Verify the total map from a Kani run outcome to QSL's terminal value"
+title: "Verify the total map from a Kani run outcome to FSL's terminal value"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/FR-029
+  - target: ix://agent-ix/filament-contract-codegen/FR-029
     type: verifies
 ---
-# TC-040: Verify the total map from a Kani run outcome to QSL's terminal value
+# TC-040: Verify the total map from a Kani run outcome to FSL's terminal value
 
 ## Description
 
-Verify that each pair of run outcome and replay settlement maps to the QSL terminal value FR-029's
+Verify that each pair of run outcome and replay settlement maps to the FSL terminal value FR-029's
 ordinary source-predicate tables state, and that an ordinary falsified run is `Refuted` only
 with a reproduced replay. Composite parity uses a distinct typed input and planned
 [TC-048](../../replay/matrix/TC-048-composite-parity-replay-binding.md).
@@ -18,7 +18,7 @@ with a reproduced replay. Composite parity uses a distinct typed input and plann
 ## Test Procedure
 
 1. Map `verified` with three SUCCESS checks, and `falsified` with a reproduced replay.
-2. Map `inconclusive` with the vacuous-proof reason, and `cover-unsatisfied`. Read each value's QSL
+2. Map `inconclusive` with the vacuous-proof reason, and `cover-unsatisfied`. Read each value's FSL
    category and vacuity cause.
 3. Map `inconclusive` with the timed-out and exhausted-unwind-bound reasons.
 4. Map `inconclusive` with the no-verdict reason, and with the witness-disagreed reason once per cause (FR-029-AC-37, IR-1022).
@@ -32,8 +32,8 @@ with a reproduced replay. Composite parity uses a distinct typed input and plann
 7. Map `falsified` with a replay disagreement of each `DisagreementCause` (`Verdicts`, `Witness`,
    `NoValue`).
 8. Map `falsified` with a non-fault `ReplayRefusal`.
-9. Map `falsified` with a fault in each position, built from QSL's `InternalFault`: the
-   call-site fault's own reading (`ReplaySettlement::Fault`; QSL's replay result carries no fault); `ReplayRefusal::Fault` and
+9. Map `falsified` with a fault in each position, built from FSL's `InternalFault`: the
+   call-site fault's own reading (`ReplaySettlement::Fault`; FSL's replay result carries no fault); `ReplayRefusal::Fault` and
    `ReplayRefusal::Admission(AdmissionFailure::Fault)`, each bare and inside
    `SpineReplayError::Refused`, `FrameReplayError::Refused` and `StateClauseReplayError::Refused`;
    and `CallSiteRefusal::Fault` bare and inside `ReplayPackageError::CallSite`,
@@ -44,20 +44,20 @@ with a reproduced replay. Composite parity uses a distinct typed input and plann
 11. Map `falsified` under every replay settlement other than reproduced.
 12. Map `falsified` with a non-fault `CallSiteRefusal` and with a `DependencyLockError::Input`,
     each bare and wrapped in `ReplayPackageError` and `FrameReplayError`.
-13. Map `falsified` with the refusal QSL's `DependencyInput::new` returns for a lock whose only
+13. Map `falsified` with the refusal FSL's `DependencyInput::new` returns for a lock whose only
     defect is one library identity selected twice.
 14. Map ordinary source-predicate `falsified` with no `ReplaySettlement`, and map each other
     ordinary outcome and reason with that input.
 15. Map `falsified` with each `StateClauseReplayError` variant and with a reproduced and an
     inconclusive `StateClauseReplayResult` (FR-024).
-16. Delegate the planned composite strength projection and QSL FR-358 F-1 to F-7 terminal
+16. Delegate the planned composite strength projection and FSL FR-358 F-1 to F-7 terminal
     scenarios to [TC-048](../../replay/matrix/TC-048-composite-parity-replay-binding.md), which
     verifies FR-029 AC-17 and AC-19 to AC-28 through the IR-666 code consumer. Keep ordinary input
     pairing separate from the distinct verified/falsified composite settlement input. Include a CG
     precheck refusal and a mismatched report (neither has a terminal value), then a reachable
-    binding-valid QSL `prepare` non-fault `Refused` report from the public facade: pass a valid
+    binding-valid FSL `prepare` non-fault `Refused` report from the public facade: pass a valid
     wire request with a replay input-byte limit below its encoded size. Change one
-    observation member to fail full `CompositeIdentity` binding. Inspect QSL's public
+    observation member to fail full `CompositeIdentity` binding. Inspect FSL's public
     `terminal_value` mapping and CG's pass-through for any actual fault report; do not construct
     a report or assert that an invariant fault can be induced by public input.
 17. Map the `falsified` state-clause run of `deposit_debiting`, whose post-state value lies outside
@@ -83,7 +83,7 @@ with a reproduced replay. Composite parity uses a distinct typed input and plann
 9. Each is `Failed` (FR-029-AC-10).
 10. Each CG-raised failure, including `ReplayPackageError::InvalidFunction`,
     `FrameReplayError::Name` and a replay reproduced in a category other than `violation`, is
-    `Failed`, and every `ReplayRefused` value carries a code a QSL
+    `Failed`, and every `ReplayRefused` value carries a code a FSL
     refusal value supplied (FR-029-AC-11).
 11. No value is `Refuted` (FR-029-AC-12).
 12. Each is `Inconclusive(ReplayRefused)` carrying `CallSiteRefusal::code()` or
@@ -92,7 +92,7 @@ with a reproduced replay. Composite parity uses a distinct typed input and plann
 14. `TerminalPairError::MissingSettlement` and `TerminalPairError::UnexpectedSettlement`, with no
     value (FR-029-AC-15).
 15. The reproduced result is `Refuted`, the inconclusive result is `Inconclusive(ReplayParity)`
-    carrying its cause, `Refused` and `CallSite` read as their QSL refusals do, and `Name`,
+    carrying its cause, `Refused` and `CallSite` read as their FSL refusals do, and `Name`,
     `Transcript`, `Envelope`, `Document`, `MissingField`, `UndeclaredField`, `DuplicateField`,
     `OutOfDomain` and
     `UnsupportedOperationShape` are `Failed`, none `Incomplete` and none
@@ -105,8 +105,8 @@ with a reproduced replay. Composite parity uses a distinct typed input and plann
     category and completed parity Proved/Tested outcomes. TC-048 step 8 checks that the map has no
     proof-subject or proof-strength input and `TerminalPairError` has no bounded-shadow variant
     (FR-029-AC-21); the production routing of shadow outcomes (FR-029-AC-30) is planned. CG prechecks and
-    wrong-claim reports yield no terminal value; binding-valid QSL `prepare` non-fault `Refused`
-    yields Inconclusive(ReplayRefused) with QSL code. Inspection establishes that an actual bound
+    wrong-claim reports yield no terminal value; binding-valid FSL `prepare` non-fault `Refused`
+    yields Inconclusive(ReplayRefused) with FSL code. Inspection establishes that an actual bound
     `Fault` or `Admission(Fault)` report yields Failed, without fabricating one. Changing one
     observation member cannot bind as the same report (FR-029-AC-27/28).
 17. The post snapshot holds the exact unclamped value and CG refuses nothing itself, and the run is
@@ -122,9 +122,9 @@ Step 5 and FR-029-AC-32 to FR-029-AC-35 are covered by the literal cause matrix 
 Partly covered. Steps 1 to 15 are tests of `tests/it/terminal_map.rs` and the bounded report
 controls above. Step 3 includes timed-out and exhausted-unwind-bound reasons (FR-029-AC-3).
 Step 9 (FR-029-AC-10) is covered
-by `tc_040_a_fault_in_any_replay_wrapper_is_failed`, which builds each fault wrapper from QSL's
-constructible `InternalFault` (QSL bcca433) and asserts `Failed`. Step 15 (FR-029-AC-16, IR-460)
+by `tc_040_a_fault_in_any_replay_wrapper_is_failed`, which builds each fault wrapper from FSL's
+constructible `InternalFault` (FSL bcca433) and asserts `Failed`. Step 15 (FR-029-AC-16, IR-460)
 is covered: the reproduced and the inconclusive results are real `StateClauseReplayResult`s of the
-QSL twin. The state-clause fault readings are step 9's (FR-029-AC-10). Step 16 remains planned
+FSL twin. The state-clause fault readings are step 9's (FR-029-AC-10). Step 16 remains planned
 (IR-806 parity in TC-048). Step 17 is covered by the normal replay control and real-Kani
 `deposit_debiting` test.

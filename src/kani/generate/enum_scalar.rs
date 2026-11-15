@@ -1,4 +1,4 @@
-//! The enum scalar comparison harness (FR-049): a bounded Kani proof that quire-exact's
+//! The enum scalar comparison harness (FR-049): a bounded Kani proof that filament-exact's
 //! `compare_native_enum` over two `NativeEnum` carriers agrees with the native operator over the
 //! operands' ranks.
 //!
@@ -39,13 +39,13 @@ pub struct EnumScalarRequest<'a> {
     pub source: &'a CheckedPackageV2,
     /// The owner route's admitted context for that package, when one accompanies the request.
     pub context: Option<&'a AdmittedContext>,
-    /// The `quire.op.enum.*` application node.
+    /// The `filament.op.enum.*` application node.
     pub node_id: &'a CheckedNodeId,
     /// Resource ceilings the backend must run under.
     pub ceilings: ProofCeilings,
     /// The loop unwind bound of the harness.
     pub unwind: u32,
-    /// The routed item's QSL occurrence; `None` for a direct request.
+    /// The routed item's FSL occurrence; `None` for a direct request.
     pub requirement_occurrence: Option<&'a crate::core::requirement::RequirementOccurrence>,
     /// Whether the routed item carries a path condition, which this row does not lower.
     pub has_path_condition: bool,
@@ -76,7 +76,7 @@ pub struct EnumScalarHarness {
 pub enum EnumScalarRefusal {
     /// The node is not an enum comparison; its family keeps its own disposition.
     NotEnumComparison,
-    /// The comparison is ill-typed; the cause is quire-exact's own.
+    /// The comparison is ill-typed; the cause is filament-exact's own.
     IllTyped {
         /// The ill-typed cause `compare_native_enum` returned.
         cause: IllTypedCause,
@@ -160,12 +160,16 @@ impl EnumCapability {
 /// The comparison operators of the enum family, with the native Rust operator each is proved
 /// against.
 const OPERATORS: [(&str, ComparisonOperator, &str); 6] = [
-    ("quire.op.enum.eq", ComparisonOperator::Equal, "=="),
-    ("quire.op.enum.ne", ComparisonOperator::NotEqual, "!="),
-    ("quire.op.enum.lt", ComparisonOperator::Less, "<"),
-    ("quire.op.enum.le", ComparisonOperator::LessOrEqual, "<="),
-    ("quire.op.enum.gt", ComparisonOperator::Greater, ">"),
-    ("quire.op.enum.ge", ComparisonOperator::GreaterOrEqual, ">="),
+    ("filament.op.enum.eq", ComparisonOperator::Equal, "=="),
+    ("filament.op.enum.ne", ComparisonOperator::NotEqual, "!="),
+    ("filament.op.enum.lt", ComparisonOperator::Less, "<"),
+    ("filament.op.enum.le", ComparisonOperator::LessOrEqual, "<="),
+    ("filament.op.enum.gt", ComparisonOperator::Greater, ">"),
+    (
+        "filament.op.enum.ge",
+        ComparisonOperator::GreaterOrEqual,
+        ">=",
+    ),
 ];
 
 /// Settle one enum comparison: refuse it, or generate its harness.
@@ -602,7 +606,7 @@ mod tests {
     use quire_exact::VariantId;
 
     const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\n\
-profile v = \"quire.value.complete/v1\";\n\
+profile v = \"filament.value.complete/v1\";\n\
 ordered enum Level { LOW, MID, HIGH }\n\
 enum Color { RED, GREEN }\n\
 function lt using v(a: Level, b: Level): Boolean pure { a < b }\n\
@@ -624,7 +628,7 @@ function same using v(a: Color, b: Color): Boolean pure { a = b }\n";
         )
         .expect("the source compiles");
         let mut evidence = CheckedPackageEvidence::new();
-        evidence.support_feature("quire.value.complete/v1");
+        evidence.support_feature("filament.value.complete/v1");
         let CheckedPackageV2ReadResult::Admitted(package) = CheckedPackageV2::read(
             compiled.package().bytes(),
             CheckedPackageReadLimits::bounded(),
@@ -775,7 +779,7 @@ function same using v(a: Color, b: Color): Boolean pure { a = b }\n";
         )
         .expect("the source compiles");
         let mut evidence = CheckedPackageEvidence::new();
-        evidence.support_feature("quire.value.complete/v1");
+        evidence.support_feature("filament.value.complete/v1");
         let CheckedPackageV2ReadResult::Admitted(package) = CheckedPackageV2::read(
             compiled.package().bytes(),
             CheckedPackageReadLimits::bounded(),
@@ -827,7 +831,7 @@ function same using v(a: Color, b: Color): Boolean pure { a = b }\n";
     #[test]
     fn a_generator_that_mints_a_key_in_shape_and_members_is_refused_end_to_end() {
         let (package, compiled) = corpus();
-        let node = comparison(&package, "quire.op.enum.lt");
+        let node = comparison(&package, "filament.op.enum.lt");
         let request = request(&package, Some(compiled.context()), &node);
         assert!(matches!(
             generate_with_mint(&request, |owner| (
@@ -909,7 +913,7 @@ function same using v(a: Color, b: Color): Boolean pure { a = b }\n";
             }
         ));
         let (_, foreign) = compile(SOURCE, "other");
-        let node = comparison(&package, "quire.op.enum.lt");
+        let node = comparison(&package, "filament.op.enum.lt");
         let EnumScalarOutcome::Refused(EnumScalarRefusal::Unsupported { capability, .. }) =
             generate_enum_scalar_harness(&request(&package, Some(foreign.context()), &node))
         else {
@@ -918,17 +922,17 @@ function same using v(a: Color, b: Color): Boolean pure { a = b }\n";
         assert_eq!(capability, EnumCapability::OwnerAdmittedContext);
     }
 
-    /// QSL admits neither an ordering over an unordered enum nor operands of different enums, so
+    /// FSL admits neither an ordering over an unordered enum nor operands of different enums, so
     /// no source reaches CG with those ill-typed causes.
     #[trace("TC-063", "FR-049-AC-8")]
     #[test]
-    fn qsl_refuses_the_ill_typed_sources_before_cg() {
+    fn fsl_refuses_the_ill_typed_sources_before_cg() {
         for (body, cause) in [
             ("a < b", "IllTyped(OperatorIneligible)"),
             ("a = b", "IllTyped(TypeMismatch)"),
         ] {
             let source = format!(
-                "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nenum Color {{ RED, GREEN }}\nordered enum Level {{ LOW, MID }}\nfunction f using v(a: {}, b: {}): Boolean pure {{ {body} }}\n",
+                "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nenum Color {{ RED, GREEN }}\nordered enum Level {{ LOW, MID }}\nfunction f using v(a: {}, b: {}): Boolean pure {{ {body} }}\n",
                 if body == "a < b" { "Color" } else { "Level" },
                 "Color",
             );
@@ -944,7 +948,7 @@ function same using v(a: Color, b: Color): Boolean pure { a = b }\n";
                 StageLimits::default(),
                 ReplayLimits::default(),
             );
-            let refusal = compiled.expect_err("QSL refuses the source");
+            let refusal = compiled.expect_err("FSL refuses the source");
             let text = format!("{refusal:?}");
             assert!(text.contains("Package(Check"), "{body}: {text}");
             assert!(text.contains(cause), "{body} refuses with {cause}: {text}");

@@ -20,7 +20,7 @@ use std::{
 };
 use syn::{spanned::Spanned, visit::Visit, Item, UseTree};
 
-const QSL_OWNED_TYPES: [&str; 5] = [
+const FSL_OWNED_TYPES: [&str; 5] = [
     "Witness",
     "ReplaySource",
     "WitnessEnvelope",
@@ -166,7 +166,7 @@ fn banned_name(path: &[String]) -> Option<&str> {
         path.iter()
             .skip(1)
             .map(String::as_str)
-            .find(|name| QSL_OWNED_TYPES.contains(name))
+            .find(|name| FSL_OWNED_TYPES.contains(name))
     } else {
         None
     }
@@ -182,7 +182,7 @@ fn macro_definitions(
             proc_macro2::TokenTree::Ident(ident) => {
                 if previous.as_deref().is_some_and(|word| {
                     ["struct", "enum", "union", "trait", "type"].contains(&word)
-                }) && QSL_OWNED_TYPES.contains(&ident.to_string().as_str())
+                }) && FSL_OWNED_TYPES.contains(&ident.to_string().as_str())
                 {
                     names.push((ident.to_string(), ident.span()));
                 }
@@ -197,14 +197,14 @@ fn macro_definitions(
     }
 }
 
-/// Scans every parsed Rust file under `src/` for the five QSL-owned declarations,
+/// Scans every parsed Rust file under `src/` for the five FSL-owned declarations,
 /// Contract IR imports and qualified paths, including alias chains across files.
 /// Macro tokens are checked for literal declaration keywords followed by a banned name;
 /// imports and qualified paths inside opaque macro tokens, macro expansion,
 /// generated files outside `src/`, and constructed identifiers are outside this scan.
 #[trace("TC-035", "FR-024-AC-10")]
 #[test]
-fn qsl_replay_types_are_neither_defined_nor_imported_from_contract_ir() {
+fn fsl_replay_types_are_neither_defined_nor_imported_from_contract_ir() {
     struct AliasScan<'a> {
         module: Vec<String>,
         aliases: &'a mut AliasMap,
@@ -285,7 +285,7 @@ fn qsl_replay_types_are_neither_defined_nor_imported_from_contract_ir() {
                 _ => None,
             };
             if let Some(name) =
-                name.filter(|name| QSL_OWNED_TYPES.contains(&name.to_string().as_str()))
+                name.filter(|name| FSL_OWNED_TYPES.contains(&name.to_string().as_str()))
             {
                 self.report(&name.to_string(), name.span(), "defines");
             }
@@ -299,7 +299,7 @@ fn qsl_replay_types_are_neither_defined_nor_imported_from_contract_ir() {
                             .first()
                             .is_some_and(|part| part == "quire_contract_ir")
                         {
-                            for name in QSL_OWNED_TYPES {
+                            for name in FSL_OWNED_TYPES {
                                 self.report(
                                     name,
                                     item.use_token.span,

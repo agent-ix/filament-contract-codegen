@@ -1,10 +1,10 @@
 //! Authored point-qualified V2 clause identities and exact generated verdict points.
 
-use ix_trace_rs::trace;
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     generate_v2_numeric_strategy, Population, V2NumericBundle, V2NumericErrorCode, V2NumericPolicy,
     V2NumericRequest, V2SelectedClaimKey,
 };
+use ix_trace_rs::trace;
 use quire_contract_model::{
     CheckedNodeId, CheckedOccurrence, CheckedOccurrenceRole, CheckedPackageV2, ExecutionPoint,
     ExecutionPointName,
@@ -18,7 +18,7 @@ fn claim<'a>(package: &'a CheckedPackageV2, clause: &CheckedNodeId) -> &'a Check
         .nodes
         .iter()
         .find(|node| &node.node_id == clause)
-        .expect("selected QSL clause")
+        .expect("selected FSL clause")
         .occurrences
         .iter()
         .find(|occurrence| occurrence.role == CheckedOccurrenceRole::Claim)
@@ -72,7 +72,7 @@ fn generated_source(bundle: &V2NumericBundle) -> &str {
         .contents
 }
 
-/// The point, including its variant and name, comes from the selected QSL clause.
+/// The point, including its variant and name, comes from the selected FSL clause.
 #[trace("TC-020", "FR-011-AC-14", "FR-004-AC-26")]
 #[test]
 fn distinct_pointed_invariants_render_distinct_verdict_points_and_identities() {
@@ -171,7 +171,7 @@ fn pre_and_post_claims_render_their_accepted_operation_points() {
     }
 }
 
-/// Two QSL claims of one content-addressed pointed node select its one point.
+/// Two FSL claims of one content-addressed pointed node select its one point.
 #[trace("TC-020", "FR-011-AC-14", "FR-004-AC-26")]
 #[test]
 fn two_authentic_claims_of_one_pointed_node_share_the_point() {
@@ -200,7 +200,7 @@ fn two_authentic_claims_of_one_pointed_node_share_the_point() {
         .nodes
         .iter()
         .find(|node| node.node_id == clauses[0])
-        .expect("shared QSL node");
+        .expect("shared FSL node");
     let claims = node
         .occurrences
         .iter()
@@ -266,7 +266,7 @@ fn changed_or_unpointed_selection_returns_typed_no_artifact_refusal() {
         .nodes
         .iter()
         .find(|node| node.semantic_form.as_ref() == "state_clause" && node.node_id != *pointed)
-        .expect("separate unpointed QSL clause");
+        .expect("separate unpointed FSL clause");
     let other_claim = claim(&package, &unpointed.node_id);
     let wrong_owner = V2NumericRequest {
         key: V2SelectedClaimKey {

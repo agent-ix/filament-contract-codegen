@@ -3,11 +3,11 @@ id: ADR-007
 title: "Minimal Kani run ownership: process group, wall-clock timeout, environment-owned memory cap"
 type: ADR
 relationships:
-  - target: ix://agent-ix/quire-contract-codegen/ADR-005
+  - target: ix://agent-ix/filament-contract-codegen/ADR-005
     type: supersedes
-  - target: ix://agent-ix/quire-contract-codegen/FR-017
+  - target: ix://agent-ix/filament-contract-codegen/FR-017
     type: relates_to
-  - target: ix://agent-ix/quire-contract-codegen/FR-028
+  - target: ix://agent-ix/filament-contract-codegen/FR-028
     type: relates_to
 ---
 # ADR-007: Minimal Kani run ownership: process group, wall-clock timeout, environment-owned memory cap

@@ -24,7 +24,7 @@ type: TestMatrix
 | FR-008 | FR-008-CON-4 | TC-017 | 🚧 V2 planned (V1 tests exist) |
 | FR-008 | FR-008-CON-1 | Inspection | 🚧 V2 planned (V1 tests exist) |
 | FR-009 | FR-009-AC-1 through FR-009-AC-6 | TC-018 | 🚧 V2 planned (V1 tests exist) |
-| FR-009 | FR-009-AC-7 | TC-018 | ✅ Covered by QSL-produced mirrored comparison populations and compiled exhaustive small-domain controls |
+| FR-009 | FR-009-AC-7 | TC-018 | ✅ Covered by FSL-produced mirrored comparison populations and compiled exhaustive small-domain controls |
 | FR-010 | FR-010-AC-1 through FR-010-AC-5 | TC-019 | 🚧 V2 planned (V1 tests exist) |
 | FR-011 | FR-011-AC-1 through FR-011-AC-5 | TC-020 | 🚧 V2 planned (V1 tests exist) |
 | FR-011 | FR-011-AC-10 | TC-020 | 🚧 Planned (IR-1316; IR-1124): no V2 unbound-model validation or complete driver-export controls |
@@ -70,6 +70,6 @@ consumer compilation.
 
 The FR-008 V2 scope depends on IR FR-038-AC-202 through AC-209 (IR-703), which are implemented in
 Contract IR with tagged local controls (IR FR-038 and TC-445 on the measured IR main head); IR's
-fresh QSL producer-origin case (AC-204) runs only under its conformance gate and no result of that
-gate is claimed here. CG's ConfigVersion producer control still needs a CG-side real QSL V2
+fresh FSL producer-origin case (AC-204) runs only under its conformance gate and no result of that
+gate is claimed here. CG's ConfigVersion producer control still needs a CG-side real FSL V2
 fixture. Prior V1 coverage is historical evidence only for the V2 contract.

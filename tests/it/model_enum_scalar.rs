@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Exact scalar generation over the original QSpec model variant comparison fixture.
+//! Exact scalar generation over the original FSpec model variant comparison fixture.
 
 #[path = "../model_enum_support/fixture.rs"]
 mod fixture;
 
-use ix_trace_rs::trace;
-use quire_contract_codegen::{
+use filament_contract_codegen::{
     derive_exact_scalar_items, generate_exact_scalar_oracles, ClaimDisposition,
     ExactScalarOperation, EXACT_SCALAR_CRATE_NAME,
 };
+use ix_trace_rs::trace;
 use quire_exact::ComparisonOperator;
 use quire_specification::{ACME_COLORS_COMPARISON_SOURCE, ACME_COLORS_DOMAIN_PACKAGE};
 
@@ -67,7 +67,7 @@ fn original_model_enum_eq_ne_generate_and_execute_all_four_truth_arms() {
         let contents = if artifact.path == "Cargo.toml" {
             artifact.contents.replacen("[dependencies]\n", concat!(
                 "[dependencies]\n",
-                "quire-contract-model = { git = \"https://github.com/agent-ix/quire-contract-ir\", branch = \"main\" }\n"
+                "filament-contract-model = { git = \"https://github.com/agent-ix/filament-contract-ir\", branch = \"main\" }\n"
             ), 1)
         } else { artifact.contents.clone() };
         (artifact.path.clone(), contents)
