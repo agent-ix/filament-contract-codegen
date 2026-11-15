@@ -1017,6 +1017,50 @@ impl Twin {
         self.with_amount_type(vec![], vec![declaration], option)
     }
 
+    /// The same twin with `amount` typed by an option over a declared, unconstrained value type
+    /// of the given `scalar` family (for example `"string"`).
+    pub fn with_scalar_option_amount(self, scalar: &str) -> Self {
+        let payload = format!("ix://{PACKAGE}/scalar_payload");
+        let mut domain: Value = serde_json::from_slice(&self.domain).expect("domain document");
+        let mut declaration = domain["types"]
+            .as_array()
+            .expect("types")
+            .iter()
+            .find(|ty| ty["identity"] == range_type("balance"))
+            .expect("balance value type")
+            .clone();
+        declaration["identity"] = json!(payload);
+        declaration["displayName"] = json!(payload);
+        declaration["origin"] = generated(&payload);
+        declaration["scalar"] = json!(scalar);
+        let constraints = if scalar == "string" {
+            json!([
+                {"keyword":"minLength", "operands":{"value":0}, "appliesTo":payload},
+                {"keyword":"maxLength", "operands":{"value":8}, "appliesTo":payload},
+                {"keyword":"format", "operands":{"name":"text-profile:nfc"}, "appliesTo":payload},
+            ])
+        } else {
+            json!([])
+        };
+        declaration["constraints"] = constraints;
+        for constraint in declaration["constraints"]
+            .as_array_mut()
+            .expect("constraints")
+        {
+            let keyword = constraint["keyword"].as_str().expect("keyword").to_owned();
+            constraint["identity"] = json!(format!("{payload}/constraints/{keyword}"));
+            constraint["diagnosticCode"] = json!(format!("text.{keyword}"));
+            constraint["origin"] = generated(&payload);
+        }
+        domain["types"]
+            .as_array_mut()
+            .expect("types")
+            .push(declaration);
+        let mut twin = self;
+        twin.domain = domain.to_string().into_bytes();
+        twin.with_option_amount_over(payload)
+    }
+
     /// The same twin with the `amount` parameter typed `Option<Option<inner>>`.
     pub fn with_nested_option_amount(self) -> Self {
         let inner = format!("ix://{PACKAGE}/inner_option");
@@ -1070,36 +1114,6 @@ impl Twin {
             ("n", range_type("balance")),
             ("flag", "ix://quire/native/Boolean".to_owned()),
         ])
-    }
-
-    /// The same twin with the `amount` parameter typed by a record `Pair` whose member `f` has
-    /// optional presence: a `field?` slot (FR-054-AC-12).
-    pub fn with_optional_field_amount(self) -> Self {
-        let record = format!("ix://{PACKAGE}/Pair");
-        let mut member = field(&record, "f");
-        member["typeRef"] = json!(range_type("balance"));
-        member["presence"] = json!("optional");
-        let declaration = json!({
-            "identity": record,
-            "displayName": record,
-            "kind": {"module": PACKAGE, "name": "record_value_type"},
-            "roles": [],
-            "origin": generated(&record),
-            "constraints": [],
-            "extensions": [],
-            "unknownPolicy": "reject",
-            "supertypes": [],
-            "fields": [member],
-            "operations": [],
-        });
-        self.with_amount_type(
-            vec![construct(
-                "record_value_type",
-                "quire.meaning.model.record-value-type/v1",
-            )],
-            vec![declaration],
-            record,
-        )
     }
 
     /// Declare `constructs` and `declarations` in the domain package and type `amount` by `type_ref`.

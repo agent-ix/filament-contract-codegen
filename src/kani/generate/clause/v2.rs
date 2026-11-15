@@ -27,9 +27,10 @@ use crate::{
     core::ir::{
         checked_term::{application, bound_members, literal, reference},
         clause::{
-            option_shape, read_clause, union_members, ClauseCondition, OptionLeaf, ClauseGraphView, ClauseInput,
-            ClauseInputSide, ClauseLeaf, ClauseTerm, OptionShape, CONTROL_CASE, CONTROL_IF,
-            CONTROL_LET, MAX_CONDITION_TERMS, OPTION_PRESENT, OPTION_VALUE,
+            option_shape, read_clause, union_members, ClauseCondition, ClauseGraphView,
+            ClauseInput, ClauseInputSide, ClauseLeaf, ClauseTerm, OptionLeaf, OptionShape,
+            CONTROL_CASE, CONTROL_IF, CONTROL_LET, MAX_CONDITION_TERMS, OPTION_PRESENT,
+            OPTION_VALUE,
         },
     },
     kani::{
@@ -80,9 +81,14 @@ pub(in crate::kani::generate) struct LoweredV2Clause {
 #[derive(Clone)]
 enum MachineScalar {
     Boolean,
-    Integer { minimum: i64, maximum: i64 },
+    Integer {
+        minimum: i64,
+        maximum: i64,
+    },
     /// An option parameter (FR-054): a presence draw and the payload leaves in ascending path order.
-    Option { leaves: Vec<OptionLeaf> },
+    Option {
+        leaves: Vec<OptionLeaf>,
+    },
 }
 
 struct ResultParameter {
@@ -349,9 +355,9 @@ fn lower_with_census<'a>(
         .inputs
         .iter()
         .any(|input| input.leaf != ClauseLeaf::Whole)
-        && !result_postcondition.as_ref().is_some_and(|signature| {
-            matches!(signature.result, Some(MachineScalar::Boolean))
-        })
+        && !result_postcondition
+            .as_ref()
+            .is_some_and(|signature| matches!(signature.result, Some(MachineScalar::Boolean)))
     {
         return Err(refusal());
     }

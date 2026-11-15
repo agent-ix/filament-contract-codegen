@@ -175,9 +175,9 @@ fn payload_leaves(
         Some(CheckedNodeKind::CompositeType(CompositeTypeForm::Option)) => {
             return Err(OptionShape::Nested)
         }
-        Some(CheckedNodeKind::CompositeType(form @ (CompositeTypeForm::Record | CompositeTypeForm::Tuple)))
-            if depth == 0 =>
-        {
+        Some(CheckedNodeKind::CompositeType(
+            form @ (CompositeTypeForm::Record | CompositeTypeForm::Tuple),
+        )) if depth == 0 => {
             let CheckedTerm::Aggregate { members } = package.term(type_node).ok_or_else(family)?
             else {
                 return Err(family());
@@ -564,9 +564,10 @@ impl Reader<'_, '_> {
         let Some(option) = self.option_operand(argument, side) else {
             return Some(None);
         };
-        let payload = option.payload.iter().find(|leaf| {
-            matches!(&leaf.leaf, ClauseLeaf::Payload(path) if path == name)
-        });
+        let payload = option
+            .payload
+            .iter()
+            .find(|leaf| matches!(&leaf.leaf, ClauseLeaf::Payload(path) if path == name));
         Some(payload.map(|payload| ClauseTerm::OptionValue {
             presence: option.presence.clone(),
             payload: payload.clone(),
