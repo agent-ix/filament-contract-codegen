@@ -2,8 +2,8 @@
 //! Authentic FSL inputs exercise the single generation entry and dedicated method execution.
 mod support;
 use filament_contract_codegen::*;
+use fsl_replay::SnapshotValue;
 use ix_trace_rs::trace;
-use qsl_replay::SnapshotValue;
 use serde_json::json;
 use support::*;
 #[trace("TC-062", "FR-048-AC-1", "FR-048-AC-2")]
@@ -168,7 +168,7 @@ fn native_conditions_stop_the_method_without_becoming_a_boundary() {
     }
     assert!(text
         .contains("Err(safety::ClauseStop::Undefined) => panic!(\"undefined safety evaluation\")"));
-    assert!(!text.contains("quire_exact::Outcome::Completed(false)"));
+    assert!(!text.contains("filament_exact::Outcome::Completed(false)"));
 }
 
 #[trace("TC-062", "FR-048-AC-9")]
@@ -184,7 +184,7 @@ fn ordinary_execution_cannot_publish_a_constrained_success() {
     let bindings = bindings(&f);
     let method = emit_method(&request(&f, &initial, &bindings)).unwrap();
     let installation = KaniInstallation::new("absent-no-spawn");
-    let cancel = quire_exact::Cancel::new();
+    let cancel = filament_exact::Cancel::new();
     let execution = KaniExecutionRequest {
         cancel: &cancel,
         installation: &installation,
@@ -220,10 +220,10 @@ fn fsl_owner_evaluates_the_complete_small_state_domain() {
             for aux in 0..=3 {
                 assert!(matches!(
                     owner_evaluation(&f, "Safe", n, flag, aux, provisions.evaluator_limits),
-                    qsl_replay::ClauseEvaluation::Completed(true)
+                    fsl_replay::ClauseEvaluation::Completed(true)
                 ));
                 assert!(
-                    matches!(owner_evaluation(&f,"Limit0",n,flag,aux,provisions.evaluator_limits),qsl_replay::ClauseEvaluation::Completed(value) if value==(n<2))
+                    matches!(owner_evaluation(&f,"Limit0",n,flag,aux,provisions.evaluator_limits),fsl_replay::ClauseEvaluation::Completed(value) if value==(n<2))
                 );
             }
         }
@@ -303,7 +303,7 @@ fn installed_small_method_controls_retain_boundary_safety_and_no_boundary_succes
                             provisions.evaluator_limits,
                         );
                         assert!(
-                            matches!(original, qsl_replay::ClauseEvaluation::Completed(value) if value == (expression == "true" || flag)),
+                            matches!(original, fsl_replay::ClauseEvaluation::Completed(value) if value == (expression == "true" || flag)),
                             "{name}: {function} at ({n},{flag},{aux})"
                         );
                     }
@@ -421,12 +421,12 @@ fn boolean_and_partial_conditions_use_the_owner_oracle_and_unbounded_domains_ref
         if condition != "self.n mod self.aux = 0" {
             assert!(matches!(
                 outcome,
-                qsl_replay::ClauseEvaluation::Completed(value) if value == (condition == "true")
+                fsl_replay::ClauseEvaluation::Completed(value) if value == (condition == "true")
             ));
         } else {
             assert!(matches!(
                 outcome,
-                qsl_replay::ClauseEvaluation::Undefined { .. }
+                fsl_replay::ClauseEvaluation::Undefined { .. }
             ));
             assert!(method.rust().contents.contains("rt::modulo"));
         }
@@ -500,7 +500,7 @@ fn equivalent_package_instances_cannot_mix_handles_and_census_refusal_retains_ow
     };
     assert_eq!(
         source.code,
-        quire_contract_model::CheckedOperationReadErrorCode::WorkLimit
+        filament_contract_model::CheckedOperationReadErrorCode::WorkLimit
     );
     assert_eq!(source.context, a.context);
     assert_eq!(source.limit, 0);
@@ -513,7 +513,7 @@ fn run_installed(method: &KaniConstrainedMethodHarness) -> ConstrainedBackendEvi
     let scratch = crate::scratch_crate::TemporaryDirectory::new("constrained-method-installed");
     std::fs::create_dir_all(scratch.path.as_path().join("src")).unwrap();
     std::fs::create_dir_all(scratch.path.as_path().join(".cargo")).unwrap();
-    crate::scratch_crate::write_manifest(scratch.path.as_path(),"[package]\nname=\"constrained_method_control\"\nversion=\"0.0.0\"\nedition=\"2021\"\n[workspace]\n[dependencies]\nquire-exact={git=\"https://github.com/agent-ix/quire-exact\",branch=\"main\"}\nquire-contract-runtime={git=\"https://github.com/agent-ix/quire-contract-runtime\",branch=\"main\",features=[\"exact\"]}\n");
+    crate::scratch_crate::write_manifest(scratch.path.as_path(),"[package]\nname=\"constrained_method_control\"\nversion=\"0.0.0\"\nedition=\"2021\"\n[workspace]\n[dependencies]\nfilament-exact={git=\"https://github.com/agent-ix/filament-exact\",branch=\"main\"}\nfilament-contract-runtime={git=\"https://github.com/agent-ix/filament-contract-runtime\",branch=\"main\",features=[\"exact\"]}\n");
     std::fs::write(
         scratch.path.as_path().join(".cargo/config.toml"),
         "[build]\njobs=2\n",
@@ -528,7 +528,7 @@ fn run_installed(method: &KaniConstrainedMethodHarness) -> ConstrainedBackendEvi
     )
     .unwrap();
     let installation = KaniInstallation::discover().expect("installed bounded Kani");
-    let cancel = quire_exact::Cancel::new();
+    let cancel = filament_exact::Cancel::new();
     let target =
         std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("target/constrained-method-backend");
     let evidence = execute_constrained_method(&KaniExecutionRequest {
@@ -608,9 +608,9 @@ fn a_standalone_collection_constraint_remains_unsupported_without_a_harness() {
         .unwrap()
         .push(field);
     let bytes = quire_canonical::to_vec(&doc, quire_canonical::Limits::new(1 << 20)).unwrap();
-    let source = format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.model.complete/v1\";\nmodel M = \"{MODEL}\";\ninvariant Safe using v on M::Node at current {{ self.n <= 3 }}\nconstraint Limit using v on M::Node at current {{ forall(item in self.items: item >= 0) }}\n");
+    let source = format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.model.complete/v1\";\nmodel M = \"{MODEL}\";\ninvariant Safe using v on M::Node at current {{ self.n <= 3 }}\nconstraint Limit using v on M::Node at current {{ forall(item in self.items: item >= 0) }}\n");
     let f = fixture_source(bytes, "constrained-standalone-collection", source);
-    let quantifier = f.package.resolved_graph().nodes.iter().find(|node| matches!(f.package.term(&node.node_id),Some(quire_contract_model::CheckedTerm::Application {operation,..}) if operation.identity()==Some("quire.op.collection.forall"))).expect("FSL emitted forall");
+    let quantifier = f.package.resolved_graph().nodes.iter().find(|node| matches!(f.package.term(&node.node_id),Some(filament_contract_model::CheckedTerm::Application {operation,..}) if operation.identity()==Some("filament.op.collection.forall"))).expect("FSL emitted forall");
     let items = [ObligationItem::CollectionClaim {
         package: &f.package,
         function_id: &f.constraints[0],
@@ -665,7 +665,7 @@ fn same_named_general_clause_bodies_and_preconditions_cannot_reuse_a_method() {
             } else {
                 "delta >= 0".into()
             };
-            let source = format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.model.complete/v1\";\nmodel M = \"{MODEL}\";\ninvariant Safe using v on M::Node at current {{ {safety} }}\nconstraint Limit0 using v on M::Node at current {{ {constraint} }}\npre Ready using v on M::Node::nudge {{ {precondition} }}\n");
+            let source = format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.model.complete/v1\";\nmodel M = \"{MODEL}\";\ninvariant Safe using v on M::Node at current {{ {safety} }}\nconstraint Limit0 using v on M::Node at current {{ {constraint} }}\npre Ready using v on M::Node::nudge {{ {precondition} }}\n");
             let bytes = quire_canonical::to_vec(&document(), quire_canonical::Limits::new(1 << 20))
                 .unwrap();
             fixture_source(bytes, "same-labelled-general-body", source)

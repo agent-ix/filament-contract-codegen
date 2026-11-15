@@ -2,7 +2,9 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::io::{self, Write};
 
-use quire_contract_model::{BooleanOperator, BoundPackage, ClauseRef, Expression, ExpressionKind};
+use filament_contract_model::{
+    BooleanOperator, BoundPackage, ClauseRef, Expression, ExpressionKind,
+};
 use serde::Serialize;
 
 use crate::{
@@ -423,7 +425,7 @@ fn check_maps(
 }
 
 fn observe_clause(
-    clause: &quire_contract_model::BoundClause,
+    clause: &filament_contract_model::BoundClause,
     map: &[SourceRegion],
     coverage: Option<&LlvmCoverage>,
 ) -> ClauseObservation {
@@ -529,8 +531,8 @@ pub(crate) fn check_output_size<T: Serialize>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use filament_contract_model::EXECUTABLE_PROJECTION_FORMAT;
     use ix_trace_rs::trace;
-    use quire_contract_model::EXECUTABLE_PROJECTION_FORMAT;
     use serde_json::{json, Value};
 
     const PACKAGE: &str = "test/no-generation-panics";

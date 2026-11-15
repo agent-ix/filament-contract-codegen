@@ -122,10 +122,10 @@ use filament_contract_codegen::{
     CheckedFunctionError, CheckedFunctionSource,
 };
 #[cfg_attr(kani, allow(unused_imports))]
-use quire_contract_model::{CheckedNodeId, CheckedPackageV2};
-use quire_eval::{self as eval, Body, BodyFactory, ChildRequest, FamilyOutcome, Resume, Transition};
-use quire_exact::{self as exact, Meter, Outcome, Refusal, Value};
-use quire_semantic_value::{self as sv, object_closure::ObjectClosure};
+use filament_contract_model::{CheckedNodeId, CheckedPackageV2};
+use filament_eval::{self as eval, Body, BodyFactory, ChildRequest, FamilyOutcome, Resume, Transition};
+use filament_exact::{self as exact, Meter, Outcome, Refusal, Value};
+use filament_semantic_value::{self as sv, object_closure::ObjectClosure};
 
 fn evaluated(outcome: Outcome<Value>, location: &sv::location::ExpressionLocation) -> eval::Evaluation {
     let location = match &outcome {
@@ -169,12 +169,12 @@ impl PreparedFunction {
     #[cfg(not(kani))]
     fn new(
         declaring_package: &CheckedPackageV2,
-        acquired: &qsl_replay::CheckedClosureCompilation,
-        selection: &qsl_replay::CallableSelection,
+        acquired: &fsl_replay::CheckedClosureCompilation,
+        selection: &fsl_replay::CallableSelection,
         resources: &filament_contract_codegen::CheckedFunctionResources,
         location: sv::location::ExpressionLocation,
     ) -> Result<Self, CheckedFunctionError> {
-        use qsl_replay::{NominalDeclarationForm as Form, NominalDeclarationMember as Member};
+        use fsl_replay::{NominalDeclarationForm as Form, NominalDeclarationMember as Member};
         use sv::declaration::TypeEnvironment;
         let owner = filament_contract_codegen::checked_function_declarations(declaring_package, acquired, selection)?;
         #[allow(unused_mut)]
@@ -498,7 +498,7 @@ mod tests {
     fn function() -> CheckedNodeId {
         CheckedNodeId {
             package: "function-fixture".into(),
-            path: vec![quire_contract_model::CheckedNodePathSegment::Name(
+            path: vec![filament_contract_model::CheckedNodePathSegment::Name(
                 "function".into(),
             )],
             ordinal: 0,
@@ -542,7 +542,7 @@ mod tests {
         assert!(source.contains("selected_nested_call_site(declaring_package"));
         assert!(source.contains("Transition::Call(ChildRequest"));
         assert!(!source.contains("Location::at("));
-        assert!(!source.contains("quire_contract_runtime"));
+        assert!(!source.contains("filament_contract_runtime"));
         assert!(!source.contains("rt::"));
     }
 

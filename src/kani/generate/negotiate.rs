@@ -12,7 +12,7 @@
 //! `operation.mode` and (for the one family with more than one catalogued law definition)
 //! `operation.laws` all confirm the request item's own descriptor, is [`OperationProvenance::IrConfirmed`]
 //! and -- for the `IntegerArithmetic` families this generator has a Kani renderer for
-//! (`quire.op.integer.{add,sub,mul,negate}`) -- reaches a real Kani harness via
+//! (`filament.op.integer.{add,sub,mul,negate}`) -- reaches a real Kani harness via
 //! [`Outcome::LoweredScalar`]/`render_scalar`. Every other confirmed family is honestly refused as
 //! [`UnsupportedObligation::OperationNotRendered`], never silently mis-rendered. A claim that
 //! codegen generated but whose operation it did not confirm reports the request item's own
@@ -77,12 +77,12 @@ use crate::kani::generate::graph::{
 };
 use std::collections::{BTreeMap, BTreeSet};
 
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedNodeId, CheckedNodeTag, CheckedOccurrence, CheckedPackageV2, CheckedSemanticNodeV2,
     CheckedSourceMapEntry, CheckedTerm, ContractPackageV1, ContractSourceV1, StateClauseKind,
 };
 
-use qsl_replay::ObligationIdentity;
+use fsl_replay::ObligationIdentity;
 
 use crate::{
     core::contract_package::ContractDriverResultSelection,
@@ -143,7 +143,7 @@ impl<'a> ContractLookup<'a> {
         for entry in source.source_map() {
             sources.entry(&entry.node_id).or_default().push(entry);
         }
-        let source_frame = qsl_replay::WireGraph::new(
+        let source_frame = fsl_replay::WireGraph::new(
             source
                 .resolved_graph()
                 .nodes
@@ -202,14 +202,14 @@ impl<'a> ContractLookup<'a> {
     fn source_node(
         &self,
         id: &CheckedNodeId,
-    ) -> Option<&'a CheckedSemanticNodeV2<quire_contract_model::CheckedJson>> {
+    ) -> Option<&'a CheckedSemanticNodeV2<filament_contract_model::CheckedJson>> {
         self.node(self.admitted_node(id)?)
     }
 
     fn node(
         &self,
         id: &CheckedNodeId,
-    ) -> Option<&'a CheckedSemanticNodeV2<quire_contract_model::CheckedJson>> {
+    ) -> Option<&'a CheckedSemanticNodeV2<filament_contract_model::CheckedJson>> {
         self.graph.node(id)
     }
 
@@ -1798,8 +1798,8 @@ mod tests {
     /// A claim that matches `clause`: its true occurrence and kind, with the selected clause's own
     /// parameters and state reads read back from the generator's refusal when it names them.
     fn claim_for(
-        package: &quire_contract_model::CheckedPackageV2,
-        clause: &quire_contract_model::CheckedNodeId,
+        package: &filament_contract_model::CheckedPackageV2,
+        clause: &filament_contract_model::CheckedNodeId,
     ) -> V2ClauseObligationClaim {
         use crate::kani::identity::V2ClauseObligationRecord;
         let occurrence = package
@@ -1809,7 +1809,7 @@ mod tests {
             .map_or_else(
                 || crate::core::requirement::RequirementOccurrence {
                     node_id: clause.clone(),
-                    role: quire_contract_model::CheckedOccurrenceRole::Expression,
+                    role: filament_contract_model::CheckedOccurrenceRole::Expression,
                     ordinal: 0,
                 },
                 |entry| crate::core::requirement::RequirementOccurrence {
@@ -2153,27 +2153,27 @@ mod tests {
                 assert!(source.contains(&original));
                 source = source.replace(&original, &distinct);
             }
-            let located = qsl_replay::call_site(
-                qsl_replay::SourceIdentity::new("agent-ix", "test:state-frame-twin"),
+            let located = fsl_replay::call_site(
+                fsl_replay::SourceIdentity::new("agent-ix", "test:state-frame-twin"),
                 "state-frame-twin".to_owned(),
                 "test:state-frame-twin",
                 source.as_bytes(),
                 [twin.domain.as_slice()],
-                &qsl_replay::DependencyInput::default(),
-                &qsl_replay::ClauseName(qsl_replay::Identifier::new(&names[0]).unwrap()),
+                &fsl_replay::DependencyInput::default(),
+                &fsl_replay::ClauseName(fsl_replay::Identifier::new(&names[0]).unwrap()),
             )
             .expect("distinct authored FSL clauses compile through the owner");
-            let mut evidence = quire_contract_model::CheckedPackageEvidence::new();
+            let mut evidence = filament_contract_model::CheckedPackageEvidence::new();
             evidence
                 .insert_domain_package_document("test/bank", twin.domain.clone())
                 .unwrap();
-            evidence.support_feature("quire.value.complete/v1");
+            evidence.support_feature("filament.value.complete/v1");
             let package = match CheckedPackageV2::read(
                 &located.package,
-                quire_contract_model::CheckedPackageReadLimits::bounded(),
+                filament_contract_model::CheckedPackageReadLimits::bounded(),
                 &evidence,
             ) {
-                quire_contract_model::CheckedPackageV2ReadResult::Admitted(package) => *package,
+                filament_contract_model::CheckedPackageV2ReadResult::Admitted(package) => *package,
                 other => panic!("owner source is admitted: {other:?}"),
             };
             let clauses = package
@@ -2284,39 +2284,39 @@ mod tests {
             .join(" and ");
         let source = format!(
             "language \"ix:native\" edition \"1-draft\";\n\
-         profile v = \"quire.model.complete/v1\";\n\
+         profile v = \"filament.model.complete/v1\";\n\
          model Bank = \"test/bank\";\n\
          predicate inspect using v (input: Bank::Account): Boolean {{ {body} }}\n"
         );
         let selection =
-            qsl_replay::QualifiedName::new(vec![qsl_replay::Identifier::new("inspect").unwrap()])
+            fsl_replay::QualifiedName::new(vec![fsl_replay::Identifier::new("inspect").unwrap()])
                 .unwrap();
         let package_name = format!("ir276-collection-request-{quantifiers}");
-        let located = qsl_replay::call_site(
-            qsl_replay::SourceIdentity::new("agent-ix", package_name.as_str()),
+        let located = fsl_replay::call_site(
+            fsl_replay::SourceIdentity::new("agent-ix", package_name.as_str()),
             package_name.clone(),
             package_name.as_str(),
             source.as_bytes(),
             [domain.as_slice()],
-            &qsl_replay::DependencyInput::default(),
+            &fsl_replay::DependencyInput::default(),
             &selection,
         )
         .expect("public FSL admission of authored finite collection predicate");
-        let mut evidence = quire_contract_model::CheckedPackageEvidence::new();
+        let mut evidence = filament_contract_model::CheckedPackageEvidence::new();
         evidence
             .insert_domain_package_document("test/bank", domain)
             .unwrap();
-        evidence.support_feature("quire.value.complete/v1");
+        evidence.support_feature("filament.value.complete/v1");
         let package = match CheckedPackageV2::read(
             &located.package,
-            quire_contract_model::CheckedPackageReadLimits {
+            filament_contract_model::CheckedPackageReadLimits {
                 // The controlled 32-quantifier FSL output is about 6.2 MiB.
                 bytes: 8 << 20,
-                ..quire_contract_model::CheckedPackageReadLimits::bounded()
+                ..filament_contract_model::CheckedPackageReadLimits::bounded()
             },
             &evidence,
         ) {
-            quire_contract_model::CheckedPackageV2ReadResult::Admitted(package) => *package,
+            filament_contract_model::CheckedPackageV2ReadResult::Admitted(package) => *package,
             other => panic!("owner-emitted graph admits unchanged: {other:?}"),
         };
         let function = package
@@ -2338,7 +2338,7 @@ mod tests {
                 matches!(
                     &node.body,
                     CheckedTerm::Application { operation, .. }
-                        if operation.identity() == Some("quire.op.collection.forall")
+                        if operation.identity() == Some("filament.op.collection.forall")
                 )
             })
             .map(|node| node.node_id.clone())

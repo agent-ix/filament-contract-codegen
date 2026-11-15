@@ -13,7 +13,7 @@ use filament_contract_codegen::{
     generate_boolean_oracle, GenerationDiagnostic, GenerationErrorCode, GenerationTerminalState,
     OracleRequest,
 };
-use quire_contract_model::{
+use filament_contract_model::{
     AnchorName, BooleanOperator, ClauseId, ComparisonOperator, DeclarationEnvironment,
     ExecutionPoint, Expression, ExpressionKind, IntegerDomain, IntegerType, NumericOperator,
     OverflowPolicy, PackageId, RequirementId, RequirementRef, RequirementRevision,
@@ -849,22 +849,22 @@ const ARITHMETIC_FREE_ORACLE: &str = "// SPDX-License-Identifier: MIT OR Apache-
 // Requirement: FR-031@3; Clause: clause
 
 /// Generated contract identity for `FR-031@3`.
-pub const ORACLE_FR_031_3_CLAUSE_IDENTITY: quire_contract_runtime::ContractIdentity<'static> =
-quire_contract_runtime::ContractIdentity::new(
-quire_contract_runtime::RequirementId::new(\"FR-031\"),
-quire_contract_runtime::RevisionId::new(\"3\"),
+pub const ORACLE_FR_031_3_CLAUSE_IDENTITY: filament_contract_runtime::ContractIdentity<'static> =
+filament_contract_runtime::ContractIdentity::new(
+filament_contract_runtime::RequirementId::new(\"FR-031\"),
+filament_contract_runtime::RevisionId::new(\"3\"),
 );
 /// Generated clause identity for `clause`.
-pub const ORACLE_FR_031_3_CLAUSE_CLAUSE: quire_contract_runtime::ClauseId<'static> =
-quire_contract_runtime::ClauseId::new(\"clause\");
+pub const ORACLE_FR_031_3_CLAUSE_CLAUSE: filament_contract_runtime::ClauseId<'static> =
+filament_contract_runtime::ClauseId::new(\"clause\");
 /// Evaluates generated oracle `FR-031@3/clause`.
 #[must_use]
 pub fn oracle_fr_031_3_clause(flag_current: bool, x_current: i64, y_current: i64) -> bool {
-quire_contract_runtime::operators::implies_short_circuit(
+filament_contract_runtime::operators::implies_short_circuit(
 flag_current
 ,
 || {
-quire_contract_runtime::operators::or_total(
+filament_contract_runtime::operators::or_total(
 || {
 (
 x_current
@@ -1175,14 +1175,14 @@ fn tc_044_native_division_uses_one_exact_member_and_domain() {
             source.contains("rt::IntegerDomain::Bounded(interval)"),
             "{source}"
         );
-        assert!(source.contains("use quire_exact as rt;"), "{source}");
+        assert!(source.contains("use filament_exact as rt;"), "{source}");
         assert!(signature(&source).ends_with("meter: &mut rt::Meter) -> rt::Outcome<bool> {"));
         assert!(
-            !source.contains("quire_contract_runtime::exact"),
+            !source.contains("filament_contract_runtime::exact"),
             "{source}"
         );
         assert!(
-            !source.contains("quire_contract_runtime::operators"),
+            !source.contains("filament_contract_runtime::operators"),
             "{source}"
         );
         assert!(!source.contains("evaluate_boolean"), "{source}");
@@ -1396,7 +1396,7 @@ fn tc_044_mixed_division_connective_retain_denial_is_typed() {
 // ---------------------------------------------------------------------------------------------
 
 /// The unlimited meter the generated checks run under unless a test sets a limit.
-const CHECK_PRELUDE: &str = "use quire_exact as rt;
+const CHECK_PRELUDE: &str = "use filament_exact as rt;
 
 const UNLIMITED: rt::ScalarLimits = rt::ScalarLimits {
     integer_bits: u64::MAX,
@@ -1456,7 +1456,7 @@ fn run_crate(label: &str, modules: &[(String, String)], checks: &str) {
     write_manifest(
         &directory.path,
         &format!(
-            "[package]\nname = \"arithmetic-{label}\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nquire-exact = {{ {EXACT_DEPENDENCY_SOURCE}, features = [\"test-support\"] }}\n\n[workspace]\n",
+            "[package]\nname = \"arithmetic-{label}\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nfilament-exact = {{ {EXACT_DEPENDENCY_SOURCE}, features = [\"test-support\"] }}\n\n[workspace]\n",
             runtime_dependency(&["exact"])
         ),
     );
@@ -2029,7 +2029,7 @@ fn arithmetic_projection(overflow: &str, operator: &str) -> serde_json::Value {
     });
     let literal = |value: i64, line: u64| serde_json::json!({"node":"integer_literal","value":value.to_string(),"value_type":integer,"source":span(line)});
     serde_json::json!({
-        "format": quire_contract_model::EXECUTABLE_PROJECTION_FORMAT,
+        "format": filament_contract_model::EXECUTABLE_PROJECTION_FORMAT,
         "package": {
             "id": "test/arithmetic",
             "schema_version": {"major":1,"minor":1},
@@ -2055,8 +2055,8 @@ fn arithmetic_projection(overflow: &str, operator: &str) -> serde_json::Value {
     })
 }
 
-fn bound_package(value: &serde_json::Value) -> quire_contract_model::BoundPackage {
-    quire_contract_model::BoundPackage::from_json_bytes(&serde_json::to_vec(value).unwrap())
+fn bound_package(value: &serde_json::Value) -> filament_contract_model::BoundPackage {
+    filament_contract_model::BoundPackage::from_json_bytes(&serde_json::to_vec(value).unwrap())
         .unwrap()
 }
 
@@ -2070,8 +2070,8 @@ fn tc_044_a_refused_sibling_clause_refuses_the_strategy_of_every_clause_in_its_p
         generate_bound_strategy, BoundStrategyPopulation, BoundStrategyRequest, StrategyErrorCode,
     };
     let mut value = arithmetic_projection("saturate", "add");
-    let refused = quire_contract_model::ClauseRef::new(
-        quire_contract_model::RequirementRef::parse("test/arithmetic", "FR-100", 3).unwrap(),
+    let refused = filament_contract_model::ClauseRef::new(
+        filament_contract_model::RequirementRef::parse("test/arithmetic", "FR-100", 3).unwrap(),
         ClauseId::new("amount-check").unwrap(),
     );
     // A healthy sibling: the same read compared with the same literal, with no arithmetic.
@@ -2087,8 +2087,8 @@ fn tc_044_a_refused_sibling_clause_refuses_the_strategy_of_every_clause_in_its_p
     binding["expression"]["expression"]["left"] = read;
     value["bindings"].as_array_mut().unwrap().push(binding);
     let package = bound_package(&value);
-    let healthy = quire_contract_model::ClauseRef::new(
-        quire_contract_model::RequirementRef::parse("test/arithmetic", "FR-100", 3).unwrap(),
+    let healthy = filament_contract_model::ClauseRef::new(
+        filament_contract_model::RequirementRef::parse("test/arithmetic", "FR-100", 3).unwrap(),
         ClauseId::new("healthy-check").unwrap(),
     );
     let refusal = generate_bound_strategy(&BoundStrategyRequest {
@@ -2169,15 +2169,15 @@ fn tc_044_boolean_sinks_refuse_arithmetic() {
         );
     }
 
-    let clause = quire_contract_model::ClauseRef::new(
-        quire_contract_model::RequirementRef::parse("test/arithmetic", "FR-100", 3).unwrap(),
+    let clause = filament_contract_model::ClauseRef::new(
+        filament_contract_model::RequirementRef::parse("test/arithmetic", "FR-100", 3).unwrap(),
         ClauseId::new("amount-check").unwrap(),
     );
 
     // The bound strategies: a clause whose oracle generates, a `reject` add used as a comparison
     // operand, keeps UnsupportedRelation; a clause the oracle refuses is UnsupportedClause
     // carrying the oracle's code and span.
-    let strategy = |package: &quire_contract_model::BoundPackage| {
+    let strategy = |package: &filament_contract_model::BoundPackage| {
         generate_bound_strategy(&BoundStrategyRequest {
             package,
             clause: &clause,

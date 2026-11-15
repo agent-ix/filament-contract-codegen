@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Authentic record and tuple sources compiled only through the public replay root.
-use qsl_replay::{
+use fsl_replay::{
     compile_admitted, AdmittedCompilation, CompileUnit, DependencyInput, ReplayLimits,
     SourceIdentity, StageLimits, SuppliedLibrary,
 };
 
 pub const SOURCE: &str = r#"language "ix:native" edition "1-draft";
-profile v = "quire.value.complete/v1";
+profile v = "filament.value.complete/v1";
 tuple Pair(Boolean, Boolean);
 tuple OtherPair(Boolean, Boolean);
 record Holder { flag: Boolean; pair: Pair; }
@@ -38,7 +38,7 @@ pub fn compile(source: &str, dependencies: &DependencyInput) -> AdmittedCompilat
 
 pub fn imported(transitive: bool) -> (AdmittedCompilation, Vec<(String, AdmittedCompilation)>) {
     let header =
-        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\n";
+        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\n";
     let library = |identity: &str, name: &str, body: &str| SuppliedLibrary {
         identity: identity.to_owned(),
         source: SourceIdentity::new("test", name),
@@ -89,7 +89,7 @@ pub fn imported(transitive: bool) -> (AdmittedCompilation, Vec<(String, Admitted
 }
 
 pub const UNION_SOURCE: &str = r#"language "ix:native" edition "1-draft";
-profile v = "quire.value.complete/v1";
+profile v = "filament.value.complete/v1";
 record Payload { flag: Boolean; }
 union Shape { Empty, Flag(Boolean), Boxed(Payload) }
 union Other { Empty, Flag(Boolean), Boxed(Payload) }

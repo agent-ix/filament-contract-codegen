@@ -18,13 +18,13 @@ use filament_contract_codegen::{
     ReplaySettlement, StateClauseHarness, StateClauseHarnessMember, StateClauseReplay,
     StateClauseReplayError, StateFrameObligations, StateFrameRequest,
 };
-use qsl_replay::{
+use filament_contract_model::{CheckedNodeId, CheckedPackageV2};
+use filament_semantic_value::catalog::Category;
+use fsl_replay::{
     replay_state_clause, AnchorKind, ClauseName, ClauseSelectionInput, DisagreementCause,
     Identifier, ModelIdentity, ObligationIdentity, ReplayRefusal, ReplayResult,
     StateClauseReplayResult, WitnessSettlement,
 };
-use quire_contract_model::{CheckedNodeId, CheckedPackageV2};
-use quire_semantic_value::catalog::Category;
 use serde_json::{json, Value};
 
 use super::kani_collection_operation as collection_operation;
@@ -212,7 +212,7 @@ fn snapshot_document(replay: &StateClauseReplay) -> Value {
         .documents
         .iter()
         .filter_map(|bytes| serde_json::from_slice::<Value>(bytes).ok())
-        .filter(|document| document["format"] == "quire.state.snapshot/v1")
+        .filter(|document| document["format"] == "filament.state.snapshot/v1")
         .collect::<Vec<_>>();
     assert_eq!(snapshots.len(), 1, "exactly one state document");
     snapshots.into_iter().next().expect("one snapshot")
@@ -267,7 +267,7 @@ fn tc_035_invariant_playback_builds_the_current_envelope() {
         .filter_map(|bytes| serde_json::from_slice::<Value>(bytes).ok())
         .filter_map(|document| document["format"].as_str().map(str::to_owned))
         .collect::<Vec<_>>();
-    assert_eq!(formats, ["quire.state.snapshot/v1"]);
+    assert_eq!(formats, ["filament.state.snapshot/v1"]);
     let document = snapshot_document(&replay);
     assert_eq!(document["observation"], "current");
     assert_eq!(
@@ -447,10 +447,10 @@ fn through(replay: StateClauseReplay) -> (Value, String, StateClauseReplayResult
                 .documents
                 .iter()
                 .filter_map(|bytes| serde_json::from_slice::<Value>(bytes).ok())
-                .filter(|document| document["format"] == "quire.state.snapshot/v1")
+                .filter(|document| document["format"] == "filament.state.snapshot/v1")
                 .collect::<Vec<_>>();
             assert_eq!(snapshots.len(), 1, "exactly one state document");
-            let qsl_replay::ReplaySource::Witness(witness) = &wire.source else {
+            let fsl_replay::ReplaySource::Witness(witness) = &wire.source else {
                 panic!("the invariant envelope rides the witness arm");
             };
             *captured.borrow_mut() = Some((
@@ -1064,7 +1064,7 @@ fn tc_035_the_refusal_set_is_closed_and_typed() {
                 let Ok(mut document) = serde_json::from_slice::<Value>(bytes) else {
                     continue;
                 };
-                if document["format"] == "quire.state.snapshot/v1" {
+                if document["format"] == "filament.state.snapshot/v1" {
                     document["anchor"] = json!({"kind": "handler", "name": "withdraw"});
                     *bytes = document.to_string().into_bytes();
                 }
@@ -1091,7 +1091,7 @@ fn tc_035_bank_invariant_mutants_settle_a_violation() {
     let replay = fixture.built(&twin, CLAUSE, &[0]);
     let payload = replay.packet.family_payload.as_ref().expect("a payload");
     assert!(payload.witness.is_none());
-    let qsl_replay::ReplaySource::Witness(witness) = &replay.wire.source else {
+    let fsl_replay::ReplaySource::Witness(witness) = &replay.wire.source else {
         panic!("the invariant envelope rides the witness arm");
     };
     assert_eq!(
@@ -1256,7 +1256,7 @@ fn tc_035_the_remaining_invariant_refusals_are_typed() {
         .nodes
         .iter()
         .find(|node| {
-            matches!(&node.owner, Some(quire_contract_model::CheckedNodeOwner::Model { node, .. })
+            matches!(&node.owner, Some(filament_contract_model::CheckedNodeOwner::Model { node, .. })
                 if node.as_ref() == VAULT)
         })
         .expect("the Vault object type")
@@ -1328,7 +1328,7 @@ const IDENTITY_ORDINAL: u32 = 7;
 
 /// A fixture whose harness carries an identity built by hand, and the same package's other
 /// clause node, whose key is the decoy node.
-fn identified(twin: &Twin) -> (Fixture, ObligationIdentity, quire_exact::NodeKey) {
+fn identified(twin: &Twin) -> (Fixture, ObligationIdentity, filament_exact::NodeKey) {
     let (package, node) = twin.emitted_package(CLAUSE);
     let own = crate::common::v2_claim::claim_for(&package, &node).obligation;
     let (_, other) = twin.emitted_package("Other");

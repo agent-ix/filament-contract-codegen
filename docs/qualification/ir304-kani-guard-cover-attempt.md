@@ -8,7 +8,7 @@ This records a run that produced no verdict on the general (`rt::Integer`) harne
   `x: Int[5, 9]`, `y: Int[0, 4]` into `Int[0, 10]`, guarded by `(x < y, holds=true)`. It carries
   `kani::assume(left_native < guard_0);` after the operand and guard-input assumptions, so no
   input satisfies the assumptions and the `completed` cover cannot be reached. The generated
-  source was copied unchanged into a scratch crate whose only dependency is quire-exact `main`
+  source was copied unchanged into a scratch crate whose only dependency is filament-exact `main`
   at the commit CG's `Cargo.lock` records (the harness is self-contained; no subject is called).
 - Command (Kani 0.68.0, CBMC 6.11.0), one run under the shared cargo slot lock, inside
   `systemd-run --user --scope -p MemoryMax=24G -p MemorySwapMax=0`, `timeout 1800`:
@@ -25,7 +25,7 @@ This records a run that produced no verdict on the general (`rt::Integer`) harne
 
 The proof body evaluates `oracle_integer_add` on `rt::Integer` (arbitrary precision) values with
 unlimited meter limits, so symbolic execution unwinds the bignum allocation and drop glue of
-quire-exact; the step count was never printed. The IR-1022 clause harness, which computes on
+filament-exact; the step count was never printed. The IR-1022 clause harness, which computes on
 native machine integers, finished in under 100 s; this harness shape does not.
 
 ## What this does not establish

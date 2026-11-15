@@ -2,12 +2,12 @@
 //! Authentic FSL emission, public IR admission, then the constrained family.
 
 use filament_contract_codegen::*;
-use qsl_replay::{
-    call_site, ClauseName, DependencyInput, Identifier, SnapshotValue, SourceIdentity,
-};
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedNodeId, CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
     CheckedPackageV2ReadResult, CheckedTerm, StateClauseKind,
+};
+use fsl_replay::{
+    call_site, ClauseName, DependencyInput, Identifier, SnapshotValue, SourceIdentity,
 };
 use serde_json::{json, Value};
 use std::{collections::BTreeMap, num::NonZeroU64, time::Duration};
@@ -29,9 +29,9 @@ pub(super) fn document() -> Value {
         value
     };
     json!({"contractVersion":"2.0.0","canonicalization":{"algorithm":"rfc8785-v1"},"source":{"identity":"ix://cg/constrained/spec","version":"1.0.0","dialect":"spec-bundle"},"package":{"identity":MODEL,"version":"1.0.0","mappingVersions":[],"profileVersions":[]},"constructs":[
-        {"kind":{"module":MODEL,"name":"entity"},"moduleVersion":"1.0.0","construct":{"identity":"none","shape":"record","members":{},"meaning":"quire.meaning.model.object-type/v1"}},
-        {"kind":{"module":MODEL,"name":"population"},"moduleVersion":"1.0.0","construct":{"identity":"none","shape":"record","members":{},"meaning":"quire.meaning.model.population/v1"}},
-        {"kind":{"module":MODEL,"name":"value_type"},"moduleVersion":"1.0.0","construct":{"identity":"none","shape":"record","members":{},"meaning":"quire.meaning.model.value-type/v1"}}
+        {"kind":{"module":MODEL,"name":"entity"},"moduleVersion":"1.0.0","construct":{"identity":"none","shape":"record","members":{},"meaning":"filament.meaning.model.object-type/v1"}},
+        {"kind":{"module":MODEL,"name":"population"},"moduleVersion":"1.0.0","construct":{"identity":"none","shape":"record","members":{},"meaning":"filament.meaning.model.population/v1"}},
+        {"kind":{"module":MODEL,"name":"value_type"},"moduleVersion":"1.0.0","construct":{"identity":"none","shape":"record","members":{},"meaning":"filament.meaning.model.value-type/v1"}}
     ],"occurrences":[],"extensions":[],"types":[
         {"identity":SMALL,"displayName":"Small","kind":{"module":MODEL,"name":"value_type"},"roles":[],"origin":origin(),"extensions":[],"unknownPolicy":"reject","scalar":"integer","constraints":[
             {"identity":format!("{SMALL}/min"),"keyword":"min","operands":{"value":"0"},"appliesTo":"ix://quire/native/Integer","diagnosticCode":"small.minimum","origin":origin()},
@@ -51,7 +51,7 @@ pub(super) struct Fixture {
 }
 pub(super) fn fixture(doc: &Value, name: &str, safety: &str, constraints: &[&str]) -> Fixture {
     let bytes = quire_canonical::to_vec(doc, quire_canonical::Limits::new(1 << 20)).unwrap();
-    let mut source=format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.model.complete/v1\";\nmodel M = \"{MODEL}\";\ninvariant Safe using v on M::Node at current {{ {safety} }}\n");
+    let mut source=format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.model.complete/v1\";\nmodel M = \"{MODEL}\";\ninvariant Safe using v on M::Node at current {{ {safety} }}\n");
     for (index, body) in constraints.iter().enumerate() {
         source.push_str(&format!(
             "constraint Limit{index} using v on M::Node at current {{ {body} }}\n"
@@ -71,7 +71,7 @@ pub(super) fn fixture_source(bytes: Vec<u8>, name: &str, source: String) -> Fixt
     )
     .expect("authentic FSL clause emission");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     evidence
         .insert_domain_package_document(MODEL, bytes.clone())
         .unwrap();
@@ -148,7 +148,7 @@ pub(super) fn request<'a>(
         initial,
         operations: bindings,
         maximum_steps: 3,
-        evaluator_limits: quire_exact::ScalarLimits {
+        evaluator_limits: filament_exact::ScalarLimits {
             integer_bits: u64::MAX,
             decimal_digits: u64::MAX,
             scale_expansion: u64::MAX,
@@ -220,8 +220,8 @@ pub(super) fn owner_evaluation(
     n: i64,
     flag: bool,
     aux: i64,
-    accounting: quire_exact::ScalarLimits,
-) -> qsl_replay::ClauseEvaluation {
+    accounting: filament_exact::ScalarLimits,
+) -> fsl_replay::ClauseEvaluation {
     let population = format!("ix://{MODEL}/nodes");
     let fields = BTreeMap::from([
         (
@@ -235,13 +235,13 @@ pub(super) fn owner_evaluation(
         ),
     ]);
     let snapshot = json!({
-        "format":"quire.state.snapshot/v1",
+        "format":"filament.state.snapshot/v1",
         "identity":{"authority":"agent-ix","identity":"constrained-current","revision_namespace":"git","revision":"fixture"},
         "observation":"current","model":{"identity":MODEL},
         "anchor":{"kind":"handler","name":"control"},
         "populations":[{"population":population,"complete":true,"objects":[{"key":"self","type":OBJECT,"fields":fields}]}]
     });
-    qsl_replay::evaluate_clause(qsl_replay::ClauseEvaluationRequest {
+    fsl_replay::evaluate_clause(fsl_replay::ClauseEvaluationRequest {
         source: SourceIdentity::new("agent-ix", format!("{}.native", f.name)),
         package_name: f.name.clone(),
         path: "constrained.native".into(),
@@ -249,19 +249,19 @@ pub(super) fn owner_evaluation(
         packages: vec![f.document.clone()],
         dependencies: DependencyInput::default(),
         clause: clause.into(),
-        observation: qsl_replay::ClauseObservation::Current {
+        observation: fsl_replay::ClauseObservation::Current {
             snapshot: serde_json::to_vec(&snapshot).unwrap(),
-            anchor: qsl_replay::SelectedAnchor {
-                kind: qsl_replay::AnchorKind::Handler,
+            anchor: fsl_replay::SelectedAnchor {
+                kind: fsl_replay::AnchorKind::Handler,
                 name: "control".into(),
             },
-            self_object: Some(qsl_replay::SelectedObject {
+            self_object: Some(fsl_replay::SelectedObject {
                 population,
                 key: "self".into(),
             }),
         },
-        limits: qsl_replay::SpineLimits::default(),
-        observation_limits: qsl_replay::ObservationLimits::default(),
+        limits: fsl_replay::SpineLimits::default(),
+        observation_limits: fsl_replay::ObservationLimits::default(),
         accounting,
     })
 }

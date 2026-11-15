@@ -112,7 +112,7 @@ use crate::oracle::claim::{ClaimDisposition, ClaimMap, OracleGenerationError, Up
 use crate::oracle::equality::EqualityOperatorKind;
 use crate::oracle::operator_catalog::IntegerOperator;
 use crate::oracle::{classify_lowering_failure, direct_unsupported_form, LoweringFailure};
-use quire_contract_model::{
+use filament_contract_model::{
     ApplicationOperator, CheckedNodeId, CheckedNodeKind, CheckedNodeTag, CheckedPackageIncomplete,
     CheckedPackageReadLimits, CheckedPackageRefusal, CheckedPackageV2, CheckedSemanticNodeV2,
     CheckedSourceMapEntry, CheckedTerm, CompleteLoweringProfileV2, CompleteLoweringRecordV2,
@@ -913,7 +913,7 @@ fn project_function_node<Body>(
         .ok_or_else(|| schedule::ScheduleRefusal::MalformedTerm(source.node_id.clone()))?;
 
     if *operator == ApplicationOperator::Call {
-        if operation_identity != "quire.op.function.call" {
+        if operation_identity != "filament.op.function.call" {
             return Err(schedule::ScheduleRefusal::UnsupportedOperation(
                 source.node_id.clone(),
             ));
@@ -1041,7 +1041,7 @@ fn validate_schedule_item(
             item.call_node_id.clone(),
         ));
     };
-    if body.and_then(application_identity) != Some("quire.op.function.call") {
+    if body.and_then(application_identity) != Some("filament.op.function.call") {
         return Err(schedule::ScheduleRefusal::MalformedTerm(
             item.call_node_id.clone(),
         ));
@@ -1666,7 +1666,7 @@ fn source_call_matches<'a>(
     else {
         return false;
     };
-    if application_identity(body) != Some("quire.op.function.call") {
+    if application_identity(body) != Some("filament.op.function.call") {
         return false;
     }
     if arguments.len() != argument_node_ids.len() + 1 {
@@ -1738,7 +1738,7 @@ fn source_nested_body_matches<Body: GraphBody>(
     else {
         return false;
     };
-    application_identity(body) == Some("quire.op.function.call")
+    application_identity(body) == Some("filament.op.function.call")
         && arguments
             .first()
             .and_then(|term| reference_in_graph(term, &index.graph))
@@ -1748,7 +1748,7 @@ fn source_nested_body_matches<Body: GraphBody>(
             .is_some_and(|arguments| source_argument_refs_match(&index.graph, caller, arguments))
 }
 
-struct FunctionSourceIndex<'a, Body: GraphBody = quire_contract_model::CheckedJson> {
+struct FunctionSourceIndex<'a, Body: GraphBody = filament_contract_model::CheckedJson> {
     graph: CheckedGraph<'a, Body>,
     by_name_body: BTreeMap<(&'a str, &'a CheckedNodeId), Option<&'a CheckedNodeId>>,
 }
@@ -1806,13 +1806,13 @@ thread_local! {
 #[cfg(test)]
 mod ir988_source_function_tests {
     use super::*;
+    use filament_contract_model::CheckedDeclaration;
     use ix_trace_rs::trace;
-    use quire_contract_model::CheckedDeclaration;
 
     fn id(value: u64) -> CheckedNodeId {
         CheckedNodeId {
             package: "fixture".into(),
-            path: vec![quire_contract_model::CheckedNodePathSegment::Name(
+            path: vec![filament_contract_model::CheckedNodePathSegment::Name(
                 value.to_string().into(),
             )],
             ordinal: 0,
@@ -1828,7 +1828,7 @@ mod ir988_source_function_tests {
             node_id: id(value),
             owner: None,
             owner_model: None,
-            schema_version: "quire.checked-semantic-graph/v2".into(),
+            schema_version: "filament.checked-semantic-graph/v2".into(),
             node_tag: if name.is_some() {
                 "function"
             } else {
@@ -1970,7 +1970,7 @@ mod ir988_admitted_generation_tests {
                 &key(T_INTEGER),
                 json!({
                     "term":"application","operator":"call",
-                    "operation":{"identity":"quire.op.function.call","laws":[],"mode":null,
+                    "operation":{"identity":"filament.op.function.call","laws":[],"mode":null,
                         "member":null,"leaves":[]},
                     "result_type":code_id(T_INTEGER),
                     "arguments":[source_reference(SOURCE_FUNCTION),
@@ -2175,7 +2175,7 @@ pub(crate) fn take_function_preflight_graph_lookup_work() -> Vec<usize> {
 pub(crate) enum FunctionPackageReadFailure {
     Refused(Box<CheckedPackageRefusal>),
     Incomplete(CheckedPackageIncomplete),
-    CatalogUnavailable(quire_contract_model::CatalogReadError),
+    CatalogUnavailable(filament_contract_model::CatalogReadError),
 }
 
 /// Classify a function item using the request's shared admitted-graph view.
@@ -2257,9 +2257,9 @@ pub(crate) fn checked_integer_function_application_is_supported_with_graph(
         return Ok(false);
     };
     let operator = match operation_identity {
-        "quire.op.integer.add" => IntegerOperator::Add,
-        "quire.op.integer.sub" => IntegerOperator::Subtract,
-        "quire.op.integer.mul" => IntegerOperator::Multiply,
+        "filament.op.integer.add" => IntegerOperator::Add,
+        "filament.op.integer.sub" => IntegerOperator::Subtract,
+        "filament.op.integer.mul" => IntegerOperator::Multiply,
         _ => return Ok(false),
     };
     let Some(_call_node) = graph.get(call_node_id) else {
@@ -2587,7 +2587,7 @@ fn check_lowered_binary_body(
 
 fn lowering_profile() -> CompleteLoweringProfileV2 {
     CompleteLoweringProfileV2 {
-        reference: quire_contract_model::LoweringProfileRef {
+        reference: filament_contract_model::LoweringProfileRef {
             authority: "agent-ix".into(),
             identity: "filament.codegen.exact-function/v1".into(),
         },
@@ -2734,9 +2734,9 @@ fn classify_body_shape<'r>(
                 .ok_or(ExactFunctionRefusal::BodyMismatch)?;
             let operation_identity = body.and_then(application_identity);
             let expected_identity = match operator {
-                BinaryIntegerOperator::Add => "quire.op.integer.add",
-                BinaryIntegerOperator::Subtract => "quire.op.integer.sub",
-                BinaryIntegerOperator::Multiply => "quire.op.integer.mul",
+                BinaryIntegerOperator::Add => "filament.op.integer.add",
+                BinaryIntegerOperator::Subtract => "filament.op.integer.sub",
+                BinaryIntegerOperator::Multiply => "filament.op.integer.mul",
             };
             if operation_identity != Some(expected_identity) {
                 return Err(ExactFunctionRefusal::BodyMismatch);
@@ -2751,22 +2751,22 @@ fn classify_body_shape<'r>(
                 .ok_or(ExactFunctionRefusal::BodyMismatch)?;
             let expected_identity = match (parameter_kinds, operator) {
                 ([OperandKind::Integer, OperandKind::Integer], EqualityOperatorKind::Equal) => {
-                    "quire.op.integer.eq"
+                    "filament.op.integer.eq"
                 }
                 ([OperandKind::Integer, OperandKind::Integer], EqualityOperatorKind::NotEqual) => {
-                    "quire.op.integer.ne"
+                    "filament.op.integer.ne"
                 }
                 ([OperandKind::Boolean, OperandKind::Boolean], EqualityOperatorKind::Equal) => {
-                    "quire.op.boolean.eq"
+                    "filament.op.boolean.eq"
                 }
                 ([OperandKind::Boolean, OperandKind::Boolean], EqualityOperatorKind::NotEqual) => {
-                    "quire.op.boolean.ne"
+                    "filament.op.boolean.ne"
                 }
                 ([OperandKind::Nominal, OperandKind::Nominal], EqualityOperatorKind::Equal) => {
-                    "quire.op.structural.eq"
+                    "filament.op.structural.eq"
                 }
                 ([OperandKind::Nominal, OperandKind::Nominal], EqualityOperatorKind::NotEqual) => {
-                    "quire.op.structural.ne"
+                    "filament.op.structural.ne"
                 }
                 _ => return Err(ExactFunctionRefusal::BodyMismatch),
             };
@@ -3771,24 +3771,24 @@ mod tests {
     use super::*;
     type Graph<'a> = crate::oracle::checked_graph::CheckedGraph<'a, CheckedTerm>;
     use crate::oracle::failed_records::{failed_record, unrecognised_kinds};
+    use filament_contract_model::CheckedPackageLimit;
     use ix_trace_rs::trace;
-    use quire_contract_model::CheckedPackageLimit;
 
     /// A real imported call carries selected references in its admitted V1
     /// closure. That item refusal precedes a declaration's Stage 1 body result.
     #[trace("FR-021-AC-41", "TC-031")]
     #[test]
     fn selected_imported_call_is_ineligible_for_temporal_body_guard() -> Result<(), String> {
-        use qsl_replay::{
+        use filament_contract_model::{
+            CheckedPackageEvidence, CheckedPackageV2ReadResult, ContractDependencyInput,
+        };
+        use fsl_replay::{
             compile_package, CompileUnit, DependencyInput, ReplayLimits, SourceIdentity,
             StageLimits, SuppliedLibrary,
         };
-        use quire_contract_model::{
-            CheckedPackageEvidence, CheckedPackageV2ReadResult, ContractDependencyInput,
-        };
 
         let library_source = "language \"ix:native\" edition \"1-draft\";\n\
-            profile v = \"quire.value.complete/v1\";\n\
+            profile v = \"filament.value.complete/v1\";\n\
             function f using v(a: Int[0, 9]): Boolean pure { a < 5 }\n";
         let library_compiled = compile_package(
             CompileUnit {
@@ -3804,7 +3804,7 @@ mod tests {
         )
         .expect("source-backed library compiles");
         let mut evidence = CheckedPackageEvidence::new();
-        evidence.support_feature("quire.value.complete/v1");
+        evidence.support_feature("filament.value.complete/v1");
         let library = match CheckedPackageV2::read(
             library_compiled.bytes(),
             CheckedPackageReadLimits::bounded(),
@@ -3814,7 +3814,7 @@ mod tests {
             other => return Err(format!("library admits: {other:?}")),
         };
         let source = "language \"ix:native\" edition \"1-draft\";\n\
-            profile v = \"quire.value.complete/v1\";\n\
+            profile v = \"filament.value.complete/v1\";\n\
             import \"test/selected-library\" as g;\n\
             function p using v(a: Int[0, 9]): Boolean pure { g::f(a) }\n";
         let dependencies = DependencyInput::new([SuppliedLibrary {
@@ -3916,7 +3916,7 @@ mod tests {
         let node = |ordinal: usize| {
             let id = CheckedNodeId {
                 package: "fixture".into(),
-                path: vec![quire_contract_model::CheckedNodePathSegment::Name(
+                path: vec![filament_contract_model::CheckedNodePathSegment::Name(
                     ordinal.to_string().into(),
                 )],
                 ordinal: 0,
@@ -3924,7 +3924,7 @@ mod tests {
             CheckedSemanticNodeV2 {
                 node_id: id.clone(),
                 owner_model: None,
-                schema_version: "quire.checked-semantic-graph/v2".into(),
+                schema_version: "filament.checked-semantic-graph/v2".into(),
                 node_tag: "expression".into(),
                 semantic_form: "binary".into(),
                 semantic_type: id,
@@ -3956,7 +3956,7 @@ mod tests {
         let call = CheckedTerm::Application {
             operator: ApplicationOperator::Call,
             operation: serde_json::from_value(
-                serde_json::json!({"identity": "quire.op.function.call"}),
+                serde_json::json!({"identity": "filament.op.function.call"}),
             )
             .expect("fixture operation"),
             result_type: nodes[0].semantic_type.clone(),
@@ -3995,14 +3995,14 @@ mod tests {
     fn ac27_inline_scalar_literal_is_retained_with_its_admitted_type() {
         let owner = CheckedNodeId {
             package: "fixture".into(),
-            path: vec![quire_contract_model::CheckedNodePathSegment::Name(
+            path: vec![filament_contract_model::CheckedNodePathSegment::Name(
                 "1".into(),
             )],
             ordinal: 0,
         };
         let type_node = CheckedNodeId {
             package: owner.package.clone(),
-            path: vec![quire_contract_model::CheckedNodePathSegment::Name(
+            path: vec![filament_contract_model::CheckedNodePathSegment::Name(
                 "2".into(),
             )],
             ordinal: 0,
@@ -4010,7 +4010,7 @@ mod tests {
         let literal = CheckedTerm::Literal {
             type_id: type_node.clone(),
             value_kind: LiteralKind::Integer,
-            value: quire_contract_model::CheckedJson::from_serializable(&serde_json::json!("7"))
+            value: filament_contract_model::CheckedJson::from_serializable(&serde_json::json!("7"))
                 .expect("checked json literal"),
         };
         let types = BTreeMap::from([(type_node.clone(), schedule::ValueKind::Integer)]);
@@ -4024,7 +4024,7 @@ mod tests {
         let malformed = CheckedTerm::Literal {
             type_id: type_node,
             value_kind: LiteralKind::Integer,
-            value: quire_contract_model::CheckedJson::from_serializable(&serde_json::json!(
+            value: filament_contract_model::CheckedJson::from_serializable(&serde_json::json!(
                 "seven"
             ))
             .expect("checked json literal"),
@@ -4039,11 +4039,11 @@ mod tests {
         ordinal: usize,
         tag: &str,
         form: &str,
-        body: Option<quire_contract_model::CheckedTerm>,
+        body: Option<filament_contract_model::CheckedTerm>,
     ) -> crate::oracle::checked_graph::fixture::Node {
         let id = CheckedNodeId {
             package: "fixture".into(),
-            path: vec![quire_contract_model::CheckedNodePathSegment::Name(
+            path: vec![filament_contract_model::CheckedNodePathSegment::Name(
                 ordinal.to_string().into(),
             )],
             ordinal: 0,
@@ -4052,7 +4052,7 @@ mod tests {
             CheckedSemanticNodeV2 {
                 node_id: id.clone(),
                 owner_model: None,
-                schema_version: "quire.checked-semantic-graph/v2".into(),
+                schema_version: "filament.checked-semantic-graph/v2".into(),
                 node_tag: tag.into(),
                 semantic_form: form.into(),
                 semantic_type: id,
@@ -4072,7 +4072,7 @@ mod tests {
     #[trace("TC-031")]
     #[test]
     fn schedule_literals_keep_raw_spelling_and_refusal_precedence() {
-        use quire_contract_model::{CheckedTerm, LiteralKind};
+        use filament_contract_model::{CheckedTerm, LiteralKind};
         let owner = typed_fixture_node(1, "expression", "binary", None)
             .node_id
             .clone();
@@ -4090,7 +4090,7 @@ mod tests {
             let literal = CheckedTerm::Literal {
                 type_id: ty.clone(),
                 value_kind: LiteralKind::Integer,
-                value: quire_contract_model::CheckedJson::from_serializable(&serde_json::json!(
+                value: filament_contract_model::CheckedJson::from_serializable(&serde_json::json!(
                     spelling
                 ))
                 .expect("checked json literal"),
@@ -4114,7 +4114,7 @@ mod tests {
             let literal = CheckedTerm::Literal {
                 type_id: ty.clone(),
                 value_kind: LiteralKind::Integer,
-                value: quire_contract_model::CheckedJson::from_serializable(&value)
+                value: filament_contract_model::CheckedJson::from_serializable(&value)
                     .expect("checked json literal"),
             };
             assert_eq!(
@@ -4129,8 +4129,10 @@ mod tests {
         let unsupported = CheckedTerm::Literal {
             type_id: ty,
             value_kind: LiteralKind::Text,
-            value: quire_contract_model::CheckedJson::from_serializable(&serde_json::Value::Null)
-                .expect("checked json literal"),
+            value: filament_contract_model::CheckedJson::from_serializable(
+                &serde_json::Value::Null,
+            )
+            .expect("checked json literal"),
         };
         assert_eq!(
             decode_schedule_operand(&unsupported, &owner, &BTreeMap::new()),
@@ -4145,7 +4147,7 @@ mod tests {
     #[trace("TC-031")]
     #[test]
     fn first_body_binding_full_keys_and_name_body_ambiguity_stay_distinct() {
-        use quire_contract_model::{CheckedDeclaration, CheckedTerm, LiteralKind};
+        use filament_contract_model::{CheckedDeclaration, CheckedTerm, LiteralKind};
         let body = typed_fixture_node(10, "expression", "binary", None);
         let other = typed_fixture_node(11, "expression", "binary", None);
         let reference = |target: &CheckedNodeId| CheckedTerm::Reference {
@@ -4224,7 +4226,7 @@ mod tests {
                 binding(CheckedTerm::Literal {
                     type_id: body.node_id.clone(),
                     value_kind: LiteralKind::Integer,
-                    value: quire_contract_model::CheckedJson::from_serializable(
+                    value: filament_contract_model::CheckedJson::from_serializable(
                         &serde_json::json!("1"),
                     )
                     .expect("checked json literal"),
@@ -4295,7 +4297,7 @@ mod tests {
             Some(CheckedTerm::Application {
                 operator: ApplicationOperator::Binary,
                 operation: serde_json::from_value(
-                    serde_json::json!({"identity": "quire.op.integer.eq"}),
+                    serde_json::json!({"identity": "filament.op.integer.eq"}),
                 )
                 .expect("fixture operation"),
                 arguments: vec![],

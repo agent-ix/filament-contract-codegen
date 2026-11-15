@@ -310,8 +310,8 @@ impl Compiled {
                 .get(id)
                 .ok_or_else(|| Refusal::MissingRoot(id.clone()))?;
             if id == &subject
-                || name.starts_with("quire_exact::")
-                || name.starts_with("<quire_exact::")
+                || name.starts_with("filament_exact::")
+                || name.starts_with("<filament_exact::")
                 || name == &claim.oracle_symbol
                 || name.ends_with(&format!("::{}", claim.oracle_symbol))
             {
@@ -320,7 +320,7 @@ impl Compiled {
         }
         if !subject_reach.iter().any(|id| {
             self.names.get(id).is_some_and(|name| {
-                name.strip_prefix("quire_contract_runtime::")
+                name.strip_prefix("filament_contract_runtime::")
                     .is_some_and(|path| {
                         path.split("::<").next().is_some_and(|path| {
                             path.rsplit("::").next() == Some("implies_short_circuit")
@@ -552,7 +552,7 @@ mod tests {
                 ("expected".into(), "m::expected_boolean_implication".into()),
                 (
                     "runtime".into(),
-                    "quire_contract_runtime::operators::implies_short_circuit".into(),
+                    "filament_contract_runtime::operators::implies_short_circuit".into(),
                 ),
                 ("bridge".into(), "oracle_free_model".into()),
                 ("shared".into(), "shared".into()),
@@ -593,11 +593,11 @@ mod tests {
             .insert("bridge".into(), BTreeSet::from(["exact".into()]));
         compiled
             .names
-            .insert("exact".into(), "quire_exact::operation".into());
+            .insert("exact".into(), "filament_exact::operation".into());
         assert_eq!(
             compiled.shared_helpers(&claim),
             Err(Refusal::DependentExpectation(
-                "quire_exact::operation".into()
+                "filament_exact::operation".into()
             ))
         );
         compiled.edges.remove("bridge");

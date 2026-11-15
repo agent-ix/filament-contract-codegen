@@ -23,19 +23,19 @@ use filament_contract_codegen::{
     ProviderOrigin, ReplayInputs, RoutedGenerationItem, ScalarDriverObservation, ScalarSentRequest,
     ScalarSettlement, WitnessDecodeLimits, SCALAR_PLAYBACK_BYTES,
 };
-use ix_trace_rs::trace;
-use qsl_replay::{
-    compile_package, DependencyInput, NativeOutcome, OperatorParityResult, ReplayLimits,
-    SourceIdentity, StageLimits, TerminalValue,
-};
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedOccurrenceRole, CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
     CheckedPackageV2ReadResult, CheckedTerm, ContractDependencies, ContractOccurrenceKeyV1,
     ContractPackageReadResult, ContractPackageWireV1,
 };
+use fsl_replay::{
+    compile_package, DependencyInput, NativeOutcome, OperatorParityResult, ReplayLimits,
+    SourceIdentity, StageLimits, TerminalValue,
+};
+use ix_trace_rs::trace;
 use std::{collections::BTreeMap, path::PathBuf, sync::Arc, time::Duration};
 
-const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nfunction subject using v(x: Int[0, 9]): Int[0, 10] pure { x + 1 }\n";
+const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nfunction subject using v(x: Int[0, 9]): Int[0, 10] pure { x + 1 }\n";
 
 fn application(body: &CheckedTerm, operation: &str) -> bool {
     matches!(body, CheckedTerm::Application { operation: found, .. } if found.identity() == Some(operation))
@@ -44,14 +44,14 @@ fn application(body: &CheckedTerm, operation: &str) -> bool {
 struct Fixture {
     harness: KaniScalarObligationHarness,
     checked: CheckedPackageV2,
-    raw_package: qsl_replay::ReplayPackage,
+    raw_package: fsl_replay::ReplayPackage,
     artifacts: Vec<Artifact>,
 }
 
 /// The FSL-emitted `x + 1` over `Int[0, 9]` through the native routed generation.
 fn native_fixture() -> Fixture {
     let compiled = compile_package(
-        qsl_replay::CompileUnit {
+        fsl_replay::CompileUnit {
             source: SourceIdentity::new("test", "scalar-playback.native"),
             package_name: "scalar-playback".to_owned(),
             path: "scalar-playback.native",
@@ -64,7 +64,7 @@ fn native_fixture() -> Fixture {
     )
     .expect("FSL compiles the authored scalar source");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     let CheckedPackageV2ReadResult::Admitted(checked) = CheckedPackageV2::read(
         compiled.bytes(),
         CheckedPackageReadLimits::bounded(),
@@ -75,21 +75,21 @@ fn native_fixture() -> Fixture {
     let nodes = &checked.resolved_graph().nodes;
     let node_id = nodes
         .iter()
-        .find(|node| application(&node.body, "quire.op.integer.add"))
+        .find(|node| application(&node.body, "filament.op.integer.add"))
         .expect("one authored addition")
         .node_id
         .clone();
     let conversion = nodes
         .iter()
         .find(|node| {
-            application(&node.body, "quire.op.numeric.narrow")
+            application(&node.body, "filament.op.numeric.narrow")
                 && matches!(&node.body, CheckedTerm::Application { arguments, .. }
                     if matches!(arguments.first(), Some(CheckedTerm::Reference { target }) if target == &node_id))
         })
         .expect("authored result narrowing")
         .node_id
         .clone();
-    let occurrence = |id: &quire_contract_model::CheckedNodeId| {
+    let occurrence = |id: &filament_contract_model::CheckedNodeId| {
         let entry = checked
             .source_map()
             .iter()
@@ -172,7 +172,7 @@ fn native_fixture() -> Fixture {
     Fixture {
         harness: (**harness).clone(),
         checked: (*checked).clone(),
-        raw_package: qsl_replay::ReplayPackage::read(compiled.bytes(), u64::MAX).unwrap(),
+        raw_package: fsl_replay::ReplayPackage::read(compiled.bytes(), u64::MAX).unwrap(),
         artifacts: generated.oracle_artifacts.expect("retained oracle package"),
     }
 }
@@ -270,7 +270,7 @@ fn a_real_falsified_native_mutant_plans_observes_and_settles_diverged_failed() {
 
     // The driver's native observation of the same staged bytes, at the decoded vector.
     let installation = KaniInstallation::discover().expect("cargo-kani is installed");
-    let cancel = quire_exact::Cancel::new();
+    let cancel = filament_exact::Cancel::new();
     let target = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/ir631-native-observe");
     let (native, executed) = observe_staged_native_for_test(&KaniScalarNativeRequest {
         cancel: &cancel,
@@ -283,18 +283,18 @@ fn a_real_falsified_native_mutant_plans_observes_and_settles_diverged_failed() {
     })
     .expect("the staged mutant runs natively");
     let outcome = match native {
-        quire_exact::Outcome::Completed(value) => NativeOutcome::Completed(value),
-        quire_exact::Outcome::Refused(quire_exact::Refusal::IntegerOutOfDomain { .. }) => {
-            NativeOutcome::RefusedOutOfRange
-        }
-        quire_exact::Outcome::Undefined(_) => NativeOutcome::Undefined,
-        quire_exact::Outcome::Incomplete(_) => NativeOutcome::Incomplete,
+        filament_exact::Outcome::Completed(value) => NativeOutcome::Completed(value),
+        filament_exact::Outcome::Refused(filament_exact::Refusal::IntegerOutOfDomain {
+            ..
+        }) => NativeOutcome::RefusedOutOfRange,
+        filament_exact::Outcome::Undefined(_) => NativeOutcome::Undefined,
+        filament_exact::Outcome::Incomplete(_) => NativeOutcome::Incomplete,
         other => panic!("unexpected native outcome {other:?}"),
     };
     // x - 1 differs from the exact x + 1 at every admitted vector.
     assert_ne!(
         outcome,
-        NativeOutcome::Completed(quire_exact::Integer::from(operands[0] + 1))
+        NativeOutcome::Completed(filament_exact::Integer::from(operands[0] + 1))
     );
     let completed = plan
         .complete(ScalarDriverObservation {
@@ -317,7 +317,7 @@ fn a_real_falsified_native_mutant_plans_observes_and_settles_diverged_failed() {
         claim: claim.clone(),
         replay_limits: limits,
     };
-    let report = qsl_replay::replay_operator_parity(wire, claim, limits);
+    let report = fsl_replay::replay_operator_parity(wire, claim, limits);
     assert!(
         matches!(report.result(), OperatorParityResult::Diverged { .. }),
         "the mutant diverges from exact addition: {:?}",

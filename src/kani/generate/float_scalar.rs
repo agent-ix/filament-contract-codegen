@@ -1,6 +1,6 @@
 //! The IEEE float scalar harness (FR-053): a bounded Kani proof that filament-exact's
 //! `compare_native_float` over two symbolic bit patterns agrees with an independent expression of
-//! the same comparison, for the three comparisons `quire.op.ieee.numeric_equal`, `.total_order`
+//! the same comparison, for the three comparisons `filament.op.ieee.numeric_equal`, `.total_order`
 //! and `.bit_identical` at both widths.
 //!
 //! The supported set is the combinations whose filament-exact harnesses carry an executed Verified
@@ -9,7 +9,7 @@
 //! harnesses Verified. A float operand is one `i64` bit pattern; the carrier admits every
 //! pattern, so the draw has no admission step and no bound is encoded into it.
 
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedNodeId, CheckedPackageV2, CheckedTerm, CompleteLoweringRecordV2,
 };
 
@@ -37,7 +37,7 @@ use crate::{
 pub struct FloatScalarRequest<'a> {
     /// The original checked package the operation node belongs to.
     pub source: &'a CheckedPackageV2,
-    /// The `quire.op.ieee.*` application node.
+    /// The `filament.op.ieee.*` application node.
     pub node_id: &'a CheckedNodeId,
     /// Resource ceilings the backend must run under.
     pub ceilings: ProofCeilings,
@@ -181,59 +181,59 @@ impl FloatScalarRefusal {
 
 /// The comparisons of the row and the `IeeeComparison` variant each is proved as.
 const COMPARISONS: [(&str, &str); 3] = [
-    ("quire.op.ieee.numeric_equal", "NumericEqual"),
-    ("quire.op.ieee.total_order", "TotalOrder"),
-    ("quire.op.ieee.bit_identical", "BitIdentical"),
+    ("filament.op.ieee.numeric_equal", "NumericEqual"),
+    ("filament.op.ieee.total_order", "TotalOrder"),
+    ("filament.op.ieee.bit_identical", "BitIdentical"),
 ];
 
 /// The arithmetic identities and the capability each is refused with.
 const ARITHMETIC: [(&str, FloatCapability); 12] = [
     (
-        "quire.op.ieee.float32.add",
+        "filament.op.ieee.float32.add",
         FloatCapability::AddNotTractable,
     ),
     (
-        "quire.op.ieee.float64.add",
+        "filament.op.ieee.float64.add",
         FloatCapability::AddNotTractable,
     ),
     (
-        "quire.op.ieee.float32.sub",
+        "filament.op.ieee.float32.sub",
         FloatCapability::SubNotTractable,
     ),
     (
-        "quire.op.ieee.float64.sub",
+        "filament.op.ieee.float64.sub",
         FloatCapability::SubNotTractable,
     ),
     (
-        "quire.op.ieee.float32.mul",
+        "filament.op.ieee.float32.mul",
         FloatCapability::MulNotTractable,
     ),
     (
-        "quire.op.ieee.float64.mul",
+        "filament.op.ieee.float64.mul",
         FloatCapability::MulNotTractable,
     ),
     (
-        "quire.op.ieee.float32.div",
+        "filament.op.ieee.float32.div",
         FloatCapability::DivNotTractable,
     ),
     (
-        "quire.op.ieee.float64.div",
+        "filament.op.ieee.float64.div",
         FloatCapability::DivNotTractable,
     ),
     (
-        "quire.op.ieee.float32.sqrt",
+        "filament.op.ieee.float32.sqrt",
         FloatCapability::SqrtNotTractable,
     ),
     (
-        "quire.op.ieee.float64.sqrt",
+        "filament.op.ieee.float64.sqrt",
         FloatCapability::SqrtNotTractable,
     ),
     (
-        "quire.op.ieee.float32.fma",
+        "filament.op.ieee.float32.fma",
         FloatCapability::FmaNotTractable,
     ),
     (
-        "quire.op.ieee.float64.fma",
+        "filament.op.ieee.float64.fma",
         FloatCapability::FmaNotTractable,
     ),
 ];
@@ -270,7 +270,7 @@ fn arithmetic_detail(capability: FloatCapability, rounding: Option<&str>) -> Str
         _ => "no harness of any spelling reached a verdict within 600 s",
     };
     format!(
-        "an arithmetic operation is a supported row only when all three of its quire-exact \
+        "an arithmetic operation is a supported row only when all three of its filament-exact \
          harnesses are Verified (FR-405 Behavior 15); {measured}; {spelling}"
     )
 }
@@ -583,7 +583,7 @@ fn render_harness(
     body.push(Statement::Forget("meter".to_owned()));
     body.push(Statement::Forget("outcome".to_owned()));
     let oracle_source =
-        "use quire_exact as rt;\nuse quire_exact::compare_native_float;\n".to_owned();
+        "use filament_exact as rt;\nuse filament_exact::compare_native_float;\n".to_owned();
     let spec = HarnessSpec::new(
         format!(
             "float-scalar {} `{operation_identity}`",
@@ -607,7 +607,7 @@ fn render_harness(
         ceilings: request.ceilings,
         node_id: request.node_id.clone(),
         operation_identity: operation_identity.to_owned(),
-        oracle_symbol: "quire_exact::compare_native_float".to_owned(),
+        oracle_symbol: "filament_exact::compare_native_float".to_owned(),
         module_symbol: spec.path().module.clone(),
         harness_symbol: spec.path().harness.clone(),
         arguments: operands

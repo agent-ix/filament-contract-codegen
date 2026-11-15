@@ -56,7 +56,7 @@ then by how identity is asserted.
 
 | # | Link | Owner | Identity or content binding |
 | --- | --- | --- | --- |
-| 1 | Checked package, `package_id` (`quire.package.semantic/v2`) | FSpec wire, FSL emits, IR re-derives on read | digest over the package's identity preimage |
+| 1 | Checked package, `package_id` (`filament.package.semantic/v2`) | FSpec wire, FSL emits, IR re-derives on read | digest over the package's identity preimage |
 | 2 | Finite profile and input (`ProfileSelection`, `ValidatedFiniteInput`, `KaniOutcome` for refusals) | IR | profile revision selected with the ABI and module revisions |
 | 3 | Obligation: FSL producer-issued structural `ObligationIdentity` plus CG's distinct harness, bound-domain, ceiling and oracle records | FSL issues claim identity; CG retains and checks harness facts | CG carries the structural identity unchanged into replay and persists the separate harness record; kind, occurrence and domains are checked separately (E-1) |
 | 4 | Corpus case: `CaseIdentity` over ceilings, construct, profile, input, request, dependencies | CG | lowercase SHA-256 over its RFC 8785 canonical JSON without a trailing newline, which also names the artifact paths; unencodable preimages refuse as `kani_corpus_identity_unencodable` and collisions refuse as `kani_corpus_identity_collision` (`bounded_kani_corpus.rs`) |

@@ -6,14 +6,14 @@ mod generated {
     include!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/lib.rs"));
     include!(concat!(env!("CARGO_MANIFEST_DIR"), "/names.rs"));
 
-    fn wire(key: &exact::NodeKey) -> quire_contract_model::CheckedNodeId {
-        quire_contract_model::CheckedNodeId {
+    fn wire(key: &exact::NodeKey) -> filament_contract_model::CheckedNodeId {
+        filament_contract_model::CheckedNodeId {
             package: key.package().into(),
             path: key.path().into_iter().map(|segment| match segment {
                 exact::PathSegment::Text(name) =>
-                    quire_contract_model::CheckedNodePathSegment::Name(name.into()),
+                    filament_contract_model::CheckedNodePathSegment::Name(name.into()),
                 exact::PathSegment::Node(child) =>
-                    quire_contract_model::CheckedNodePathSegment::Node(std::sync::Arc::new(wire(&child))),
+                    filament_contract_model::CheckedNodePathSegment::Node(std::sync::Arc::new(wire(&child))),
             }).collect(),
             ordinal: key.ordinal(),
         }
@@ -27,18 +27,18 @@ mod generated {
         let lookup = |id, name: &[&str], form| lookup_composite_key(prepared.context, id, name, form);
         let unknown = exact::NodeKey::new("unknown", vec![exact::PathSegment::Text("absent".to_owned())], 0)
             .expect("structural unknown key");
-        assert!(matches!(lookup(wire(&unknown), &["Absent"], qsl_replay::AdmittedCompositeForm::Record),
-            Err(EnvironmentError::Lookup(qsl_replay::AdmittedLookupRefusal::Unknown { declaration, case: None })) if declaration == unknown));
+        assert!(matches!(lookup(wire(&unknown), &["Absent"], fsl_replay::AdmittedCompositeForm::Record),
+            Err(EnvironmentError::Lookup(fsl_replay::AdmittedLookupRefusal::Unknown { declaration, case: None })) if declaration == unknown));
         let marker = compiled.context().enums().next().expect("actual own enum");
         let wrong = marker.key().clone();
-        assert!(matches!(lookup(wire(&wrong), &["Marker"], qsl_replay::AdmittedCompositeForm::Record),
-            Err(EnvironmentError::Lookup(qsl_replay::AdmittedLookupRefusal::WrongKind { declaration })) if declaration == wrong));
+        assert!(matches!(lookup(wire(&wrong), &["Marker"], fsl_replay::AdmittedCompositeForm::Record),
+            Err(EnvironmentError::Lookup(fsl_replay::AdmittedLookupRefusal::WrongKind { declaration })) if declaration == wrong));
         let leaf = &libraries.iter().find(|(name,_)| name == "test/composites").expect("real leaf").1;
         for declaration in leaf.context().composites() {
             let key = declaration.node().clone();
             let names = declaration.qualified_name().iter().map(|part| part.as_str()).collect::<Vec<_>>();
             assert!(matches!(lookup(wire(&key), &names, declaration.form()),
-                Err(EnvironmentError::Lookup(qsl_replay::AdmittedLookupRefusal::Foreign { declaration: actual, package }))
+                Err(EnvironmentError::Lookup(fsl_replay::AdmittedLookupRefusal::Foreign { declaration: actual, package }))
                 if actual == key && package == leaf.context().package_name().clone()));
         }
         let pair = super::declaration(compiled.context(), "Pair");
@@ -46,11 +46,11 @@ mod generated {
         assert_eq!(lookup(wire(&key), &["Pair"], pair.form()).expect("real wire resolves kernel key"), pair.key().clone());
         assert!(matches!(lookup(wire(&key), &["WrongName"], pair.form()),
             Err(EnvironmentError::Reconstruction(ReconstructionError::Composite))));
-        assert!(matches!(lookup(wire(&key), &["Pair"], qsl_replay::AdmittedCompositeForm::Record),
+        assert!(matches!(lookup(wire(&key), &["Pair"], fsl_replay::AdmittedCompositeForm::Record),
             Err(EnvironmentError::Reconstruction(ReconstructionError::Composite))));
         assert!(matches!(lookup_composite_key(None, wire(&key), &["Pair"], pair.form()),
             Err(EnvironmentError::MissingAdmittedContext { declaration }) if declaration == wire(&key)));
-        let malformed = quire_contract_model::CheckedNodeId { package: "admitted-composites".into(), path: Vec::new(), ordinal: 0 };
+        let malformed = filament_contract_model::CheckedNodeId { package: "admitted-composites".into(), path: Vec::new(), ordinal: 0 };
         assert!(matches!(lookup(malformed, &["Pair"], pair.form()),
             Err(EnvironmentError::Reconstruction(ReconstructionError::Composite))));
     }
@@ -60,7 +60,7 @@ mod generated {
     fn absent_wrong_or_tampered_capability_never_charges() {
         let (compiled,_) = super::compilation();
         assert!(matches!(environment_holder_same(None), Err(EnvironmentError::MissingAdmittedContext { .. })));
-        let other = super::fixture::compile(super::fixture::SOURCE, &qsl_replay::DependencyInput::default());
+        let other = super::fixture::compile(super::fixture::SOURCE, &fsl_replay::DependencyInput::default());
         assert!(matches!(environment_holder_same(Some(other.context())), Err(EnvironmentError::ContextPackageContentMismatch)));
         let (environment,_) = super::environment(compiled.context());
         let value = super::values(&environment, compiled.context(), "Holder").remove(0);
@@ -82,9 +82,9 @@ mod generated {
     }
 }
 use ix_trace_rs::trace;
-use qsl_replay::{AdmittedCompilation, AdmittedComposite, AdmittedCompositeForm, AdmittedContext};
-use quire_exact::{ChargePoint, FieldValue, InjectedDenial, LimitKind, Meter, Outcome, Presence, ScalarLimits, Value, ValueType};
-use quire_semantic_value::declaration::{CompositeDeclaration, CompositeShape, EqualityOperand, EqualityOperator, FieldDeclaration, TypeEnvironment};
+use fsl_replay::{AdmittedCompilation, AdmittedComposite, AdmittedCompositeForm, AdmittedContext};
+use filament_exact::{ChargePoint, FieldValue, InjectedDenial, LimitKind, Meter, Outcome, Presence, ScalarLimits, Value, ValueType};
+use filament_semantic_value::declaration::{CompositeDeclaration, CompositeShape, EqualityOperand, EqualityOperator, FieldDeclaration, TypeEnvironment};
 
 type Constructor = for<'ctx> fn(Option<&'ctx AdmittedContext>) -> Result<generated::PreparedEqualityEnvironment<'ctx>, generated::EnvironmentError>;
 type Oracle = fn(&generated::PreparedEqualityEnvironment<'_>, &Value, &Value, &mut Meter) -> Outcome<bool>;
@@ -97,7 +97,7 @@ fn compilation() -> (AdmittedCompilation, Vec<(String, AdmittedCompilation)>) {
 fn declaration<'a>(context: &'a AdmittedContext, name: &str) -> &'a AdmittedComposite {
     context.composites().find(|item| item.qualified_name().iter().map(|part| part.as_str()).eq([name])).expect("actual declaration")
 }
-fn environment(context: &AdmittedContext) -> (TypeEnvironment, quire_semantic_value::enumeration::EnumMemberIndex) {
+fn environment(context: &AdmittedContext) -> (TypeEnvironment, filament_semantic_value::enumeration::EnumMemberIndex) {
     let pair = declaration(context,"Pair");
     let declarations = ["Pair", "OtherPair", "Holder", "OtherHolder"].into_iter().map(|name| {
         let actual = declaration(context,name);

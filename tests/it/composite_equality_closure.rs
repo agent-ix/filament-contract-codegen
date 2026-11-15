@@ -11,8 +11,8 @@ use filament_contract_codegen::{
     GeneratedCompositeEqualityClaim, RecordedDeclaration, RecordedForm, RecordedPresence,
     RecordedType,
 };
+use filament_contract_model::{CheckedNodeId, CheckedPackageV2};
 use ix_trace_rs::trace;
-use quire_contract_model::{CheckedNodeId, CheckedPackageV2};
 
 /// `(alias, function, operator)`: the corpus items, named as `closure_cases.rs` expects.
 const ITEMS: [(&str, &str, EqualityOperatorKind); 6] = [

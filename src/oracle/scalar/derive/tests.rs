@@ -8,12 +8,12 @@ use super::super::lower::{catalogued_operation, check_operand, operation_confirm
 use super::super::*;
 use super::*;
 use crate::oracle::checked_graph::fixture::Node as FixtureNode;
-use ix_trace_rs::trace;
-use quire_contract_model::{
+use filament_contract_model::{
     ApplicationOperator, CheckedApplicationOperation, CheckedApplicationOperationFixture,
     CheckedArtifactRef, CompleteContractNodeV2, OperationModeKind,
 };
-use quire_exact::{TextProfile, TextType};
+use filament_exact::{TextProfile, TextType};
+use ix_trace_rs::trace;
 use std::collections::BTreeMap;
 
 type Graph<'a> = crate::oracle::checked_graph::CheckedGraph<'a, CheckedTerm>;
@@ -154,7 +154,7 @@ fn every_operation() -> Vec<ExactScalarOperation> {
     all.push(Op::QuantityConversion);
     all.push(Op::CarriedQuantityConversion {
         unit: node_id('b'),
-        carrier: quire_exact::QuantityCarrier::Decimal(decimal),
+        carrier: filament_exact::QuantityCarrier::Decimal(decimal),
     });
     for operator in [
         QuantityOperator::Add,
@@ -252,7 +252,7 @@ fn zero_literal() -> CheckedTerm {
     CheckedTerm::Literal {
         type_id: node_id('1'),
         value_kind: LiteralKind::Integer,
-        value: quire_contract_model::CheckedJson::from_serializable(&serde_json::json!("0"))
+        value: filament_contract_model::CheckedJson::from_serializable(&serde_json::json!("0"))
             .expect("checked json literal"),
     }
 }
@@ -324,7 +324,7 @@ fn tc_024_derivation_checks_the_graph_and_the_lowering_before_the_identity() {
 #[trace("FR-014-AC-48", "TC-024")]
 #[test]
 fn quantity_conversion_confirmation_requires_identity_and_exact_mode() {
-    for identity in [QUANTITY_CONVERT_IDENTITY, "quire.op.quantity.add"] {
+    for identity in [QUANTITY_CONVERT_IDENTITY, "filament.op.quantity.add"] {
         for mode in ["exact", "nearest-even"] {
             let (_, node) =
                 application_node(fixture_application(CheckedApplicationOperationFixture {
@@ -426,11 +426,11 @@ fn tc_024_derivation_refuses_a_missing_identity_a_non_application_and_a_foreign_
     );
     assert_eq!(
         derive_hand_built(fixture_application(CheckedApplicationOperationFixture {
-            identity: Some("quire.op.rational.eq".into()),
+            identity: Some("filament.op.rational.eq".into()),
             ..Default::default()
         })),
         Err(no_claim(ClaimDerivationRefusal::OperationNotDerivable {
-            operation_identity: "quire.op.rational.eq".to_owned()
+            operation_identity: "filament.op.rational.eq".to_owned()
         }))
     );
 }
@@ -442,7 +442,7 @@ fn tc_024_derivation_refuses_a_missing_identity_a_non_application_and_a_foreign_
 fn tc_024_derivation_reads_the_division_profile_from_the_laws_and_nowhere_else() {
     let laws = |identities: &[&str]| {
         fixture_application(CheckedApplicationOperationFixture {
-            identity: Some("quire.op.integer.div".into()),
+            identity: Some("filament.op.integer.div".into()),
             law_definitions: identities
                 .iter()
                 .map(|identity| CheckedArtifactRef {
@@ -461,15 +461,15 @@ fn tc_024_derivation_reads_the_division_profile_from_the_laws_and_nowhere_else()
             graph: &graph,
             node: &node,
             bounds: BoundView::complete(&lowered),
-            identity: "quire.op.integer.div",
+            identity: "filament.op.integer.div",
         }
         .division_profile()
     };
     let law_refusal = Err(no_claim(ClaimDerivationRefusal::LawNotDerivable {
-        operation_identity: "quire.op.integer.div".to_owned(),
+        operation_identity: "filament.op.integer.div".to_owned(),
     }));
     assert_eq!(profile_of(laws(&[])), law_refusal);
-    assert_eq!(profile_of(laws(&["quire.value.other/v1"])), law_refusal);
+    assert_eq!(profile_of(laws(&["filament.value.other/v1"])), law_refusal);
     assert_eq!(
         profile_of(laws(&[
             DivisionProfile::Floor.definition_identity(),
@@ -492,7 +492,7 @@ fn tc_024_derivation_reads_the_division_profile_from_the_laws_and_nowhere_else()
 fn tc_024_a_remainder_without_exactly_one_law_is_not_derivable() {
     let remainder = |identities: &[&str]| {
         derive_hand_built(fixture_application(CheckedApplicationOperationFixture {
-            identity: Some("quire.op.integer.rem".into()),
+            identity: Some("filament.op.integer.rem".into()),
             law_definitions: identities
                 .iter()
                 .map(|identity| CheckedArtifactRef {
@@ -504,7 +504,7 @@ fn tc_024_a_remainder_without_exactly_one_law_is_not_derivable() {
         }))
     };
     let refusal = Err(no_claim(ClaimDerivationRefusal::LawNotDerivable {
-        operation_identity: "quire.op.integer.rem".to_owned(),
+        operation_identity: "filament.op.integer.rem".to_owned(),
     }));
     assert_eq!(remainder(&[]), refusal);
     assert_eq!(
@@ -515,7 +515,7 @@ fn tc_024_a_remainder_without_exactly_one_law_is_not_derivable() {
         refusal
     );
     assert_eq!(
-        family_of_identity("quire.op.integer.rem"),
+        family_of_identity("filament.op.integer.rem"),
         Some(Family::IntegerRemainder)
     );
 }
@@ -528,7 +528,7 @@ fn tc_024_derivation_requires_the_mode_to_agree_with_the_bound_rounding() {
     let derivation_of = |mode: Option<(OperationModeKind, &str)>| {
         let (id, node) =
             application_node(fixture_application(CheckedApplicationOperationFixture {
-                identity: Some("quire.op.decimal.add".into()),
+                identity: Some("filament.op.decimal.add".into()),
                 mode: mode.map(|(kind, value)| (kind, value.into())),
                 ..Default::default()
             }));
@@ -538,12 +538,12 @@ fn tc_024_derivation_requires_the_mode_to_agree_with_the_bound_rounding() {
             graph: &graph,
             node: &node,
             bounds: BoundView::complete(&lowered),
-            identity: "quire.op.decimal.add",
+            identity: "filament.op.decimal.add",
         }
         .require_mode(RoundingMode::NearestEven)
     };
     let refusal = Err(no_claim(ClaimDerivationRefusal::ModeNotDerivable {
-        operation_identity: "quire.op.decimal.add".to_owned(),
+        operation_identity: "filament.op.decimal.add".to_owned(),
     }));
     assert_eq!(derivation_of(None), refusal);
     assert_eq!(
@@ -567,17 +567,17 @@ fn tc_024_derivation_requires_the_mode_to_agree_with_the_bound_rounding() {
 #[test]
 fn tc_024_the_refused_catalogue_identities_have_no_family() {
     for identity in [
-        "quire.op.rational.eq",
-        "quire.op.rational.ne",
-        "quire.op.decimal.eq",
-        "quire.op.decimal.ne",
-        "quire.op.ieee.from_exact",
-        "quire.op.ieee.to_rational",
-        "quire.op.ieee.float32.negate",
-        "quire.op.ieee.float64.negate",
-        "quire.op.numeric.narrow",
-        "quire.op.rational.narrow",
-        "quire.op.text.size",
+        "filament.op.rational.eq",
+        "filament.op.rational.ne",
+        "filament.op.decimal.eq",
+        "filament.op.decimal.ne",
+        "filament.op.ieee.from_exact",
+        "filament.op.ieee.to_rational",
+        "filament.op.ieee.float32.negate",
+        "filament.op.ieee.float64.negate",
+        "filament.op.numeric.narrow",
+        "filament.op.rational.narrow",
+        "filament.op.text.size",
     ] {
         assert_eq!(family_of_identity(identity), None, "{identity}");
     }
@@ -597,8 +597,10 @@ fn carried_conversion_private_mismatches_preserve_valid_sibling() {
         CheckedTerm::Literal {
             type_id: node_id('1'),
             value_kind: kind,
-            value: quire_contract_model::CheckedJson::from_serializable(&serde_json::json!(value))
-                .expect("checked json literal"),
+            value: filament_contract_model::CheckedJson::from_serializable(&serde_json::json!(
+                value
+            ))
+            .expect("checked json literal"),
         }
     }
     let unit = v2_node('b', "scalar_type", "unit", 'b', None);
@@ -669,8 +671,8 @@ fn carried_conversion_private_mismatches_preserve_valid_sibling() {
     };
     let expected = ExactScalarOperation::CarriedQuantityConversion {
         unit: unit.node_id.clone(),
-        carrier: quire_exact::QuantityCarrier::Integer {
-            domain: quire_exact::IntegerInterval::new((-2_i64).into(), 2_i64.into())
+        carrier: filament_exact::QuantityCarrier::Integer {
+            domain: filament_exact::IntegerInterval::new((-2_i64).into(), 2_i64.into())
                 .expect("domain"),
             rounding: RoundingMode::NearestEven,
         },
@@ -715,7 +717,7 @@ fn tc_024_sqrt_and_fma_refuse_mode_and_bound_defects_like_add() {
             value: Box::new(CheckedTerm::Literal {
                 type_id: node_id('1'),
                 value_kind: LiteralKind::Text,
-                value: quire_contract_model::CheckedJson::from_serializable(&serde_json::json!(
+                value: filament_contract_model::CheckedJson::from_serializable(&serde_json::json!(
                     value
                 ))
                 .expect("checked json literal"),
@@ -752,26 +754,26 @@ fn tc_024_sqrt_and_fma_refuse_mode_and_bound_defects_like_add() {
     let nearest = [rounding_bound('c', "nearest-even")];
     for (identity, add, operator, width) in [
         (
-            "quire.op.ieee.float32.sqrt",
-            "quire.op.ieee.float32.add",
+            "filament.op.ieee.float32.sqrt",
+            "filament.op.ieee.float32.add",
             IeeeArithmeticOperator::SquareRoot,
             IeeeWidth::Binary32,
         ),
         (
-            "quire.op.ieee.float64.sqrt",
-            "quire.op.ieee.float64.add",
+            "filament.op.ieee.float64.sqrt",
+            "filament.op.ieee.float64.add",
             IeeeArithmeticOperator::SquareRoot,
             IeeeWidth::Binary64,
         ),
         (
-            "quire.op.ieee.float32.fma",
-            "quire.op.ieee.float32.add",
+            "filament.op.ieee.float32.fma",
+            "filament.op.ieee.float32.add",
             IeeeArithmeticOperator::FusedMultiplyAdd,
             IeeeWidth::Binary32,
         ),
         (
-            "quire.op.ieee.float64.fma",
-            "quire.op.ieee.float64.add",
+            "filament.op.ieee.float64.fma",
+            "filament.op.ieee.float64.add",
             IeeeArithmeticOperator::FusedMultiplyAdd,
             IeeeWidth::Binary64,
         ),
@@ -880,7 +882,7 @@ fn tc_024_sqrt_and_fma_operands_are_checked_for_float_type_and_width() {
         let float_literal = |kind| CheckedTerm::Literal {
             type_id: node_id('1'),
             value_kind: kind,
-            value: quire_contract_model::CheckedJson::from_serializable(&serde_json::json!("0"))
+            value: filament_contract_model::CheckedJson::from_serializable(&serde_json::json!("0"))
                 .expect("checked json literal"),
         };
         let other_width = if form == ScalarForm::Float32 {

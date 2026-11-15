@@ -325,9 +325,9 @@ mod tests {
         time::Duration,
     };
 
+    use filament_exact::Cancel;
+    use fsl_replay::{ProofFormat, RefinementSmtCertificate, RefutedQuery};
     use ix_trace_rs::trace;
-    use qsl_replay::{ProofFormat, RefinementSmtCertificate, RefutedQuery};
-    use quire_exact::Cancel;
 
     use super::{
         refinement_handoff, RefinementExpected, RefinementHandoffError, RefinementRole,

@@ -6,13 +6,13 @@
 
 use std::{num::NonZeroU64, time::Duration};
 
-use quire_canonical::FixedShape;
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedNodeId, CheckedOccurrence, ClauseRef, ContractSourceV1, DependencyIdentity, SourceSpan,
 };
+use quire_canonical::FixedShape;
 use serde::{Deserialize, Serialize};
 
-use qsl_replay::ObligationIdentity;
+use fsl_replay::ObligationIdentity;
 
 use crate::{
     core::artifact::Artifact,
@@ -23,7 +23,7 @@ use crate::{
 };
 
 /// Contract IR's admitted identity for Boolean implication.
-pub(crate) const BOOLEAN_IMPLIES_IDENTITY: &str = "quire.op.boolean.implies";
+pub(crate) const BOOLEAN_IMPLIES_IDENTITY: &str = "filament.op.boolean.implies";
 
 /// Resource ceilings bound into a proof identity (FR-028).
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -1021,8 +1021,8 @@ pub struct KaniScalarObligationHarness {
     generated_rust: Artifact,
     generated_record: Artifact,
     generated_artifacts: Option<Vec<Artifact>>,
-    original_scalar_limits: Option<quire_exact::ScalarLimits>,
-    original_scalar_package: Option<std::sync::Arc<quire_contract_model::CheckedPackageV2>>,
+    original_scalar_limits: Option<filament_exact::ScalarLimits>,
+    original_scalar_package: Option<std::sync::Arc<filament_contract_model::CheckedPackageV2>>,
     scalar_replay_body: Result<
         crate::core::scalar_authority::ScalarReplayBody,
         crate::core::scalar_authority::ScalarAuthorityError,
@@ -1074,7 +1074,7 @@ impl KaniScalarObligationHarness {
         identity: ScalarObligationIdentity,
         rust: Artifact,
         record: Artifact,
-        limits: quire_exact::ScalarLimits,
+        limits: filament_exact::ScalarLimits,
     ) -> Self {
         let mut harness = Self::generated(identity, rust, record);
         harness.original_scalar_limits = Some(limits);
@@ -1102,7 +1102,7 @@ impl KaniScalarObligationHarness {
     pub(crate) fn scalar_original_package(
         &self,
     ) -> Result<
-        &std::sync::Arc<quire_contract_model::CheckedPackageV2>,
+        &std::sync::Arc<filament_contract_model::CheckedPackageV2>,
         crate::core::scalar_authority::ScalarAuthorityError,
     > {
         self.scalar_replay_body()?;
@@ -1117,7 +1117,7 @@ impl KaniScalarObligationHarness {
             crate::core::scalar_authority::ScalarReplayBody,
             crate::core::scalar_authority::ScalarAuthorityError,
         >,
-        source: std::sync::Arc<quire_contract_model::CheckedPackageV2>,
+        source: std::sync::Arc<filament_contract_model::CheckedPackageV2>,
     ) {
         if let Ok(value) = &body {
             let retained = serde_json::from_str::<serde_json::Value>(&self.record.contents)
@@ -1154,7 +1154,7 @@ impl KaniScalarObligationHarness {
     /// retained scalar meter context.
     pub fn original_scalar_limits(
         &self,
-    ) -> Result<quire_exact::ScalarLimits, ScalarOriginalLimitsError> {
+    ) -> Result<filament_exact::ScalarLimits, ScalarOriginalLimitsError> {
         if !self.has_valid_provenance() {
             return Err(ScalarOriginalLimitsError::GeneratedArtifactChanged);
         }
@@ -1228,7 +1228,7 @@ pub struct StateFrameHarness {
     pub record: Artifact,
 }
 
-/// An integer comparison operator of the closed `quire.op.integer` ordering family.
+/// An integer comparison operator of the closed `filament.op.integer` ordering family.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum StateComparison {

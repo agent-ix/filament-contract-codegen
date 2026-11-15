@@ -14,14 +14,14 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
-use qsl_replay::{DomainKey, DomainKind, ProofBound};
-use quire_contract_model::{ApplicationOperator, CheckedTerm};
-use quire_contract_model::{
+use filament_contract_model::{ApplicationOperator, CheckedTerm};
+use filament_contract_model::{
     CheckedExtensionRefusalDetail, CheckedNodeId, CheckedPackageIncomplete, CheckedPackageLimit,
     CheckedPackageRefusal, CheckedPackageRefusalCause, CheckedPackageRefusalCode,
     CheckedPackageRefusalLocation, CheckedProtocolRefusalDetail, CheckedTerminalDuplicate,
     ContractPackageV1,
 };
+use fsl_replay::{DomainKey, DomainKind, ProofBound};
 use serde::Serialize;
 
 use crate::core::contract_package::{
@@ -96,13 +96,13 @@ mod scalar_cache_tests {
 struct CapabilityLookups<'a> {
     scalar: crate::kani::generate::negotiate::ScalarFormLookups<'a>,
     scalar_targets:
-        BTreeMap<*const quire_contract_model::CheckedPackageV2, BTreeSet<CheckedNodeId>>,
+        BTreeMap<*const filament_contract_model::CheckedPackageV2, BTreeSet<CheckedNodeId>>,
     scalar_families: BTreeMap<
-        *const quire_contract_model::CheckedPackageV2,
+        *const filament_contract_model::CheckedPackageV2,
         BTreeMap<CheckedNodeId, Option<KaniFormFamily>>,
     >,
     functions: BTreeMap<
-        *const quire_contract_model::CheckedPackageV2,
+        *const filament_contract_model::CheckedPackageV2,
         crate::oracle::function::FunctionPreflightGraph<'a>,
     >,
 }
@@ -110,7 +110,7 @@ struct CapabilityLookups<'a> {
 impl<'a> CapabilityLookups<'a> {
     fn new(envelope: &BackendProviderEnvelope) -> Self {
         let mut scalar_targets = BTreeMap::<
-            *const quire_contract_model::CheckedPackageV2,
+            *const filament_contract_model::CheckedPackageV2,
             BTreeSet<CheckedNodeId>,
         >::new();
         for item in &envelope.items {
@@ -137,7 +137,7 @@ impl<'a> CapabilityLookups<'a> {
 
     fn scalar_family(
         &mut self,
-        package: &quire_contract_model::CheckedPackageV2,
+        package: &filament_contract_model::CheckedPackageV2,
         node_id: &CheckedNodeId,
     ) -> Option<KaniFormFamily> {
         let package_key = std::ptr::from_ref(package);
@@ -159,15 +159,15 @@ impl<'a> CapabilityLookups<'a> {
 
     fn checked_node(
         &mut self,
-        package: &'a quire_contract_model::CheckedPackageV2,
+        package: &'a filament_contract_model::CheckedPackageV2,
         node_id: &CheckedNodeId,
-    ) -> Option<&'a quire_contract_model::CheckedSemanticNodeV2> {
+    ) -> Option<&'a filament_contract_model::CheckedSemanticNodeV2> {
         self.function_graph(package).get(node_id)
     }
 
     fn function_graph(
         &mut self,
-        package: &'a quire_contract_model::CheckedPackageV2,
+        package: &'a filament_contract_model::CheckedPackageV2,
     ) -> &crate::oracle::function::FunctionPreflightGraph<'a> {
         // Keep each admitted package's graph separate, including same-name packages with
         // different contents. The key is used only within this envelope's borrowed lifetime.
@@ -421,7 +421,7 @@ pub enum KaniForm {
     /// claim entry and checked graph; callers cannot assert them independently.
     V2ScalarClaim {
         /// The checked source package containing the source node.
-        package: Arc<quire_contract_model::CheckedPackageV2>,
+        package: Arc<filament_contract_model::CheckedPackageV2>,
         /// The admitted lowering of the full driver request.
         contract: Box<ContractPackageV1>,
         /// The full typed lowering positions, including context-only roots.
@@ -429,14 +429,14 @@ pub enum KaniForm {
         /// This claim's index among driver positions.
         request_index: usize,
         /// The requested checked node.
-        node_id: quire_contract_model::CheckedNodeId,
+        node_id: filament_contract_model::CheckedNodeId,
     },
     /// A V2 state-clause/frame role handled by the state-frame path.
     V2StateFrame {
         /// The admitted package containing the state clause.
-        package: Arc<quire_contract_model::CheckedPackageV2>,
+        package: Arc<filament_contract_model::CheckedPackageV2>,
         /// The checked state-clause node.
-        clause: quire_contract_model::CheckedNodeId,
+        clause: filament_contract_model::CheckedNodeId,
         /// The harness role requested from the checked state-clause node.
         role: KaniObligationRole,
         /// Rust path of the state ABI.
@@ -451,20 +451,20 @@ pub enum KaniForm {
     /// it is byte-for-byte the ordered reference list in the call node.
     V2FunctionApplication {
         /// The admitted package containing both nodes.
-        package: Arc<quire_contract_model::CheckedPackageV2>,
+        package: Arc<filament_contract_model::CheckedPackageV2>,
         /// The checked `function/pure_function` declaration being applied.
-        function_node_id: quire_contract_model::CheckedNodeId,
+        function_node_id: filament_contract_model::CheckedNodeId,
         /// The checked local `expression/call` node.
-        call_node_id: quire_contract_model::CheckedNodeId,
+        call_node_id: filament_contract_model::CheckedNodeId,
         /// Source argument nodes, in the caller's claimed order.
-        argument_node_ids: Vec<quire_contract_model::CheckedNodeId>,
+        argument_node_ids: Vec<filament_contract_model::CheckedNodeId>,
     },
     /// A typed form outside the normative V1/V2 Kani set.
     OutsideSet {
         /// The admitted package containing the typed node.
-        package: Arc<quire_contract_model::CheckedPackageV2>,
+        package: Arc<filament_contract_model::CheckedPackageV2>,
         /// The checked node outside Kani's normative form set.
-        node_id: quire_contract_model::CheckedNodeId,
+        node_id: filament_contract_model::CheckedNodeId,
     },
 }
 
@@ -623,9 +623,9 @@ fn scalar_family_from_item(item: crate::oracle::scalar::ExactScalarItem) -> Kani
 }
 
 fn checked_operation<'a>(
-    package: &'a quire_contract_model::CheckedPackageV2,
+    package: &'a filament_contract_model::CheckedPackageV2,
     node_id: &CheckedNodeId,
-) -> Option<&'a quire_contract_model::CheckedApplicationOperation> {
+) -> Option<&'a filament_contract_model::CheckedApplicationOperation> {
     match package.term(node_id)? {
         CheckedTerm::Application { operation, .. } => Some(operation),
         _ => None,
@@ -633,14 +633,14 @@ fn checked_operation<'a>(
 }
 
 fn checked_operation_identity<'a>(
-    package: &'a quire_contract_model::CheckedPackageV2,
+    package: &'a filament_contract_model::CheckedPackageV2,
     node_id: &CheckedNodeId,
 ) -> Option<&'a str> {
     checked_operation(package, node_id)?.identity()
 }
 
 fn checked_state_clause_role<'a>(
-    package: &'a quire_contract_model::CheckedPackageV2,
+    package: &'a filament_contract_model::CheckedPackageV2,
     node_id: &CheckedNodeId,
 ) -> Option<&'a str> {
     Some(
@@ -652,7 +652,7 @@ fn checked_state_clause_role<'a>(
 }
 
 fn checked_node_family<'a>(
-    package: &'a quire_contract_model::CheckedPackageV2,
+    package: &'a filament_contract_model::CheckedPackageV2,
     node_id: &CheckedNodeId,
     lookups: &mut CapabilityLookups<'a>,
 ) -> KaniFormFamily {
@@ -664,33 +664,33 @@ fn checked_node_family<'a>(
         .and_then(|_| checked_operation_identity(package, node_id));
     match identity {
         Some(
-            "quire.op.boolean.and"
-            | "quire.op.boolean.or"
-            | "quire.op.boolean.not"
-            | "quire.op.boolean.implies"
-            | "quire.op.boolean.eq"
-            | "quire.op.boolean.ne",
+            "filament.op.boolean.and"
+            | "filament.op.boolean.or"
+            | "filament.op.boolean.not"
+            | "filament.op.boolean.implies"
+            | "filament.op.boolean.eq"
+            | "filament.op.boolean.ne",
         ) => KaniFormFamily::Boolean,
-        Some("quire.op.equality.equal" | "quire.op.equality.not_equal") => {
+        Some("filament.op.equality.equal" | "filament.op.equality.not_equal") => {
             KaniFormFamily::CompositeEquality
         }
-        Some("quire.op.function.apply" | "quire.op.function.call") => {
+        Some("filament.op.function.apply" | "filament.op.function.call") => {
             KaniFormFamily::FunctionApplication
         }
-        Some("quire.op.collection.for_all_non_negative" | "quire.op.collection.exists_equal") => {
-            KaniFormFamily::BoundedCollection
-        }
-        Some("quire.op.graph.reachability") => KaniFormFamily::BoundedGraph,
+        Some(
+            "filament.op.collection.for_all_non_negative" | "filament.op.collection.exists_equal",
+        ) => KaniFormFamily::BoundedCollection,
+        Some("filament.op.graph.reachability") => KaniFormFamily::BoundedGraph,
         _ => KaniFormFamily::OutsideSet,
     }
 }
 
 fn checked_function_call_matches(
-    package: &quire_contract_model::CheckedPackageV2,
+    package: &filament_contract_model::CheckedPackageV2,
     graph: &crate::oracle::function::FunctionPreflightGraph<'_>,
-    function_node_id: &quire_contract_model::CheckedNodeId,
-    call_node_id: &quire_contract_model::CheckedNodeId,
-    argument_node_ids: &[quire_contract_model::CheckedNodeId],
+    function_node_id: &filament_contract_model::CheckedNodeId,
+    call_node_id: &filament_contract_model::CheckedNodeId,
+    argument_node_ids: &[filament_contract_model::CheckedNodeId],
 ) -> bool {
     let Some(function) = graph.get(function_node_id) else {
         return false;
@@ -744,7 +744,7 @@ fn checked_function_call_matches(
     else {
         return false;
     };
-    if operation.identity() != Some("quire.op.function.call") {
+    if operation.identity() != Some("filament.op.function.call") {
         return false;
     }
     if arguments.len() != argument_node_ids.len() + 1 || parameters.len() != argument_node_ids.len()
@@ -764,7 +764,7 @@ fn checked_function_call_matches(
 fn resolve_checked_reference<'a>(
     graph: &crate::oracle::function::FunctionPreflightGraph<'a>,
     term: &CheckedTerm,
-) -> Option<&'a quire_contract_model::CheckedSemanticNodeV2> {
+) -> Option<&'a filament_contract_model::CheckedSemanticNodeV2> {
     let CheckedTerm::Reference { target } = term else {
         return None;
     };
@@ -1010,7 +1010,7 @@ impl KaniForm {
                     Err(Box::new(Cause::KaniFormRefused {
                         form: identity,
                         refusal: crate::kani::generate::outcome::UnsupportedObligation::OperationNotRendered {
-                            operation_identity: "quire.op.function.call".to_owned(),
+                            operation_identity: "filament.op.function.call".to_owned(),
                             derived_domains: Vec::new(),
                         },
                         backend: backend.identity.clone(),
@@ -1621,7 +1621,7 @@ pub enum ContractNegotiationError {
 // FR-019 requires the typed projection by value in the public refusal.
 #[allow(clippy::result_large_err)]
 pub fn negotiate_contract_package(
-    source: &quire_contract_model::CheckedPackageV2,
+    source: &filament_contract_model::CheckedPackageV2,
     package: &ContractPackageV1,
     positions: &[ContractRequestPosition],
     envelope: &BackendProviderEnvelope,

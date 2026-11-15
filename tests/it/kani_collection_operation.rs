@@ -8,12 +8,12 @@ use filament_contract_codegen::{
     V2ClauseElementDomain, V2ClauseObligationClaim, V2ClauseObligationRecord, V2ClauseParameter,
     V2ClauseRead,
 };
-use ix_trace_rs::trace;
-use qsl_replay::{call_site, ClauseName, DependencyInput, Identifier, SourceIdentity};
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedNodeId, CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
     CheckedPackageV2ReadResult, CheckedTerm,
 };
+use fsl_replay::{call_site, ClauseName, DependencyInput, Identifier, SourceIdentity};
+use ix_trace_rs::trace;
 use serde_json::{json, Value};
 use std::time::Duration;
 
@@ -41,8 +41,8 @@ pub(crate) fn document() -> Value {
         "source":{"identity":"ix://ir1091.operation/spec","version":"1.0.0","dialect":"spec-bundle"},
         "package":{"identity":MODEL,"version":"1.0.0","mappingVersions":[],"profileVersions":[]},
         "constructs":[
-            {"kind":{"module":MODEL,"name":"entity"},"moduleVersion":"1.0.0","construct":{"identity":"none","shape":"record","members":{},"meaning":"quire.meaning.model.object-type/v1"}},
-            {"kind":{"module":MODEL,"name":"value_type"},"moduleVersion":"1.0.0","construct":{"identity":"none","shape":"record","members":{},"meaning":"quire.meaning.model.value-type/v1"}}
+            {"kind":{"module":MODEL,"name":"entity"},"moduleVersion":"1.0.0","construct":{"identity":"none","shape":"record","members":{},"meaning":"filament.meaning.model.object-type/v1"}},
+            {"kind":{"module":MODEL,"name":"value_type"},"moduleVersion":"1.0.0","construct":{"identity":"none","shape":"record","members":{},"meaning":"filament.meaning.model.value-type/v1"}}
         ],
         "occurrences":[],"extensions":[],
         "types":[
@@ -69,7 +69,7 @@ pub(crate) fn fixture(doc: &Value, preconditions: &str) -> CheckedPackageV2 {
 
 fn fixture_with_body(doc: &Value, preconditions: &str, body: &str) -> CheckedPackageV2 {
     let bytes = quire_canonical::to_vec(doc, quire_canonical::Limits::new(1 << 20)).unwrap();
-    let source = format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.model.complete/v1\";\nmodel M = \"{MODEL}\";\n{preconditions}\npost CollectionReady using v on M::Node::step {{ {body} }}\n");
+    let source = format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.model.complete/v1\";\nmodel M = \"{MODEL}\";\n{preconditions}\npost CollectionReady using v on M::Node::step {{ {body} }}\n");
     let site = call_site(
         SourceIdentity::new("agent-ix", "ir1091-operation.native"),
         "ir1091-operation".to_owned(),
@@ -81,7 +81,7 @@ fn fixture_with_body(doc: &Value, preconditions: &str, body: &str) -> CheckedPac
     )
     .expect("FSL emits the authored operation clauses");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     evidence
         .insert_domain_package_document(MODEL, bytes)
         .unwrap();
@@ -255,33 +255,33 @@ pub fn finish() { assert!(DRAWS.lock().unwrap().is_empty(), "every declared stat
             String::from_utf8_lossy(&output.stderr)
         );
         let subject = r#"
-fn subject(items: &mut quire_exact::Value, unread: &mut quire_exact::Value, count: &mut quire_exact::Value, limit: i64, enabled: bool) {
+fn subject(items: &mut filament_exact::Value, unread: &mut filament_exact::Value, count: &mut filament_exact::Value, limit: i64, enabled: bool) {
     assert_eq!(limit, 2, "operation parameter order and value");
     assert!(enabled, "Boolean parameter reaches the subject");
-    assert!(matches!(unread, quire_exact::Value::Boolean(true)), "unread field reaches the subject");
-    assert!(matches!(count, quire_exact::Value::Integer(value) if value == &quire_exact::Integer::from(2_i64)), "declaration order binds the count field");
-    let quire_exact::Value::Collection(collection) = items else { panic!("exact collection ABI"); };
+    assert!(matches!(unread, filament_exact::Value::Boolean(true)), "unread field reaches the subject");
+    assert!(matches!(count, filament_exact::Value::Integer(value) if value == &filament_exact::Integer::from(2_i64)), "declaration order binds the count field");
+    let filament_exact::Value::Collection(collection) = items else { panic!("exact collection ABI"); };
     let expected = std::env::args().nth(3).unwrap_or_else(|| "1,2".into()).split(',').filter(|part| !part.is_empty())
         .map(|part| part.parse::<i64>().unwrap()).collect::<Vec<_>>();
     assert_eq!(collection.elements().len(), expected.len());
     for (actual, expected) in collection.elements().iter().zip(&expected) {
         match actual {
-            quire_exact::Value::Integer(actual) => assert_eq!(actual, &quire_exact::Integer::from(*expected), "the symbolic input order is retained"),
-            quire_exact::Value::Boolean(actual) => assert_eq!(*actual, *expected != 0, "Boolean occurrence order is retained"),
+            filament_exact::Value::Integer(actual) => assert_eq!(actual, &filament_exact::Integer::from(*expected), "the symbolic input order is retained"),
+            filament_exact::Value::Boolean(actual) => assert_eq!(*actual, *expected != 0, "Boolean occurrence order is retained"),
             _ => panic!("supported exact primitive elements"),
         }
     }
     let action = std::env::args().nth(1).unwrap();
     match action.as_str() {
-        "field-type" => *unread = quire_exact::Value::Integer(quire_exact::Integer::from(0_i64)),
-        "field-domain" => *count = quire_exact::Value::Integer(quire_exact::Integer::from(99_i64)),
+        "field-type" => *unread = filament_exact::Value::Integer(filament_exact::Integer::from(0_i64)),
+        "field-domain" => *count = filament_exact::Value::Integer(filament_exact::Integer::from(99_i64)),
         "duplicate" | "element-domain" | "cardinality" | "collection-kind" | "below-minimum" | "reorder" => {
             let mut ty = collection.collection_type().clone();
             let values = match action.as_str() {
                 "duplicate" => vec![1,1], "element-domain" => vec![99], "cardinality" => vec![0,1,2,3], "below-minimum" => vec![], "reorder" => vec![2,1], _ => vec![1,2],
-            }.into_iter().map(|value: i64| quire_exact::Value::Integer(quire_exact::Integer::from(value))).collect();
-            if action == "collection-kind" { ty = quire_exact::CollectionType::new(quire_exact::CollectionKind::Sequence, ty.element().clone(), ty.bound()); }
-            *items = quire_exact::from_admitted(ty, values);
+            }.into_iter().map(|value: i64| filament_exact::Value::Integer(filament_exact::Integer::from(value))).collect();
+            if action == "collection-kind" { ty = filament_exact::CollectionType::new(filament_exact::CollectionKind::Sequence, ty.element().clone(), ty.bound()); }
+            *items = filament_exact::from_admitted(ty, values);
         }
         "healthy" | "result-domain" => {},
         _ => panic!("unknown subject action"),
@@ -324,7 +324,7 @@ fn subject(items: &mut quire_exact::Value, unread: &mut quire_exact::Value, coun
                 path.file_name()
                     .unwrap()
                     .to_string_lossy()
-                    .starts_with("libquire_exact-")
+                    .starts_with("libfilament_exact-")
                     && path
                         .extension()
                         .is_some_and(|extension| extension == "rlib")
@@ -334,7 +334,7 @@ fn subject(items: &mut quire_exact::Value, unread: &mut quire_exact::Value, coun
             .args(["120s", "rustc", "--edition=2021", "main.rs", "-L"])
             .arg(format!("dependency={}", deps.display()))
             .arg("--extern")
-            .arg(format!("quire_exact={}", exact.display()))
+            .arg(format!("filament_exact={}", exact.display()))
             .args(["--extern", "kani=libkani.rlib", "-o", "operation"])
             .current_dir(&scratch.path)
             .output()
@@ -426,7 +426,7 @@ fn operation_context_requires_and_assumes_same_anchor_preconditions() {
     let output = executable.run("healthy", "2,1,2,0,1,1,2,1", "1,2");
     assert!(!output.status.success());
     assert!(String::from_utf8_lossy(&output.stderr).contains("symbolic input excluded"));
-    let post = ids.iter().find(|id| matches!(package.term(id), Some(CheckedTerm::Application { operation, .. }) if operation.state_clause_kind().ok().flatten() == Some(quire_contract_model::StateClauseKind::Postcondition))).unwrap();
+    let post = ids.iter().find(|id| matches!(package.term(id), Some(CheckedTerm::Application { operation, .. }) if operation.state_clause_kind().ok().flatten() == Some(filament_contract_model::StateClauseKind::Postcondition))).unwrap();
     let outcome = negotiate(&package, std::slice::from_ref(post));
     let KaniObligationOutcome::Emitted {
         records,
@@ -463,7 +463,7 @@ fn present_unrenderable_sibling_refuses_collection_postcondition() {
     let pre = ids
         .iter()
         .find(|id| matches!(package.term(id), Some(CheckedTerm::Application { operation, .. })
-            if operation.state_clause_kind().ok().flatten() == Some(quire_contract_model::StateClauseKind::Precondition)))
+            if operation.state_clause_kind().ok().flatten() == Some(filament_contract_model::StateClauseKind::Precondition)))
         .expect("admitted precondition");
     let outcome = negotiate(&package, &ids);
     let KaniObligationOutcome::Emitted {
@@ -567,7 +567,7 @@ fn unsupported_whole_object_axes_have_typed_refusals_and_no_harness() {
             _ => unreachable!(),
         };
         let package = fixture(&doc, pre);
-        let post = clauses(&package).into_iter().find(|id| matches!(package.term(id), Some(CheckedTerm::Application { operation, .. }) if operation.state_clause_kind().ok().flatten() == Some(quire_contract_model::StateClauseKind::Postcondition))).unwrap();
+        let post = clauses(&package).into_iter().find(|id| matches!(package.term(id), Some(CheckedTerm::Application { operation, .. }) if operation.state_clause_kind().ok().flatten() == Some(filament_contract_model::StateClauseKind::Postcondition))).unwrap();
         let outcome = negotiate(&package, &[post]);
         let KaniObligationOutcome::Emitted {
             records,
@@ -664,18 +664,18 @@ fn whole_object_precondition_totality_and_playback_keep_all_state_and_parameters
         vec![
             (
                 "self.z_items".into(),
-                qsl_replay::WitnessValue::OrderedSet(vec![
-                    qsl_replay::WitnessValue::Integer(0),
-                    qsl_replay::WitnessValue::Integer(1)
+                fsl_replay::WitnessValue::OrderedSet(vec![
+                    fsl_replay::WitnessValue::Integer(0),
+                    fsl_replay::WitnessValue::Integer(1)
                 ])
             ),
             (
                 "self.a_unread".into(),
-                qsl_replay::WitnessValue::Boolean(true)
+                fsl_replay::WitnessValue::Boolean(true)
             ),
-            ("self.m_count".into(), qsl_replay::WitnessValue::Integer(2)),
-            ("limit".into(), qsl_replay::WitnessValue::Integer(2)),
-            ("enabled".into(), qsl_replay::WitnessValue::Boolean(true)),
+            ("self.m_count".into(), fsl_replay::WitnessValue::Integer(2)),
+            ("limit".into(), fsl_replay::WitnessValue::Integer(2)),
+            ("enabled".into(), fsl_replay::WitnessValue::Boolean(true)),
         ]
     );
     assert!(matches!(
@@ -926,8 +926,8 @@ fn unsupported_sibling_refusal_names_the_exact_admitted_precondition() {
         "pre Ready using v on M::Node::step { exists(item in self.z_items: item > limit) }",
     );
     let ids = clauses(&package);
-    let pre = ids.iter().find(|id| matches!(package.term(id), Some(CheckedTerm::Application { operation, .. }) if operation.state_clause_kind().ok().flatten() == Some(quire_contract_model::StateClauseKind::Precondition))).unwrap();
-    let post = ids.iter().find(|id| matches!(package.term(id), Some(CheckedTerm::Application { operation, .. }) if operation.state_clause_kind().ok().flatten() == Some(quire_contract_model::StateClauseKind::Postcondition))).unwrap();
+    let pre = ids.iter().find(|id| matches!(package.term(id), Some(CheckedTerm::Application { operation, .. }) if operation.state_clause_kind().ok().flatten() == Some(filament_contract_model::StateClauseKind::Precondition))).unwrap();
+    let post = ids.iter().find(|id| matches!(package.term(id), Some(CheckedTerm::Application { operation, .. }) if operation.state_clause_kind().ok().flatten() == Some(filament_contract_model::StateClauseKind::Postcondition))).unwrap();
     let KaniObligationOutcome::Emitted {
         records,
         v2_clause_harnesses,
@@ -1095,7 +1095,7 @@ fn hand_written_claim(
         maximum,
     };
     V2ClauseObligationClaim {
-        obligation: qsl_replay::ObligationIdentity::new(
+        obligation: fsl_replay::ObligationIdentity::new(
             crate::common::v2_claim::resolved_key(package, clause),
             None,
             0,

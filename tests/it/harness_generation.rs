@@ -6,7 +6,7 @@ use filament_contract_codegen::{
     generate_tristate_harness, GenerationErrorCode, GenerationTerminalState, HarnessErrorCode,
     HarnessRequest, MAX_GENERATED_SOURCE_BYTES,
 };
-use quire_contract_model::{
+use filament_contract_model::{
     AnchorName, BooleanOperator, ClauseId, DeclarationEnvironment, ExecutionPoint, Expression,
     ExpressionKind, PackageId, RequirementId, RequirementRef, RequirementRevision,
     SourceDocumentId, SourceIdentity, SourceLocation, SourceRevision, SourceSpan, StateObservation,
@@ -215,7 +215,7 @@ mod generated_tests {
     use super::*;
     use proptest::strategy::{Just, Strategy as _};
     use proptest::test_runner::{Config, TestRunner};
-    use quire_contract_runtime::{
+    use filament_contract_runtime::{
         CampaignReport, ClauseId, ClauseKind, ClauseOutcome, ContractIdentity, ExecutionPoint,
         Observation, RequirementId, RevisionId, VerdictKind,
     };
@@ -664,7 +664,7 @@ fn tc_004_state_only_and_dependency_free_harnesses_compile_with_denied_warnings(
             ),
         );
         let generated_test = format!(
-            "\n#[cfg(test)] mod generated_tests {{ use super::*; use quire_contract_runtime::{{ClauseId, ClauseKind, ClauseOutcome, Observation, VerdictKind}}; #[test] fn shape_executes() {{ let mut observations = [Observation::new(ClauseId::new(\"blank\"), ClauseKind::Guard, ClauseOutcome::NotEvaluated, None); 2]; {} assert_eq!(verdict.kind(), VerdictKind::Passed); }} }}\n",
+            "\n#[cfg(test)] mod generated_tests {{ use super::*; use filament_contract_runtime::{{ClauseId, ClauseKind, ClauseOutcome, Observation, VerdictKind}}; #[test] fn shape_executes() {{ let mut observations = [Observation::new(ClauseId::new(\"blank\"), ClauseKind::Guard, ClauseOutcome::NotEvaluated, None); 2]; {} assert_eq!(verdict.kind(), VerdictKind::Passed); }} }}\n",
             invocation.replace("HARNESS_FN", function),
         );
         fs::write(

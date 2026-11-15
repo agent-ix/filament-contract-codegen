@@ -15,7 +15,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 pub const GENERATOR_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// CG's kernel version: the linked `filament-exact` crate's `KERNEL_VERSION`.
-pub const KERNEL_VERSION: u32 = quire_exact::KERNEL_VERSION;
+pub const KERNEL_VERSION: u32 = filament_exact::KERNEL_VERSION;
 
 fn generator_version() -> String {
     GENERATOR_VERSION.to_owned()

@@ -7,15 +7,15 @@
 use filament_contract_codegen::{
     KaniScalarObligationHarness, ObligationDisposition, RoutedGeneration, UnsupportedObligation,
 };
-use ix_trace_rs::trace;
-use qsl_replay::{
+use filament_contract_model::{
+    CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2, CheckedPackageV2ReadResult,
+};
+use filament_exact::DivisionProfile;
+use fsl_replay::{
     admit_integer_division, compile_package_with_integer_division, CompileUnit, DefinitionRole,
     DependencyInput, ReplayLimits, SourceIdentity, StageLimits,
 };
-use quire_contract_model::{
-    CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2, CheckedPackageV2ReadResult,
-};
-use quire_exact::DivisionProfile;
+use ix_trace_rs::trace;
 
 use super::{
     exact_function_agreement::body_id,
@@ -33,7 +33,7 @@ pub(crate) fn role(profile: DivisionProfile) -> DefinitionRole {
 /// One function of the corpus source: `name using v(parameters): Integer pure { expression }`.
 pub(crate) fn source(functions: &[(&str, &str, &str, &str)]) -> String {
     let mut text = String::from(
-        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\n",
+        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\n",
     );
     for (name, parameters, result, expression) in functions {
         text.push_str(&format!(
@@ -62,7 +62,7 @@ pub(crate) fn compile(text: &str, profile: DivisionProfile) -> CheckedPackageV2 
     )
     .expect("FSL compiles the division source");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     match CheckedPackageV2::read(
         compiled.bytes(),
         CheckedPackageReadLimits::bounded(),
@@ -79,8 +79,8 @@ pub(crate) fn application_in(
     package: &CheckedPackageV2,
     function: &str,
     identity: &str,
-) -> quire_contract_model::CheckedNodeId {
-    use quire_contract_model::CheckedTerm;
+) -> filament_contract_model::CheckedNodeId {
+    use filament_contract_model::CheckedTerm;
     let declaration = package
         .resolved_graph()
         .nodes
@@ -130,7 +130,7 @@ pub(crate) fn routed(package: &CheckedPackageV2, function: &str, unwind: u32) ->
 
 pub(crate) fn routed_node(
     package: &CheckedPackageV2,
-    node: &quire_contract_model::CheckedNodeId,
+    node: &filament_contract_model::CheckedNodeId,
     unwind: u32,
 ) -> RoutedGeneration {
     routed_nodes(package, std::slice::from_ref(node), unwind, false)
@@ -139,7 +139,7 @@ pub(crate) fn routed_node(
 /// Routes each of `nodes` as one request through the general or the native entry.
 pub(crate) fn routed_nodes(
     package: &CheckedPackageV2,
-    nodes: &[quire_contract_model::CheckedNodeId],
+    nodes: &[filament_contract_model::CheckedNodeId],
     unwind: u32,
     native: bool,
 ) -> RoutedGeneration {
@@ -257,7 +257,7 @@ pub(crate) struct Shape {
 
 impl Shape {
     pub(crate) fn operation_identity(&self) -> String {
-        format!("quire.op.integer.{}", self.operation)
+        format!("filament.op.integer.{}", self.operation)
     }
 
     pub(crate) fn generation(&self) -> RoutedGeneration {
@@ -348,7 +348,7 @@ mod host {
 "#;
 
 /// A host crate over `harness`: the generated support plus the grid over `operands`, run against
-/// the real `quire-exact`. Each mutant is `(name, mutated mapping, what it wrongly accepts)`.
+/// the real `filament-exact`. Each mutant is `(name, mutated mapping, what it wrongly accepts)`.
 fn host_crate(
     harness: &KaniScalarObligationHarness,
     operands: ((i64, i64), (i64, i64)),
@@ -409,7 +409,7 @@ fn mapping_mutants(
     let is_division = harness
         .identity
         .operation_identity
-        .contains("quire.op.integer.div")
+        .contains("filament.op.integer.div")
         || harness.identity.operation_identity.contains("division");
     let _ = is_division;
     let mut mutants = vec![
@@ -471,7 +471,7 @@ fn run_host(shape: &Shape, operands: ((i64, i64), (i64, i64)), member: Option<&s
 
 #[trace("TC-071", "FR-057-AC-2", "FR-057-AC-4")]
 #[test]
-fn host_controls_each_law_and_member_against_quire_exact() {
+fn host_controls_each_law_and_member_against_filament_exact() {
     for (index, (profile, operation, narrow, member)) in [
         (
             DivisionProfile::Truncating,
@@ -612,7 +612,7 @@ fn named_vectors(operation: &str, profile: DivisionProfile) -> [(i64, i64, i64);
 }
 
 /// One differential module: the harness's support compiled as host Rust and compared with the
-/// real `quire-exact` evaluation over the grid and the named vectors. With `swapped`, the
+/// real `filament-exact` evaluation over the grid and the named vectors. With `swapped`, the
 /// expected side's window table is the one of another law and the vectors must then fail.
 fn diff_module(name: &str, shape: &Shape, swapped: bool) -> String {
     let generation = shape.generation();
@@ -681,7 +681,7 @@ fn diff_ranges(operation: &str, profile: DivisionProfile) -> [(i64, i64); 2] {
 
 #[trace("TC-071", "FR-057-AC-4", "FR-057-AC-5")]
 #[test]
-fn host_differential_of_the_expected_side_against_quire_exact() {
+fn host_differential_of_the_expected_side_against_filament_exact() {
     for (operation, profile) in [
         ("div", DivisionProfile::Truncating),
         ("div", DivisionProfile::Floor),
@@ -779,7 +779,7 @@ fn every_division_claim_of_each_law_generates_one_harness_from_its_own_node() {
             assert_eq!(harness.identity.node_id, node, "the harness keeps its node");
             assert_eq!(
                 harness.identity.operation_identity,
-                format!("quire.op.integer.{operation}")
+                format!("filament.op.integer.{operation}")
             );
             let division = harness.identity.division_scalar.as_ref().unwrap();
             assert_eq!(
@@ -869,7 +869,7 @@ fn the_expected_side_is_relational_for_div_and_euclidean_for_rem_and_mod_and_nam
             .collect::<Vec<_>>()
             .join("\n");
         for forbidden in [
-            "quire_exact",
+            "filament_exact",
             "rt::",
             "nx::",
             "oracle_",
@@ -979,16 +979,16 @@ fn the_native_route_refuses_each_division_claim_and_leaves_its_sibling_byte_iden
     for profile in DivisionProfile::ALL {
         let package = catalog(profile);
         let nodes = [
-            application_in(&package, "dv", "quire.op.integer.div"),
-            application_in(&package, "rm", "quire.op.integer.rem"),
-            application_in(&package, "md", "quire.op.integer.mod"),
-            application_in(&package, "ad", "quire.op.integer.add"),
+            application_in(&package, "dv", "filament.op.integer.div"),
+            application_in(&package, "rm", "filament.op.integer.rem"),
+            application_in(&package, "md", "filament.op.integer.mod"),
+            application_in(&package, "ad", "filament.op.integer.add"),
         ];
         let together = routed_nodes(&package, &nodes, 12, true);
         for (index, identity) in [
-            (0, "quire.op.integer.div"),
-            (1, "quire.op.integer.rem"),
-            (2, "quire.op.integer.mod"),
+            (0, "filament.op.integer.div"),
+            (1, "filament.op.integer.rem"),
+            (2, "filament.op.integer.mod"),
         ] {
             assert!(parts(&together, index).1.is_none(), "no harness");
             let UnsupportedObligation::NativeDivisionPlanUnavailable {
@@ -1044,11 +1044,11 @@ fn the_integer_siblings_of_a_division_claim_generate_as_they_do_alone() {
     );
     let names = ["dv", "ad", "su", "mu", "ng"];
     let identities = [
-        "quire.op.integer.div",
-        "quire.op.integer.add",
-        "quire.op.integer.sub",
-        "quire.op.integer.mul",
-        "quire.op.integer.negate",
+        "filament.op.integer.div",
+        "filament.op.integer.add",
+        "filament.op.integer.sub",
+        "filament.op.integer.mul",
+        "filament.op.integer.negate",
     ];
     let nodes: Vec<_> = names
         .iter()
@@ -1082,7 +1082,7 @@ fn the_harness_identity_records_node_operation_profile_route_ranges_and_backend_
     let harness = parts(&generation, 0).1.unwrap();
     let identity = &harness.identity;
     assert_eq!(identity.node_id, node);
-    assert_eq!(identity.operation_identity, "quire.op.integer.div");
+    assert_eq!(identity.operation_identity, "filament.op.integer.div");
     assert_eq!(identity.unwind, 12);
     assert_eq!(
         identity.solver,
@@ -1135,7 +1135,7 @@ fn run_with_launcher(
     )
     .unwrap();
     std::fs::set_permissions(&launcher, std::fs::Permissions::from_mode(0o755)).unwrap();
-    let cancel = quire_exact::Cancel::new();
+    let cancel = filament_exact::Cancel::new();
     filament_contract_codegen::execute_kani_obligation(
         &filament_contract_codegen::KaniExecutionRequest {
             cancel: &cancel,
@@ -1434,7 +1434,7 @@ fn the_shipped_table_holds_the_measured_division_rows_with_their_route() {
     )
     .expect("the shipped table is JSON");
     for identity in ["div", "rem", "mod"] {
-        let id = format!("quire.op.integer.{identity}");
+        let id = format!("filament.op.integer.{identity}");
         let rows = table
             .as_array()
             .unwrap()
@@ -1474,7 +1474,7 @@ fn a_division_harness_at_or_above_its_row_width_is_refused_before_kani_and_below
         TractabilityTable,
     };
     let table = TractabilityTable::shipped_general_route_scalar().expect("the shipped table");
-    let cancel = quire_exact::Cancel::new();
+    let cancel = filament_exact::Cancel::new();
     let installation = filament_contract_codegen::KaniInstallation::new("/nonexistent/cargo-kani");
     let missing = std::path::Path::new("/nonexistent/crate");
     for (function, operation) in [("dv", "div"), ("rm", "rem"), ("md", "mod")] {
@@ -1483,7 +1483,7 @@ fn a_division_harness_at_or_above_its_row_width_is_refused_before_kani_and_below
         let (harness, _) = harness_of(&generation).expect("a division harness");
         fn request<'a>(
             harness: &'a KaniScalarObligationHarness,
-            cancel: &'a quire_exact::Cancel,
+            cancel: &'a filament_exact::Cancel,
             installation: &'a filament_contract_codegen::KaniInstallation,
             missing: &'a std::path::Path,
         ) -> filament_contract_codegen::KaniExecutionRequest<'a> {
@@ -1515,7 +1515,10 @@ fn a_division_harness_at_or_above_its_row_width_is_refused_before_kani_and_below
         else {
             panic!("the one refusal arm is V2ClauseNotTractable");
         };
-        assert_eq!(operation_identity, format!("quire.op.integer.{operation}"));
+        assert_eq!(
+            operation_identity,
+            format!("filament.op.integer.{operation}")
+        );
         assert_eq!(width_bits, 4);
         assert_eq!(route, IntegerRoute::General);
         assert_eq!(row.max_operand_bits, 4);

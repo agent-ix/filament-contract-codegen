@@ -9,8 +9,8 @@ use filament_contract_codegen::{
     KaniShadowHarness, ProductionRead, ProofCeilings, ShadowItem, ShadowLeaf, ShadowShape,
     SharedHelperClaim,
 };
+use filament_exact::Cancel;
 use ix_trace_rs::trace;
-use quire_exact::Cancel;
 use std::time::Duration;
 
 fn ceilings(wall_seconds: u64) -> ProofCeilings {

@@ -20,8 +20,8 @@ use filament_contract_codegen::{
     RefinementOutcome, RefinementPlanError, RefinementSummary, RefinementVersions, ShadowItem,
     ShadowLeaf, ShadowShape, SharedHelperClaim, MAX_PLANNED_CASES,
 };
+use filament_exact::Cancel;
 use ix_trace_rs::trace;
-use quire_exact::Cancel;
 
 fn ceilings(wall_seconds: u64) -> ProofCeilings {
     ProofCeilings {
@@ -737,7 +737,7 @@ fn tc_039_a_cancelled_refinement_is_a_typed_refusal_not_an_inconclusive_strength
     let result = std::thread::scope(|scope| {
         scope.spawn(|| {
             std::thread::sleep(Duration::from_secs(1));
-            cancel.cancel(quire_exact::CancelCause::Requested);
+            cancel.cancel(filament_exact::CancelCause::Requested);
         });
         execute_kani_refinement(&KaniRefinementRequest {
             cancel: &cancel,

@@ -23,15 +23,15 @@ use filament_contract_codegen::{
     EqualityOperatorKind, OracleGenerationError, RecordedSchedule, UpstreamBlocker,
     COMPOSITE_EQUALITY_CRATE_NAME,
 };
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedNodeTag, CheckedPackageLimit, CheckedPackageReadLimits, CheckedPackageRefusalCause,
     CheckedPackageRefusalCode, CheckedPackageV2, CheckedPackageV2ReadResult, CheckedSemanticNodeV2,
     CompleteLoweringProfileV2, CompleteLoweringRecordV2, ContractDependencies,
     ContractFeatureRecordV1, ContractPackageReadResult, ContractPackageWireV1,
 };
-use quire_exact::{CardinalityBound, CollectionKind, IeeeWidth};
-use quire_exact::{CollectionType, Presence, ValueType};
-use quire_semantic_value::declaration::{
+use filament_exact::{CardinalityBound, CollectionKind, IeeeWidth};
+use filament_exact::{CollectionType, Presence, ValueType};
+use filament_semantic_value::declaration::{
     CompositeDeclaration, CompositeShape, FieldDeclaration, ObjectTypeDeclaration, TypeEnvironment,
 };
 use serde_json::json;
@@ -128,7 +128,7 @@ struct FixturePackage {
 }
 
 impl FixturePackage {
-    fn key(&self, code: u32) -> quire_contract_model::CheckedNodeId {
+    fn key(&self, code: u32) -> filament_contract_model::CheckedNodeId {
         self.ids.resolve(&code_id(code))
     }
 }
@@ -148,7 +148,7 @@ fn admit(builder: PackageBuilder) -> FixturePackage {
 
 fn admit_with(
     builder: &PackageBuilder,
-    limits: quire_contract_model::CheckedPackageReadLimits,
+    limits: filament_contract_model::CheckedPackageReadLimits,
 ) -> FixturePackage {
     let (checked, ids) = builder.admit_with_resolved(limits);
     FixturePackage { checked, ids }
@@ -161,7 +161,7 @@ pub(super) struct FixtureOracles {
 }
 
 impl FixtureOracles {
-    fn key(&self, code: u32) -> quire_contract_model::CheckedNodeId {
+    fn key(&self, code: u32) -> filament_contract_model::CheckedNodeId {
         self.ids.resolve(&code_id(code))
     }
 }
@@ -181,7 +181,7 @@ fn generate(package: &FixturePackage, items: &[CompositeEqualityItem]) -> Fixtur
 fn generate_with_context(
     package: &FixturePackage,
     items: &[CompositeEqualityItem],
-    extra_context: &[quire_contract_model::CheckedNodeId],
+    extra_context: &[filament_contract_model::CheckedNodeId],
 ) -> FixtureOracles {
     let items = items
         .iter()
@@ -304,7 +304,7 @@ fn genuine_host_case(case: &str, reversed: bool) -> CompositeEqualityOracles {
     let compiled = if case == "mixed" {
         super::admitted_composite_fixture::compile(
             super::admitted_composite_fixture::SOURCE,
-            &qsl_replay::DependencyInput::default(),
+            &fsl_replay::DependencyInput::default(),
         )
     } else {
         genuine_fixture::compile(case)
@@ -357,7 +357,7 @@ use super::composite_equality_agreement::fixture as genuine_fixture;
 
 fn admitted_profile() -> CompleteLoweringProfileV2 {
     CompleteLoweringProfileV2 {
-        reference: quire_contract_model::LoweringProfileRef {
+        reference: filament_contract_model::LoweringProfileRef {
             authority: "agent-ix".into(),
             identity: "filament.codegen.composite-equality/v1".into(),
         },
@@ -413,7 +413,7 @@ fn invalid_type_resolution_work_limit_refuses_before_lowering() {
 #[trace("FR-018-AC-32", "TC-029")]
 #[test]
 fn tc_029_ac32_direct_control_case_refusal_preserves_healthy_equality_sibling() {
-    use quire_contract_model::LoweringProfileRef;
+    use filament_contract_model::LoweringProfileRef;
     use serde_json::json;
     use std::{fs, path::PathBuf};
 
@@ -425,7 +425,7 @@ fn tc_029_ac32_direct_control_case_refusal_preserves_healthy_equality_sibling() 
             .expect("read authoritative FSpec fixture"),
     )
     .expect("FSpec fixture JSON");
-    let frame = qsl_replay::WireGraph::of_package_value(&wire).expect("FSpec wire context");
+    let frame = fsl_replay::WireGraph::of_package_value(&wire).expect("FSpec wire context");
     let nodes = wire["semantic_graph"]["nodes"].as_array().unwrap();
     let document_id = |position: usize| {
         frame
@@ -436,7 +436,7 @@ fn tc_029_ac32_direct_control_case_refusal_preserves_healthy_equality_sibling() 
         .iter()
         .position(|node| node["semantic_form"] == "case")
         .unwrap();
-    let case_id: quire_contract_model::CheckedNodeId =
+    let case_id: filament_contract_model::CheckedNodeId =
         serde_json::from_value(document_id(case_position)).unwrap();
     let integer_position = nodes
         .iter()
@@ -475,7 +475,7 @@ fn tc_029_ac32_direct_control_case_refusal_preserves_healthy_equality_sibling() 
             &key(BOOLEAN),
             json!({
                 "term":"application", "operator":"binary",
-                "operation":{"identity":"quire.op.integer.eq","laws":[],"mode":null,"member":null,"leaves":[]},
+                "operation":{"identity":"filament.op.integer.eq","laws":[],"mode":null,"member":null,"leaves":[]},
                 "result_type":reference(BOOLEAN)["target"].clone(),
                 "arguments":integer_literals.iter().map(|id| json!({"term":"reference","target":id})).collect::<Vec<_>>(),
             }),
@@ -652,7 +652,7 @@ fn tc_029_ac24_recursive_list_and_tree_items_emit_one_oracle_each() {
         ("record SelfRecord { next: SelfRecord?; }\n", "SelfRecord"),
         ("record Tree { children: Sequence<Tree>[0, 2]; }\n", "Tree"),
     ] {
-        let source = format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\n{declarations}function f using v(a: {name},b: {name}): Boolean pure {{ a = b }}\n");
+        let source = format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\n{declarations}function f using v(a: {name},b: {name}): Boolean pure {{ a = b }}\n");
         let compiled = genuine_fixture::compile_source(&source);
         let package = super::admitted_enum_equality::checked(&compiled, &[]);
         let item = super::composite_equality_agreement::original_item(&package, false);
@@ -700,7 +700,7 @@ fn tc_029_public_fsl_recursive_items_generate_through_reader() {
 /// A raw external fixture proves strict-reader admission and original shape only.
 /// It is never rewritten into a package authenticated by a FSL context.
 fn assert_recursive_fixture_shapes(package: &CheckedPackageV2) {
-    use quire_contract_model::CheckedNodeId;
+    use filament_contract_model::CheckedNodeId;
     fn members(node: &CheckedSemanticNodeV2) -> Vec<serde_json::Value> {
         let body = serde_json::to_value(&node.body).expect("typed original body serializes");
         body["members"]
@@ -801,14 +801,14 @@ fn tc_029_authoritative_fspec_recursive_items_generate_through_reader() {
         "git show FSpec fixture: {}",
         String::from_utf8_lossy(&output.stderr)
     );
-    let mut evidence = quire_contract_model::CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    let mut evidence = filament_contract_model::CheckedPackageEvidence::new();
+    evidence.support_feature("filament.value.complete/v1");
     let wire: serde_json::Value =
         serde_json::from_slice(&output.stdout).expect("FSpec fixture JSON");
     let canonical = serde_json::to_vec(&wire).expect("canonical FSpec fixture");
     let read = CheckedPackageV2::read(
         &canonical,
-        quire_contract_model::CheckedPackageReadLimits::bounded(),
+        filament_contract_model::CheckedPackageReadLimits::bounded(),
         &evidence,
     );
     assert!(
@@ -924,7 +924,7 @@ fn tc_029_ac20_byte_ceiling_has_failed_records_and_no_contract_package() {
 fn tc_029_ac1_every_item_gets_one_disposition_refused_siblings_unchanged() {
     let compiled = super::admitted_composite_fixture::compile(
         super::admitted_composite_fixture::SOURCE,
-        &qsl_replay::DependencyInput::default(),
+        &fsl_replay::DependencyInput::default(),
     );
     let package = super::admitted_enum_equality::checked(&compiled, &[]);
     let healthy = super::admitted_enum_equality::direct_source_item(&package, "pair_same");
@@ -1032,7 +1032,7 @@ fn tc_029_admitted_one_reference_sequence_resolves_its_separate_bound() {
     assert_eq!(sequence_node.semantic_form.as_ref(), "sequence");
     assert_eq!(
         match &sequence_node.body {
-            quire_contract_model::CheckedTerm::Aggregate { members } => members.len(),
+            filament_contract_model::CheckedTerm::Aggregate { members } => members.len(),
             _ => panic!("reader-admitted sequence is an aggregate"),
         },
         1,
@@ -1116,9 +1116,9 @@ fn tc_029_a_body_operand_disagreeing_with_the_descriptor_refuses_before_generati
 #[trace("FR-018-AC-6", "TC-029")]
 #[test]
 fn tc_029_ac6_ieee_at_any_depth_is_operator_ineligible() {
-    let source = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nrecord FloatRecord { f: Float64; }\nrecord IntegerRecord { f: Integer; }\n";
+    let source = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nrecord FloatRecord { f: Float64; }\nrecord IntegerRecord { f: Integer; }\n";
     let compiled =
-        super::admitted_composite_fixture::compile(source, &qsl_replay::DependencyInput::default());
+        super::admitted_composite_fixture::compile(source, &fsl_replay::DependencyInput::default());
     let owner_key = |name: &str| {
         compiled
             .context()
@@ -1146,7 +1146,7 @@ fn tc_029_ac6_ieee_at_any_depth_is_operator_ineligible() {
             "FloatRecord",
             CompositeShape::Record(vec![FieldDeclaration::new(
                 "f",
-                ValueType::Float(quire_exact::FloatType::exact(IeeeWidth::Binary64)),
+                ValueType::Float(filament_exact::FloatType::exact(IeeeWidth::Binary64)),
                 Presence::Required,
             )]),
         )],
@@ -1164,7 +1164,7 @@ fn tc_029_ac6_ieee_at_any_depth_is_operator_ineligible() {
     // pass by *reaching* an IEEE leaf through a composite, never by naming the
     // leaf type directly).
     assert!(
-        environment.contains_ieee(&ValueType::Float(quire_exact::FloatType::exact(
+        environment.contains_ieee(&ValueType::Float(filament_exact::FloatType::exact(
             IeeeWidth::Binary64
         )))
     );
@@ -1440,28 +1440,28 @@ fn tc_029_ac7_a_direct_reference_operand_is_refused_by_ir_today() {
 #[test]
 fn tc_029_ac8_a_duplicate_field_is_refused_with_its_declaration_cause() {
     let source = concat!(
-        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\n",
+        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\n",
         "record Point { x: Integer; x: Integer; }\n",
         "function f using v(a: Point,b: Point): Boolean pure { a = b }\n",
     );
-    let result = qsl_replay::compile_admitted(
-        qsl_replay::CompileUnit {
-            source: qsl_replay::SourceIdentity::new("test", "duplicate-field.native"),
+    let result = fsl_replay::compile_admitted(
+        fsl_replay::CompileUnit {
+            source: fsl_replay::SourceIdentity::new("test", "duplicate-field.native"),
             package_name: "duplicate-field".to_owned(),
             path: "duplicate-field.native",
             bytes: source.as_bytes(),
         },
         [],
-        &qsl_replay::DependencyInput::default(),
-        qsl_replay::StageLimits::default(),
-        qsl_replay::ReplayLimits::default(),
+        &fsl_replay::DependencyInput::default(),
+        fsl_replay::StageLimits::default(),
+        fsl_replay::ReplayLimits::default(),
     );
-    let qsl_replay::AdmittedRefusal::Package(refusal) =
+    let fsl_replay::AdmittedRefusal::Package(refusal) =
         result.expect_err("duplicate source produces no admitted context")
     else {
         panic!("duplicate source must retain its owning Package refusal");
     };
-    assert_eq!(refusal.code(), qsl_replay::Code::AmbiguousDeclaration);
+    assert_eq!(refusal.code(), fsl_replay::Code::AmbiguousDeclaration);
     assert_eq!(refusal.cause(), Some("ambiguous-name"));
 }
 
@@ -1826,7 +1826,7 @@ fn tc_029_ac13_declaration_keys_are_the_reached_v2_node_ids() {
         // Independently recompute exact claims and source locations via public IR lowering,
         // without reading the generator's private profile or claim-map to build expectations.
         let profile = CompleteLoweringProfileV2 {
-            reference: quire_contract_model::LoweringProfileRef {
+            reference: filament_contract_model::LoweringProfileRef {
                 authority: "agent-ix".into(),
                 identity: "filament.codegen.composite-equality/v1".into(),
             },
@@ -1850,7 +1850,7 @@ fn tc_029_ac13_declaration_keys_are_the_reached_v2_node_ids() {
 /// Generate an unchanged genuine tuple source; extra declarations remain original context,
 /// never synthetic nodes or a context borrowed from an unrelated source.
 fn genuine_tuple_source(members: &str, extras: &str) -> (CompositeEqualityOracles, String) {
-    let source = format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\ntuple Pair({members});\n{extras}function f using v(a: Pair,b: Pair): Boolean pure {{ a = b }}\n");
+    let source = format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\ntuple Pair({members});\n{extras}function f using v(a: Pair,b: Pair): Boolean pure {{ a = b }}\n");
     let compiled = genuine_fixture::compile_source(&source);
     let package = super::admitted_enum_equality::checked(&compiled, &[]);
     let item = super::composite_equality_agreement::original_item(&package, false);
@@ -2345,14 +2345,14 @@ fn tc_029_nominal_owner_lookups_use_only_structural_wire_identities() {
         .map(|artifact| artifact.contents.as_str())
         .collect::<String>();
     assert!(lib.contains("composite_declaration(&context.wire_graph().key(&key)"));
-    assert!(generated.contains("quire_contract_model::CheckedNodeId {"));
+    assert!(generated.contains("filament_contract_model::CheckedNodeId {"));
     for forbidden in ["NodeKey::new(", "node_key_of_wire(", "checked_node_key("] {
         assert!(
             !generated.contains(forbidden),
             "generated nominal lookup contains {forbidden}"
         );
     }
-    assert!(contents(&oracles, "Cargo.toml").contains("quire-contract-model ="));
+    assert!(contents(&oracles, "Cargo.toml").contains("filament-contract-model ="));
 }
 
 /// Numeric reconstruction retains its exact errors; context preparation preserves lookup and
@@ -2384,7 +2384,7 @@ fn tc_029_ac17_emitted_reconstruction_is_typed_and_refused_never_unwrapped() {
                 .contains("Result<PreparedEqualityEnvironment<'ctx>, EnvironmentError>"));
             assert!(function
                 .signature
-                .contains("Option<&'ctx qsl_replay::AdmittedContext>"));
+                .contains("Option<&'ctx fsl_replay::AdmittedContext>"));
             assert!(function
                 .body
                 .contains("EnvironmentError::ContextPackageMismatch"));
@@ -2425,7 +2425,7 @@ fn tc_029_ac17_emitted_reconstruction_is_typed_and_refused_never_unwrapped() {
         for variant in [
             "MissingAdmittedContext {",
             "ContextPackageMismatch {",
-            "Lookup(qsl_replay::AdmittedLookupRefusal),",
+            "Lookup(fsl_replay::AdmittedLookupRefusal),",
             "Declaration(sv::EnvironmentFailure),",
             "TypeCheck(sv::TypeCheckError),",
             "Reconstruction(ReconstructionError),",

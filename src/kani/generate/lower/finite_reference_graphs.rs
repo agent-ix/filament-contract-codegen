@@ -2,11 +2,11 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use quire_contract_ir::kani::{
+use filament_contract_ir::kani::{
     DispatchIndex, KaniOutcome, KaniProfile, SemanticFamily, ValidatedFiniteInput,
 };
 
-use quire_contract_model::std001_code;
+use filament_contract_model::std001_code;
 
 use super::admit_family;
 
@@ -146,12 +146,12 @@ pub fn prepare_finite_graph_reaches(
 
 #[cfg(test)]
 mod tests {
-    use ix_trace_rs::trace;
-    use quire_contract_ir::kani::{
+    use filament_contract_ir::kani::{
         CapabilityDisposition, CapabilityEntry, DispatchIndex, FiniteInput, FiniteObject,
         FiniteReference, KaniOutcomeKind, KaniProfile, ModuleDescriptor, PopulationCompleteness,
         ProfileSelection, ResourceBounds, SemanticFamily,
     };
+    use ix_trace_rs::trace;
 
     use super::{prepare_finite_graph_reaches, GraphRequest};
 

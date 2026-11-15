@@ -183,8 +183,8 @@ fn public_v2_integer_literals_preserve_owner_semantics_and_every_denial_prefix()
                 package.graph().nodes.iter().any(|candidate| {
                     matches!(
                         &candidate.body,
-                        quire_contract_model::CheckedTerm::Application { operation, .. }
-                            if operation.identity() == Some("quire.op.numeric.narrow")
+                        filament_contract_model::CheckedTerm::Application { operation, .. }
+                            if operation.identity() == Some("filament.op.numeric.narrow")
                     )
                 }),
                 "the FSL-authored bounded equality must contain the checked narrow wrapper"
@@ -222,7 +222,7 @@ fn case_{index}() {{
 "#, reference = case.reference, label = case.source, expected = case.expected, skipped = case.skipped_arithmetic).unwrap();
     }
     let manifest = format!(
-        "[package]\nname = \"v2-literal-native-agreement\"\nversion = \"0.0.0\"\nedition = \"2021\"\n\n[dependencies]\nquire-exact = {{ {EXACT_DEPENDENCY_SOURCE}, features = [\"test-support\"] }}\nquire-semantic-value = {{ {SEMANTIC_VALUE_DEPENDENCY_SOURCE} }}\n{}\nix-trace-rs = {{ git = \"https://github.com/agent-ix/ix-trace-rs\", branch = \"main\" }}\n[workspace]\n",
+        "[package]\nname = \"v2-literal-native-agreement\"\nversion = \"0.0.0\"\nedition = \"2021\"\n\n[dependencies]\nfilament-exact = {{ {EXACT_DEPENDENCY_SOURCE}, features = [\"test-support\"] }}\nfilament-semantic-value = {{ {SEMANTIC_VALUE_DEPENDENCY_SOURCE} }}\n{}\nix-trace-rs = {{ git = \"https://github.com/agent-ix/ix-trace-rs\", branch = \"main\" }}\n[workspace]\n",
         scratch_crate::runtime_dependency(&["exact"]),
     );
     scratch_crate::write_manifest(&scratch.path, &manifest);
@@ -267,8 +267,8 @@ fn case_{index}() {{
 
 pub(super) const NATIVE_SUPPORT: &str = r#"
 use std::num::NonZeroU64;
-use quire_exact as rt;
-use quire_semantic_value::declaration as sv;
+use filament_exact as rt;
+use filament_semantic_value::declaration as sv;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 enum Observation {
@@ -361,7 +361,7 @@ impl Expr {
                         let checked = environment.check_equality(operator,
                             sv::EqualityOperand::typed(rt::ValueType::Integer),
                             sv::EqualityOperand::typed(rt::ValueType::Integer),
-                            &quire_semantic_value::enumeration::EnumMemberIndex::default())
+                            &filament_semantic_value::enumeration::EnumMemberIndex::default())
                             .map_err(Observation::IllTyped)?;
                         checked.evaluate(&environment, &rt::Value::Integer(left), &rt::Value::Integer(right), meter)
                     }

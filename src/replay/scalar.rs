@@ -225,7 +225,7 @@ fn scalar_operand_count(identity: &ScalarObligationIdentity) -> Option<usize> {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct EnumWitness {
     /// Declaration node the members belong to.
-    pub declaration: quire_contract_model::CheckedNodeId,
+    pub declaration: filament_contract_model::CheckedNodeId,
     /// Comparison operator identity.
     pub operator: String,
     /// Left operand rank in the declared member order.

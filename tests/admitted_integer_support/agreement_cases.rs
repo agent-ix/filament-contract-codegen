@@ -17,25 +17,25 @@ mod generated {
     }
 }
 use ix_trace_rs::trace;
-use quire_exact::{
+use filament_exact::{
     ChargePoint, Integer, IntegerInterval, LimitKind, Meter, Outcome, ScalarLimits, Value,
     ValueType,
 };
-use quire_semantic_value::declaration::{EqualityOperand, EqualityOperator, TypeEnvironment};
+use filament_semantic_value::declaration::{EqualityOperand, EqualityOperator, TypeEnvironment};
 
-fn compile_source() -> qsl_replay::AdmittedCompilation {
-    let source = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nfunction f using v(a: Int[0, 9],b: Integer): Boolean pure { convert<Integer>(a) = b }\n";
-    qsl_replay::compile_admitted(
-        qsl_replay::CompileUnit {
-            source: qsl_replay::SourceIdentity::new("test", "admitted-enums.native"),
+fn compile_source() -> fsl_replay::AdmittedCompilation {
+    let source = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nfunction f using v(a: Int[0, 9],b: Integer): Boolean pure { convert<Integer>(a) = b }\n";
+    fsl_replay::compile_admitted(
+        fsl_replay::CompileUnit {
+            source: fsl_replay::SourceIdentity::new("test", "admitted-enums.native"),
             package_name: "admitted-enums".to_owned(),
             path: "admitted-enums.native",
             bytes: source.as_bytes(),
         },
         [],
-        &qsl_replay::DependencyInput::default(),
-        qsl_replay::StageLimits::default(),
-        qsl_replay::ReplayLimits::default(),
+        &fsl_replay::DependencyInput::default(),
+        fsl_replay::StageLimits::default(),
+        fsl_replay::ReplayLimits::default(),
     )
     .expect("independently compile exactly the retained original source")
 }
@@ -89,7 +89,7 @@ fn unbounded_right_values_outside_sibling_interval_still_complete() {
             EqualityOperator::Equal,
             EqualityOperand::converted(bounded_integer(), ValueType::Integer),
             EqualityOperand::typed(ValueType::Integer),
-            &quire_semantic_value::enumeration::EnumMemberIndex::default(),
+            &filament_semantic_value::enumeration::EnumMemberIndex::default(),
         )
         .expect("FSpec admits Int[0,9] to unbounded Integer");
     for left in [0_i64, 9] {
@@ -119,8 +119,8 @@ fn unbounded_right_values_outside_sibling_interval_still_complete() {
         let direct = observed(|meter| checked.evaluate(&environment, &l, &r, meter));
         assert_eq!(
             direct.0,
-            Outcome::Refused(quire_exact::Refusal::CheckedInvariant {
-                cause: quire_exact::CheckedInvariantCause::EqualityOperandSourceNotAdmitted,
+            Outcome::Refused(filament_exact::Refusal::CheckedInvariant {
+                cause: filament_exact::CheckedInvariantCause::EqualityOperandSourceNotAdmitted,
             }),
             "left source bound is preserved"
         );
@@ -133,16 +133,16 @@ fn unbounded_right_values_outside_sibling_interval_still_complete() {
 #[trace("FR-018-AC-40", "FR-018-AC-42", "TC-029")]
 #[test]
 fn context_free_constructor_rejects_explicit_wrong_context() {
-    let other = qsl_replay::compile_admitted(
-        qsl_replay::CompileUnit {
-            source: qsl_replay::SourceIdentity::new("test", "other.native"),
+    let other = fsl_replay::compile_admitted(
+        fsl_replay::CompileUnit {
+            source: fsl_replay::SourceIdentity::new("test", "other.native"),
             package_name: "other".to_owned(),
             path: "other.native",
-            bytes: b"language \"ix:native\" edition \"1-draft\"; profile v = \"quire.value.complete/v1\"; function other using v(): Boolean pure { true }",
+            bytes: b"language \"ix:native\" edition \"1-draft\"; profile v = \"filament.value.complete/v1\"; function other using v(): Boolean pure { true }",
         },
         [],
-        &qsl_replay::DependencyInput::default(), qsl_replay::StageLimits::default(),
-        qsl_replay::ReplayLimits::default(),
+        &fsl_replay::DependencyInput::default(), fsl_replay::StageLimits::default(),
+        fsl_replay::ReplayLimits::default(),
     ).expect("another actual source package");
     assert!(matches!(
         generated::environment_numeric(Some(other.context())),

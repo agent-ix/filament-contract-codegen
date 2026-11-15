@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Kernel admission and rendering policy for the shared checked clause plan.
 
-use quire_exact::{NativeIntegerInterval, NativeIntegerOperation, NativeIntegerPlan};
+use filament_exact::{NativeIntegerInterval, NativeIntegerOperation, NativeIntegerPlan};
 
 use super::{
     native_literal, EqualityOperandKind, ExactScalarOperation, NativeClauseCapabilityReason, Step,
@@ -9,8 +9,8 @@ use super::{
 };
 use crate::core::native_integer::{NativeIntegerOperationDecision, NativeIntegerSelection};
 use crate::oracle::operator_catalog::IntegerOperator;
-use quire_contract_model::CheckedNodeId;
-use quire_exact::{IntegerDomain, OrderingOperator};
+use filament_contract_model::CheckedNodeId;
+use filament_exact::{IntegerDomain, OrderingOperator};
 
 fn refusal(
     plan: &[Step],
@@ -66,7 +66,7 @@ pub(super) fn helpers(
     let mut source =
         crate::oracle::scalar::render::render_clause_native_operation_helpers(&booleans)
             .map_err(|_| V2ClauseRefusal::Render)?;
-    source.push_str("\nuse quire_exact as nx;\n");
+    source.push_str("\nuse filament_exact as nx;\n");
     let mut selected = NativeIntegerSelection::new();
     let mut ranges = Vec::<Option<NativeIntegerInterval>>::with_capacity(plan.len());
     for (index, step) in plan.iter().enumerate() {
@@ -268,11 +268,11 @@ fn completed_interval(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ix_trace_rs::trace;
-    use quire_exact::{
+    use filament_exact::{
         evaluate_native_integer_arithmetic, Meter, NativeInteger, NativeIntegerOperands, Outcome,
         Refusal, ScalarLimits,
     };
+    use ix_trace_rs::trace;
 
     fn interval(lower: i128, upper: i128) -> NativeIntegerInterval {
         NativeIntegerInterval::new(lower, upper).unwrap()

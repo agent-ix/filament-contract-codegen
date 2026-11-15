@@ -27,9 +27,9 @@ relationships:
 When an admitted request selects an IR-confirmed V2 exact-scalar claim of one
 of the following kinds, CG SHALL generate a bounded Kani row:
 
-- `quire.op.integer.div` or `quire.op.integer.rem`, each with its one
+- `filament.op.integer.div` or `filament.op.integer.rem`, each with its one
   law-selected `DivisionProfile` (truncating, floor or Euclidean);
-- `quire.op.integer.mod`, which is always the Euclidean remainder and carries
+- `filament.op.integer.mod`, which is always the Euclidean remainder and carries
   no law.
 
 The row proves that the claim's generated oracle agrees with an independent

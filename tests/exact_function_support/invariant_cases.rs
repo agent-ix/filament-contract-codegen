@@ -1,19 +1,19 @@
 //! Execute the same emitted guards with genuine checked-owner inputs.
 use ix_trace_rs::trace;
-use qsl_replay::{
-    acquire_checked_closure, CompileUnit, DependencyInput, ReplayLimits, SourceIdentity,
+use fsl_replay::{
+    acfilament_checked_closure, CompileUnit, DependencyInput, ReplayLimits, SourceIdentity,
     StageLimits,
 };
 use filament_contract_codegen::{CheckedFunctionResources, CheckedFunctionSource};
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2, CheckedPackageV2ReadResult,
 };
-use quire_eval::{BodyFailure, CallFailure, FamilyOutcome};
-use quire_exact::{
+use filament_eval::{BodyFailure, CallFailure, FamilyOutcome};
+use filament_exact::{
     CancelCause, CheckedInvariantCause, FieldValue, Integer, LimitKind, Meter, Outcome, Refusal,
     ScalarLimits, Value, ValueType,
 };
-use quire_semantic_value::{
+use filament_semantic_value::{
     declaration::{
         DeclarationCause, EnvironmentFailure, EnvironmentLimitKind, TypeEnvironmentLimits,
     },
@@ -68,8 +68,8 @@ include!(concat!(env!("CARGO_MANIFEST_DIR"), "/fixture.rs"));
 fn identity() -> SourceIdentity {
     SourceIdentity::new("agent-ix", "ir595-agreement")
 }
-fn acquired() -> qsl_replay::CheckedClosureCompilation {
-    acquire_checked_closure(
+fn acquired() -> fsl_replay::CheckedClosureCompilation {
+    acfilament_checked_closure(
         CompileUnit {
             source: identity(),
             package_name: "ir595-agreement".into(),
@@ -86,7 +86,7 @@ fn acquired() -> qsl_replay::CheckedClosureCompilation {
 fn package() -> CheckedPackageV2 {
     let acquired = acquired();
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     match CheckedPackageV2::read(
         acquired.package().bytes(),
         CheckedPackageReadLimits::bounded(),
@@ -97,10 +97,10 @@ fn package() -> CheckedPackageV2 {
     }
 }
 fn selection(
-    acquired: &qsl_replay::CheckedClosureCompilation,
+    acquired: &fsl_replay::CheckedClosureCompilation,
     package: &CheckedPackageV2,
     name: &str,
-) -> qsl_replay::CallableSelection {
+) -> fsl_replay::CallableSelection {
     let function = &package
         .resolved_graph()
         .nodes
@@ -150,7 +150,7 @@ fn nominal_value() -> Value {
             .find(|v| {
                 v.qualified_name()
                     .iter()
-                    .map(quire_exact::Identifier::as_str)
+                    .map(filament_exact::Identifier::as_str)
                     .eq([name])
             })
             .unwrap()
@@ -166,7 +166,7 @@ fn nominal_value() -> Value {
     let sv_shape = types
         .composite(named("Holder").key().clone())
         .expect("same Holder key");
-    let quire_semantic_value::declaration::CompositeShape::Record(fields) = sv_shape.shape() else {
+    let filament_semantic_value::declaration::CompositeShape::Record(fields) = sv_shape.shape() else {
         panic!("checked record form");
     };
     assert_eq!(
@@ -175,9 +175,9 @@ fn nominal_value() -> Value {
             .map(|field| (field.name(), field.presence()))
             .collect::<Vec<_>>(),
         vec![
-            ("pair", quire_exact::Presence::Required),
-            ("shape", quire_exact::Presence::Required),
-            ("flag", quire_exact::Presence::Optional)
+            ("pair", filament_exact::Presence::Required),
+            ("shape", filament_exact::Presence::Required),
+            ("flag", filament_exact::Presence::Optional)
         ],
         "native declaration assembly must preserve each actual owner presence"
     );
@@ -189,7 +189,7 @@ fn nominal_value() -> Value {
         )
         .unwrap();
     let choice = named("Choice");
-    let qsl_replay::NominalDeclarationMember::UnionMember { variant, .. } = &choice.members()[0]
+    let fsl_replay::NominalDeclarationMember::UnionMember { variant, .. } = &choice.members()[0]
     else {
         panic!("actual Empty union member");
     };
@@ -208,7 +208,7 @@ fn nominal_value() -> Value {
 }
 fn objects() -> ObjectClosure {
     ObjectClosure::new(
-        &quire_semantic_value::declaration::TypeEnvironment::default(),
+        &filament_semantic_value::declaration::TypeEnvironment::default(),
         [],
         &[],
     )
@@ -244,7 +244,7 @@ fn counters(meter: &Meter) -> Vec<u64> {
     .map(|kind| meter.consumed(kind))
     .to_vec()
 }
-fn invariant(evaluation: &quire_eval::Evaluation, expected: CheckedInvariantCause) {
+fn invariant(evaluation: &filament_eval::Evaluation, expected: CheckedInvariantCause) {
     assert!(
         matches!(&evaluation.outcome,
         FamilyOutcome::Evaluated(Outcome::Refused(Refusal::CheckedInvariant { cause })) if *cause == expected),
@@ -313,7 +313,7 @@ fn result_membership_uses_real_signature_and_preserves_stopped_arms_and_charges(
     .unwrap();
     assert!(matches!(
         &stopped.outcome,
-        FamilyOutcome::Evaluated(Outcome::Undefined(quire_exact::Undefined::DivisionByZero))
+        FamilyOutcome::Evaluated(Outcome::Undefined(filament_exact::Undefined::DivisionByZero))
     ));
     assert_eq!(stopped.location, result_location);
     assert_eq!(counters(&actual), expected);
@@ -350,12 +350,12 @@ fn result_membership_uses_real_signature_and_preserves_stopped_arms_and_charges(
     };
     assert_eq!(
         record,
-        &quire_exact::Incomplete {
+        &filament_exact::Incomplete {
             limit_kind: LimitKind::WorkUnits,
             limit: 9,
             consumed: 9,
             next_charge: Integer::from(1_i64),
-            charge_point: quire_exact::ChargePoint::BooleanResultRetain,
+            charge_point: filament_exact::ChargePoint::BooleanResultRetain,
         }
     );
     assert_eq!(stopped.location, result_location);
@@ -381,7 +381,7 @@ fn authentic_owner_declarations_construct_once_and_duplicate_keeps_original_diag
     let original_name = originals[0]
         .qualified_name()
         .iter()
-        .map(quire_exact::Identifier::as_str)
+        .map(filament_exact::Identifier::as_str)
         .collect::<Vec<_>>()
         .join(".");
     assert_eq!(invalid.declaration, original_name);
@@ -432,7 +432,7 @@ fn authentic_owner_declarations_construct_once_and_duplicate_keeps_original_diag
 }
 
 fn environment_failure(
-    result: Result<quire_eval::Evaluation, CallFailure>,
+    result: Result<filament_eval::Evaluation, CallFailure>,
 ) -> (EnvironmentFailure, Option<CancelCause>) {
     let Err(CallFailure::Body(failure)) = result else {
         panic!("typed body failure: {result:?}");
@@ -602,7 +602,7 @@ fn native_argument_shape_guard_uses_its_exact_cause_without_a_body_charge() {
     let acquired = acquired();
     let selected = selection(&acquired, &package, "bool_eq");
     let mut actual = meter();
-    let quire_eval::Transition::Done(rejected) =
+    let filament_eval::Transition::Done(rejected) =
         healthy::invoke_native_body(&package, &acquired, &selected, vec![], &mut actual).unwrap()
     else {
         panic!("terminal body guard");
@@ -621,7 +621,7 @@ fn native_operand_kind_guard_uses_its_exact_cause_without_a_body_charge() {
     let acquired = acquired();
     let selected = selection(&acquired, &package, "bool_eq");
     let mut actual = meter();
-    let quire_eval::Transition::Done(rejected) = healthy::invoke_native_body(
+    let filament_eval::Transition::Done(rejected) = healthy::invoke_native_body(
         &package,
         &acquired,
         &selected,

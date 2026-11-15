@@ -3,8 +3,9 @@
 use filament_contract_codegen::{
     composite_parity_terminal_value, verified_shadow_terminal_value, CompositeReportError,
 };
-use ix_trace_rs::trace;
-use qsl_replay::{
+use filament_contract_model::CheckedNodeId;
+use filament_exact::PathSegment;
+use fsl_replay::{
     replay_composite_parity, settle_verified_shadow, Certification, CompositeEvidence,
     CompositeIdentity, CompositeParityClaim, CompositeParityResult, EqualityOperator,
     EqualityOutcome, FalsifiedParity, Identifier, InconclusiveCause, Integer,
@@ -13,8 +14,7 @@ use qsl_replay::{
     ReplayRequestWire, ReplaySource, RequestTargetWire, Role, ScalarLimits, StateEnvironment,
     TerminalValue, VerifiedShadow, VerifiedShadowResult, WitnessValue,
 };
-use quire_contract_model::CheckedNodeId;
-use quire_exact::PathSegment;
+use ix_trace_rs::trace;
 
 fn limits() -> ScalarLimits {
     ScalarLimits {
@@ -58,7 +58,7 @@ fn public_report(
     claim: CompositeParityClaim,
     evidence: FalsifiedParity,
     replay_limits: ReplayLimits,
-) -> (CompositeIdentity, qsl_replay::CompositeParityReport) {
+) -> (CompositeIdentity, fsl_replay::CompositeParityReport) {
     let sent = CompositeIdentity::new(
         wire.obligation_identity.clone(),
         &claim,
@@ -69,18 +69,18 @@ fn public_report(
 }
 
 fn public_composite_fixture() -> PublicCompositeFixture {
-    use qsl_replay::{
+    use filament_contract_model::{
+        CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
+        CheckedPackageV2ReadResult,
+    };
+    use fsl_replay::{
         compile_package, parity_obligation, BoundEntries, DependencyInput, Domain, DomainKey,
         DomainKind, FiniteBound, OperandIdentity, ParityArgument, ParityPreimage, ProofBound,
         SourceIdentity, StageLimits,
     };
-    use quire_contract_model::{
-        CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
-        CheckedPackageV2ReadResult,
-    };
-    let source = b"language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nfunction f using v(a: Sequence<Int[0, 9]>[0, 3], b: Sequence<Int[0, 9]>[0, 3]): Boolean pure { a = b }\n";
+    let source = b"language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nfunction f using v(a: Sequence<Int[0, 9]>[0, 3], b: Sequence<Int[0, 9]>[0, 3]): Boolean pure { a = b }\n";
     let compiled = compile_package(
-        qsl_replay::CompileUnit {
+        fsl_replay::CompileUnit {
             source: SourceIdentity::new("test", "ir666"),
             package_name: "ir666".to_owned(),
             path: "ir666.native",
@@ -93,7 +93,7 @@ fn public_composite_fixture() -> PublicCompositeFixture {
     )
     .expect("compile package");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     let CheckedPackageV2ReadResult::Admitted(package) = CheckedPackageV2::read(
         compiled.bytes(),
         CheckedPackageReadLimits::bounded(),
@@ -102,7 +102,7 @@ fn public_composite_fixture() -> PublicCompositeFixture {
         panic!("read package")
     };
     let nodes = &package.resolved_graph().nodes;
-    let graph = qsl_replay::WireGraph::new(nodes.iter().map(|node| &node.node_id))
+    let graph = fsl_replay::WireGraph::new(nodes.iter().map(|node| &node.node_id))
         .expect("admitted graph has structural keys");
     let named = |name: &str| {
         nodes
@@ -140,8 +140,8 @@ fn public_composite_fixture() -> PublicCompositeFixture {
         .iter()
         .find(|node| {
             node.node_tag.as_ref() == "expression"
-                && matches!(&node.body, quire_contract_model::CheckedTerm::Application { operation, .. }
-                    if operation.identity() == Some("quire.op.structural.eq"))
+                && matches!(&node.body, filament_contract_model::CheckedTerm::Application { operation, .. }
+                    if operation.identity() == Some("filament.op.structural.eq"))
         })
         .expect("compiled structural equality");
     let node = graph
@@ -210,11 +210,11 @@ fn public_composite_fixture() -> PublicCompositeFixture {
     };
     let obligation = parity_obligation(&preimage).expect("the public preimage encodes");
     let wire = ReplayRequestWire {
-        package: qsl_replay::ReplayPackage::read(compiled.bytes(), u64::MAX).unwrap(),
+        package: fsl_replay::ReplayPackage::read(compiled.bytes(), u64::MAX).unwrap(),
         profile_selections: Vec::new(),
         dependencies: Vec::new(),
         replay_target: RequestTargetWire::function(
-            qsl_replay::QualifiedName::new(vec![Identifier::new("f").unwrap()]).unwrap(),
+            fsl_replay::QualifiedName::new(vec![Identifier::new("f").unwrap()]).unwrap(),
             OccurrenceKey::new(preimage.node.clone(), preimage.occurrence.clone()),
         ),
         source: ReplaySource::Input(Vec::new()),
@@ -248,7 +248,7 @@ fn tc_041_f1_and_f2_preserve_precedence_and_native_causes() {
     let mut evidence = falsified_evidence();
     evidence.refinement = Refinement::Disagreed;
     evidence.operands[0] = sequence_value(12);
-    evidence.native = NativeParityObservation::ExecutionFault(qsl_replay::NativeCause::new(
+    evidence.native = NativeParityObservation::ExecutionFault(fsl_replay::NativeCause::new(
         "native failed".to_owned(),
     ));
     let mut wire = fixture.wire.clone();
@@ -261,10 +261,10 @@ fn tc_041_f1_and_f2_preserve_precedence_and_native_causes() {
     assert_eq!(bound.terminal_value(), TerminalValue::Failed);
 
     for native in [
-        NativeParityObservation::Incomplete(qsl_replay::NativeCause::new(
+        NativeParityObservation::Incomplete(fsl_replay::NativeCause::new(
             "native limit".to_owned(),
         )),
-        NativeParityObservation::ExecutionFault(qsl_replay::NativeCause::new(
+        NativeParityObservation::ExecutionFault(fsl_replay::NativeCause::new(
             "native fault".to_owned(),
         )),
     ] {
@@ -305,7 +305,7 @@ fn tc_041_f3_to_f6_keep_operand_and_limit_stages_distinct() {
         panic!("expected F-3, got {:?}", bound.result());
     };
     assert_eq!(refusal.index, 0);
-    assert_eq!(refusal.code(), qsl_replay::Code::InvalidRuntimeInput);
+    assert_eq!(refusal.code(), fsl_replay::Code::InvalidRuntimeInput);
     assert_eq!(
         bound.terminal_value(),
         TerminalValue::Inconclusive(InconclusiveCause::ReplayRefused(refusal.code()))
@@ -323,7 +323,7 @@ fn tc_041_f3_to_f6_keep_operand_and_limit_stages_distinct() {
     );
     let bound = composite_parity_terminal_value(&sent, Some(&report)).unwrap();
     let CompositeParityResult::Incomplete {
-        stage: qsl_replay::IncompleteStage::Admission(incomplete),
+        stage: fsl_replay::IncompleteStage::Admission(incomplete),
     } = bound.result()
     else {
         panic!("expected F-4 admission, got {:?}", bound.result());
@@ -339,7 +339,7 @@ fn tc_041_f3_to_f6_keep_operand_and_limit_stages_distinct() {
     );
     assert_eq!(
         bound.terminal_value(),
-        TerminalValue::Incomplete(qsl_replay::IncompleteCause::ResourceExhausted)
+        TerminalValue::Incomplete(fsl_replay::IncompleteCause::ResourceExhausted)
     );
 
     let mut claim = fixture.claim.clone();
@@ -352,7 +352,7 @@ fn tc_041_f3_to_f6_keep_operand_and_limit_stages_distinct() {
     );
     let bound = composite_parity_terminal_value(&sent, Some(&report)).unwrap();
     let CompositeParityResult::Incomplete {
-        stage: qsl_replay::IncompleteStage::ExactEvaluation(incomplete),
+        stage: fsl_replay::IncompleteStage::ExactEvaluation(incomplete),
     } = bound.result()
     else {
         panic!("expected F-5 exact evaluation, got {:?}", bound.result());
@@ -363,7 +363,7 @@ fn tc_041_f3_to_f6_keep_operand_and_limit_stages_distinct() {
     assert_eq!(incomplete.next_charge, Integer::from(2_i64));
     assert_eq!(
         bound.terminal_value(),
-        TerminalValue::Incomplete(qsl_replay::IncompleteCause::ResourceExhausted)
+        TerminalValue::Incomplete(fsl_replay::IncompleteCause::ResourceExhausted)
     );
 
     let (sent, report) = public_report(
@@ -376,12 +376,12 @@ fn tc_041_f3_to_f6_keep_operand_and_limit_stages_distinct() {
     assert!(matches!(
         bound.result(),
         CompositeParityResult::Incomplete {
-            stage: qsl_replay::IncompleteStage::RefinementCeiling
+            stage: fsl_replay::IncompleteStage::RefinementCeiling
         }
     ));
     assert_eq!(
         bound.terminal_value(),
-        TerminalValue::Incomplete(qsl_replay::IncompleteCause::ResourceExhausted)
+        TerminalValue::Incomplete(fsl_replay::IncompleteCause::ResourceExhausted)
     );
 }
 
@@ -439,11 +439,11 @@ fn tc_041_f7_compares_verdict_and_pair_count_then_preserves_agreement() {
         panic!("expected F-7 agreement, got {:?}", bound.result());
     };
     assert!(
-        matches!(agreement.claim(), qsl_replay::ScalarClaim::CompositeEquality(claim) if **claim == sent)
+        matches!(agreement.claim(), fsl_replay::ScalarClaim::CompositeEquality(claim) if **claim == sent)
     );
     assert_eq!(
         agreement.outcome(),
-        &qsl_replay::ScalarOutcome::Equality(EqualityOutcome {
+        &fsl_replay::ScalarOutcome::Equality(EqualityOutcome {
             equal: false,
             pair_count: 2
         })
@@ -472,7 +472,7 @@ fn tc_048_verified_public_rows_keep_their_fsl_terminal_values() {
                 success_checks: 3,
                 refinement: Refinement::CeilingReached,
             },
-            TerminalValue::Incomplete(qsl_replay::IncompleteCause::ResourceExhausted),
+            TerminalValue::Incomplete(fsl_replay::IncompleteCause::ResourceExhausted),
         ),
         (
             VerifiedShadow {
@@ -521,7 +521,7 @@ fn tc_048_verified_public_rows_keep_their_fsl_terminal_values() {
             Refinement::CeilingReached => assert!(matches!(
                 bound.result(),
                 VerifiedShadowResult::Incomplete {
-                    stage: qsl_replay::IncompleteStage::RefinementCeiling
+                    stage: fsl_replay::IncompleteStage::RefinementCeiling
                 }
             )),
             Refinement::Exhausted if verified.success_checks == 0 => {
@@ -653,10 +653,10 @@ fn tc_048_falsified_report_requires_every_sent_identity_member() {
         .domain()
         .clone();
     other.harness_bounds.push(
-        qsl_replay::ProofBound::new(
+        fsl_replay::ProofBound::new(
             sequence_domain,
-            Some(qsl_replay::DomainKind::Collection),
-            qsl_replay::FiniteBound::cardinality(1),
+            Some(fsl_replay::DomainKind::Collection),
+            fsl_replay::FiniteBound::cardinality(1),
         )
         .expect("sequence cardinality pairs with collection"),
     );
@@ -685,22 +685,22 @@ fn tc_048_falsified_report_requires_every_sent_identity_member() {
             })
         },
         |e: &mut FalsifiedParity| {
-            e.native = NativeParityObservation::Incomplete(qsl_replay::NativeCause::new(
+            e.native = NativeParityObservation::Incomplete(fsl_replay::NativeCause::new(
                 "stopped".to_owned(),
             ))
         },
         |e: &mut FalsifiedParity| {
-            e.native = NativeParityObservation::Incomplete(qsl_replay::NativeCause::new(
+            e.native = NativeParityObservation::Incomplete(fsl_replay::NativeCause::new(
                 "other stop".to_owned(),
             ))
         },
         |e: &mut FalsifiedParity| {
-            e.native = NativeParityObservation::ExecutionFault(qsl_replay::NativeCause::new(
+            e.native = NativeParityObservation::ExecutionFault(fsl_replay::NativeCause::new(
                 "execution fault".to_owned(),
             ))
         },
         |e: &mut FalsifiedParity| {
-            e.native = NativeParityObservation::Refused(qsl_replay::Code::InvalidRuntimeInput)
+            e.native = NativeParityObservation::Refused(fsl_replay::Code::InvalidRuntimeInput)
         },
         |e: &mut FalsifiedParity| e.refinement = Refinement::CeilingReached,
     ] {
@@ -768,7 +768,7 @@ fn tc_048_native_cause_is_part_of_the_bound_observation() {
     let wire = fixture.wire;
     let claim = fixture.claim;
     let mut evidence = falsified_evidence();
-    evidence.native = NativeParityObservation::Incomplete(qsl_replay::NativeCause::new(
+    evidence.native = NativeParityObservation::Incomplete(fsl_replay::NativeCause::new(
         "actual native stop".to_owned(),
     ));
     let sent = CompositeIdentity::new(
@@ -789,7 +789,7 @@ fn tc_048_native_cause_is_part_of_the_bound_observation() {
     let CompositeEvidence::Falsified(ref mut other_evidence) = other.evidence else {
         panic!("fixture is falsified");
     };
-    other_evidence.native = NativeParityObservation::Incomplete(qsl_replay::NativeCause::new(
+    other_evidence.native = NativeParityObservation::Incomplete(fsl_replay::NativeCause::new(
         "different stop".to_owned(),
     ));
     assert_eq!(
@@ -799,7 +799,7 @@ fn tc_048_native_cause_is_part_of_the_bound_observation() {
 
     let fixture = public_composite_fixture();
     let mut evidence = falsified_evidence();
-    evidence.native = NativeParityObservation::ExecutionFault(qsl_replay::NativeCause::new(
+    evidence.native = NativeParityObservation::ExecutionFault(fsl_replay::NativeCause::new(
         "actual execution fault".to_owned(),
     ));
     let (sent, report) = public_report(
@@ -816,7 +816,7 @@ fn tc_048_native_cause_is_part_of_the_bound_observation() {
     let CompositeEvidence::Falsified(ref mut other_evidence) = other.evidence else {
         panic!("fixture is falsified");
     };
-    other_evidence.native = NativeParityObservation::ExecutionFault(qsl_replay::NativeCause::new(
+    other_evidence.native = NativeParityObservation::ExecutionFault(fsl_replay::NativeCause::new(
         "changed execution fault".to_owned(),
     ));
     assert_eq!(
@@ -825,7 +825,7 @@ fn tc_048_native_cause_is_part_of_the_bound_observation() {
     );
 
     let mut evidence = falsified_evidence();
-    evidence.native = NativeParityObservation::Refused(qsl_replay::Code::InvalidRuntimeInput);
+    evidence.native = NativeParityObservation::Refused(fsl_replay::Code::InvalidRuntimeInput);
     let (sent, report) = public_report(
         fixture.wire,
         fixture.claim,
@@ -841,7 +841,7 @@ fn tc_048_native_cause_is_part_of_the_bound_observation() {
     let CompositeEvidence::Falsified(ref mut other_evidence) = other.evidence else {
         panic!("fixture is falsified");
     };
-    other_evidence.native = NativeParityObservation::Refused(qsl_replay::Code::InvalidRequest);
+    other_evidence.native = NativeParityObservation::Refused(fsl_replay::Code::InvalidRequest);
     assert_eq!(
         composite_parity_terminal_value(&other, Some(&report)).unwrap_err(),
         CompositeReportError::ClaimMismatch

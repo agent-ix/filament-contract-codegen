@@ -22,7 +22,7 @@ its later `filament-eval` expectation path.
    the live source applications before loading the bundle. Run
    `make evaluator-corpus EVALUATOR_CORPUS_DIR=<dir>` and load `cases.jsonl`
    through `filament_eval_corpus::load` and FSL's FR-402 admission. Assert exact
-   `quire.evaluator-case/v1` fields, ascending case ids, two source labels,
+   `filament.evaluator-case/v1` fields, ascending case ids, two source labels,
    dependency units, `package_id` from compilation, callable function,
    arguments, decimal-string limits, `object_environment: null`, sorted
    `generated_bodies: []` and `expected: null` while `filament-eval`

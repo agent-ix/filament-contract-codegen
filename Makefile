@@ -189,14 +189,14 @@ rustdoc:
 # =============================================================================
 
 SIBLINGS ?= $(abspath $(shell git rev-parse --path-format=absolute --git-common-dir)/../..)
-LOCAL_PATCHES ?= quire-contract-ir:quire-contract-ir:. quire-contract-ir:quire-contract-model:crates/quire-contract-model \
-	quire-contract-runtime:quire-contract-runtime:. \
-	quire-verification-contracts:quire-verification-contracts:. \
-	filament-spec-language:qsl-attrs:qsl-attrs filament-spec-language:qsl-cst:qsl-cst filament-spec-language:qsl-eval:qsl-eval \
-	filament-spec-language:qsl-forms:qsl-forms filament-spec-language:qsl-foundation:qsl-foundation \
-	filament-spec-language:qsl-package:qsl-package filament-spec-language:qsl-replay:qsl-replay \
-	filament-spec-language:qsl-semantics:qsl-semantics \
-	quire-exact:quire-exact:. quire-semantic-value:quire-semantic-value:.
+LOCAL_PATCHES ?= filament-contract-ir:filament-contract-ir:. filament-contract-ir:filament-contract-model:crates/filament-contract-model \
+	filament-contract-runtime:filament-contract-runtime:. \
+	filament-verification-contracts:filament-verification-contracts:. \
+	filament-spec-language:fsl-cst:fsl-cst filament-spec-language:fsl-eval:fsl-eval \
+	filament-spec-language:fsl-forms:fsl-forms filament-spec-language:fsl-foundation:fsl-foundation \
+	filament-spec-language:fsl-package:fsl-package filament-spec-language:fsl-replay:fsl-replay \
+	filament-spec-language:fsl-semantics:fsl-semantics \
+	filament-exact:filament-exact:. filament-semantic-value:filament-semantic-value:.
 
 .PHONY: use-local
 use-local:

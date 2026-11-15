@@ -4,18 +4,18 @@
 //! FSL and the strict checked-package reader. No CG facade, replay builder or execution path.
 
 use super::model;
-use qsl_replay::{call_site, ClauseName, DependencyInput, Identifier, SourceIdentity};
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedNodeId, CheckedNodePathSegment, CheckedPackageEvidence, CheckedPackageReadLimits,
     CheckedPackageV2, CheckedPackageV2ReadResult,
 };
+use fsl_replay::{call_site, ClauseName, DependencyInput, Identifier, SourceIdentity};
 use serde_json::{json, Value};
 
 const AUTHORITY: &str = "agent-ix";
 const IDENTITY: &str = "test:state-frame-twin";
 const PACKAGE: &str = "test/bank";
 
-fn matches_site(id: &CheckedNodeId, key: quire_exact::NodeKeyView<'_>) -> bool {
+fn matches_site(id: &CheckedNodeId, key: filament_exact::NodeKeyView<'_>) -> bool {
     if id.package.as_ref() != key.package() || id.ordinal != key.ordinal() {
         return false;
     }
@@ -24,11 +24,11 @@ fn matches_site(id: &CheckedNodeId, key: quire_exact::NodeKeyView<'_>) -> bool {
         let matches = match (segment, path.next()) {
             (
                 CheckedNodePathSegment::Name(left),
-                Some(quire_exact::PathSegmentView::Text(right)),
+                Some(filament_exact::PathSegmentView::Text(right)),
             ) => left.as_ref() == right,
             (
                 CheckedNodePathSegment::Node(left),
-                Some(quire_exact::PathSegmentView::Node(right)),
+                Some(filament_exact::PathSegmentView::Node(right)),
             ) => matches_site(left, right),
             _ => false,
         };
@@ -162,9 +162,9 @@ fn domain_document(granted: &[&str]) -> Vec<u8> {
         "occurrences": [],
         "extensions": [],
         "constructs": [
-            construct("object_type", "quire.meaning.model.object-type/v1"),
-            construct("population", "quire.meaning.model.population/v1"),
-            construct("value_type", "quire.meaning.model.value-type/v1"),
+            construct("object_type", "filament.meaning.model.object-type/v1"),
+            construct("population", "filament.meaning.model.population/v1"),
+            construct("value_type", "filament.meaning.model.value-type/v1"),
         ],
         "types": types,
         "populations": [{
@@ -188,7 +188,7 @@ pub const CLAUSES: [(&str, &str, &str); 2] = [
 fn unit_source(clauses: &[(&str, &str, &str)], blank_lines: usize) -> String {
     let header = format!(
         "language \"ix:native\" edition \"1-draft\";\n\
-         profile v = \"quire.value.complete/v1\";\n\
+         profile v = \"filament.value.complete/v1\";\n\
          model Bank = {PACKAGE:?};\n"
     );
     let clauses = clauses
@@ -403,7 +403,7 @@ impl Twin {
         evidence
             .insert_domain_package_document(PACKAGE, self.domain.clone())
             .expect("retain authored domain document");
-        evidence.support_feature("quire.value.complete/v1");
+        evidence.support_feature("filament.value.complete/v1");
         let package = match CheckedPackageV2::read(
             &located.package,
             CheckedPackageReadLimits::bounded(),

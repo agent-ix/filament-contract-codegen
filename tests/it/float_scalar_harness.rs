@@ -6,18 +6,18 @@ use filament_contract_codegen::{
     FloatCapability, FloatScalarHarness, FloatScalarOutcome, FloatScalarRefusal,
     FloatScalarRequest, KaniRunOutcome, ObligationDisposition, UnsupportedObligation,
 };
-use ix_trace_rs::trace;
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedNodeId, CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
     CheckedPackageV2ReadResult, CheckedTerm,
 };
+use ix_trace_rs::trace;
 
 use super::routed_generation::{
     admitted_routing_input, generate_routed, kani_context, kani_parts, route,
 };
 
 const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\n\
-profile v = \"quire.value.complete/v1\";\n\
+profile v = \"filament.value.complete/v1\";\n\
 function numeq64 using v(a: Float64[nearest-even], b: Float64[nearest-even]): Boolean pure { quire::value::ieee::numericEqual(a, b) }\n\
 function total64 using v(a: Float64[nearest-even], b: Float64[nearest-even]): Boolean pure { quire::value::ieee::totalOrder(a, b) }\n\
 function bitid64 using v(a: Float64[nearest-even], b: Float64[nearest-even]): Boolean pure { quire::value::ieee::bitIdentical(a, b) }\n\
@@ -42,17 +42,17 @@ struct Corpus {
 }
 
 fn compiled_bytes() -> Vec<u8> {
-    qsl_replay::compile_admitted(
-        qsl_replay::CompileUnit {
-            source: qsl_replay::SourceIdentity::new("test", "float-row.native"),
+    fsl_replay::compile_admitted(
+        fsl_replay::CompileUnit {
+            source: fsl_replay::SourceIdentity::new("test", "float-row.native"),
             package_name: "float-row".to_owned(),
             path: "float-row.native",
             bytes: SOURCE.as_bytes(),
         },
         [],
-        &qsl_replay::DependencyInput::default(),
-        qsl_replay::StageLimits::default(),
-        qsl_replay::ReplayLimits::default(),
+        &fsl_replay::DependencyInput::default(),
+        fsl_replay::StageLimits::default(),
+        fsl_replay::ReplayLimits::default(),
     )
     .expect("FSL admits the float source")
     .package()
@@ -62,7 +62,7 @@ fn compiled_bytes() -> Vec<u8> {
 
 fn read_package(bytes: &[u8]) -> Option<CheckedPackageV2> {
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     match CheckedPackageV2::read(bytes, CheckedPackageReadLimits::bounded(), &evidence) {
         CheckedPackageV2ReadResult::Admitted(package) => Some(*package),
         _ => None,
@@ -193,37 +193,37 @@ impl Corpus {
 const ROWS: [(&str, &str, &str, &str); 6] = [
     (
         "numeq64",
-        "quire.op.ieee.numeric_equal",
+        "filament.op.ieee.numeric_equal",
         "float64",
         "NumericEqual",
     ),
     (
         "total64",
-        "quire.op.ieee.total_order",
+        "filament.op.ieee.total_order",
         "float64",
         "TotalOrder",
     ),
     (
         "bitid64",
-        "quire.op.ieee.bit_identical",
+        "filament.op.ieee.bit_identical",
         "float64",
         "BitIdentical",
     ),
     (
         "numeq32",
-        "quire.op.ieee.numeric_equal",
+        "filament.op.ieee.numeric_equal",
         "float32",
         "NumericEqual",
     ),
     (
         "total32",
-        "quire.op.ieee.total_order",
+        "filament.op.ieee.total_order",
         "float32",
         "TotalOrder",
     ),
     (
         "bitid32",
-        "quire.op.ieee.bit_identical",
+        "filament.op.ieee.bit_identical",
         "float32",
         "BitIdentical",
     ),
@@ -244,7 +244,7 @@ fn every_comparison_generates_one_native_carrier_harness_from_its_node() {
         let generated = corpus.harness(function, identity);
         let id = &generated.harness.identity;
         assert_eq!(id.operation_identity, identity);
-        assert_eq!(id.oracle_symbol, "quire_exact::compare_native_float");
+        assert_eq!(id.oracle_symbol, "filament_exact::compare_native_float");
         let float = id.float_scalar.as_ref().expect("a float identity");
         assert_eq!(float.width, width);
         assert_eq!(float.operator, identity);
@@ -273,10 +273,10 @@ fn every_comparison_generates_one_native_carrier_harness_from_its_node() {
 #[test]
 fn the_fsl_equality_operator_generates_the_numeric_equal_row() {
     let corpus = corpus();
-    let generated = corpus.harness("eq64", "quire.op.ieee.numeric_equal");
+    let generated = corpus.harness("eq64", "filament.op.ieee.numeric_equal");
     assert_eq!(
         generated.harness.identity.operation_identity,
-        "quire.op.ieee.numeric_equal"
+        "filament.op.ieee.numeric_equal"
     );
 }
 
@@ -321,7 +321,7 @@ fn the_symbolic_domain_is_every_bit_pattern_of_the_width() {
 #[test]
 fn the_assertion_requires_completed_and_no_assumption_reads_the_outcome() {
     let corpus = corpus();
-    let generated = corpus.harness("numeq64", "quire.op.ieee.numeric_equal");
+    let generated = corpus.harness("numeq64", "filament.op.ieee.numeric_equal");
     let body = proof_body(&generated);
     for needle in [
         "Ok(rt::Outcome::Incomplete(_))",
@@ -361,27 +361,27 @@ fn arithmetic_is_refused_with_a_named_not_tractable_capability() {
     for (function, identity, capability) in [
         (
             "add64",
-            "quire.op.ieee.float64.add",
+            "filament.op.ieee.float64.add",
             FloatCapability::AddNotTractable,
         ),
         (
             "sub32",
-            "quire.op.ieee.float32.sub",
+            "filament.op.ieee.float32.sub",
             FloatCapability::SubNotTractable,
         ),
         (
             "mul64",
-            "quire.op.ieee.float64.mul",
+            "filament.op.ieee.float64.mul",
             FloatCapability::MulNotTractable,
         ),
         (
             "div32",
-            "quire.op.ieee.float32.div",
+            "filament.op.ieee.float32.div",
             FloatCapability::DivNotTractable,
         ),
         (
             "div64",
-            "quire.op.ieee.float64.div",
+            "filament.op.ieee.float64.div",
             FloatCapability::DivNotTractable,
         ),
     ] {
@@ -399,7 +399,7 @@ fn arithmetic_is_refused_with_a_named_not_tractable_capability() {
         assert!(detail.contains("FR-405 Behavior 15"), "{detail}");
     }
     let FloatScalarOutcome::Refused(FloatScalarRefusal::Unsupported { detail, .. }) =
-        corpus.outcome("div32", "quire.op.ieee.float32.div")
+        corpus.outcome("div32", "filament.op.ieee.float32.div")
     else {
         panic!("refused");
     };
@@ -420,12 +420,12 @@ fn arithmetic_is_refused_with_a_named_not_tractable_capability() {
 fn unsupported_operand_shapes_are_refused_with_named_capabilities() {
     let corpus = corpus();
     let FloatScalarOutcome::Refused(FloatScalarRefusal::Unsupported { capability, .. }) =
-        corpus.outcome("same64", "quire.op.ieee.numeric_equal")
+        corpus.outcome("same64", "filament.op.ieee.numeric_equal")
     else {
         panic!("a same-parameter operand is refused");
     };
     assert_eq!(capability, FloatCapability::SameParameterOperand);
-    let node = corpus.node("guarded64", "quire.op.ieee.numeric_equal");
+    let node = corpus.node("guarded64", "filament.op.ieee.numeric_equal");
     let FloatScalarOutcome::Refused(FloatScalarRefusal::Unsupported { capability, .. }) =
         generate_float_scalar_harness(&corpus.request(&node, true))
     else {
@@ -433,7 +433,7 @@ fn unsupported_operand_shapes_are_refused_with_named_capabilities() {
     };
     assert_eq!(capability, FloatCapability::PathCondition);
     assert_eq!(capability.name(), "float.path_condition");
-    let node = corpus.node("not_float", "quire.op.integer.lt");
+    let node = corpus.node("not_float", "filament.op.integer.lt");
     assert!(matches!(
         generate_float_scalar_harness(&corpus.request(&node, false)),
         FloatScalarOutcome::Refused(FloatScalarRefusal::NotFloatOperation)
@@ -447,12 +447,12 @@ fn unsupported_operand_shapes_are_refused_with_named_capabilities() {
 fn a_routed_request_settles_comparisons_and_refuses_arithmetic_siblings() {
     let corpus = corpus();
     let mixed = corpus.routed(&[
-        ("numeq64", "quire.op.ieee.numeric_equal"),
-        ("add64", "quire.op.ieee.float64.add"),
-        ("total32", "quire.op.ieee.total_order"),
-        ("not_float", "quire.op.integer.lt"),
+        ("numeq64", "filament.op.ieee.numeric_equal"),
+        ("add64", "filament.op.ieee.float64.add"),
+        ("total32", "filament.op.ieee.total_order"),
+        ("not_float", "filament.op.integer.lt"),
     ]);
-    let alone = corpus.routed(&[("numeq64", "quire.op.ieee.numeric_equal")]);
+    let alone = corpus.routed(&[("numeq64", "filament.op.ieee.numeric_equal")]);
     assert_eq!(mixed.items[0].output, alone.items[0].output);
     let (record, harness) = kani_parts(&mixed.items[0].output);
     assert!(matches!(
@@ -472,7 +472,7 @@ fn a_routed_request_settles_comparisons_and_refuses_arithmetic_siblings() {
         panic!("{:?}", record.disposition);
     };
     assert_eq!(cause, "float.add.not_kani_tractable");
-    assert_eq!(operation, "quire.op.ieee.float64.add");
+    assert_eq!(operation, "filament.op.ieee.float64.add");
     let (record, harness) = kani_parts(&mixed.items[2].output);
     let harness = harness.expect("the float32 total order generates");
     assert_ne!(
@@ -529,7 +529,7 @@ fn decode(
 #[test]
 fn float64_witnesses_keep_their_exact_bit_patterns() {
     let corpus = corpus();
-    let generated = corpus.harness("numeq64", "quire.op.ieee.numeric_equal");
+    let generated = corpus.harness("numeq64", "filament.op.ieee.numeric_equal");
     for bits in [
         0x8000_0000_0000_0000_u64,
         0x7FF0_0000_0000_0001,
@@ -555,7 +555,7 @@ fn float64_witnesses_keep_their_exact_bit_patterns() {
 #[test]
 fn float32_witnesses_are_range_checked_and_keep_their_bits() {
     let corpus = corpus();
-    let generated = corpus.harness("numeq32", "quire.op.ieee.numeric_equal");
+    let generated = corpus.harness("numeq32", "filament.op.ieee.numeric_equal");
     for bits in [0x8000_0000_u32, 0x7F80_0001, 0xFFC0_0000, 0] {
         let witness = decode(&generated, &transcript(&generated, &[i64::from(bits), 1]))
             .expect("an in-range pattern decodes");
@@ -574,31 +574,31 @@ fn float32_witnesses_are_range_checked_and_keep_their_bits() {
 #[test]
 fn malformed_float_bindings_and_schemas_are_refused_with_typed_causes() {
     let corpus = corpus();
-    let generated = corpus.harness("numeq64", "quire.op.ieee.numeric_equal");
+    let generated = corpus.harness("numeq64", "filament.op.ieee.numeric_equal");
     for draws in [&[1_i64][..], &[1, 2, 3][..]] {
         let error = decode(&generated, &transcript(&generated, draws)).expect_err("arity");
         assert_eq!(error.code, "kani_witness_arity_mismatch");
     }
-    let mut narrowed = corpus.harness("numeq64", "quire.op.ieee.numeric_equal");
+    let mut narrowed = corpus.harness("numeq64", "filament.op.ieee.numeric_equal");
     narrowed.harness.identity.arguments[0].maximum = i64::from(u32::MAX);
     let error = decode(&narrowed, &transcript(&narrowed, &[1, 2])).expect_err("schema");
     assert_eq!(error.code, "cg_scalar_witness_schema_float_mismatch");
-    let mut duplicate = corpus.harness("numeq64", "quire.op.ieee.numeric_equal");
+    let mut duplicate = corpus.harness("numeq64", "filament.op.ieee.numeric_equal");
     duplicate.harness.identity.arguments[1].identifier = "a".to_owned();
     let error = decode(&duplicate, &transcript(&duplicate, &[1, 2])).expect_err("duplicate");
     assert_eq!(error.code, "cg_scalar_witness_schema_duplicate_binding");
-    let mut foreign = corpus.harness("numeq64", "quire.op.ieee.numeric_equal");
+    let mut foreign = corpus.harness("numeq64", "filament.op.ieee.numeric_equal");
     foreign
         .harness
         .identity
         .float_scalar
         .as_mut()
         .unwrap()
-        .operator = "quire.op.ieee.total_order".to_owned();
+        .operator = "filament.op.ieee.total_order".to_owned();
     let error = decode(&foreign, &transcript(&foreign, &[1, 2])).expect_err("foreign");
     assert_eq!(error.code, "cg_scalar_witness_schema_float_mismatch");
     let integer = {
-        let mut other = corpus.harness("numeq64", "quire.op.ieee.numeric_equal");
+        let mut other = corpus.harness("numeq64", "filament.op.ieee.numeric_equal");
         other.harness.identity.float_scalar = None;
         other
     };
@@ -619,7 +619,7 @@ fn malformed_float_bindings_and_schemas_are_refused_with_typed_causes() {
 // ---- owner replay (FR-053-AC-11) ----
 
 fn owner_package(function: &str) -> filament_contract_codegen::ReplayPackage {
-    let unlimited = qsl_replay::ScalarLimits {
+    let unlimited = fsl_replay::ScalarLimits {
         integer_bits: u64::MAX,
         decimal_digits: u64::MAX,
         scale_expansion: u64::MAX,
@@ -647,11 +647,11 @@ fn owner_package(function: &str) -> filament_contract_codegen::ReplayPackage {
             accounting_limits: unlimited,
             stage_limits: std::collections::BTreeMap::from([(
                 "s1.input_bytes".to_owned(),
-                qsl_replay::DEFAULT_REPLAY_INPUT_BYTES,
+                fsl_replay::DEFAULT_REPLAY_INPUT_BYTES,
             )]),
             supplied_limits: None,
             declared_domains: Vec::new(),
-            replay_limits: qsl_replay::ReplayLimits::default(),
+            replay_limits: fsl_replay::ReplayLimits::default(),
         },
         function,
     )
@@ -679,21 +679,21 @@ fn a_decoded_witness_replays_through_the_owner_route_with_exact_bits() {
     let numeq = |a: u64, b: u64| {
         owner_result(
             "numeq64",
-            "quire.op.ieee.numeric_equal",
+            "filament.op.ieee.numeric_equal",
             &[signed(a), signed(b)],
         )
     };
     let bitid = |a: u64, b: u64| {
         owner_result(
             "bitid64",
-            "quire.op.ieee.bit_identical",
+            "filament.op.ieee.bit_identical",
             &[signed(a), signed(b)],
         )
     };
     let total = |a: u64, b: u64| {
         owner_result(
             "total64",
-            "quire.op.ieee.total_order",
+            "filament.op.ieee.total_order",
             &[signed(a), signed(b)],
         )
     };
@@ -710,7 +710,11 @@ fn a_decoded_witness_replays_through_the_owner_route_with_exact_bits() {
     assert!(!bitid(qnan_1, qnan_2), "NaN payloads are distinguished");
     assert!(total(minus_zero, zero), "-0 precedes +0 in totalOrder");
     assert!(!total(zero, minus_zero));
-    let narrow = owner_result("numeq32", "quire.op.ieee.numeric_equal", &[0x8000_0000, 0]);
+    let narrow = owner_result(
+        "numeq32",
+        "filament.op.ieee.numeric_equal",
+        &[0x8000_0000, 0],
+    );
     assert!(narrow, "binary32 zeros of both signs are numerically equal");
 }
 
@@ -739,7 +743,7 @@ fn routed_cause(
 #[test]
 fn a_literal_operand_and_a_non_parameter_operand_are_refused_under_their_own_names() {
     let corpus = corpus();
-    let cause = |function: &str| match corpus.outcome(function, "quire.op.ieee.numeric_equal") {
+    let cause = |function: &str| match corpus.outcome(function, "filament.op.ieee.numeric_equal") {
         FloatScalarOutcome::Refused(FloatScalarRefusal::Unsupported { capability, .. }) => {
             capability
         }
@@ -756,9 +760,9 @@ fn a_literal_operand_and_a_non_parameter_operand_are_refused_under_their_own_nam
         "float.operand_not_parameter"
     );
     let routed = corpus.routed(&[
-        ("lit64", "quire.op.ieee.numeric_equal"),
-        ("nested64", "quire.op.ieee.numeric_equal"),
-        ("numeq64", "quire.op.ieee.numeric_equal"),
+        ("lit64", "filament.op.ieee.numeric_equal"),
+        ("nested64", "filament.op.ieee.numeric_equal"),
+        ("numeq64", "filament.op.ieee.numeric_equal"),
     ]);
     assert_eq!(routed_cause(&routed, 0), "float.literal_operand");
     assert_eq!(routed_cause(&routed, 1), "float.operand_not_parameter");
@@ -827,7 +831,7 @@ fn corpus_with_unpinned_operands(retype: bool, bogus_rounding: bool) -> (Corpus,
     let bytes = serde_json::to_vec(&value).expect("json");
     let package = match CheckedPackageV2::read(&bytes, CheckedPackageReadLimits::bounded(), &{
         let mut evidence = CheckedPackageEvidence::new();
-        evidence.support_feature("quire.value.complete/v1");
+        evidence.support_feature("filament.value.complete/v1");
         evidence
     }) {
         CheckedPackageV2ReadResult::Admitted(package) => *package,
@@ -854,11 +858,11 @@ fn corpus_with_unpinned_operands(retype: bool, bogus_rounding: bool) -> (Corpus,
 fn an_unpinned_float_operand_requires_a_bound_naming_its_type() {
     let (corpus, scalar) = corpus_with_unpinned_operands(true, false);
     let FloatScalarOutcome::Refused(FloatScalarRefusal::RequiresBound { unbounded_type }) =
-        corpus.outcome("unpinned64", "quire.op.ieee.numeric_equal")
+        corpus.outcome("unpinned64", "filament.op.ieee.numeric_equal")
     else {
         panic!(
             "an unpinned operand requires a bound: {:?}",
-            corpus.outcome("unpinned64", "quire.op.ieee.numeric_equal")
+            corpus.outcome("unpinned64", "filament.op.ieee.numeric_equal")
         );
     };
     assert_eq!(
@@ -875,7 +879,7 @@ fn an_unpinned_float_operand_requires_a_bound_naming_its_type() {
         .into_disposition(),
         ObligationDisposition::RequiresBound { unbounded_type }
     );
-    let sibling = corpus.outcome("numeq64", "quire.op.ieee.numeric_equal");
+    let sibling = corpus.outcome("numeq64", "filament.op.ieee.numeric_equal");
     assert!(
         matches!(sibling, FloatScalarOutcome::Supported(_)),
         "a pinned sibling is unaffected: {sibling:?}"
@@ -883,14 +887,14 @@ fn an_unpinned_float_operand_requires_a_bound_naming_its_type() {
 
     let (corpus, _) = corpus_with_unpinned_operands(false, true);
     let FloatScalarOutcome::Refused(FloatScalarRefusal::Unsupported { capability, .. }) =
-        corpus.outcome("unpinned64", "quire.op.ieee.numeric_equal")
+        corpus.outcome("unpinned64", "filament.op.ieee.numeric_equal")
     else {
         panic!("an unreadable bound is unsupported");
     };
     assert_eq!(capability, FloatCapability::RoundingUnreadable);
 
     // No result bound is required of a comparison, and the pin narrows no operand domain.
-    let pinned = corpus.harness("numeq64", "quire.op.ieee.numeric_equal");
+    let pinned = corpus.harness("numeq64", "filament.op.ieee.numeric_equal");
     assert!(
         proof_body(&pinned).contains("kani::assume(left >= i64::MIN && left <= i64::MAX)"),
         "{}",
@@ -903,7 +907,7 @@ fn an_unpinned_float_operand_requires_a_bound_naming_its_type() {
 #[test]
 fn an_unknown_witness_width_is_refused_not_replayed_as_binary64() {
     let witness = filament_contract_codegen::FloatWitness {
-        operator: "quire.op.ieee.numeric_equal".to_owned(),
+        operator: "filament.op.ieee.numeric_equal".to_owned(),
         width: "float16".to_owned(),
         operands: vec![("a".to_owned(), 0), ("b".to_owned(), 0)],
     };
@@ -1025,12 +1029,12 @@ fn is_nan(bits: u64, wide: bool) -> bool {
 fn the_draw_encoding_matches_the_class_boundary_set_and_every_encoding_mutant_fails() {
     let corpus = corpus();
     let text64 = corpus
-        .harness("numeq64", "quire.op.ieee.numeric_equal")
+        .harness("numeq64", "filament.op.ieee.numeric_equal")
         .harness
         .rust
         .contents;
     let text32 = corpus
-        .harness("numeq32", "quire.op.ieee.numeric_equal")
+        .harness("numeq32", "filament.op.ieee.numeric_equal")
         .harness
         .rust
         .contents;
@@ -1143,8 +1147,8 @@ const CONTROLS_32: [u64; 12] = [
     0x0000_0001,
 ];
 
-fn limits_of(value: u64) -> quire_exact::ScalarLimits {
-    quire_exact::ScalarLimits {
+fn limits_of(value: u64) -> filament_exact::ScalarLimits {
+    filament_exact::ScalarLimits {
         integer_bits: value,
         decimal_digits: value,
         scale_expansion: value,
@@ -1158,8 +1162,8 @@ fn limits_of(value: u64) -> quire_exact::ScalarLimits {
     }
 }
 
-fn limits_with(kind: quire_exact::LimitKind, value: u64) -> quire_exact::ScalarLimits {
-    use quire_exact::LimitKind;
+fn limits_with(kind: filament_exact::LimitKind, value: u64) -> filament_exact::ScalarLimits {
+    use filament_exact::LimitKind;
     let mut limits = limits_of(u64::MAX);
     match kind {
         LimitKind::IntegerBits => limits.integer_bits = value,
@@ -1178,7 +1182,7 @@ fn limits_with(kind: quire_exact::LimitKind, value: u64) -> quire_exact::ScalarL
 #[trace("TC-067", "FR-053-AC-13")]
 #[test]
 fn the_native_comparisons_equal_the_owner_with_charges_and_budgets_at_every_limit() {
-    use quire_exact::{
+    use filament_exact::{
         compare_ieee, compare_native_float, ChargePoint, IeeeComparison, IeeeWidth, LimitKind,
         Meter, NativeFloat, Outcome,
     };
@@ -1275,7 +1279,7 @@ fn the_native_comparisons_equal_the_owner_with_charges_and_budgets_at_every_limi
 #[trace("TC-067", "FR-053-AC-13")]
 #[test]
 fn every_comparison_control_point_has_its_stated_owner_result() {
-    use quire_exact::IeeeComparison::{BitIdentical, NumericEqual, TotalOrder};
+    use filament_exact::IeeeComparison::{BitIdentical, NumericEqual, TotalOrder};
     for (comparison, width_wide, a, b, expected) in COMPARISON_POINTS {
         assert_eq!(
             owner_compare(comparison, width_wide, a, b),
@@ -1286,21 +1290,22 @@ fn every_comparison_control_point_has_its_stated_owner_result() {
     let _ = (BitIdentical, NumericEqual, TotalOrder);
 }
 
-fn owner_compare(comparison: quire_exact::IeeeComparison, wide: bool, a: u64, b: u64) -> bool {
+fn owner_compare(comparison: filament_exact::IeeeComparison, wide: bool, a: u64, b: u64) -> bool {
     let width = if wide {
-        quire_exact::IeeeWidth::Binary64
+        filament_exact::IeeeWidth::Binary64
     } else {
-        quire_exact::IeeeWidth::Binary32
+        filament_exact::IeeeWidth::Binary32
     };
-    let mut meter = quire_exact::Meter::new(limits_of(u64::MAX));
-    let value = |bits| quire_exact::NativeFloat::new(width, bits).expect("a pattern of the width");
-    match quire_exact::compare_ieee(
+    let mut meter = filament_exact::Meter::new(limits_of(u64::MAX));
+    let value =
+        |bits| filament_exact::NativeFloat::new(width, bits).expect("a pattern of the width");
+    match filament_exact::compare_ieee(
         comparison,
         value(a).to_ieee_value(),
         value(b).to_ieee_value(),
         &mut meter,
     ) {
-        Ok(quire_exact::Outcome::Completed(result)) => result,
+        Ok(filament_exact::Outcome::Completed(result)) => result,
         other => panic!("the owner did not complete: {other:?}"),
     }
 }
@@ -1322,8 +1327,8 @@ const NSN1: u64 = 0xFFF0_0000_0000_0001;
 
 /// Every control point of the comparison mutants (FR-053 Behavior control points, AC-8): the
 /// comparison, whether it is `binary64`, the two bit patterns and the owner's expected result.
-const COMPARISON_POINTS: [(quire_exact::IeeeComparison, bool, u64, u64, bool); 22] = {
-    use quire_exact::IeeeComparison::{BitIdentical as B, NumericEqual as N, TotalOrder as T};
+const COMPARISON_POINTS: [(filament_exact::IeeeComparison, bool, u64, u64, bool); 22] = {
+    use filament_exact::IeeeComparison::{BitIdentical as B, NumericEqual as N, TotalOrder as T};
     [
         (N, true, Z_P, Z_N, true),
         (N, true, QN0, QN0, false),
@@ -1356,7 +1361,7 @@ struct Mutant {
     id: &'static str,
     function: &'static str,
     identity: &'static str,
-    comparison: quire_exact::IeeeComparison,
+    comparison: filament_exact::IeeeComparison,
     wide: bool,
     site: &'static str,
     with: &'static str,
@@ -1376,12 +1381,12 @@ fn total64(a: u64, b: u64) -> bool {
 }
 
 fn mutants() -> Vec<Mutant> {
-    use quire_exact::IeeeComparison::{BitIdentical, NumericEqual, TotalOrder};
+    use filament_exact::IeeeComparison::{BitIdentical, NumericEqual, TotalOrder};
     vec![
         Mutant {
             id: "c numeric_equal ignoring the sign of a nonzero value",
             function: "numeq64",
-            identity: "quire.op.ieee.numeric_equal",
+            identity: "filament.op.ieee.numeric_equal",
             comparison: NumericEqual,
             wide: true,
             site: NUMERIC_F64,
@@ -1392,7 +1397,7 @@ fn mutants() -> Vec<Mutant> {
         Mutant {
             id: "e bit_identical canonicalizing a NaN",
             function: "bitid64",
-            identity: "quire.op.ieee.bit_identical",
+            identity: "filament.op.ieee.bit_identical",
             comparison: BitIdentical,
             wide: true,
             site: "let native = a == b;",
@@ -1405,7 +1410,7 @@ fn mutants() -> Vec<Mutant> {
         Mutant {
             id: "f total_order as signed integer comparison of the raw bits",
             function: "total64",
-            identity: "quire.op.ieee.total_order",
+            identity: "filament.op.ieee.total_order",
             comparison: TotalOrder,
             wide: true,
             site: TOTAL_F64,
@@ -1416,7 +1421,7 @@ fn mutants() -> Vec<Mutant> {
         Mutant {
             id: "g total_order as unsigned comparison of the raw bits",
             function: "total64",
-            identity: "quire.op.ieee.total_order",
+            identity: "filament.op.ieee.total_order",
             comparison: TotalOrder,
             wide: true,
             site: TOTAL_F64,
@@ -1427,7 +1432,7 @@ fn mutants() -> Vec<Mutant> {
         Mutant {
             id: "h total_order equating the zeros",
             function: "total64",
-            identity: "quire.op.ieee.total_order",
+            identity: "filament.op.ieee.total_order",
             comparison: TotalOrder,
             wide: true,
             site: TOTAL_F64,
@@ -1438,7 +1443,7 @@ fn mutants() -> Vec<Mutant> {
         Mutant {
             id: "i total_order strict instead of precedes-or-equal",
             function: "total64",
-            identity: "quire.op.ieee.total_order",
+            identity: "filament.op.ieee.total_order",
             comparison: TotalOrder,
             wide: true,
             site: TOTAL_F64,
@@ -1449,7 +1454,7 @@ fn mutants() -> Vec<Mutant> {
         Mutant {
             id: "j total_order leaving NaN unordered",
             function: "total64",
-            identity: "quire.op.ieee.total_order",
+            identity: "filament.op.ieee.total_order",
             comparison: TotalOrder,
             wide: true,
             site: TOTAL_F64,
@@ -1460,7 +1465,7 @@ fn mutants() -> Vec<Mutant> {
         Mutant {
             id: "k total_order equating all NaNs",
             function: "total64",
-            identity: "quire.op.ieee.total_order",
+            identity: "filament.op.ieee.total_order",
             comparison: TotalOrder,
             wide: true,
             site: TOTAL_F64,
@@ -1471,7 +1476,7 @@ fn mutants() -> Vec<Mutant> {
         Mutant {
             id: "l total_order with the operands swapped",
             function: "total64",
-            identity: "quire.op.ieee.total_order",
+            identity: "filament.op.ieee.total_order",
             comparison: TotalOrder,
             wide: true,
             site: TOTAL_F64,
@@ -1482,7 +1487,7 @@ fn mutants() -> Vec<Mutant> {
         Mutant {
             id: "m total_order key built with the binary64 sign position at binary32",
             function: "total32",
-            identity: "quire.op.ieee.total_order",
+            identity: "filament.op.ieee.total_order",
             comparison: TotalOrder,
             wide: false,
             site: "f32::from_bits(a).total_cmp(&f32::from_bits(b)).is_le()",
@@ -1577,7 +1582,7 @@ fn the_expected_side_reaches_no_native_operation_and_a_sharing_mutant_fails_the_
         );
     }
     let text = corpus
-        .harness("bitid64", "quire.op.ieee.bit_identical")
+        .harness("bitid64", "filament.op.ieee.bit_identical")
         .harness
         .rust
         .contents;
@@ -1607,9 +1612,9 @@ fn the_expected_side_reaches_no_native_operation_and_a_sharing_mutant_fails_the_
 #[test]
 fn the_identity_records_the_operation_bindings_options_and_dependency_cohort() {
     let corpus = corpus();
-    let (harness, manifest) = corpus.routed_harness("numeq32", "quire.op.ieee.numeric_equal");
+    let (harness, manifest) = corpus.routed_harness("numeq32", "filament.op.ieee.numeric_equal");
     let id = &harness.identity;
-    assert_eq!(id.operation_identity, "quire.op.ieee.numeric_equal");
+    assert_eq!(id.operation_identity, "filament.op.ieee.numeric_equal");
     assert!(
         id.requirement_occurrence.is_some(),
         "the source association"
@@ -1650,9 +1655,9 @@ fn the_identity_records_the_operation_bindings_options_and_dependency_cohort() {
         ]
     );
     assert_eq!(id.unwind, 2);
-    assert_eq!(id.oracle_symbol, "quire_exact::compare_native_float");
+    assert_eq!(id.oracle_symbol, "filament_exact::compare_native_float");
     assert!(
-        manifest.contents.contains("quire-exact"),
+        manifest.contents.contains("filament-exact"),
         "the dependency cohort names the carrier crate: {}",
         manifest.contents
     );
@@ -1676,7 +1681,7 @@ fn the_shipped_float_rows_are_a_version_free_record_with_measured_peaks() {
         .filter(|row| {
             row["operation_ids"][0]
                 .as_str()
-                .is_some_and(|id| id.starts_with("quire.op.ieee."))
+                .is_some_and(|id| id.starts_with("filament.op.ieee."))
         })
         .collect::<Vec<_>>();
     assert_eq!(float_rows.len(), 5);
@@ -1756,12 +1761,12 @@ macro_rules! kani_verifies {
 }
 
 kani_verifies! {
-    kani_numeric_equal_float64_verifies => ("numeq64", "quire.op.ieee.numeric_equal"),
-    kani_total_order_float64_verifies => ("total64", "quire.op.ieee.total_order"),
-    kani_bit_identical_float64_verifies => ("bitid64", "quire.op.ieee.bit_identical"),
-    kani_numeric_equal_float32_verifies => ("numeq32", "quire.op.ieee.numeric_equal"),
-    kani_total_order_float32_verifies => ("total32", "quire.op.ieee.total_order"),
-    kani_bit_identical_float32_verifies => ("bitid32", "quire.op.ieee.bit_identical"),
+    kani_numeric_equal_float64_verifies => ("numeq64", "filament.op.ieee.numeric_equal"),
+    kani_total_order_float64_verifies => ("total64", "filament.op.ieee.total_order"),
+    kani_bit_identical_float64_verifies => ("bitid64", "filament.op.ieee.bit_identical"),
+    kani_numeric_equal_float32_verifies => ("numeq32", "filament.op.ieee.numeric_equal"),
+    kani_total_order_float32_verifies => ("total32", "filament.op.ieee.total_order"),
+    kani_bit_identical_float32_verifies => ("bitid32", "filament.op.ieee.bit_identical"),
 }
 
 /// The comparison mutants of FR-053-AC-8: the native comparison asked as another one, so its result
@@ -1772,7 +1777,7 @@ kani_verifies! {
 fn kani_numeric_equal_asked_as_bit_identical_is_falsified() {
     falsified(
         "numeq64",
-        "quire.op.ieee.numeric_equal",
+        "filament.op.ieee.numeric_equal",
         "float-numeq-as-bitid",
         "rt::IeeeComparison::NumericEqual",
         "rt::IeeeComparison::BitIdentical",
@@ -1785,7 +1790,7 @@ fn kani_numeric_equal_asked_as_bit_identical_is_falsified() {
 fn kani_bit_identical_asked_as_numeric_equal_is_falsified() {
     falsified(
         "bitid64",
-        "quire.op.ieee.bit_identical",
+        "filament.op.ieee.bit_identical",
         "float-bitid-as-numeq",
         "rt::IeeeComparison::BitIdentical",
         "rt::IeeeComparison::NumericEqual",
@@ -1798,7 +1803,7 @@ fn kani_bit_identical_asked_as_numeric_equal_is_falsified() {
 fn kani_total_order_asked_as_bit_identical_is_falsified() {
     falsified(
         "total32",
-        "quire.op.ieee.total_order",
+        "filament.op.ieee.total_order",
         "float-total-as-bitid",
         "rt::IeeeComparison::TotalOrder",
         "rt::IeeeComparison::BitIdentical",
@@ -1812,7 +1817,7 @@ fn kani_total_order_asked_as_bit_identical_is_falsified() {
 fn kani_nan_reflexive_numeric_equal_expectation_is_falsified() {
     falsified(
         "numeq32",
-        "quire.op.ieee.numeric_equal",
+        "filament.op.ieee.numeric_equal",
         "float-numeq-nan-reflexive",
         "!a_nan && !b_nan && (((a | b) << 1) == 0 || a == b)",
         "(((a | b) << 1) == 0 || a == b)",
@@ -1828,11 +1833,11 @@ fn kani_nan_reflexive_numeric_equal_expectation_is_falsified() {
 #[ignore = "kani lane: run serially through `make kani`"]
 fn kani_a_falsifying_counterexample_replays_through_the_owner_route() {
     let corpus = corpus();
-    let generated = corpus.harness("numeq64", "quire.op.ieee.numeric_equal");
+    let generated = corpus.harness("numeq64", "filament.op.ieee.numeric_equal");
     let evidence = run(
         "float-replay",
         "numeq64",
-        "quire.op.ieee.numeric_equal",
+        "filament.op.ieee.numeric_equal",
         Some((
             "rt::IeeeComparison::NumericEqual",
             "rt::IeeeComparison::BitIdentical",
@@ -1888,7 +1893,7 @@ fn kani_an_unsatisfied_cover_is_not_verified() {
     let evidence = run(
         "float-cover-forced",
         "numeq32",
-        "quire.op.ieee.numeric_equal",
+        "filament.op.ieee.numeric_equal",
         Some((
             "let cover_reached: bool = completed;",
             "let cover_reached: bool = false;",
@@ -1915,7 +1920,7 @@ fn kani_an_unsatisfied_cover_is_not_verified() {
 #[ignore = "kani lane: run serially through `make kani`"]
 fn kani_the_run_evidence_records_every_option_and_no_tool_version() {
     let corpus = corpus();
-    let (harness, manifest) = corpus.routed_harness("numeq32", "quire.op.ieee.numeric_equal");
+    let (harness, manifest) = corpus.routed_harness("numeq32", "filament.op.ieee.numeric_equal");
     let evidence =
         crate::kani_obligations::run_scalar_under_real_kani("float-evidence", &harness, &manifest);
     assert_eq!(evidence.outcome, KaniRunOutcome::Verified, "{evidence:?}");

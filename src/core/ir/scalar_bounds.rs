@@ -4,8 +4,8 @@
 //! Shared bound readers over admitted checked terms.
 
 use super::checked_term::{bound_members, literal, literal_count, literal_integer};
-use quire_contract_model::{CheckedTerm, LiteralKind};
-use quire_exact::{
+use filament_contract_model::{CheckedTerm, LiteralKind};
+use filament_exact::{
     DecimalType, IntegerInterval, RationalDomain, RoundingMode, TextProfile, TextType,
 };
 

@@ -9,13 +9,13 @@
 //! caller supplied in [`InvariantReplayInputs::unread_values`] (FR-024-AC-58, IR-1512). This module
 //! invents no value for any field.
 
-use qsl_replay::{
+use filament_contract_model::{CheckedNodeId, CheckedNodeOwner, CheckedPackageV2};
+use fsl_replay::{
     call_site, AnchorKind, ClauseName, ClauseSelectionInput, EnvelopeSource, ObligationIdentity,
     QualifiedName, ReplayPackage, ReplaySource, ReplayTargetMembers, RequestTargetWire,
     SelectedAnchor, SelectedObject, StateClauseCounterexample, WitnessPacket, WitnessValue,
 };
 use quire_canonical::FixedShape;
-use quire_contract_model::{CheckedNodeId, CheckedNodeOwner, CheckedPackageV2};
 use serde::Serialize;
 
 use super::{
@@ -389,7 +389,7 @@ impl StateClauseReplay {
         let model = model_header(&packages, &object.object_type)
             .map_err(|cause| StateClauseReplayError::Document(DocumentError::Model(cause)))?;
         let document = CurrentSnapshotDocument {
-            format: "quire.state.snapshot/v1",
+            format: "filament.state.snapshot/v1",
             identity: (&snapshot_label).into(),
             observation: "current",
             anchor: AnchorMember {
@@ -473,7 +473,7 @@ mod tests {
             identity: "twin-current".to_owned(),
         };
         let document = CurrentSnapshotDocument {
-            format: "quire.state.snapshot/v1",
+            format: "filament.state.snapshot/v1",
             identity: (&label).into(),
             observation: "current",
             anchor: AnchorMember {

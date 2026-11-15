@@ -1,6 +1,6 @@
 //! Borrowed checked terms and keyed nodes shared by oracle consumers.
 
-use quire_contract_model::{
+use filament_contract_model::{
     ApplicationOperator, CheckedJson, CheckedNodeId, CheckedPackageV2, CheckedSemanticNodeV2,
     CheckedTerm, ContractPackageV1,
 };
@@ -65,7 +65,7 @@ impl GraphBody for CheckedTerm {
 pub(crate) struct CheckedGraph<'a, Body: GraphBody = CheckedJson> {
     package: Package<'a, Body>,
     ordered: Vec<&'a CheckedSemanticNodeV2<Body>>,
-    keys: std::sync::Arc<std::collections::BTreeMap<CheckedNodeId, quire_exact::NodeKey>>,
+    keys: std::sync::Arc<std::collections::BTreeMap<CheckedNodeId, filament_exact::NodeKey>>,
 }
 
 enum Package<'a, Body: GraphBody> {
@@ -113,9 +113,9 @@ impl<'a> CheckedGraph<'a, CheckedJson> {
 
 fn frame_keys<'a>(
     ids: impl Iterator<Item = &'a CheckedNodeId>,
-) -> std::sync::Arc<std::collections::BTreeMap<CheckedNodeId, quire_exact::NodeKey>> {
+) -> std::sync::Arc<std::collections::BTreeMap<CheckedNodeId, filament_exact::NodeKey>> {
     let ids = ids.collect::<Vec<_>>();
-    let keys = match qsl_replay::WireGraph::new(ids.iter().copied()) {
+    let keys = match fsl_replay::WireGraph::new(ids.iter().copied()) {
         Ok(graph) => ids
             .into_iter()
             .cloned()
@@ -130,7 +130,7 @@ impl<'a, Body: GraphBody> CheckedGraph<'a, Body> {
     /// Structural keys are resolved once in this graph's own index frame.
     pub(crate) fn node_keys(
         &self,
-    ) -> std::sync::Arc<std::collections::BTreeMap<CheckedNodeId, quire_exact::NodeKey>> {
+    ) -> std::sync::Arc<std::collections::BTreeMap<CheckedNodeId, filament_exact::NodeKey>> {
         std::sync::Arc::clone(&self.keys)
     }
 

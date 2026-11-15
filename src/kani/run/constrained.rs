@@ -42,7 +42,9 @@ impl ConstrainedBackendEvidence {
         }
     }
     /// Original cancellation source, without exposing an ordinary proof outcome.
-    pub fn cancellation_source(&self) -> Option<quire_contract_ir::kani::KaniCancellationSource> {
+    pub fn cancellation_source(
+        &self,
+    ) -> Option<filament_contract_ir::kani::KaniCancellationSource> {
         if let KaniRunOutcome::Cancelled { source } = self.backend.outcome {
             Some(source)
         } else {

@@ -7,17 +7,17 @@ use filament_contract_codegen::{
     derive_exact_scalar_items, generate_exact_scalar_oracles, ClaimDisposition, ExactScalarOracles,
     OperationProvenance,
 };
-use ix_trace_rs::trace;
-use qsl_replay::{
-    compile_package, CompileUnit, DependencyInput, ReplayLimits, SourceIdentity, StageLimits,
-};
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2, CheckedPackageV2ReadResult,
     CheckedTerm,
 };
+use fsl_replay::{
+    compile_package, CompileUnit, DependencyInput, ReplayLimits, SourceIdentity, StageLimits,
+};
+use ix_trace_rs::trace;
 
 pub(crate) fn emitted(declarations: &str) -> Vec<u8> {
-    let source = format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\n{declarations}\n");
+    let source = format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\n{declarations}\n");
     let emitted = compile_package(
         CompileUnit {
             source: SourceIdentity::new("test", "scalar-source-forms.native"),
@@ -40,7 +40,7 @@ pub(crate) fn compiled(declarations: &str) -> CheckedPackageV2 {
 
 pub(crate) fn admit(bytes: &[u8]) -> CheckedPackageV2 {
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     match CheckedPackageV2::read(bytes, CheckedPackageReadLimits::bounded(), &evidence) {
         CheckedPackageV2ReadResult::Admitted(package) => *package,
         other => panic!("strict IR reader must admit unchanged genuine FSL bytes: {other:?}"),
@@ -70,7 +70,7 @@ pub(crate) fn generated(
     let [node] = nodes.as_slice() else {
         panic!("one genuine {identity} application: {nodes:?}");
     };
-    if identity == "quire.op.quantity.convert" {
+    if identity == "filament.op.quantity.convert" {
         let CheckedTerm::Application { arguments, .. } = &node.body else {
             panic!("conversion application");
         };
@@ -115,7 +115,7 @@ pub(crate) fn generated(
             Some("cm")
         );
         assert!(
-            matches!(bound_member(&source_type.body, "rounding"), CheckedTerm::Literal { value_kind: quire_contract_model::LiteralKind::Text, value, .. } if value.as_str() == Some("exact"))
+            matches!(bound_member(&source_type.body, "rounding"), CheckedTerm::Literal { value_kind: filament_contract_model::LiteralKind::Text, value, .. } if value.as_str() == Some("exact"))
         );
         let CheckedTerm::Reference { target: carrier } = bound_member(&source_type.body, "carrier")
         else {
@@ -130,7 +130,7 @@ pub(crate) fn generated(
         assert_eq!(carrier.semantic_form.as_ref(), "integer_range");
         for (name, expected) in [("min", "0"), ("max", "1000")] {
             assert!(
-                matches!(bound_member(&carrier.body, name), CheckedTerm::Literal { value_kind: quire_contract_model::LiteralKind::Integer, value, .. } if value.as_str() == Some(expected)),
+                matches!(bound_member(&carrier.body, name), CheckedTerm::Literal { value_kind: filament_contract_model::LiteralKind::Integer, value, .. } if value.as_str() == Some(expected)),
                 "genuine source carrier {name} matches the owner-admitted native input"
             );
         }
@@ -169,7 +169,7 @@ fn genuine_ieee_equality_and_intrinsics_generate() {
     ] {
         for width in ["Float32", "Float64"] {
             let package = compiled(&format!("function subject using v(a: {width}[nearest-even], b: {width}[nearest-even]): Boolean pure {{ {expression} }}"));
-            let identity = format!("quire.op.ieee.{identity}");
+            let identity = format!("filament.op.ieee.{identity}");
             let (oracles, symbol) = generated(&package, &identity);
             manifest = oracles
                 .artifacts
@@ -188,9 +188,9 @@ fn genuine_ieee_equality_and_intrinsics_generate() {
                 claim.oracle_source
             ));
             let comparison = match identity.as_str() {
-                "quire.op.ieee.numeric_equal" => "NumericEqual",
-                "quire.op.ieee.total_order" => "TotalOrder",
-                "quire.op.ieee.bit_identical" => "BitIdentical",
+                "filament.op.ieee.numeric_equal" => "NumericEqual",
+                "filament.op.ieee.total_order" => "TotalOrder",
+                "filament.op.ieee.bit_identical" => "BitIdentical",
                 _ => unreachable!("test cases name only IEEE relations"),
             };
             calls.push_str(&format!("check(|a, b, meter| crate::case_{ordinal}::{symbol}(a, b, meter).map_err(|stop| format!(\"{{stop:?}}\")), rt::IeeeComparison::{comparison}, {});\n", width == "Float32"));
@@ -205,7 +205,7 @@ fn genuine_ieee_equality_and_intrinsics_generate() {
 #[test]
 fn genuine_carried_quantity_u01_conversion_generates() {
     let package = compiled("dimension Length;\nunit m : Length = rational(1, 1);\nunit cm : Length = rational(1, 100) * m;\nfunction subject using v(a: Quantity<cm, Int[0, 1000]>): Quantity<m> pure { convert<Quantity<m>>(a) }");
-    let (oracles, symbol) = generated(&package, "quire.op.quantity.convert");
+    let (oracles, symbol) = generated(&package, "filament.op.quantity.convert");
     let manifest = &oracles
         .artifacts
         .iter()
@@ -225,14 +225,14 @@ fn genuine_carried_quantity_u01_conversion_generates() {
             "assert_eq!(actual.magnitude(), &expected); assert_eq!(actual.unit(), &m.id());",
         )
     );
-    run_native("quantity-source-forms", manifest, &native, "qsl-replay = { git = \"https://github.com/agent-ix/filament-spec-language\", branch = \"main\" }\n");
+    run_native("quantity-source-forms", manifest, &native, "fsl-replay = { git = \"https://github.com/agent-ix/filament-spec-language\", branch = \"main\" }\n");
 }
 
 pub(crate) fn run_native(label: &str, manifest: &str, source: &str, dependencies: &str) {
     use std::{fs, process::Command};
     let scratch = crate::scratch_crate::TemporaryDirectory::new(label);
     fs::create_dir_all(scratch.path.join("src")).unwrap();
-    let manifest = format!("{manifest}\n[dev-dependencies]\nquire-exact = {{ git = \"https://github.com/agent-ix/quire-exact\", branch = \"main\", features = [\"test-support\"] }}\n{dependencies}");
+    let manifest = format!("{manifest}\n[dev-dependencies]\nfilament-exact = {{ git = \"https://github.com/agent-ix/filament-exact\", branch = \"main\", features = [\"test-support\"] }}\n{dependencies}");
     fs::write(scratch.path.join("Cargo.toml"), manifest).unwrap();
     fs::write(scratch.path.join("src/lib.rs"), source).unwrap();
     crate::scratch_crate::resolve_seeded_lock(&scratch.path);
@@ -260,7 +260,7 @@ fn native_ieee_checks(calls: &str) -> String {
     let support = r#"
 #[cfg(test)]
 mod native {
-use quire_exact as rt;
+use filament_exact as rt;
 const LIMITS: rt::ScalarLimits = rt::ScalarLimits {
     integer_bits: 4096, decimal_digits: 4096, scale_expansion: 4096,
     text_input_bytes: 4096, text_scalars: 4096, normalized_scalars: 4096,
@@ -317,7 +317,7 @@ fn ieee_extension_preserves_binary_support_and_refuses_other_shapes() {
     use filament_contract_codegen::{
         ExactScalarItem, ExactScalarOperation, ExactScalarRefusal, ScalarForm,
     };
-    use quire_exact::{IeeeComparison, IeeeWidth};
+    use filament_exact::{IeeeComparison, IeeeWidth};
     let bytes = emitted("function subject using v(a: Float64[nearest-even], b: Float64[nearest-even]): Boolean pure { a = b }\nfunction sibling using v(a: Float64[nearest-even], b: Float64[nearest-even]): Boolean pure { quire::value::ieee::totalOrder(a, b) }");
     let original: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
     for form in ["binary", "unary", "conversion"] {
@@ -325,7 +325,9 @@ fn ieee_extension_preserves_binary_support_and_refuses_other_shapes() {
         let nodes = wire["semantic_graph"]["nodes"].as_array_mut().unwrap();
         let position = nodes
             .iter()
-            .position(|node| node["body"]["operation"]["identity"] == "quire.op.ieee.numeric_equal")
+            .position(|node| {
+                node["body"]["operation"]["identity"] == "filament.op.ieee.numeric_equal"
+            })
             .unwrap();
         nodes[position]["semantic_form"] = form.into();
         let CheckedPackageV2ReadResult::Admitted(package) = read_mutated_wire(wire) else {
@@ -368,7 +370,9 @@ fn ieee_extension_preserves_binary_support_and_refuses_other_shapes() {
             .clone();
         let position = nodes
             .iter()
-            .position(|node| node["body"]["operation"]["identity"] == "quire.op.ieee.numeric_equal")
+            .position(|node| {
+                node["body"]["operation"]["identity"] == "filament.op.ieee.numeric_equal"
+            })
             .unwrap();
         let node = &mut nodes[position];
         match mutation {
@@ -380,7 +384,7 @@ fn ieee_extension_preserves_binary_support_and_refuses_other_shapes() {
                 node["body"]["arguments"][0] = serde_json::json!({"term": "literal", "type_id": boolean, "value_kind": "boolean", "value": "true"})
             }
             "result" => node["body"]["result_type"] = float,
-            "identity" => node["body"]["operation"]["identity"] = "quire.op.integer.eq".into(),
+            "identity" => node["body"]["operation"]["identity"] = "filament.op.integer.eq".into(),
             "law" => node["body"]["operation"]["laws"] = serde_json::json!([]),
             "mode" => {
                 node["body"]["operation"]["mode"] =
@@ -397,8 +401,8 @@ fn ieee_extension_preserves_binary_support_and_refuses_other_shapes() {
         );
     }
     let package = admit(&bytes);
-    let node = package.resolved_graph().nodes.iter().find(|node| matches!(&node.body, CheckedTerm::Application { operation, .. } if operation.identity() == Some("quire.op.ieee.numeric_equal"))).unwrap();
-    let sibling = package.resolved_graph().nodes.iter().find(|node| matches!(&node.body, CheckedTerm::Application { operation, .. } if operation.identity() == Some("quire.op.ieee.total_order"))).unwrap();
+    let node = package.resolved_graph().nodes.iter().find(|node| matches!(&node.body, CheckedTerm::Application { operation, .. } if operation.identity() == Some("filament.op.ieee.numeric_equal"))).unwrap();
+    let sibling = package.resolved_graph().nodes.iter().find(|node| matches!(&node.body, CheckedTerm::Application { operation, .. } if operation.identity() == Some("filament.op.ieee.total_order"))).unwrap();
     let good = derive_exact_scalar_items(&package, std::slice::from_ref(&sibling.node_id))
         .pop()
         .unwrap()
@@ -451,15 +455,15 @@ fn native_quantity_checks(operation_call: &str, completed_assertions: &str) -> S
     let support = r#"
 #[cfg(test)]
 mod native {
-use quire_exact as rt;
-use quire_semantic_value::quantity as owner;
+use filament_exact as rt;
+use filament_semantic_value::quantity as owner;
 #[test]
 fn values_and_ledgers() {
-    let source = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\ndimension Length;\nunit m : Length = rational(1, 1);\nunit cm : Length = rational(1, 100) * m;\nfunction subject using v(a: Quantity<cm, Int[0, 1000]>): Quantity<m> pure { convert<Quantity<m>>(a) }";
-    let admitted = qsl_replay::compile_admitted(qsl_replay::CompileUnit {
-        source: qsl_replay::SourceIdentity::new("test", "scalar-source-forms.native"),
+    let source = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\ndimension Length;\nunit m : Length = rational(1, 1);\nunit cm : Length = rational(1, 100) * m;\nfunction subject using v(a: Quantity<cm, Int[0, 1000]>): Quantity<m> pure { convert<Quantity<m>>(a) }";
+    let admitted = fsl_replay::compile_admitted(fsl_replay::CompileUnit {
+        source: fsl_replay::SourceIdentity::new("test", "scalar-source-forms.native"),
         package_name: "scalar-source-forms".to_owned(), path: "scalar-source-forms.native", bytes: source.as_bytes(),
-    }, [], &qsl_replay::DependencyInput::default(), qsl_replay::StageLimits::default(), qsl_replay::ReplayLimits::default()).unwrap();
+    }, [], &fsl_replay::DependencyInput::default(), fsl_replay::StageLimits::default(), fsl_replay::ReplayLimits::default()).unwrap();
     let context = admitted.context();
     let unit = |name: &str| context.units().find(|unit| unit.qualified_name().last().map(|part| part.as_str()) == Some(name)).unwrap();
     let cm = unit("cm");
@@ -475,7 +479,7 @@ fn values_and_ledgers() {
     let input = rt::Value::Quantity(rt::Quantity::new(
         rt::Rational::from_integer(rt::Integer::from(250_i64)), cm.id(),
     ));
-    let types = quire_semantic_value::declaration::TypeEnvironment::default();
+    let types = filament_semantic_value::declaration::TypeEnvironment::default();
     assert!(types.admits(&source_type, &input).unwrap(), "owner admits the bounded carried source");
     for invalid in [
         rt::Quantity::new(rt::Rational::from_integer(rt::Integer::from(1001_i64)), cm.id()),
@@ -533,7 +537,7 @@ fn ieee_call_extension_does_not_admit_integer_calls() {
         .as_array_mut()
         .unwrap()
         .iter_mut()
-        .find(|candidate| candidate["body"]["operation"]["identity"] == "quire.op.integer.eq")
+        .find(|candidate| candidate["body"]["operation"]["identity"] == "filament.op.integer.eq")
         .unwrap();
     changed["semantic_form"] = "call".into();
     assert!(
@@ -549,9 +553,9 @@ fn ieee_call_extension_does_not_admit_integer_calls() {
 #[test]
 fn same_shape_ieee_descriptor_mismatch_retains_caller_declared_generation() {
     use filament_contract_codegen::{ExactScalarItem, ExactScalarOperation};
-    use quire_exact::{IeeeComparison, IeeeWidth};
+    use filament_exact::{IeeeComparison, IeeeWidth};
     let package = compiled("function subject using v(a: Float64[nearest-even], b: Float64[nearest-even]): Boolean pure { a = b }");
-    let node = package.resolved_graph().nodes.iter().find(|node| matches!(&node.body, CheckedTerm::Application { operation, .. } if operation.identity() == Some("quire.op.ieee.numeric_equal"))).unwrap();
+    let node = package.resolved_graph().nodes.iter().find(|node| matches!(&node.body, CheckedTerm::Application { operation, .. } if operation.identity() == Some("filament.op.ieee.numeric_equal"))).unwrap();
     let output = generate_exact_scalar_oracles(
         &package,
         &[ExactScalarItem {
@@ -589,7 +593,7 @@ fn same_shape_ieee_descriptor_mismatch_retains_caller_declared_generation() {
 #[test]
 fn carried_input_native_harness_component_executes_owner_admission_and_conversion() {
     let manifest = format!(
-        "[package]\nname = \"carried-input-harness-component\"\nversion = \"0.0.0\"\nedition = \"2021\"\n[dependencies]\nquire-exact = {{ {} }}\nquire-semantic-value = {{ {} }}\n[workspace]\n",
+        "[package]\nname = \"carried-input-harness-component\"\nversion = \"0.0.0\"\nedition = \"2021\"\n[dependencies]\nfilament-exact = {{ {} }}\nfilament-semantic-value = {{ {} }}\n[workspace]\n",
         filament_contract_codegen::EXACT_DEPENDENCY_SOURCE,
         filament_contract_codegen::SEMANTIC_VALUE_DEPENDENCY_SOURCE,
     );
@@ -597,5 +601,5 @@ fn carried_input_native_harness_component_executes_owner_admission_and_conversio
         "owner::convert_quantity(operand, m.unit(), &owner::QuantityTarget::Exact, &mut generated_meter)",
         "assert_eq!(actual, direct);",
     );
-    run_native("carried-input-harness-component", &manifest, &native, "qsl-replay = { git = \"https://github.com/agent-ix/filament-spec-language\", branch = \"main\" }\n");
+    run_native("carried-input-harness-component", &manifest, &native, "fsl-replay = { git = \"https://github.com/agent-ix/filament-spec-language\", branch = \"main\" }\n");
 }

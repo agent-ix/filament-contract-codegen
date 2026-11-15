@@ -8,7 +8,7 @@ use filament_contract_codegen::{
     generate_bound_oracles, generate_bound_strategy, BoundGenerationError, BoundStrategyPopulation,
     BoundStrategyRequest, GenerationErrorCode, GenerationTerminalState, StrategyErrorCode,
 };
-use quire_contract_model::{
+use filament_contract_model::{
     BoundPackage, ClauseId, ClauseRef, RequirementRef, EXECUTABLE_PROJECTION_FORMAT,
 };
 use serde_json::{json, Value};
@@ -930,11 +930,11 @@ pub fn {oracle}(version_4_eumber_pre: i64, version_4_eumber_post: i64) -> bool {
 mod generated_checks {{
     use super::*;
 
-    fn report() -> quire_contract_runtime::CampaignReport<'static> {{
-        quire_contract_runtime::CampaignReport::new(
-            quire_contract_runtime::ContractIdentity::new(
-                quire_contract_runtime::RequirementId::new("FR-034"),
-                quire_contract_runtime::RevisionId::new("9"),
+    fn report() -> filament_contract_runtime::CampaignReport<'static> {{
+        filament_contract_runtime::CampaignReport::new(
+            filament_contract_runtime::ContractIdentity::new(
+                filament_contract_runtime::RequirementId::new("FR-034"),
+                filament_contract_runtime::RevisionId::new("9"),
             ),
         )
     }}
@@ -986,7 +986,7 @@ mod generated_checks {{
         assert_eq!(zero.rejection_rate(), None);
 
         let encoded = br#"{{"schemaVersion":"runtime.campaign-snapshot/v1","requirement":"FR-034","revision":"9","counterSemantics":"saturating-u64-v1","counts":{{"accepted":18446744073709551615,"rejected":0,"failed":0,"discarded":0}}}}"#;
-        let decoded = quire_contract_runtime::decode_campaign_snapshot(encoded).unwrap();
+        let decoded = filament_contract_runtime::decode_campaign_snapshot(encoded).unwrap();
         let saturated = {summary_from_snapshot}(&decoded.snapshot());
         assert_eq!(saturated.attempted, u64::MAX);
         assert_eq!(saturated.discard_rate(), None);
@@ -1156,10 +1156,10 @@ pub fn {oracle}({oracle_parameters}) -> bool {{
             ),
         );
         let strategy = super::{module}::{strategy}();
-        let mut report = quire_contract_runtime::CampaignReport::new(
-            quire_contract_runtime::ContractIdentity::new(
-                quire_contract_runtime::RequirementId::new({requirement:?}),
-                quire_contract_runtime::RevisionId::new({revision:?}),
+        let mut report = filament_contract_runtime::CampaignReport::new(
+            filament_contract_runtime::ContractIdentity::new(
+                filament_contract_runtime::RequirementId::new({requirement:?}),
+                filament_contract_runtime::RevisionId::new({revision:?}),
             ),
         );
         match super::{module}::{runner}(&mut runner, &strategy, &mut report).unwrap_err() {{
@@ -1174,8 +1174,8 @@ pub fn {oracle}({oracle_parameters}) -> bool {{
                 assert!(partner.map_or(true, |value| (0..=1000).contains(&value)));
                 assert!(matches!(
                     (expected, observed),
-                    (super::{module}::{expectation_type}::Holds, quire_contract_runtime::VerdictKind::{false_kind})
-                        | (super::{module}::{expectation_type}::Violated, quire_contract_runtime::VerdictKind::Passed)
+                    (super::{module}::{expectation_type}::Holds, filament_contract_runtime::VerdictKind::{false_kind})
+                        | (super::{module}::{expectation_type}::Violated, filament_contract_runtime::VerdictKind::Passed)
                 ));
             }}
             other => panic!("expected conformance mismatch, got {{other:?}}"),
@@ -1330,10 +1330,10 @@ fn tc_020_all_clause_kinds_and_populations_run_without_discards() {
                 ),
             );
             let strategy = super::{module}::{strategy}();
-            let mut report = quire_contract_runtime::CampaignReport::new(
-                quire_contract_runtime::ContractIdentity::new(
-                    quire_contract_runtime::RequirementId::new({requirement:?}),
-                    quire_contract_runtime::RevisionId::new({revision:?}),
+            let mut report = filament_contract_runtime::CampaignReport::new(
+                filament_contract_runtime::ContractIdentity::new(
+                    filament_contract_runtime::RequirementId::new({requirement:?}),
+                    filament_contract_runtime::RevisionId::new({revision:?}),
                 ),
             );
             let summary = super::{module}::{runner}(&mut runner, &strategy, &mut report).unwrap();
@@ -1384,10 +1384,10 @@ fn tc_020_all_clause_kinds_and_populations_run_without_discards() {
                     r#"
     #[test]
     fn seeded_report_rates_include_prior_accepted_rejected_and_discarded_counts() {{
-        let mut report = quire_contract_runtime::CampaignReport::new(
-            quire_contract_runtime::ContractIdentity::new(
-                quire_contract_runtime::RequirementId::new("FR-100"),
-                quire_contract_runtime::RevisionId::new("3"),
+        let mut report = filament_contract_runtime::CampaignReport::new(
+            filament_contract_runtime::ContractIdentity::new(
+                filament_contract_runtime::RequirementId::new("FR-100"),
+                filament_contract_runtime::RevisionId::new("3"),
             ),
         );
         let prior = super::{module}::{census_runner}(&mut report).unwrap();
@@ -1424,10 +1424,10 @@ fn tc_020_all_clause_kinds_and_populations_run_without_discards() {
 
     #[test]
     fn identity_mismatch_is_not_masked_by_a_prior_discard() {{
-        let mut report = quire_contract_runtime::CampaignReport::new(
-            quire_contract_runtime::ContractIdentity::new(
-                quire_contract_runtime::RequirementId::new("FR-WRONG"),
-                quire_contract_runtime::RevisionId::new("0"),
+        let mut report = filament_contract_runtime::CampaignReport::new(
+            filament_contract_runtime::ContractIdentity::new(
+                filament_contract_runtime::RequirementId::new("FR-WRONG"),
+                filament_contract_runtime::RevisionId::new("0"),
             ),
         );
         report.record_discard();

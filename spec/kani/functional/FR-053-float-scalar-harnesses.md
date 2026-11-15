@@ -45,9 +45,9 @@ parameters typed `float32` or `float64`, and the planned prerequisites below are
 available, CG SHALL generate a bounded Kani harness that proves the generated IEEE
 oracle of [FR-014](../../oracle/functional/FR-014-exact-scalar-oracles.md) agrees
 with an independent native expression of the same operation over every symbolic
-operand bit pattern. The operations are the comparisons `quire.op.ieee.numeric_equal`,
-`.total_order` and `.bit_identical`, the arithmetic `quire.op.ieee.float32.add`,
-`.sub`, `.mul`, `.div` and the `float64` forms, and the planned `quire.op.ieee.float32.sqrt`,
+operand bit pattern. The operations are the comparisons `filament.op.ieee.numeric_equal`,
+`.total_order` and `.bit_identical`, the arithmetic `filament.op.ieee.float32.add`,
+`.sub`, `.mul`, `.div` and the `float64` forms, and the planned `filament.op.ieee.float32.sqrt`,
 `.fma` and the `float64` forms. This is the IEEE float row of the IR-269 scalar renderer
 that TC-030's IEEE-float scalar row settles today as `OperationNotRendered`, and the
 specification part of the row that this requirement implements. It is not a new
@@ -80,7 +80,7 @@ P3, which is delivered.
   unbounded set, so Contract IR refuses a package with an unbounded float under a
   bounds-required profile, and AC-3's unpinned-operand refusal is that Contract IR record.
 - P3 (ticket IR-1502) is the FR-014 extension that derives and generates an oracle
-  for `quire.op.ieee.float32.sqrt`, `.float64.sqrt`, `.float32.fma` and `.float64.fma`.
+  for `filament.op.ieee.float32.sqrt`, `.float64.sqrt`, `.float32.fma` and `.float64.fma`.
   Delivered under IR-1502: FR-014 derives and generates these four identities
   (FR-014-AC-72..80, tagged and run under TC-024). The owner supports both (`IeeeOperation::SquareRoot`,
   `IeeeOperation::FusedMultiplyAdd`), and Contract IR catalogues both identities, so
@@ -92,9 +92,9 @@ work under this requirement, not prerequisites. The IR-1436 review orders the Me
 tractability work (IR-844, IR-241) before the carriers because every owner oracle
 charges a Meter; that ordering is context and adds no criterion here.
 
-Outside this requirement: `quire.op.ieee.to_float32` and `.to_float64` (width
-conversions, a different operation kind), `quire.op.ieee.from_exact`,
-`quire.op.ieee.to_rational`, `quire.op.ieee.float32.negate`, `quire.op.ieee.float64.negate` and every other identity FR-014
+Outside this requirement: `filament.op.ieee.to_float32` and `.to_float64` (width
+conversions, a different operation kind), `filament.op.ieee.from_exact`,
+`filament.op.ieee.to_rational`, `filament.op.ieee.float32.negate`, `filament.op.ieee.float64.negate` and every other identity FR-014
 refuses or does not derive keep their FR-014 dispositions and, for a claim, TC-030's.
 A float literal operand and an operand that is not a parameter are outside this row
 (AC-1).
@@ -378,7 +378,7 @@ parts of AC-1, AC-4, AC-5, AC-9, AC-10, AC-13 and AC-14 were conditional on P3 (
 
 | ID | Criteria | Verification |
 | --- | --- | --- |
-| FR-053-AC-1 | Each admitted `quire.op.ieee.numeric_equal`, `.total_order` and `.bit_identical` node over two distinct parameters of one float width selects a harness naming the operation identity, width and operand forms from the admitted node; the harness proves the carrier's native comparison and the expected side is an independent native expression, not a second call of the oracle. Each `quire.op.ieee.float32` and `float64` `add`, `sub`, `mul`, `div`, `sqrt` and `fma` node selects no harness and is refused with the named capability `float.<op>.not_kani_tractable` carrying its measured disposition (planner ruling: no arithmetic combination has all three filament-exact harnesses Verified). `quire.op.ieee.to_float32`, `.to_float64`, `.from_exact`, `.to_rational`, `.float32.negate`, `.float64.negate` and every other identity select no harness and keep their existing dispositions. A float literal operand is accounted `unsupported` naming `float.literal_operand` (`FloatLiteralOperand`) and an operand that is neither a parameter nor a literal naming `float.operand_not_parameter` (FR-015's `OperandNotSupported`), each with no harness; a same-parameter operand pair, operands of differing widths and a path condition are refused with their own named capabilities. | Test |
+| FR-053-AC-1 | Each admitted `filament.op.ieee.numeric_equal`, `.total_order` and `.bit_identical` node over two distinct parameters of one float width selects a harness naming the operation identity, width and operand forms from the admitted node; the harness proves the carrier's native comparison and the expected side is an independent native expression, not a second call of the oracle. Each `filament.op.ieee.float32` and `float64` `add`, `sub`, `mul`, `div`, `sqrt` and `fma` node selects no harness and is refused with the named capability `float.<op>.not_kani_tractable` carrying its measured disposition (planner ruling: no arithmetic combination has all three filament-exact harnesses Verified). `filament.op.ieee.to_float32`, `.to_float64`, `.from_exact`, `.to_rational`, `.float32.negate`, `.float64.negate` and every other identity select no harness and keep their existing dispositions. A float literal operand is accounted `unsupported` naming `float.literal_operand` (`FloatLiteralOperand`) and an operand that is neither a parameter nor a literal naming `float.operand_not_parameter` (FR-015's `OperandNotSupported`), each with no harness; a same-parameter operand pair, operands of differing widths and a path condition are refused with their own named capabilities. | Test |
 | FR-053-AC-2 | Each operand is drawn as one `i64` bit pattern, `0..=0xFFFF_FFFF` for `float32` and every `i64` for `float64`, built through `IeeeValue::binary32(u32)` or `binary64(u64)`. Every pattern is reachable exactly once, including both zeros, subnormals, both infinities and every NaN sign and payload, and a host enumeration of the stated class-boundary set (both signs; exponent field 0, 1, the bias, the largest finite and all ones; fraction 0, 1, the largest below the quiet bit, the quiet bit, the quiet bit plus one and all ones) at each width, plus the `i64` values 2^32, -1, `i64::MIN` and `i64::MAX` at `float32`, matches the encoding: an in-range pattern is admitted once and decodes to the same bits, and an out-of-range `float32` value is excluded. Each of these fails the correspondence check (FSpec FR-196-AC-5): an assumption of non-negative `float64` bits (point `0x8000000000000000`), an assumption excluding NaN (`QN0`, `SN1`), excluding infinities (`INF+`), excluding subnormals or zero (`SUBMIN`, `Z+`), a `float32` draw left unconstrained above `u32::MAX` (the value 2^32 aliases `Z+`), a `float32` draw decoded as a signed 32-bit value (`0x80000000`), and a decode that canonicalizes a NaN (`SN1` must keep its payload). | Test |
 | FR-053-AC-3 | A comparison operand whose type reaches no `float_rounding` bound yields source-associated `requires-bound` naming the operand's type node with no harness; Contract IR raises `requires_bound` for a float operand with no `float_rounding` bound, and CG reports that record's type node rather than applying a check of its own. An operand whose `float_rounding` bound is present but unreadable yields the named `float.rounding_unreadable` with its cause and no harness. No result bound is required, read or reported for a comparison, because a comparison has none, and a `float_rounding` pin narrows no operand domain. An arithmetic node reaches no bound check: it is refused by AC-1 first. | Test |
 | FR-053-AC-4 | For every supported comparison the oracle and native expression agree on the Boolean, ordered charges, the denied next charge and consumed counters, at zero, exact and short budgets at each charge point the operation reaches on that input. For every supported arithmetic operation the harness proves the completed value's bits under `nearest-even` (and the NaN result's sign, quietness and payload and the `invalid` flag under every spelling) and the provenance of a completed result, and that only `exact` refuses (it cannot tell a refusal from a completed result under `exact`, and a limit is not drawn); the result bits under the other spellings, the typed outcome at a limit, the flags other than `invalid`, the ordered charges (including the result-unit charge), the denied next charge and the consumed counters at zero, exact and short budgets are proved by AC-13's host differential and not by the harness. The charge points are: `ieee.operands`, `ieee.exact-intermediate`, `ieee.round` and `ieee.result-retain` as the Behavior list orders them, with the arity of `sqrt` and `fma`. Classification-decided inputs (NaN, infinity, invalid operation, division by zero) charge only `ieee.operands` and `ieee.result-retain`. The reference neither runs the generated oracle twice nor bridges through Runtime. | Test |
@@ -417,7 +417,7 @@ parts of AC-1, AC-4, AC-5, AC-9, AC-10, AC-13 and AC-14 were conditional on P3 (
 ## Status
 
 Implemented. Scope ruling (planner): the row is the supported combinations, the three
-comparisons `quire.op.ieee.numeric_equal`, `.total_order` and `.bit_identical` at `binary32` and
+comparisons `filament.op.ieee.numeric_equal`, `.total_order` and `.bit_identical` at `binary32` and
 `binary64`, which are the combinations whose filament-exact harnesses are Verified (FR-405 Behavior
 15). `generate_float_scalar_harness` (src/kani/generate/float_scalar.rs), routed through
 `generate_routed`, settles a comparison node of a genuine FSL source admitted through Contract IR to

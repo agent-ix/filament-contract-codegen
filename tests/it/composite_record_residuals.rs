@@ -6,8 +6,8 @@ use super::{
     composite_original_eq,
 };
 use filament_contract_codegen::{ClaimDisposition, CompositeBuildError};
+use filament_contract_model::CheckedOccurrenceRole;
 use ix_trace_rs::trace;
-use quire_contract_model::CheckedOccurrenceRole;
 
 #[trace("TC-048")]
 #[test]

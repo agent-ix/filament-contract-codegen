@@ -2,7 +2,7 @@
 
 use std::collections::BTreeSet;
 
-use quire_contract_model::{ClauseRef, RequirementRef, SourceSpan};
+use filament_contract_model::{ClauseRef, RequirementRef, SourceSpan};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -231,15 +231,15 @@ impl {domain_type} {{\n\
     /// Checks this generated domain expectation against a tri-state harness verdict.\n\
     pub fn verify(\n\
         self,\n\
-        verdict: quire_contract_runtime::VerdictKind,\n\
+        verdict: filament_contract_runtime::VerdictKind,\n\
     ) -> proptest::test_runner::TestCaseResult {{\n\
         let matches = match self {{\n\
             Self::Accepted => matches!(\n\
                 verdict,\n\
-                quire_contract_runtime::VerdictKind::Passed\n\
-                    | quire_contract_runtime::VerdictKind::FailedPostcondition\n\
+                filament_contract_runtime::VerdictKind::Passed\n\
+                    | filament_contract_runtime::VerdictKind::FailedPostcondition\n\
             ),\n\
-            Self::Rejected => verdict == quire_contract_runtime::VerdictKind::RejectedPrecondition,\n\
+            Self::Rejected => verdict == filament_contract_runtime::VerdictKind::RejectedPrecondition,\n\
         }};\n\
         if matches {{\n\
             Ok(())\n\
@@ -395,12 +395,12 @@ impl {domain_type} {{\n\
     /// Checks this generated domain expectation against a tri-state harness verdict.\n\
     pub fn verify(\n\
         self,\n\
-        verdict: quire_contract_runtime::VerdictKind,\n\
+        verdict: filament_contract_runtime::VerdictKind,\n\
     ) -> proptest::test_runner::TestCaseResult {{\n\
         let matches = matches!(\n\
             verdict,\n\
-            quire_contract_runtime::VerdictKind::Passed\n\
-                | quire_contract_runtime::VerdictKind::FailedPostcondition\n\
+            filament_contract_runtime::VerdictKind::Passed\n\
+                | filament_contract_runtime::VerdictKind::FailedPostcondition\n\
         );\n\
         if matches {{\n\
             Ok(())\n\

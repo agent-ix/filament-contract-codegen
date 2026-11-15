@@ -172,7 +172,7 @@ pub(super) enum LetType {
 #[derive(Clone, Debug)]
 pub(super) enum Init {
     Expression(ExprText),
-    ScalarMeter(quire_exact::ScalarLimits),
+    ScalarMeter(filament_exact::ScalarLimits),
     NativeAdmission {
         checked: ExprText,
         stage: NativeAdmissionStage,

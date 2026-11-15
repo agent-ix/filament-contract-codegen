@@ -346,7 +346,7 @@ by filament-integration IR-842.
    one entry-token probe inside each consequent's region; dropping or duplicating a region leaves the
    declared count unchanged (FR-014-AC-36).
 3. From a FSL-emitted, strict-reader-admitted V2 state-clause package, select a clause whose
-   `quire.op.state.clause` body's third argument references a separate Boolean expression node.
+   `filament.op.state.clause` body's third argument references a separate Boolean expression node.
    Request the clause node id and assert that its descriptor and generated `ir_confirmed`
    `Outcome<bool>` oracle evaluate the referenced expression, while the claim and oracle retain
    the clause node id rather than the expression node id. Exercise current and `pre(...)` field
@@ -359,7 +359,7 @@ by filament-integration IR-842.
 
 1. Author FSL source with a bounded `amount` parameter and a clause comparison
    against literal `0` that the checker lowers as a literal reference wrapped by
-   `quire.op.numeric.narrow`. Use FSL's public emitter and Contract IR's strict
+   `filament.op.numeric.narrow`. Use FSL's public emitter and Contract IR's strict
    reader; inspect the admitted conversion's `type_argument`, sole literal
    reference and target integer range. Select the clause identity through public
    CG and require an `ir_confirmed` generated oracle. Against independent
@@ -623,5 +623,5 @@ refused-list controls of `src/oracle/scalar/derive/tests.rs`.
    including a zero divisor and `i64::MIN rem -1`.
 4. Mutation controls: render `rem` as `modulo`, and with
    `DivisionMember::Quotient`; each must fail step 3. Assert that
-   `quire.op.integer.rem` is no longer in the refused-identity list and that
+   `filament.op.integer.rem` is no longer in the refused-identity list and that
    every other refused identity keeps its refusal.

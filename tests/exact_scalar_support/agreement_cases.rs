@@ -41,10 +41,10 @@ use generated::{
     text_not_equal, OracleStop,
 };
 use ix_trace_rs::trace;
-use quire_exact::Quantity;
-use quire_exact::{IllTyped, Integer, Meter, Outcome, ScalarLimits, Text};
-use quire_semantic_value::enumeration::EnumValue;
-use quire_semantic_value::quantity::{IdentifiedUnit, QuantityRefusal, UnitQuantity};
+use filament_exact::Quantity;
+use filament_exact::{IllTyped, Integer, Meter, Outcome, ScalarLimits, Text};
+use filament_semantic_value::enumeration::EnumValue;
+use filament_semantic_value::quantity::{IdentifiedUnit, QuantityRefusal, UnitQuantity};
 
 /// Generated oracles in `ComparisonOperator::ALL` order.
 type Compare<T> = fn(&T, &T, &mut Meter) -> Result<Outcome<bool>, OracleStop>;
@@ -106,7 +106,7 @@ fn assert_rows_agreed(rows: &[(&str, usize)]) {
 // Deliberately untraced: this exists as `render_scalar`'s (`src/kani/generate/scalar.rs`) F1
 // mutation-testing vehicle, not to satisfy a numbered acceptance criterion. It runs the real
 // generated oracle directly -- no Kani/CBMC involved -- to prove, by actual execution, that
-// `quire.op.integer.add` over `[-1000,1000]` refuses an out-of-domain result rather than
+// `filament.op.integer.add` over `[-1000,1000]` refuses an out-of-domain result rather than
 // completing it: exactly the fact `render_scalar`'s rendered `sound` assertion now checks. The
 // accompanying generator mutation (`integer_arithmetic_bound` in `src/oracle/scalar/render.rs`, forcing
 // its `Bounded` arm to also emit `None`) is not committed; it is a one-time proof, captured in
@@ -1375,7 +1375,7 @@ fn tc_024_tc193_ieee_oracles_agree() {
 #[trace("FR-014-AC-9", "TC-024")]
 #[test]
 fn tc_024_operand_width_mismatch_is_a_typed_stop_before_any_charge() {
-    use quire_exact::{IeeeValue, Meter, ScalarLimits};
+    use filament_exact::{IeeeValue, Meter, ScalarLimits};
     let mut meter = Meter::new(ScalarLimits {
         integer_bits: u64::MAX,
         decimal_digits: u64::MAX,
@@ -1523,7 +1523,7 @@ fn conversion_fixture() -> rt::Fixture {
 }
 
 fn compound_source(f: &mut rt::Fixture, magnitude: i64, terms: &[(&str, i64)]) -> Quantity {
-    use quire_semantic_value::quantity::{result_unit, UnitOperation};
+    use filament_semantic_value::quantity::{result_unit, UnitOperation};
     let root = f.unit("m");
     let mut unit = result_unit(UnitOperation::Divide, root.unit(), root.unit()).unwrap();
     for (name, exponent) in terms {

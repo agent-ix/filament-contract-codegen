@@ -10,22 +10,22 @@ use super::{
 use ix_trace_rs::trace;
 use std::{fs, process::Command};
 
-const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nrecord Point { x: Boolean; }\nrecord OtherPoint { x: Boolean; }\nfunction subject using v(a: Boolean, b: Boolean): Boolean pure { a = b }\n";
+const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nrecord Point { x: Boolean; }\nrecord OtherPoint { x: Boolean; }\nfunction subject using v(a: Boolean, b: Boolean): Boolean pure { a = b }\n";
 
 #[trace("TC-029", "FR-018-AC-48", "FR-018-AC-49")]
 #[test]
 fn emitted_preparation_retains_native_errors_and_semantic_precedence() {
-    let compiled = qsl_replay::compile_package(
-        qsl_replay::CompileUnit {
-            source: qsl_replay::SourceIdentity::new("test", "equality-preparation.native"),
+    let compiled = fsl_replay::compile_package(
+        fsl_replay::CompileUnit {
+            source: fsl_replay::SourceIdentity::new("test", "equality-preparation.native"),
             package_name: "equality-native-preparation".to_owned(),
             path: "equality-preparation.native",
             bytes: SOURCE.as_bytes(),
         },
         [],
-        &qsl_replay::DependencyInput::default(),
-        qsl_replay::StageLimits::default(),
-        qsl_replay::ReplayLimits::default(),
+        &fsl_replay::DependencyInput::default(),
+        fsl_replay::StageLimits::default(),
+        fsl_replay::ReplayLimits::default(),
     )
     .expect("the public producer issues real component identities");
     let packet: serde_json::Value = serde_json::from_slice(compiled.bytes()).unwrap();
@@ -33,7 +33,7 @@ fn emitted_preparation_retains_native_errors_and_semantic_precedence() {
     let node_id = serde_json::from_value(
         nodes
             .iter()
-            .find(|node| node["body"]["operation"]["identity"] == "quire.op.boolean.eq")
+            .find(|node| node["body"]["operation"]["identity"] == "filament.op.boolean.eq")
             .unwrap()["node_id"]
             .clone(),
     )
@@ -100,7 +100,7 @@ fn emitted_preparation_retains_native_errors_and_semantic_precedence() {
     fs::write(&library, format!("{emitted}\n{NATIVE_CHECKS}")).unwrap();
     fs::write(scratch.join("source.native"), SOURCE).unwrap();
     fs::write(scratch.join("checked-package.json"), compiled.bytes()).unwrap();
-    let manifest = format!("{}\n[dev-dependencies]\nqsv-failing-allocator = {{ git = \"https://github.com/agent-ix/quire-semantic-value\", branch = \"main\" }}\nquire-exact = {{ {}, features = [\"test-support\"] }}\n", crate::core::profile::equality_oracle_crate_manifest("equality-native-preparation"), crate::core::profile::EXACT_DEPENDENCY_SOURCE);
+    let manifest = format!("{}\n[dev-dependencies]\nqsv-failing-allocator = {{ git = \"https://github.com/agent-ix/filament-semantic-value\", branch = \"main\" }}\nfilament-exact = {{ {}, features = [\"test-support\"] }}\n", crate::core::profile::equality_oracle_crate_manifest("equality-native-preparation"), crate::core::profile::EXACT_DEPENDENCY_SOURCE);
     fs::write(scratch.join("Cargo.toml"), manifest).unwrap();
     fs::copy(root.join("Cargo.lock"), scratch.join("Cargo.lock")).unwrap();
     let metadata = Command::new(env!("CARGO"))
@@ -147,11 +147,11 @@ const LIMITS: exact::ScalarLimits = exact::ScalarLimits {
 };
 #[test]
 fn preparation_preserves_owner_errors_and_semantics() {
-    let compiled = qsl_replay::compile_admitted(qsl_replay::CompileUnit {
-        source: qsl_replay::SourceIdentity::new("test", "equality-preparation.native"),
+    let compiled = fsl_replay::compile_admitted(fsl_replay::CompileUnit {
+        source: fsl_replay::SourceIdentity::new("test", "equality-preparation.native"),
         package_name: "equality-native-preparation".to_owned(), path: "equality-preparation.native",
         bytes: include_bytes!("../source.native"),
-    }, [], &qsl_replay::DependencyInput::default(), qsl_replay::StageLimits::default(), qsl_replay::ReplayLimits::default()).unwrap();
+    }, [], &fsl_replay::DependencyInput::default(), fsl_replay::StageLimits::default(), fsl_replay::ReplayLimits::default()).unwrap();
     let context = compiled.context();
     let direct_environment = sv::TypeEnvironment::default();
     qsv_failing_allocator::arm(0);
@@ -175,7 +175,7 @@ fn preparation_preserves_owner_errors_and_semantics() {
     let right = exact::Value::Boolean(false);
     let mut meter = exact::Meter::new(LIMITS);
     let actual = oracle_component(&prepared, &left, &right, &mut meter);
-    let checked = direct_environment.check_equality(sv::EqualityOperator::Equal, sv::EqualityOperand::typed(exact::ValueType::Boolean), sv::EqualityOperand::typed(exact::ValueType::Boolean), &quire_semantic_value::enumeration::EnumMemberIndex::default()).unwrap();
+    let checked = direct_environment.check_equality(sv::EqualityOperator::Equal, sv::EqualityOperand::typed(exact::ValueType::Boolean), sv::EqualityOperand::typed(exact::ValueType::Boolean), &filament_semantic_value::enumeration::EnumMemberIndex::default()).unwrap();
     let mut direct_meter = exact::Meter::new(LIMITS);
     assert_eq!(actual, checked.evaluate(&direct_environment, &left, &right, &mut direct_meter));
     assert_eq!(actual, exact::Outcome::Completed(false));

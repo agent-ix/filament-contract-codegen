@@ -20,7 +20,7 @@ use std::collections::BTreeSet;
 use filament_contract_codegen::{
     CompositeEqualityItem, EqualityOperandDescriptor, EqualityOperatorKind,
 };
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedNodeId, CheckedNodePathSegment, CheckedPackageEvidence, CheckedPackageReadLimits,
     CheckedPackageV2, CheckedPackageV2ReadResult,
 };
@@ -240,7 +240,7 @@ fn family_of(code: u32) -> &'static str {
     }
 }
 
-/// The `quire.op.<family>.eq` operation FR-093's `Equality` row lowers an equality over
+/// The `filament.op.<family>.eq` operation FR-093's `Equality` row lowers an equality over
 /// `family` operands to: Contract IR checks every operand's family against the operation's
 /// declared operands, so the identity must match the operands' own type. `text` carries its
 /// `text_profile` law and mode, selected by [`PackageBuilder::select_definition`]; `structural`
@@ -257,13 +257,13 @@ fn equality_operation(family: &str) -> Value {
     };
     match family {
         "text" => json!({
-            "identity": "quire.op.text.eq",
+            "identity": "filament.op.text.eq",
             "laws": [{"role": "text_profile", "definition": text_profile_definition()}],
             "mode": {"kind": "text_profile", "value": "nfc"},
             "member": null,
             "leaves": [],
         }),
-        other => plain(&format!("quire.op.{other}.eq")),
+        other => plain(&format!("filament.op.{other}.eq")),
     }
 }
 
@@ -290,7 +290,7 @@ fn operation_for(code: u32) -> Value {
 /// The catalog's `text_profile` law definition, read from the catalog's home.
 fn text_profile_definition() -> Value {
     let catalog: Value = serde_json::from_str(
-        quire_verification_contracts::operation_catalog::CHECKED_OPERATION_CATALOG_V1,
+        filament_verification_contracts::operation_catalog::CHECKED_OPERATION_CATALOG_V1,
     )
     .expect("the operation catalog is JSON");
     catalog["law_roles"]["text_profile"][0].clone()
@@ -365,7 +365,7 @@ pub fn binary_body(left_type: u32, right_type: u32) -> Value {
 }
 
 /// [`binary_body`] over two operands of the base package's `Example.Phase` enum, which has no
-/// corpus code: its own `quire.op.enum.eq` is the operation.
+/// corpus code: its own `filament.op.enum.eq` is the operation.
 pub fn binary_body_enum() -> Value {
     application(
         "binary",
@@ -375,13 +375,13 @@ pub fn binary_body_enum() -> Value {
     )
 }
 
-/// The body of a `quire.op.numeric.convert` application: `argument` converted to `target`,
+/// The body of a `filament.op.numeric.convert` application: `argument` converted to `target`,
 /// with FSL's `type_argument` member naming the `target` type node as its declaration.
 fn convert_body(argument: Value, target: u32) -> Value {
     application(
         "convert",
         json!({
-            "identity": "quire.op.numeric.convert",
+            "identity": "filament.op.numeric.convert",
             "laws": [],
             "mode": null,
             "member": {"kind": "type_argument", "declaration": node_ref(&key(target))},
@@ -479,7 +479,7 @@ pub fn reference_model_document() -> Value {
         "package": {"identity": REFERENCE_MODEL, "version": "1"},
         "constructs": [{
             "kind": {"module": REFERENCE_MODEL, "name": "entity"},
-            "construct": {"meaning": "quire.meaning.model.object-type/v1"},
+            "construct": {"meaning": "filament.meaning.model.object-type/v1"},
         }],
         "types": [{
             "identity": REFERENCE_OBJECT, "displayName": "Point",
@@ -505,7 +505,7 @@ impl Default for PackageBuilder {
             .expect("nodes")
             .push(json!({
                 "node_id": node_ref(&root_id),
-                "schema_version": "quire.checked-semantic-graph/v2",
+                "schema_version": "filament.checked-semantic-graph/v2",
                 "node_tag": "model",
                 "semantic_form": "model_root",
                 "semantic_type": node_ref(&root_id),
@@ -592,7 +592,7 @@ impl PackageBuilder {
             .expect("nodes")
             .push(json!({
                 "node_id": node_id,
-                "schema_version": "quire.checked-semantic-graph/v2",
+                "schema_version": "filament.checked-semantic-graph/v2",
                 "node_tag": "model",
                 "semantic_form": "object_type",
                 "semantic_type": node_id,
@@ -667,7 +667,7 @@ impl PackageBuilder {
             .expect("nodes");
         let mut node = json!({
             "node_id": node_id,
-            "schema_version": "quire.checked-semantic-graph/v2",
+            "schema_version": "filament.checked-semantic-graph/v2",
             "node_tag": tag,
             "semantic_form": form,
             "semantic_type": semantic_type_id,
@@ -793,7 +793,7 @@ impl PackageBuilder {
     }
 
     /// An equality node `code` whose left operand is a conversion, spelled as FSL spells
-    /// `convert<T>`: a `quire.op.numeric.convert` `expression` node of its own (node
+    /// `convert<T>`: a `filament.op.numeric.convert` `expression` node of its own (node
     /// `CONVERSION_BASE + code`, typed `target`, with the `type_argument` member naming the
     /// `target` type node as its declaration) over the `source`-typed parameter, and a
     /// `reference` to that node as the equality's first argument. The right operand is the
@@ -972,7 +972,7 @@ impl PackageBuilder {
 
 fn evidence_for_wire(wire: &Value) -> CheckedPackageEvidence {
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     let selected_model = |identity: &str| {
         wire["semantic_graph"]["nodes"]
             .as_array()
@@ -1040,7 +1040,7 @@ pub fn read_malformed_body_wire(wire: Value) -> CheckedPackageV2ReadResult {
 // The composite/structural corpus (codes in `codes.rs`)
 // ---------------------------------------------------------------------------
 
-/// [`corpus_package`] plus [`E_REFERENCE_DIRECT`]: `quire.op.reference.eq` over a selected
+/// [`corpus_package`] plus [`E_REFERENCE_DIRECT`]: `filament.op.reference.eq` over a selected
 /// model-object reference and a record. Contract IR refuses the non-reference second operand,
 /// before the generator runs; `tc_029_ac7_a_direct_reference_operand_is_refused_by_ir_today`
 /// pins the reader refusal.
@@ -1187,7 +1187,7 @@ pub fn application_operand_package() -> PackageBuilder {
         application(
             "binary",
             json!({
-                "identity": "quire.op.rational.div",
+                "identity": "filament.op.rational.div",
                 "laws": [],
                 "mode": null,
                 "member": null,
@@ -1515,7 +1515,7 @@ fn corpus_package_with_nested_ieee() -> PackageBuilder {
     // it reads its node id.
     let clause_profile = json!({
         "authority": "agent-ix",
-        "identity": "quire.temporal.event-position.false-extension/v1",
+        "identity": "filament.temporal.event-position.false-extension/v1",
     });
     builder.select_profile("temporal_profile", clause_profile.clone());
     builder.application_node_tagged(
@@ -1526,7 +1526,7 @@ fn corpus_package_with_nested_ieee() -> PackageBuilder {
         application(
             "temporal_formula",
             json!({
-                "identity": "quire.op.temporal.true",
+                "identity": "filament.op.temporal.true",
                 "laws": [], "mode": null, "member": null, "leaves": [],
             }),
             T_BOOLEAN,
@@ -1542,7 +1542,7 @@ fn corpus_package_with_nested_ieee() -> PackageBuilder {
         application(
             "temporal",
             json!({
-                "identity": "quire.op.temporal.clause",
+                "identity": "filament.op.temporal.clause",
                 "laws": [{"role": "temporal_profile", "definition": clause_profile}],
                 "mode": null, "member": null, "leaves": [],
             }),
@@ -1778,7 +1778,7 @@ pub fn recursive_items_package_from_wire(
 /// Compile independently authored recursive declarations through FSL's public
 /// replay facade and extend the admitted package with equality items.
 pub fn fsl_recursive_items_package() -> (PackageBuilder, CheckedNodeId, CheckedNodeId) {
-    use qsl_replay::{
+    use fsl_replay::{
         compile_package, CompileUnit, DependencyInput, ReplayLimits, SourceIdentity, StageLimits,
     };
 
@@ -1798,7 +1798,7 @@ pub fn fsl_recursive_items_package() -> (PackageBuilder, CheckedNodeId, CheckedN
     .expect("FSL compiles the recursive item types");
     let read = CheckedPackageV2::read(
         compiled.bytes(),
-        quire_contract_model::CheckedPackageReadLimits::bounded(),
+        filament_contract_model::CheckedPackageReadLimits::bounded(),
         &evidence(),
     );
     assert!(
@@ -1965,11 +1965,11 @@ pub fn golden_items() -> Vec<CompositeEqualityItem> {
 
 #[cfg(test)]
 mod fixture_identity_tests {
-    use ix_trace_rs::trace;
-    use quire_contract_model::{
+    use filament_contract_model::{
         CheckedPackageLimit, CheckedPackageRefusalCause, CheckedPackageRefusalCode, CheckedTerm,
         ClockConfiguration,
     };
+    use ix_trace_rs::trace;
 
     use super::*;
 

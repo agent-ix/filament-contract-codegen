@@ -1,24 +1,25 @@
 //! The Kani subject ABI vocabulary: binding roles, primitive types, integer bounds, the solver
 //! choice and the adapter option vector.
 
-use quire_contract_model::{IntegerDomain, OverflowPolicy};
+use filament_contract_model::{IntegerDomain, OverflowPolicy};
 use serde::{Deserialize, Serialize};
 
 use crate::oracle::operator_catalog::{OperandOrder, Operator, ScalarKaniOperator};
 
 /// The accounting limits supplied to every generated scalar harness meter.
-pub(crate) const SCALAR_HARNESS_LIMITS: quire_exact::ScalarLimits = quire_exact::ScalarLimits {
-    integer_bits: u64::MAX,
-    decimal_digits: u64::MAX,
-    scale_expansion: u64::MAX,
-    text_input_bytes: u64::MAX,
-    text_scalars: u64::MAX,
-    normalized_scalars: u64::MAX,
-    unit_edges: u64::MAX,
-    value_occurrences: u64::MAX,
-    work_units: u64::MAX,
-    result_units: u64::MAX,
-};
+pub(crate) const SCALAR_HARNESS_LIMITS: filament_exact::ScalarLimits =
+    filament_exact::ScalarLimits {
+        integer_bits: u64::MAX,
+        decimal_digits: u64::MAX,
+        scale_expansion: u64::MAX,
+        text_input_bytes: u64::MAX,
+        text_scalars: u64::MAX,
+        normalized_scalars: u64::MAX,
+        unit_edges: u64::MAX,
+        value_occurrences: u64::MAX,
+        work_units: u64::MAX,
+        result_units: u64::MAX,
+    };
 
 /// Operand count for the catalog's integer scalar Kani profile.
 ///

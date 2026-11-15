@@ -7,7 +7,7 @@ use super::{
     CompositeEqualityRefusal, CompositeShape, FieldDeclaration, Graph, GraphBody, ItemCheckError,
     NodeKey, Presence, TypeClosure, ValueType, COLLECTION_BOUNDS_MEMBERS,
 };
-use quire_contract_model::CheckedTerm;
+use filament_contract_model::CheckedTerm;
 use std::collections::{BTreeMap, BTreeSet};
 
 enum Frame {
@@ -31,7 +31,7 @@ enum Frame {
     FinishUnion {
         id: CheckedNodeId,
         key: NodeKey,
-        members: Vec<qsl_replay::AdmittedUnionMember>,
+        members: Vec<fsl_replay::AdmittedUnionMember>,
     },
     FinishTuple {
         id: CheckedNodeId,
@@ -136,7 +136,7 @@ fn collection_parts<Body: GraphBody>(
 
 /// Resolve a root within the item's shared closure and work counter.
 pub(super) fn resolve_type<Body: GraphBody>(
-    admitted: Option<&qsl_replay::AdmittedContext>,
+    admitted: Option<&fsl_replay::AdmittedContext>,
     graph: &Graph<'_, Body>,
     bounds_by_type: &BTreeMap<&CheckedNodeId, Vec<&CheckedSemanticNodeV2<Body>>>,
     closure: &mut TypeClosure,
@@ -481,8 +481,8 @@ pub(super) fn resolve_type<Body: GraphBody>(
                         return Err(mismatch().into());
                     }
                     built.push(
-                        quire_semantic_value::declaration::UnionMemberDeclaration::resolved(
-                            quire_exact::Identifier::new(member.identifier())
+                        filament_semantic_value::declaration::UnionMemberDeclaration::resolved(
+                            filament_exact::Identifier::new(member.identifier())
                                 .map_err(|_| mismatch())?,
                             payload,
                         ),

@@ -2,15 +2,15 @@
 
 use super::*;
 use admitted::composite_fixture as fixture;
-use ix_trace_rs::trace;
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2, CheckedPackageV2ReadResult,
 };
+use ix_trace_rs::trace;
 
-fn compilation() -> (CheckedPackageV2, qsl_replay::AdmittedContext) {
+fn compilation() -> (CheckedPackageV2, fsl_replay::AdmittedContext) {
     let compiled = fixture::compile(fixture::UNION_SOURCE, &Default::default());
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     let read = CheckedPackageV2::read(
         compiled.package().bytes(),
         CheckedPackageReadLimits::bounded(),
@@ -23,9 +23,9 @@ fn compilation() -> (CheckedPackageV2, qsl_replay::AdmittedContext) {
 }
 
 fn declaration<'a>(
-    context: &'a qsl_replay::AdmittedContext,
+    context: &'a fsl_replay::AdmittedContext,
     name: &str,
-) -> &'a qsl_replay::AdmittedComposite {
+) -> &'a fsl_replay::AdmittedComposite {
     context
         .composites()
         .find(|item| {
@@ -37,7 +37,7 @@ fn declaration<'a>(
         .expect("original declaration")
 }
 
-fn closure(package: &CheckedPackageV2, context: &qsl_replay::AdmittedContext) -> TypeClosure {
+fn closure(package: &CheckedPackageV2, context: &fsl_replay::AdmittedContext) -> TypeClosure {
     let graph = Graph::from_checked(package);
     let root = declaration(context, "Wrap");
     let id = package
@@ -215,7 +215,7 @@ fn union_closure_seals_owner_members_and_admits_each_nested_payload() {
     );
 }
 
-fn lookup_closure(context: &qsl_replay::AdmittedContext, node: &CheckedNodeId) -> TypeClosure {
+fn lookup_closure(context: &fsl_replay::AdmittedContext, node: &CheckedNodeId) -> TypeClosure {
     TypeClosure {
         node_keys: std::sync::Arc::new(
             context
@@ -274,7 +274,7 @@ fn union_lookup_and_seal_faults_keep_typed_causes_before_equality() {
     unknown
         .node_id
         .path
-        .push(quire_contract_model::CheckedNodePathSegment::Name(
+        .push(filament_contract_model::CheckedNodePathSegment::Name(
             "unknown".into(),
         ));
     let unknown_key = crate::core::ir::node_key::checked_node_key(&unknown.node_id)
@@ -312,20 +312,20 @@ fn union_lookup_and_seal_faults_keep_typed_causes_before_equality() {
             declaration: marker.key().to_string()
         })
     );
-    let library = qsl_replay::SuppliedLibrary {
+    let library = fsl_replay::SuppliedLibrary {
         identity: "admitted-composites".to_owned(),
-        source: qsl_replay::SourceIdentity::new("test", "admitted-composites.native"),
+        source: fsl_replay::SourceIdentity::new("test", "admitted-composites.native"),
         path: "admitted-composites.native".to_owned(),
         bytes: fixture::UNION_SOURCE.as_bytes().to_vec(),
     };
-    let dependencies = qsl_replay::DependencyInput::new([library]).unwrap();
-    let importer = qsl_replay::compile_admitted(
-        qsl_replay::CompileUnit {
-            source: qsl_replay::SourceIdentity::new("test", "union-importer.native"),
+    let dependencies = fsl_replay::DependencyInput::new([library]).unwrap();
+    let importer = fsl_replay::compile_admitted(
+        fsl_replay::CompileUnit {
+            source: fsl_replay::SourceIdentity::new("test", "union-importer.native"),
             package_name: "union-importer".to_owned(),
             path: "union-importer.native",
             bytes:
-                br#"language "ix:native" edition "1-draft"; profile v = "quire.value.complete/v1";
+                br#"language "ix:native" edition "1-draft"; profile v = "filament.value.complete/v1";
         import "admitted-composites" as u;
         function healthy using v(a: Boolean,b: Boolean): Boolean pure { a = b }"#,
         },

@@ -1,10 +1,10 @@
 //! Consume the public replay facade's checker-issued nominal identities.
 
 use super::{CompositeEqualityRefusal, ItemCheckError, OracleGenerationError, TypeClosure};
-use qsl_replay::{AdmittedCompositeForm, AdmittedContext, AdmittedLookupRefusal};
-use quire_contract_model::{CheckedNodeId, CheckedSemanticNodeV2, CheckedTerm};
-use quire_exact::{EnumShape, NodeKey, ValueType};
-use quire_semantic_value::enumeration::EnumDeclaration;
+use filament_contract_model::{CheckedNodeId, CheckedSemanticNodeV2, CheckedTerm};
+use filament_exact::{EnumShape, NodeKey, ValueType};
+use filament_semantic_value::enumeration::EnumDeclaration;
+use fsl_replay::{AdmittedCompositeForm, AdmittedContext, AdmittedLookupRefusal};
 
 /// Authenticated enum shape and its wire lookup recipe, retained for generation.
 #[derive(Clone)]
@@ -140,7 +140,7 @@ pub(super) struct CompositeBinding {
     pub node: CheckedNodeId,
     pub qualified: Vec<String>,
     pub form: AdmittedCompositeForm,
-    pub declaration: qsl_replay::AdmittedComposite,
+    pub declaration: fsl_replay::AdmittedComposite,
 }
 
 pub(super) fn composite_lookup_refusal(cause: AdmittedLookupRefusal) -> CompositeEqualityRefusal {
@@ -244,7 +244,7 @@ mod tests {
             );
             let unknown = NodeKey::new(
                 "test/unknown",
-                vec![quire_exact::PathSegment::Text("missing".to_owned())],
+                vec![filament_exact::PathSegment::Text("missing".to_owned())],
                 0,
             )
             .expect("structural unknown key");
@@ -297,7 +297,7 @@ mod tests {
 pub(crate) struct OwnerEnum {
     pub(crate) node: CheckedNodeId,
     pub(crate) shape: EnumShape,
-    pub(crate) members: Vec<quire_exact::EnumMember>,
+    pub(crate) members: Vec<filament_exact::EnumMember>,
     pub(crate) qualified: Vec<String>,
     pub(crate) cases: Vec<String>,
 }
@@ -314,7 +314,7 @@ pub(crate) enum OwnerEnumRefusal {
 /// Resolve `node`, an `enum` declaration of `graph`, through the owner's admitted context.
 pub(crate) fn owner_enum(
     admitted: Option<&AdmittedContext>,
-    graph: &crate::oracle::checked_graph::CheckedGraph<'_, quire_contract_model::CheckedTerm>,
+    graph: &crate::oracle::checked_graph::CheckedGraph<'_, filament_contract_model::CheckedTerm>,
     node: &CheckedNodeId,
 ) -> Result<OwnerEnum, OwnerEnumRefusal> {
     let context = admitted.ok_or(OwnerEnumRefusal::NoContext)?;
@@ -363,7 +363,7 @@ pub(crate) fn owner_enum(
             .map_err(|error| OwnerEnumRefusal::NotAdmitted(format!("{error:?}")))?;
         let rank = u32::try_from(position)
             .map_err(|_| OwnerEnumRefusal::NotAdmitted("member rank exceeds u32".to_owned()))?;
-        members.push(quire_exact::EnumMember::new(value.variant(), rank));
+        members.push(filament_exact::EnumMember::new(value.variant(), rank));
     }
     Ok(OwnerEnum {
         node: node.clone(),

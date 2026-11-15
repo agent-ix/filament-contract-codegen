@@ -13,13 +13,13 @@ kani`. Every job ended well inside the 10 minute probe cap.
 
 ## Corpus
 
-A V1-draft QSL source (`quire.value.complete/v1`), functions over `Float64[nearest-even]` and
+A V1-draft QSL source (`filament.value.complete/v1`), functions over `Float64[nearest-even]` and
 `Float32[nearest-even]` parameters whose body is `quire::value::ieee::numericEqual(a, b)`,
 `totalOrder(a, b)` or `bitIdentical(a, b)`, compiled by QSL, admitted by Contract IR, lowered through
 `generate_routed` by CG. QSL main at the time of the run (`f32450ae9`) admits float parameters, the operators `=` and `!=`
-(lowered to `quire.op.ieee.numeric_equal`), the three relation intrinsics, `+ - * /` over one
-width, and `convert` to `Rational` (its `qsl-replay` tests `compile_ieee_profile` and the fixtures
-under `qsl-replay/tests/fixtures/ieee_float`). A float ordering operator lowers to three
+(lowered to `filament.op.ieee.numeric_equal`), the three relation intrinsics, `+ - * /` over one
+width, and `convert` to `Rational` (its `fsl-replay` tests `compile_ieee_profile` and the fixtures
+under `fsl-replay/tests/fixtures/ieee_float`). A float ordering operator lowers to three
 `numeric_equal` nodes and one `total_order`, so it is not one row node. A float literal enters as a
 bit-constructor value node and is not a drawn parameter: this row refuses such an operand with
 `float.literal_operand`, and an expression operand with `float.operand_not_parameter`. QSL types a
@@ -32,7 +32,7 @@ comparison case run here; no synthetic IR is used anywhere in this evidence.
 ## Verdicts
 
 The harness draws each operand as one `i64` bit pattern (every `i64` for `float64`, `0..=0xFFFF_FFFF`
-for `float32`), builds `quire_exact::NativeFloat::binary64(bits as u64)` or `binary32(bits as u32)`,
+for `float32`), builds `filament_exact::NativeFloat::binary64(bits as u64)` or `binary32(bits as u32)`,
 calls `compare_native_float` under a meter that never denies and compares the Boolean with an
 expected side that reads the bit patterns directly (an exponent and fraction classification for
 `numeric_equal`, bit equality for `bit_identical`, the host's `total_cmp` for `total_order`).
@@ -62,9 +62,9 @@ mutant's bit identity on that witness.
 
 ## Not tractable and refused, no harness
 
-Every arithmetic identity of the row (`quire.op.ieee.float32|float64` `add`, `sub`, `mul`, `div`,
+Every arithmetic identity of the row (`filament.op.ieee.float32|float64` `add`, `sub`, `mul`, `div`,
 `sqrt`, `fma`) is a typed refusal naming its capability (`float.<op>.not_kani_tractable`) with no
-harness. The measured basis is quire-exact FR-405's evidence: an arithmetic operation is a supported
+harness. The measured basis is filament-exact FR-405's evidence: an arithmetic operation is a supported
 row only when its three harnesses (`nearest-even`, `exact`, and the four directed spellings) are
 all Verified. Only the `nearest-even` harnesses of `add` and `sub` at both widths and of `mul` at
 `binary32` are Verified; every `exact` and directed harness, and every harness of `div`, `sqrt` and
@@ -75,7 +75,7 @@ widths, `max_operand_bits` 32).
 Kani symbolic `f32` division finding. Kani's model of the host `f32` division is not bit-exact: at
 the operands `0x800000A9 / 0x9C873333` it returns a value other than the hardware's and the
 correctly rounded `0x1BA00000`. A host `/` is therefore not usable as the expected side of a `div`
-harness, and the bracketing of the quotient in exact integers that quire-exact's `div` harnesses use
+harness, and the bracketing of the quotient in exact integers that filament-exact's `div` harnesses use
 is solver-bound (no `div` verdict at either width). The finding is recorded in this document, in
 the `div` row of the tractability table and in the refusal detail of
 `float.div.not_kani_tractable`.

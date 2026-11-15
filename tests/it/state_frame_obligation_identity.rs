@@ -13,8 +13,8 @@ use filament_contract_codegen::{
     StateFrameIdentity, StateFrameObligations, StateFrameRecordError, StateFrameRefusal,
     StateFrameRequest, StateFrameRole, StateFrameRoleIdentities, StateFrameRoleIdentitiesError,
 };
+use fsl_replay::{ModelIdentity, ObligationIdentity};
 use ix_trace_rs::trace;
-use qsl_replay::{ModelIdentity, ObligationIdentity};
 use serde_json::{json, Value};
 
 use super::kani_obligations_state_frame::{
@@ -163,15 +163,19 @@ fn tc_025_a_key_nested_past_the_readable_depth_is_refused_when_written() {
     let twin = Twin::new();
     let fixture = emitted_fixture(&twin, BALANCE);
     let nest = |levels: usize| {
-        let mut key = quire_exact::NodeKey::new(
+        let mut key = filament_exact::NodeKey::new(
             "deep",
-            vec![quire_exact::PathSegment::Text("leaf".to_owned())],
+            vec![filament_exact::PathSegment::Text("leaf".to_owned())],
             0,
         )
         .expect("leaf key");
         for _ in 0..levels {
-            key = quire_exact::NodeKey::new("deep", vec![quire_exact::PathSegment::Node(key)], 0)
-                .expect("wrapper key");
+            key = filament_exact::NodeKey::new(
+                "deep",
+                vec![filament_exact::PathSegment::Node(key)],
+                0,
+            )
+            .expect("wrapper key");
         }
         ObligationIdentity::new(key, None, 0)
     };

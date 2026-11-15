@@ -20,7 +20,7 @@ relationships:
 
 ## Description
 
-A V2 clause whose body applies `quire.op.option.present` or `quire.op.option.value` is refused
+A V2 clause whose body applies `filament.op.option.present` or `filament.op.option.value` is refused
 today as `UnsupportedObligation::V2ClauseOperatorNotSupported` (FR-015-AC-42), because the V2
 clause arm admits only connectives, the six integer comparisons and integer add, subtract,
 multiply and negate. This requirement lowers those two operations over an operand whose checked
@@ -40,7 +40,7 @@ equality over option operands (FR-015-AC-69 to FR-015-AC-71, IR-264) is a differ
 
 ### Semantic authority
 
-FSL and the Contract IR own option definedness: a read of `quire.op.option.value` is admitted
+FSL and the Contract IR own option definedness: a read of `filament.op.option.value` is admitted
 only where a `Present` fact guards it, so an admitted package never carries an unguarded read
 (IR `OptionPresence` definedness). filament-exact owns the `Undefined::NoneValue` reason, which only
 a direct evaluation of an unlinked expression can meet. FR-014 states no option operation. This
@@ -61,7 +61,7 @@ below is a cost refusal.
 ## Inputs
 
 - An admitted V2 clause claim (FR-015-AC-40) whose body reads an operand of checked type
-  `Option<T>` as above, through `quire.op.option.present` or `quire.op.option.value`.
+  `Option<T>` as above, through `filament.op.option.present` or `filament.op.option.value`.
 - The clause's other operations, as FR-015-AC-40 and FR-015-AC-41 admit them.
 - The proof subject, backend and ceilings of FR-015, [FR-025](./FR-025-generated-subject-abi.md)
   and [FR-028](./FR-028-bounded-proof-ceilings.md).
@@ -91,25 +91,25 @@ bound by the rule of FR-015-AC-11.
 
 ### Operations
 
-When a clause applies `quire.op.option.present`, the oracle SHALL return the presence draw.
+When a clause applies `filament.op.option.present`, the oracle SHALL return the presence draw.
 
-When a clause applies `quire.op.option.value` to a present option, the oracle SHALL return the
+When a clause applies `filament.op.option.value` to a present option, the oracle SHALL return the
 payload, and a composite payload is projected leaf by leaf through the clause's own field or
 position reads.
 
-When a clause applies `quire.op.option.value` to an absent option, the oracle SHALL stop with
+When a clause applies `filament.op.option.value` to an absent option, the oracle SHALL stop with
 `ClauseStop::Undefined`.
 
 The harness SHALL NOT substitute a default value or a canonical payload for an absent read.
 
 The harness SHALL NOT add an assumption that excludes the absent draw.
 
-When a clause guards `quire.op.option.value` with `quire.op.option.present` through a
+When a clause guards `filament.op.option.value` with `filament.op.option.present` through a
 short-circuit connective (`implies`, `and`, `or`), the oracle SHALL evaluate the guarded operand
 only when the connective's left operand requires it, as the scalar clause oracle does for
 `implies`.
 
-When a clause guards `quire.op.option.value` as above and the option is absent, the harness
+When a clause guards `filament.op.option.value` as above and the option is absent, the harness
 SHALL complete the oracle without a stop.
 
 An admitted clause never carries an unguarded read, so the absent stop is a defensive path of the
@@ -132,8 +132,8 @@ itself an option, CG SHALL refuse the clause with reason `NestedOption`.
 When a clause reads a record field of optional presence (`field?`), CG SHALL refuse the clause
 with reason `NullablePresence`.
 
-When a clause applies a `quire.op.option.*` operation other than `present` and `value` (for
-example `quire.op.option.some`), CG SHALL refuse it with reason `OptionOperationNotLowered`
+When a clause applies a `filament.op.option.*` operation other than `present` and `value` (for
+example `filament.op.option.some`), CG SHALL refuse it with reason `OptionOperationNotLowered`
 naming the operation, and not as `V2ClauseOperatorNotSupported`.
 
 The refusals SHALL NOT map to `NoFiniteEncoding`, `StateFrameRefused` or
@@ -171,8 +171,8 @@ checked condition".
 | --- | --- | --- |
 | FR-054-AC-1 | A clause over `x: Option<Int[0, 1000]>` generates a harness that draws one presence `bool` and one `i64` payload as `Copy` values with no allocation. Mutant: rendering the value in an enum arm that carries it; the inspection of the generated source for an enum arm fails. | Test |
 | FR-054-AC-2 | The abstract domain of `x: Option<Int[0, 1000]>` is exactly 1002 draws, with the payload `0` when absent and inside `0..=1000` when present, and a host enumeration finds each admitted value once. Mutants: leaving an absent payload unconstrained (the enumeration finds the absent value twice, at payload 1), and widening the present bound (the enumeration finds payload 1001). | Test |
-| FR-054-AC-3 | `quire.op.option.present(x)` lowers to the presence draw: the claim `result = option.present(x)` verifies healthy with its cover satisfied. Mutant at the site where the oracle reads the presence leaf: returning its negation fails the produced-result step at every draw, including presence 0 with payload 0 and presence 1 with payload 0. | Test |
-| FR-054-AC-4 | `quire.op.option.value(x)` of a present option returns the payload: the claim `result = (option.present(x) implies option.value(x) <= 1000)` verifies healthy with its cover satisfied. Mutant subject with consequent `x.value < 1000` fails the produced-result step with presence 1 and payload 1000. | Test |
+| FR-054-AC-3 | `filament.op.option.present(x)` lowers to the presence draw: the claim `result = option.present(x)` verifies healthy with its cover satisfied. Mutant at the site where the oracle reads the presence leaf: returning its negation fails the produced-result step at every draw, including presence 0 with payload 0 and presence 1 with payload 0. | Test |
+| FR-054-AC-4 | `filament.op.option.value(x)` of a present option returns the payload: the claim `result = (option.present(x) implies option.value(x) <= 1000)` verifies healthy with its cover satisfied. Mutant subject with consequent `x.value < 1000` fails the produced-result step with presence 1 and payload 1000. | Test |
 | FR-054-AC-5 | On a direct oracle fixture outside admission, the unguarded claim `result = (option.value(x) <= 1000)` stops at the absent draw with `ClauseStop::Undefined` and fails the produced-result step with presence 0 and payload 0. Mutants: substituting a default payload `0` for the absent read, or assuming presence, makes the fixture verify and fails this control. | Test |
 | FR-054-AC-6 | The guarded claim of FR-054-AC-4 completes at the absent draw with the oracle's value `true` and no stop. Mutant at the oracle's guard site: evaluating `option.value` before the presence test stops at presence 0 and payload 0, failing the produced-result step. | Test |
 | FR-054-AC-7 | A subject answering `option.present(x) and option.value(x) <= 1000` against the claim of FR-054-AC-4 fails the produced-result step with presence 0 and payload 0. | Test |
@@ -181,7 +181,7 @@ checked condition".
 | FR-054-AC-10 | An option whose payload has a text, decimal, rational, float, quantity, enum, timestamp, uuid, union, population or collection leaf is refused as `OptionNotLowered` with reason `PayloadNotScalar` naming the family and node, with no harness. Mutant: returning `V2ClauseOperatorNotSupported` for one family fails the reason check. | Test |
 | FR-054-AC-11 | An option of an option, and a record payload holding an option leaf, are each refused with reason `NestedOption` naming the node, with no harness. Mutant: classifying the record-held option leaf as `PayloadNotScalar` fails. | Test |
 | FR-054-AC-12 | A read of a record field `field?` of optional presence is refused with reason `NullablePresence` naming the node, with no harness. Mutant: lowering it as a two-state option makes a clause that distinguishes null from absent verify and fails this control. | Test |
-| FR-054-AC-13 | A clause applying `quire.op.option.some` is refused with reason `OptionOperationNotLowered` naming the operation, not as `V2ClauseOperatorNotSupported`, with no harness. | Test |
+| FR-054-AC-13 | A clause applying `filament.op.option.some` is refused with reason `OptionOperationNotLowered` naming the operation, not as `V2ClauseOperatorNotSupported`, with no harness. | Test |
 | FR-054-AC-14 | None of the four refusal reasons is reported as `NoFiniteEncoding`, `StateFrameRefused` or `V2ClauseOperatorNotSupported`. Mutant: collapsing the four reasons into `V2ClauseOperatorNotSupported` fails FR-054-AC-10 to FR-054-AC-13. | Test |
 | FR-054-AC-15 | A request holding a refused option clause and a supported sibling item reports the sibling `supported` with its harness unchanged. Mutant: dropping the sibling after the refusal fails. | Test |
 | FR-054-AC-16 | An option of an unbounded integer keeps `requires_bound` with the type node and has no harness. Mutant: remapping it to `PayloadNotScalar` fails the disposition check. | Test |
@@ -191,7 +191,7 @@ checked condition".
 | FR-054-AC-20 | Playback of an absent option with a non-canonical payload leaf (payload 1) is refused. Mutant: omitting the canonical check accepts it. | Test |
 | FR-054-AC-21 | Executed through CG's two-phase runner (FR-017-AC-63), the healthy runs of FR-054-AC-3, AC-4, AC-6 and AC-8 return `Verified` with the cover satisfied, and the mutant runs of FR-054-AC-3, AC-4, AC-7 and AC-8 return `Falsified` from the witness phase with the playback each criterion names. Run one at a time, with the memory cap supplied by the caller's environment (ADR-007), recording verdict and wall time, and peak memory only where the environment supplies a source. A run that ends `TimedOut` or `Inconclusive` leaves the control unmet. The probe record does not substitute. | Test |
 | FR-054-AC-22 | The controls of FR-054-AC-5 and FR-054-AC-6 are run on the generated oracle compiled in a scratch crate, one run per mutant, and each stated verdict is observed. | Test |
-| FR-054-AC-23 | FR-015-AC-42 states that `quire.op.option.present` and `quire.op.option.value` are lowered by FR-054 and that every other `quire.op.option.*` operator is refused with `OptionNotLowered` and not as `V2ClauseOperatorNotSupported`. | Inspection |
+| FR-054-AC-23 | FR-015-AC-42 states that `filament.op.option.present` and `filament.op.option.value` are lowered by FR-054 and that every other `filament.op.option.*` operator is refused with `OptionNotLowered` and not as `V2ClauseOperatorNotSupported`. | Inspection |
 
 ## Dependencies
 

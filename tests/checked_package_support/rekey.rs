@@ -3,7 +3,7 @@
 //! The fixture builder keeps the same IDs in the authored wire and in expected
 //! values. A body edit does not change a node's source position or identity.
 
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedNodeId, CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
     CheckedPackageV2ReadResult,
 };

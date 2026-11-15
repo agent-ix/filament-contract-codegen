@@ -65,8 +65,8 @@ impl ProbeOp {
 
     fn operation_id(self) -> &'static str {
         match self {
-            Self::Mul => "quire.op.integer.mul",
-            Self::Add => "quire.op.integer.add",
+            Self::Mul => "filament.op.integer.mul",
+            Self::Add => "filament.op.integer.add",
         }
     }
 
@@ -251,8 +251,8 @@ pub(crate) fn native_probe_clause(
     op: NativeOp,
     bits: u32,
 ) -> (
-    quire_contract_model::CheckedPackageV2,
-    quire_contract_model::CheckedNodeId,
+    filament_contract_model::CheckedPackageV2,
+    filament_contract_model::CheckedNodeId,
 ) {
     Twin::with_bounded_amount_result_postcondition((1_i64 << bits) - 1, op.condition())
         .emitted_package("BalanceNeverDrops")
@@ -363,8 +363,8 @@ fn ir1526_probe_native_route_under_installed_kani() {
 /// The catalog operation ids of the clause, as the corpus rows name them.
 fn harness_operation(op: NativeOp) -> &'static str {
     match op {
-        NativeOp::Add => "quire.op.integer.add",
-        NativeOp::Mul => "quire.op.integer.mul",
-        NativeOp::Chain => "quire.op.integer.mul+quire.op.integer.add",
+        NativeOp::Add => "filament.op.integer.add",
+        NativeOp::Mul => "filament.op.integer.mul",
+        NativeOp::Chain => "filament.op.integer.mul+filament.op.integer.add",
     }
 }

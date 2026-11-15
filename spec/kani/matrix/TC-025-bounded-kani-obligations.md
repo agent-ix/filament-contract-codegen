@@ -35,8 +35,8 @@ whose cardinality and element domains both have nonzero inclusive endpoints,
 and clauses/function bodies that apply `forall` and `exists` to that selected
 field. Emit each package through FSL's public replay path and admit the emitted
 V2 package through Contract IR. Inspect that the admitted claim is the clause /
-function body and that its `quire.op.collection.forall` or
-`quire.op.collection.exists` operation identifies the selected field path; do
+function body and that its `filament.op.collection.forall` or
+`filament.op.collection.exists` operation identifies the selected field path; do
 not map these operations to the finite-input `QueryKind` as if they were the
 claim. Also use a bounded Boolean collection field. No copied package wire,
 hand-built package builder, concrete `Vec` input or caller semantic ceiling is
@@ -536,7 +536,7 @@ referenced operators and an inline Boolean literal. Other V2 controls retain the
     identity, no harness for any of the three, and the supported sibling's one harness. The Text
     equality case exercises operator classification before clause operand reading. The traced
     `nested_absolute_value_names_its_exact_operator` unit test checks that a nested
-    `quire.op.integer.abs` term is selected by the operator audit. The closed authoritative
+    `filament.op.integer.abs` term is selected by the operator audit. The closed authoritative
     checked-operation catalog does not contain an absolute-value entry, so an admitted absolute
     clause cannot be constructed yet. The nonclause and absent-node request cases in this step
     remain separate FR-015-AC-14 evidence to complete.
@@ -1108,7 +1108,7 @@ with the required author `make kani-gate`; independent review and final acceptan
     operation identity, no harness, and an unaffected supported sibling) and the precedence
     fixtures of FR-015-AC-166 (an unsupported operator before a failing control, a failing control
     before an unsupported operator, a `let` binding an option-typed parameter expecting
-    `LetValueNotNativeScalar`, a `let` binding `quire.op.option.value` of an Integer result decided
+    `LetValueNotNativeScalar`, a `let` binding `filament.op.option.value` of an Integer result decided
     by FR-054, two failing controls) with the last-refusal-met mutant, and the collapse mutant of
     FR-015-AC-167. The probe that fixed the tractability expectation is
     `docs/qualification/ir1447-kani-control-probe.md`.
@@ -1120,7 +1120,7 @@ with the required author `make kani-gate`; independent review and final acceptan
   frame of a `postcondition` state clause over one integer field is instead generated with that
   clause by `generate_state_frame_obligations` (FR-015-AC-26 to FR-015-AC-32).
 - V2 scalar harnesses outside `IntegerArithmetic`: an IR-confirmed claim over
-  one of the four `quire.op.integer.{add,sub,mul,negate}` identities reaches a
+  one of the four `filament.op.integer.{add,sub,mul,negate}` identities reaches a
   real harness unless a ground independent of the operation (an
   i64-unrepresentable endpoint, the source ceiling) displaces it. Every other
   confirmed family is refused as `OperationNotRendered`, an unbuilt renderer in

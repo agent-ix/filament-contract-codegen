@@ -1,4 +1,4 @@
-//! Private installed-Kani controls for field-edge reachability claims, `quire.op.model.reaches_field`
+//! Private installed-Kani controls for field-edge reachability claims, `filament.op.model.reaches_field`
 //! over `Reference`, `Option` and bounded `Collection` fields (FR-015-AC-98, -105, -106, TC-025,
 //! IR-805 slice D). Run explicitly and serially: `cargo test --lib kani_graph_field_private --
 //! --ignored --test-threads=1`.
@@ -26,10 +26,10 @@ use crate::{
     kani::generate::outcome::GraphUnsupportedReason as Reason,
     GraphWitness, StateClauseReplay,
 };
+use filament_contract_model::{CheckedNodeId, CheckedOperationMember, CheckedTerm};
+use filament_semantic_value::catalog::Category;
+use fsl_replay::{DisagreementCause, WitnessSettlement};
 use ix_trace_rs::trace;
-use qsl_replay::{DisagreementCause, WitnessSettlement};
-use quire_contract_model::{CheckedNodeId, CheckedOperationMember, CheckedTerm};
-use quire_semantic_value::catalog::Category;
 use serde_json::{json, Value};
 
 fn field(name: &str, lower: u64, upper: u64, ordered: bool, unique: bool, presence: &str) -> Value {
@@ -65,8 +65,8 @@ fn domain_value() -> Value {
         "source": {"identity": SOURCE, "version": "1.0.0", "dialect": "spec-bundle"},
         "package": {"identity": DOMAIN, "version": "1.0.0", "mappingVersions": [], "profileVersions": []},
         "constructs": [
-            construct("entity", "quire.meaning.model.object-type/v1"),
-            construct("population", "quire.meaning.model.population/v1")
+            construct("entity", "filament.meaning.model.object-type/v1"),
+            construct("population", "filament.meaning.model.population/v1")
         ],
         "occurrences": [], "extensions": [],
         "types": [{
@@ -105,7 +105,7 @@ fn declaring_type(authored: &Authored) -> CheckedNodeId {
         .iter()
         .find_map(|node| match &node.body {
             CheckedTerm::Application { operation, .. }
-                if operation.identity() == Some("quire.op.model.reaches_field") =>
+                if operation.identity() == Some("filament.op.model.reaches_field") =>
             {
                 operation.member_declaration().ok().flatten().cloned()
             }
@@ -126,7 +126,7 @@ fn harness(authored: &Authored, path: &[usize]) -> crate::KaniGraphObligationHar
         .iter()
         .find(|node| {
             matches!(&node.body, CheckedTerm::Application { operation, .. }
-                if operation.identity() == Some("quire.op.model.reaches_field"))
+                if operation.identity() == Some("filament.op.model.reaches_field"))
         })
         .expect("a field-edge application")
         .node_id
@@ -473,23 +473,23 @@ fn a_reaches_field_without_a_field_member_is_refused_not_read_as_another_form() 
     };
     let refused = Err(GraphRefusal::Unsupported(Reason::FieldNotAdmitted));
     assert_eq!(
-        field_of(Some("quire.op.model.reaches_field"), Some(&end)),
+        field_of(Some("filament.op.model.reaches_field"), Some(&end)),
         refused
     );
     assert_eq!(
-        field_of(Some("quire.op.model.reaches_field"), None),
+        field_of(Some("filament.op.model.reaches_field"), None),
         refused
     );
     assert_eq!(
-        field_of(Some("quire.op.model.reaches_field"), Some(&field)),
+        field_of(Some("filament.op.model.reaches_field"), Some(&field)),
         Ok(Some((&node, "next")))
     );
     assert_eq!(
-        field_of(Some("quire.op.model.reaches"), Some(&end)),
+        field_of(Some("filament.op.model.reaches"), Some(&end)),
         Ok(None)
     );
     assert_eq!(
-        field_of(Some("quire.op.model.reaches"), Some(&field)),
+        field_of(Some("filament.op.model.reaches"), Some(&field)),
         Ok(None)
     );
 }

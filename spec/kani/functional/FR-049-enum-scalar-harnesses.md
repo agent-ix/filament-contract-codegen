@@ -25,7 +25,7 @@ relationships:
 ## Description
 
 When an admitted request selects an `enum` scalar comparison node
-(`quire.op.enum.eq`, `.ne`, `.lt`, `.le`, `.gt` or `.ge`) over an admitted enum
+(`filament.op.enum.eq`, `.ne`, `.lt`, `.le`, `.gt` or `.ge`) over an admitted enum
 declaration (eq and ne over any admitted declaration; lt, le, gt and ge over an
 `ordered enum` declaration only), CG SHALL generate a bounded Kani row proving that the
 native enum comparison of filament-exact

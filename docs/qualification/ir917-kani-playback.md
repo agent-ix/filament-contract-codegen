@@ -11,8 +11,8 @@ lane (`concrete_playback_refuses_unsealed_sources_and_bounds_the_launch` in `src
 - Fixture, harness, subject and owners are those of `ir1509-kani-clause-controls.md`: the clause
   `result = (amount < 1000 implies amount + 1 <= 1000)` over `amount: Int[0, 1000]` compiled from the QSL source
   of `Twin::with_bounded_amount_implication`, the sealed harness `negotiate_kani_native_obligations` generates,
-  and the test-written `crate::subject` calling `quire_contract_runtime::operators::implies_short_circuit`.
-  The plus-one mutant is the isolated copy of the locked quire-exact checkout with
+  and the test-written `crate::subject` calling `filament_contract_runtime::operators::implies_short_circuit`.
+  The plus-one mutant is the isolated copy of the locked filament-exact checkout with
   `left.0.checked_add(right.0)?.checked_add(1)`.
 - The playback test is appended inside the generated module immediately before its closing brace. The entry
   refuses unless removing exactly those bytes restores the sealed artifact in `src/lib.rs`, then runs

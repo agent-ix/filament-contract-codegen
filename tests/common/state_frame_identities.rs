@@ -2,8 +2,8 @@
 //! literal the tests compare against, never derived from the code under test.
 
 use filament_contract_codegen::StateFrameRoleIdentities;
-use qsl_replay::{ModelIdentity, NodeKey, ObligationIdentity};
-use quire_exact::PathSegment;
+use filament_exact::PathSegment;
+use fsl_replay::{ModelIdentity, NodeKey, ObligationIdentity};
 
 fn key(package: &str, path: &str, ordinal: u64) -> NodeKey {
     NodeKey::new(package, vec![PathSegment::Text(path.to_owned())], ordinal).expect("a node key")

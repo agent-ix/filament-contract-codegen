@@ -166,9 +166,9 @@ fn oracle(
         arguments.push(if input.boolean {
             value
         } else if condition.oracle.native_integer_selection.is_some() {
-            format!("&quire_exact::NativeInteger::new(i128::from({value}))")
+            format!("&filament_exact::NativeInteger::new(i128::from({value}))")
         } else {
-            format!("&quire_exact::Integer::from({value})")
+            format!("&filament_exact::Integer::from({value})")
         });
     }
     if !condition.oracle.descriptor.operation_identities.is_empty() {
@@ -191,7 +191,7 @@ fn oracle(
     } else if condition.oracle.native_integer_selection.is_some() {
         format!("Result<bool, {name}::ClauseStop>")
     } else {
-        format!("Result<quire_exact::Outcome<bool>, {name}::ClauseStop>")
+        format!("Result<filament_exact::Outcome<bool>, {name}::ClauseStop>")
     };
     writeln!(source,"fn evaluate_{name}(state: &{state_type}{parameters}) -> {result} {{ {name}::oracle_clause({}) }}",arguments.join(",")).map_err(|_|R::Render)
 }
@@ -202,7 +202,7 @@ fn completed_arms(condition: &ConstrainedConditionSpec, on_false: &str, on_true:
     if condition.oracle.native_integer_selection.is_some() {
         format!("Ok(false) => {on_false},\nOk(true) => {on_true},")
     } else {
-        format!("Ok(quire_exact::Outcome::Completed(false)) => {on_false},\nOk(quire_exact::Outcome::Completed(true)) => {on_true},")
+        format!("Ok(filament_exact::Outcome::Completed(false)) => {on_false},\nOk(filament_exact::Outcome::Completed(true)) => {on_true},")
     }
 }
 
@@ -211,7 +211,7 @@ fn stop_arms(condition: &ConstrainedConditionSpec, module: &str, label: &str) ->
     if condition.oracle.native_integer_selection.is_some() {
         format!("Err({module}::ClauseStop::Undefined) => panic!(\"undefined {label} evaluation\"),\nErr({module}::ClauseStop::IntegerOutOfDomain | {module}::ClauseStop::Refused) => panic!(\"refused {label} evaluation\"),\nErr({module}::ClauseStop::Incomplete) => panic!(\"incomplete {label} evaluation\"),\nErr(_) => panic!(\"owner call failure\"),")
     } else {
-        format!("Ok(quire_exact::Outcome::Undefined(_)) => panic!(\"undefined {label} evaluation\"),\nOk(quire_exact::Outcome::Refused(_)) => panic!(\"refused {label} evaluation\"),\nOk(quire_exact::Outcome::Incomplete(_)) => panic!(\"incomplete {label} evaluation\"),\nErr(_) => panic!(\"owner call failure\"),")
+        format!("Ok(filament_exact::Outcome::Undefined(_)) => panic!(\"undefined {label} evaluation\"),\nOk(filament_exact::Outcome::Refused(_)) => panic!(\"refused {label} evaluation\"),\nOk(filament_exact::Outcome::Incomplete(_)) => panic!(\"incomplete {label} evaluation\"),\nErr(_) => panic!(\"owner call failure\"),")
     }
 }
 
@@ -252,7 +252,7 @@ pub(super) fn render(
         "work_units",
         "result_units",
     ];
-    writeln!(source,"fn meter() -> quire_exact::Meter {{ quire_exact::Meter::new(quire_exact::ScalarLimits {{ {} }}) }}",names.iter().zip(identity.evaluator_limits).map(|(name,value)|format!("{name}: {value}u64")).collect::<Vec<_>>().join(",")).map_err(|_|R::Render)?;
+    writeln!(source,"fn meter() -> filament_exact::Meter {{ filament_exact::Meter::new(filament_exact::ScalarLimits {{ {} }}) }}",names.iter().zip(identity.evaluator_limits).map(|(name,value)|format!("{name}: {value}u64")).collect::<Vec<_>>().join(",")).map_err(|_|R::Render)?;
     oracle(&mut source, "safety", &prepared.safety, identity, None)?;
     if let Some(constraint) = &prepared.constraint {
         oracle(&mut source, "constraint", constraint, identity, None)?;
@@ -314,7 +314,7 @@ pub(super) fn render(
         let completed = if prepared.safety.oracle.native_integer_selection.is_some() {
             "Ok(value) => assert!(value, \"safety violation\"),"
         } else {
-            "Ok(quire_exact::Outcome::Completed(value)) => assert!(value, \"safety violation\"),"
+            "Ok(filament_exact::Outcome::Completed(value)) => assert!(value, \"safety violation\"),"
         };
         writeln!(
             source,
@@ -466,7 +466,7 @@ pub(in crate::kani::generate) fn observation_lines(
     use ConstrainedMethodRefusal as R;
     let mut safety = rust.contents.lines().enumerate().filter(|(_, line)| {
         line.trim_start()
-            .starts_with("Ok(quire_exact::Outcome::Completed(value)) => assert!(value,")
+            .starts_with("Ok(filament_exact::Outcome::Completed(value)) => assert!(value,")
             || line.trim_start().starts_with("Ok(value) => assert!(value,")
             || line
                 .trim_start()

@@ -13,20 +13,20 @@ use filament_contract_codegen::{
 };
 use ix_trace_rs::trace;
 
-const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nfunction implication using v(left: Boolean, right: Boolean): Boolean pure { left implies right }\n";
+const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nfunction implication using v(left: Boolean, right: Boolean): Boolean pure { left implies right }\n";
 
-fn checked_source(source: &str) -> quire_contract_model::CheckedPackageV2 {
-    let compiled = qsl_replay::compile_admitted(
-        qsl_replay::CompileUnit {
-            source: qsl_replay::SourceIdentity::new("test", "implication.native"),
+fn checked_source(source: &str) -> filament_contract_model::CheckedPackageV2 {
+    let compiled = fsl_replay::compile_admitted(
+        fsl_replay::CompileUnit {
+            source: fsl_replay::SourceIdentity::new("test", "implication.native"),
             package_name: "current-implication".to_owned(),
             path: "implication.native",
             bytes: source.as_bytes(),
         },
         [],
-        &qsl_replay::DependencyInput::default(),
-        qsl_replay::StageLimits::default(),
-        qsl_replay::ReplayLimits::default(),
+        &fsl_replay::DependencyInput::default(),
+        fsl_replay::StageLimits::default(),
+        fsl_replay::ReplayLimits::default(),
     )
     .expect("authored implications compile through FSL");
     crate::admitted_enum_equality::checked(&compiled, &[])
@@ -147,7 +147,7 @@ fn run(
     // A new, empty compilation directory is part of qualification: a launcher returning
     // a preselected report cannot supply this build's symbols or call graph.
     let target = TemporaryDirectory::new(&format!("current-claims-{name}"));
-    let cancel = quire_exact::Cancel::new();
+    let cancel = filament_exact::Cancel::new();
     let installation = KaniInstallation::discover().expect("installed Kani");
     let evidence = execute_kani_obligation(&KaniExecutionRequest {
         cancel: &cancel,
@@ -220,7 +220,7 @@ fn run_pair(
         &harnesses[0].rust.contents,
     );
     let target = TemporaryDirectory::new("current-claims-pair-healthy");
-    let cancel = quire_exact::Cancel::new();
+    let cancel = filament_exact::Cancel::new();
     let installation = KaniInstallation::discover().unwrap();
     let requests = harnesses
         .iter()
@@ -293,7 +293,7 @@ fn subject_mutant(harness: &KaniScalarObligationHarness) -> KaniScalarObligation
                         .map(|segment| segment.ident.to_string())
                         .collect::<Vec<_>>(),
                     [
-                        "quire_contract_runtime",
+                        "filament_contract_runtime",
                         "operators",
                         "implies_short_circuit"
                     ]

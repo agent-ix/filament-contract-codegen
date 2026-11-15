@@ -6,14 +6,14 @@ use filament_contract_codegen::{
     generate_boolean_oracle, GenerationDiagnostic, GenerationErrorCode, GenerationTerminalState,
     OracleRequest, MAX_GENERATED_SOURCE_BYTES,
 };
-use jsonschema::{Draft, JSONSchema};
-use quire_contract_model::{
+use filament_contract_model::{
     AnchorName, BooleanOperator, ClauseId, ComparisonOperator, DeclarationEnvironment,
     ExecutionPoint, Expression, ExpressionKind, IntegerDomain, IntegerType, NumericOperator,
     OverflowPolicy, PackageId, RationalType, RequirementId, RequirementRef, RequirementRevision,
     SourceDocumentId, SourceIdentity, SourceLocation, SourceRevision, SourceSpan, StateObservation,
     SymbolName, ValueDeclaration, ValueDeclarationKind, ValueType,
 };
+use jsonschema::{Draft, JSONSchema};
 
 fn name(value: &str) -> SymbolName {
     SymbolName::new(value).unwrap()
@@ -517,15 +517,15 @@ fn tc_001_boolean_oracle_bundle_is_deterministic_traceable_and_schema_valid() {
     assert!(first
         .rust
         .contents
-        .contains("quire_contract_runtime::RequirementId::new(\"FR-001\")"));
+        .contains("filament_contract_runtime::RequirementId::new(\"FR-001\")"));
     assert!(first
         .rust
         .contents
-        .contains("quire_contract_runtime::RevisionId::new(\"7\")"));
+        .contains("filament_contract_runtime::RevisionId::new(\"7\")"));
     assert!(first
         .rust
         .contents
-        .contains("quire_contract_runtime::ClauseId::new(\"clause-main\")"));
+        .contains("filament_contract_runtime::ClauseId::new(\"clause-main\")"));
 
     let source_map: Vec<filament_contract_codegen::SourceRegion> =
         serde_json::from_str(&first.source_map.contents).unwrap();
@@ -813,7 +813,7 @@ fn tc_002_supported_boolean_grammar_compiles_and_matches_an_independent_evaluato
                 BooleanOperator::Implication => "implies_short_circuit",
             };
             assert!(bundle.rust.contents.contains(&format!(
-                "quire_contract_runtime::operators::{expected_function}("
+                "filament_contract_runtime::operators::{expected_function}("
             )));
         }
         for function in [

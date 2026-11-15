@@ -10,10 +10,10 @@ supersedes for the controls it names. The tests are in `tests/it/kani_obligation
   compiled from the QSL source of `Twin::with_bounded_amount_implication` and generated through
   `negotiate_kani_native_obligations` (subject path `crate::subject::check`, unwind 3).
 - Subject: the module `crate::subject` appended beside the sealed artifact; it calls
-  `quire_contract_runtime::operators::implies_short_circuit(amount < 1000, || amount + 1 <= 1000)`.
+  `filament_contract_runtime::operators::implies_short_circuit(amount < 1000, || amount + 1 <= 1000)`.
   The runner's cargo build compiles it. CG and QSL have no step that emits a subject from QSL source
   (the QSL operation declares no body), so the subject is written by the test.
-- Owners: quire-exact and quire-contract-runtime at the commits CG's `Cargo.lock` records. A mutant copies
+- Owners: filament-exact and filament-contract-runtime at the commits CG's `Cargo.lock` records. A mutant copies
   the locked checkout into the scratch crate (`owner-mutant/`), edits the copy, and a `[patch]` entry
   resolves the dependency to it; the test asserts `cargo metadata` resolves the owner to that copy. The
   shared checkouts are never edited.
@@ -36,9 +36,9 @@ tokens.
 | subject consequent `amount + 2 <= 1000` | compiled subject | {999} | 1001 | true |
 | subject consequent `amount + 1 < 1000` | compiled subject | {999} | 1001 | true |
 | subject antecedent `amount <= 1000` | compiled subject | {1000} | 1001 | true |
-| helper body returns `false` | isolated quire-contract-runtime copy, `src/operators.rs` | 0 through 1000 | 1001 | true |
-| `left.0.checked_add(right.0)?.checked_add(1)` | isolated quire-exact copy, `src/native_integer.rs` | 0 through 999 | 1001 | true |
-| `Some(left.0)` | isolated quire-exact copy, `src/native_integer.rs` | 0 through 999 | 1001 | true |
+| helper body returns `false` | isolated filament-contract-runtime copy, `src/operators.rs` | 0 through 1000 | 1001 | true |
+| `left.0.checked_add(right.0)?.checked_add(1)` | isolated filament-exact copy, `src/native_integer.rs` | 0 through 999 | 1001 | true |
+| `Some(left.0)` | isolated filament-exact copy, `src/native_integer.rs` | 0 through 999 | 1001 | true |
 
 Enumeration mutants: omitting 999 gives `checked` 1000 and `sequence_exact` false; visiting 998 twice and
 omitting 999 gives `checked` 1001 and `sequence_exact` false; a descending visit is not exact. A record

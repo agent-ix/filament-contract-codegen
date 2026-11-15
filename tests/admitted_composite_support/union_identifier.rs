@@ -8,17 +8,17 @@ mod generated {
 #[ix_trace_rs::trace("FR-018-AC-2", "FR-018-AC-8", "FR-018-AC-17", "TC-029")]
 #[test]
 fn reconstructed_union_members_execute_equality() {
-    let compiled = qsl_replay::compile_admitted(
-        qsl_replay::CompileUnit {
-            source: qsl_replay::SourceIdentity::new("test", "union.native"),
+    let compiled = fsl_replay::compile_admitted(
+        fsl_replay::CompileUnit {
+            source: fsl_replay::SourceIdentity::new("test", "union.native"),
             package_name: "union-identifier".to_owned(),
             path: "union.native",
             bytes: include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/original.native")),
         },
         [],
-        &qsl_replay::DependencyInput::default(),
-        qsl_replay::StageLimits::default(),
-        qsl_replay::ReplayLimits::default(),
+        &fsl_replay::DependencyInput::default(),
+        fsl_replay::StageLimits::default(),
+        fsl_replay::ReplayLimits::default(),
     )
     .expect("same original union context");
     let prepared = generated::environment_shape(Some(compiled.context()))
@@ -36,9 +36,9 @@ fn reconstructed_union_members_execute_equality() {
             let payload = if member.payload().is_empty() {
                 vec![]
             } else {
-                vec![quire_exact::Value::Boolean(true)]
+                vec![filament_exact::Value::Boolean(true)]
             };
-            quire_exact::UnionValue::from_admitted(member.member().clone(), payload)
+            filament_exact::UnionValue::from_admitted(member.member().clone(), payload)
         })
         .collect::<Vec<_>>();
     for (left, right, expected) in [
@@ -46,7 +46,7 @@ fn reconstructed_union_members_execute_equality() {
         (&values[1], &values[1], true),
         (&values[0], &values[1], false),
     ] {
-        let mut meter = quire_exact::Meter::new(quire_exact::ScalarLimits {
+        let mut meter = filament_exact::Meter::new(filament_exact::ScalarLimits {
             integer_bits: u64::MAX,
             decimal_digits: u64::MAX,
             scale_expansion: u64::MAX,
@@ -60,7 +60,7 @@ fn reconstructed_union_members_execute_equality() {
         });
         assert_eq!(
             generated::oracle_shape(&prepared, left, right, &mut meter),
-            quire_exact::Outcome::Completed(expected)
+            filament_exact::Outcome::Completed(expected)
         );
     }
 }

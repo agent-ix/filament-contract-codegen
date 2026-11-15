@@ -8,9 +8,9 @@ use filament_contract_codegen::{
     derive_exact_scalar_items, generate_exact_scalar_oracles, ClaimDisposition,
     ExactScalarOperation, EXACT_SCALAR_CRATE_NAME,
 };
+use filament_exact::ComparisonOperator;
+use filament_specification::{ACME_COLORS_COMPARISON_SOURCE, ACME_COLORS_DOMAIN_PACKAGE};
 use ix_trace_rs::trace;
-use quire_exact::ComparisonOperator;
-use quire_specification::{ACME_COLORS_COMPARISON_SOURCE, ACME_COLORS_DOMAIN_PACKAGE};
 
 #[trace("TC-024", "FR-014-AC-2")]
 #[trace("TC-024", "FR-014-AC-6")]
@@ -67,7 +67,7 @@ fn original_model_enum_eq_ne_generate_and_execute_all_four_truth_arms() {
         let contents = if artifact.path == "Cargo.toml" {
             artifact.contents.replacen("[dependencies]\n", concat!(
                 "[dependencies]\n",
-                "quire-contract-model = { git = \"https://github.com/agent-ix/quire-contract-ir\", branch = \"main\" }\n"
+                "filament-contract-model = { git = \"https://github.com/agent-ix/filament-contract-ir\", branch = \"main\" }\n"
             ), 1)
         } else { artifact.contents.clone() };
         (artifact.path.clone(), contents)

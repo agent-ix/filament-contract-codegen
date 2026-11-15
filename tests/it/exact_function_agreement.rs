@@ -6,20 +6,20 @@ use filament_contract_codegen::{
     generate_exact_function_oracles, ClaimDisposition, EqualityOperatorKind, ExactFunctionBody,
     ExactFunctionDeclaration, ExactFunctionItem, FunctionParameter,
 };
-use ix_trace_rs::trace;
-use qsl_replay::{
-    acquire_checked_closure, ApplicationEnvironment, CompileUnit, DependencyInput, LibraryName,
-    ReplayLimits, SourceIdentity, StageLimits, SuppliedLibrary,
-};
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedNodeId, CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
     CheckedPackageV2ReadResult, CheckedTerm,
 };
-use quire_eval::FamilyOutcome;
-use quire_exact::{
+use filament_eval::FamilyOutcome;
+use filament_exact::{
     Integer, IntegerArithmetic, IntegerInterval, LimitKind, Meter, Outcome, ScalarLimits, Value,
 };
-use quire_semantic_value::object_closure::ObjectClosure;
+use filament_semantic_value::object_closure::ObjectClosure;
+use fsl_replay::{
+    acfilament_checked_closure, ApplicationEnvironment, CompileUnit, DependencyInput, LibraryName,
+    ReplayLimits, SourceIdentity, StageLimits, SuppliedLibrary,
+};
+use ix_trace_rs::trace;
 
 #[allow(clippy::duplicate_mod)]
 #[path = "../exact_function_support/package.rs"]
@@ -32,7 +32,7 @@ use super::kani_obligations_state_frame::model;
 
 const SOURCE: &str = concat!(
     "language \"ix:native\" edition \"1-draft\";\n",
-    "profile v = \"quire.value.complete/v1\";\n",
+    "profile v = \"filament.value.complete/v1\";\n",
     "function add using v(x: Int[0, 9], y: Int[0, 9]): Integer pure { x + y }\n",
     "function eq using v(x: Int[0, 9], y: Int[0, 9]): Boolean pure { x = y }\n",
     "function nested using v(x: Int[0, 9], y: Int[0, 9]): Integer pure { add(x, y) }\n",
@@ -53,7 +53,7 @@ const SOURCE: &str = concat!(
 
 const LIBRARY_SOURCE: &str = concat!(
     "language \"ix:native\" edition \"1-draft\";\n",
-    "profile v = \"quire.value.complete/v1\";\n",
+    "profile v = \"filament.value.complete/v1\";\n",
     "function imported_base using v(x: Int[0, 9], y: Int[0, 9]): Integer pure { x + y }\n",
     "function imported using v(x: Int[0, 9], y: Int[0, 9]): Integer pure { imported_base(x, y) }\n",
     "function probe_imported using v(x: Int[0, 9], y: Int[0, 9]): Integer pure { imported(x, y) }\n",
@@ -61,7 +61,7 @@ const LIBRARY_SOURCE: &str = concat!(
 
 const IMPORTER_SOURCE: &str = concat!(
     "language \"ix:native\" edition \"1-draft\";\n",
-    "profile v = \"quire.value.complete/v1\";\n",
+    "profile v = \"filament.value.complete/v1\";\n",
     "import \"test/function-library\" as lib;\n",
     "function caller using v(x: Int[0, 9], y: Int[0, 9]): Integer pure { lib::imported(x, y) }\n",
 );
@@ -79,7 +79,7 @@ fn source_identity() -> SourceIdentity {
 }
 
 fn admitted_source_text(source: &str) -> CheckedPackageV2 {
-    let acquired = acquire_checked_closure(
+    let acquired = acfilament_checked_closure(
         CompileUnit {
             source: source_identity(),
             package_name: "ir595-agreement".to_owned(),
@@ -93,7 +93,7 @@ fn admitted_source_text(source: &str) -> CheckedPackageV2 {
     )
     .expect("FSL admits the genuine function source");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     let read = CheckedPackageV2::read(
         acquired.package().bytes(),
         CheckedPackageReadLimits::bounded(),
@@ -446,7 +446,7 @@ pub(super) fn genuine_case_and_healthy() -> (
 ) {
     const CASE_SOURCE: &str = concat!(
         "language \"ix:native\" edition \"1-draft\";\n",
-        "profile v = \"quire.value.complete/v1\";\n",
+        "profile v = \"filament.value.complete/v1\";\n",
         "union Shape { Empty, Circle(Integer), Rect(Integer, Integer) }\n",
         "function area using v(s: Shape): Integer pure { case s { Empty: 0; Circle(r): r; Rect(w, h): w * h; } }\n",
         "function probe_area using v(s: Shape): Integer pure { area(s) }\n",
@@ -571,7 +571,7 @@ pub(super) fn genuine_temporal_and_healthy(
     .expect("authored model package identity");
     let source = format!(
         "{language}\n{value_profile}\n\
-         profile t = \"quire.temporal.infinite-trace/v1\";\n\
+         profile t = \"filament.temporal.infinite-trace/v1\";\n\
          {model}\n\
          temporal ReachesTwo using t over (a: Bank::Account) clock \"model-steps\" on origin {{\n\
          fair weak each Bank::Account::deposit;\n\
@@ -579,7 +579,7 @@ pub(super) fn genuine_temporal_and_healthy(
          function healthy using v(x: Int[0, 9], y: Int[0, 9]): Integer pure {{ x + y }}\n\
          function probe_healthy using v(x: Int[0, 9], y: Int[0, 9]): Integer pure {{ healthy(x, y) }}\n"
     );
-    let acquired = acquire_checked_closure(
+    let acquired = acfilament_checked_closure(
         CompileUnit {
             source: source_identity(),
             package_name: "ir595-agreement".to_owned(),
@@ -680,7 +680,7 @@ fn imported_corpus() -> (
     CheckedPackageV2,
     filament_contract_codegen::ExactFunctionOracles,
 ) {
-    let compiled = acquire_checked_closure(
+    let compiled = acfilament_checked_closure(
         CompileUnit {
             source: library_identity(),
             package_name: "test/function-library".to_owned(),
@@ -694,7 +694,7 @@ fn imported_corpus() -> (
     )
     .expect("FSL admits the genuine library source");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     let read = CheckedPackageV2::read(
         compiled.package().bytes(),
         CheckedPackageReadLimits::bounded(),
@@ -1136,7 +1136,7 @@ fn tc_031_genuine_fsl_source_generates_four_direct_function_claims() {
     assert_eq!(source.matches("pub fn oracle_").count(), 4);
     assert!(source.contains("apply_checked_function("));
     assert!(source.contains("selected_nested_call_site("));
-    assert!(!source.contains("quire_contract_runtime"));
+    assert!(!source.contains("filament_contract_runtime"));
 }
 
 fn meter() -> Meter {
@@ -1161,7 +1161,7 @@ fn meter() -> Meter {
 #[test]
 fn tc_031_independent_fr485_session_runs_all_four_functions_without_registration() {
     let package = admitted_source();
-    let acquired = acquire_checked_closure(
+    let acquired = acfilament_checked_closure(
         CompileUnit {
             source: source_identity(),
             package_name: "ir595-agreement".to_owned(),
@@ -1233,14 +1233,14 @@ fn bounded_multiply_result_refuses_the_value_28() {
         .expect("valid bounded result interval");
     let left = Integer::from(4_u64);
     let right = Integer::from(7_u64);
-    let outcome = quire_exact::evaluate_integer_arithmetic(
+    let outcome = filament_exact::evaluate_integer_arithmetic(
         IntegerArithmetic::Multiply(&left, &right),
         Some(&domain),
         &mut meter(),
     );
     assert!(matches!(
         outcome,
-        Outcome::Refused(quire_exact::Refusal::IntegerOutOfDomain { .. })
+        Outcome::Refused(filament_exact::Refusal::IntegerOutOfDomain { .. })
     ));
 }
 
@@ -1257,7 +1257,7 @@ fn tc_031_nested_static_origin_matches_the_fsl_checked_call_site() {
         .expect("nested location record")
         .location
         .origin;
-    let acquired = acquire_checked_closure(
+    let acquired = acfilament_checked_closure(
         CompileUnit {
             source: source_identity(),
             package_name: "ir595-agreement".to_owned(),
@@ -1289,7 +1289,7 @@ fn tc_031_nested_static_origin_matches_the_fsl_checked_call_site() {
             function: static_name,
             index: static_index,
         },
-        quire_semantic_value::location::ExpressionOwner::Body {
+        filament_semantic_value::location::ExpressionOwner::Body {
             function: fsl_name,
             index: fsl_index,
         },
@@ -1334,7 +1334,7 @@ fn tc_031_imported_static_origin_matches_the_fsl_checked_call_site() {
         bytes: LIBRARY_SOURCE.as_bytes().to_vec(),
     }])
     .expect("one genuine FSL library dependency");
-    let acquired = acquire_checked_closure(
+    let acquired = acfilament_checked_closure(
         CompileUnit {
             source: importer_identity(),
             package_name: "function-importer".to_owned(),
@@ -1367,7 +1367,7 @@ fn tc_031_imported_static_origin_matches_the_fsl_checked_call_site() {
             function: static_name,
             index: static_index,
         },
-        quire_semantic_value::location::ExpressionOwner::Body {
+        filament_semantic_value::location::ExpressionOwner::Body {
             function: fsl_name,
             index: fsl_index,
         },
@@ -1577,7 +1577,7 @@ fn operand_type_refusal_retains_the_original_v2_frame() {
 fn tc_057_generated_checked_invariant_guards_use_checked_owner_inputs() {
     const SOURCE: &str = concat!(
         "language \"ix:native\" edition \"1-draft\";\n",
-        "profile v = \"quire.value.complete/v1\";\n",
+        "profile v = \"filament.value.complete/v1\";\n",
         "tuple Pair(Boolean, Integer);\n",
         "union Choice { Empty, Some(Pair) }\n",
         "record Holder { pair: Pair; shape: Choice; flag: Boolean?; }\n",
@@ -1717,8 +1717,8 @@ fn tc_057_generated_checked_invariant_guards_use_checked_owner_inputs() {
         contents.push_str(&format!(r#"
 pub(super) fn invoke_native_body(
     declaring_package: &CheckedPackageV2,
-    acquired: &qsl_replay::CheckedClosureCompilation,
-    selection: &qsl_replay::CallableSelection,
+    acquired: &fsl_replay::CheckedClosureCompilation,
+    selection: &fsl_replay::CallableSelection,
     arguments: Vec<Value>, meter: &mut Meter,
 ) -> Result<Transition, eval::BodyFailure> {{
     let prepared = PreparedFunction::new(declaring_package, acquired, selection, &Default::default(),
