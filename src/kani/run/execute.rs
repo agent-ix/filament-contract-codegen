@@ -2038,6 +2038,8 @@ mod tests {
     }
 }
 
+pub(crate) mod refinement;
+
 #[cfg(test)]
 mod two_phase_tests;
 

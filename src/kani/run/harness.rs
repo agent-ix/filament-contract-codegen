@@ -32,6 +32,9 @@ pub enum KaniExecutableHarness<'a> {
     Graph(&'a KaniGraphObligationHarness),
     /// A V2 operation-clause precondition harness, including admitted collection clauses.
     V2Clause(&'a KaniV2ClauseObligationHarness),
+    /// A bounded shadow harness; its refinement obligation runs through
+    /// `execute_kani_refinement` (FR-028-AC-24).
+    Shadow(&'a crate::kani::identity::shadow::KaniShadowHarness),
 }
 
 impl<'a> From<&'a KaniObligationHarness> for KaniExecutableHarness<'a> {
@@ -61,6 +64,12 @@ impl<'a> From<&'a KaniGraphObligationHarness> for KaniExecutableHarness<'a> {
 impl<'a> From<&'a KaniCollectionObligationHarness> for KaniExecutableHarness<'a> {
     fn from(harness: &'a KaniCollectionObligationHarness) -> Self {
         Self::Collection(harness)
+    }
+}
+
+impl<'a> From<&'a crate::kani::identity::shadow::KaniShadowHarness> for KaniExecutableHarness<'a> {
+    fn from(harness: &'a crate::kani::identity::shadow::KaniShadowHarness) -> Self {
+        Self::Shadow(harness)
     }
 }
 
@@ -97,6 +106,7 @@ impl<'a> KaniExecutableHarness<'a> {
             | Self::StateFrame(_)
             | Self::Collection(_)
             | Self::Graph(_)
+            | Self::Shadow(_)
             | Self::Constrained(_) => None,
         }
     }
@@ -105,9 +115,11 @@ impl<'a> KaniExecutableHarness<'a> {
             Self::Collection(harness) => harness.has_valid_provenance(),
             Self::Graph(harness) => harness.has_valid_provenance(),
             Self::V2Clause(harness) => harness.has_valid_provenance(),
-            Self::Contract(_) | Self::Scalar(_) | Self::StateFrame(_) | Self::Constrained(_) => {
-                true
-            }
+            Self::Contract(_)
+            | Self::Scalar(_)
+            | Self::StateFrame(_)
+            | Self::Shadow(_)
+            | Self::Constrained(_) => true,
         }
     }
 
@@ -216,6 +228,18 @@ impl<'a> KaniExecutableHarness<'a> {
             }
             Self::Collection(harness) => collection_arguments(&harness.identity),
             Self::Graph(harness) => graph_arguments(&harness.identity),
+            Self::Shadow(harness) => harness
+                .identity
+                .leaves
+                .iter()
+                .map(|leaf| SymbolicArgumentBounds {
+                    identifier: leaf.name.clone(),
+                    bounds: SymbolicBounds::Integer {
+                        minimum: leaf.drawn.0,
+                        maximum: leaf.drawn.1,
+                    },
+                })
+                .collect(),
             Self::V2Clause(harness) => {
                 if let Some(context) = &harness.identity.collection_operation {
                     let mut arguments = context
@@ -332,6 +356,19 @@ impl<'a> KaniExecutableHarness<'a> {
                     rust: &harness.rust,
                     selection: format!("{}::{}", identity.module_symbol, identity.harness_symbol),
                     kind: Some(identity.kind),
+                    unwind: identity.unwind,
+                    solver: identity.solver,
+                    options: &identity.options,
+                    witness_options: &identity.witness_options,
+                }
+            }
+            Self::Shadow(harness) => {
+                let identity = &harness.identity;
+                HarnessView {
+                    ceilings: identity.ceilings,
+                    rust: &harness.rust,
+                    selection: harness.harness_path(),
+                    kind: None,
                     unwind: identity.unwind,
                     solver: identity.solver,
                     options: &identity.options,

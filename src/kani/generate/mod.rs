@@ -32,6 +32,8 @@ pub(crate) mod record;
 mod role_parity_tests;
 // The scalar family.
 pub(crate) mod scalar;
+// The bounded-shadow generator and its refinement obligation (FR-028-AC-13 to AC-20).
+pub mod shadow;
 
 // Validated private descriptions and their pure renderer.
 mod render;

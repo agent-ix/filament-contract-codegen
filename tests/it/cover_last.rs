@@ -20,7 +20,7 @@ use ix_trace_rs::trace;
 
 /// Every family the inspection drives, with the one source file that emits it. A file in this
 /// table is a file the scan allows to spell a proof attribute.
-const FAMILIES: [(&str, &str); 8] = [
+const FAMILIES: [(&str, &str); 9] = [
     ("scalar", "kani/generate/render.rs"),
     ("v2 precondition", "kani/generate/render.rs"),
     ("state clause", "kani/generate/render.rs"),
@@ -38,11 +38,12 @@ const FAMILIES: [(&str, &str); 8] = [
         "whole-object postcondition",
         "kani/generate/render/collection_operation.rs",
     ),
+    ("bounded shadow", "kani/generate/render/shadow.rs"),
 ];
 
 /// Test code the scan skips whole: `kani/test_support.rs` has no `#[cfg(test)]` of its own, its
 /// gate is the `mod` declaration in `kani/mod.rs`.
-const TEST_CODE_FILES: [&str; 1] = ["kani/test_support.rs"];
+const TEST_CODE_FILES: [&str; 2] = ["kani/test_support.rs", "kani/generate/shadow/tests.rs"];
 
 fn is_path(path: &syn::Path, segments: [&str; 2]) -> bool {
     path.segments
@@ -140,6 +141,7 @@ fn emitted() -> Vec<(&'static str, String)> {
         crate::bounded_kani_corpus::guard_sources(),
         crate::kani_obligations_symbolic_domains::guard_sources(),
         crate::kani_collection_operation::guard_sources(),
+        crate::shadow_refinement::guard_sources(),
     ]
     .concat()
 }
@@ -187,11 +189,12 @@ fn tc_025_the_cover_inspection_rejects_a_misplaced_duplicated_or_missing_cover()
 /// The proof-attribute templates each driven file holds, as `proof_spellings` counts them. A
 /// driven file with more spellings than this has a template no entry point above drives; raise
 /// the count only together with a driver and a family in `FAMILIES`.
-const PROOF_TEMPLATES: [(&str, usize); 4] = [
+const PROOF_TEMPLATES: [(&str, usize); 5] = [
     ("kani/generate/render.rs", 3),
     ("kani/generate/render/constrained.rs", 1),
     ("kani/generate/render/collection_operation.rs", 1),
     ("kani/generate/corpus/bounded_kani_corpus.rs", 1),
+    ("kani/generate/render/shadow.rs", 1),
 ];
 
 /// `literal` as the compiler reads it with respect to `\` line continuations: each backslash
@@ -336,6 +339,7 @@ fn tc_025_frame_renderer_owns_every_non_corpus_kani_spelling() {
             || file == "kani/generate/render.rs"
             || file == "kani/generate/render/collection_operation.rs"
             || file == "kani/generate/render/constrained.rs"
+            || file == "kani/generate/render/shadow.rs"
             || file == "kani/generate/corpus/bounded_kani_corpus.rs"
         {
             continue;
