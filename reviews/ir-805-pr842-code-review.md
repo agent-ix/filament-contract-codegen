@@ -77,3 +77,12 @@ read restored. Details are in the gap-analysis SR.
 | tests/it/scratch_crate.rs | examined | `per_label_package`, `tests_ran` |
 | tests/exact_scalar_support/package.rs | examined | float comparison operands carry `float_rounding`; cohort size 4 |
 | src/oracle/function/kani_harness/tests.rs | examined | `acfilament_checked_closure` import |
+
+## Dispositions
+
+Disposition pass round 1: fix commit 1b4fb4c9 (was a1a4c6b6); I checked `git diff a1a4c6b6..1b4fb4c9`.
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-001 | fixed | `bounded_kani_corpus.rs:690-691` now emits `corpus/{name}.fsl` and `corpus/{name}.dependency.fsl`. Every `quire-codegen-` scratch prefix is now `filament-codegen-`: `tests/it/bounded_kani_corpus.rs:485`, `capability_settlement.rs:1094`, and also `oracle_generation.rs:912,1048` and `scratch_crate.rs:340`. `git grep` at 1b4fb4c9 finds no `.qsl` or `quire-codegen` in src, tests, scripts or the Makefile. |
+| FND-002 | fixed | deny.toml drops `ignore = ["RUSTSEC-2026-0009"]` and the BSD-3-Clause, CDLA-Permissive-2.0 and ISC allowances, and `make cargo-audit` drops `--ignore`. At 1b4fb4c9, `cargo deny check` reports `advisories ok, bans ok, licenses ok, sources ok`, and `cargo audit` (1509 advisories, 268 crates) exits 0. The one remaining warning is `wildcard` (3 git deps with no `version`: filament-exact, filament-semantic-value, filament-specification). It already existed on main, `wildcards = "warn"` is the stated policy, and FND-002 did not cover it. |

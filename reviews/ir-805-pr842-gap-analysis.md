@@ -87,3 +87,24 @@ IR-260 mutant result: with `#[cfg(any())]` on the `if let Some(CompleteLoweringR
 | FR-015-AC-151 | examined | PARTIAL; carrier read; pipeline subject PLANNED (unowned, planner to assign) |
 | FR-037-AC-9 | examined | bounded corpus cohorts admit every requested scalar once |
 | FR-056 measured table | context_only | rows carry generator and kernel version the probe ran against |
+
+## Dispositions
+
+Disposition pass round 1: fix commit 1b4fb4c9 (was a1a4c6b6). These are targeted runs at
+1b4fb4c9 (`--locked`, under the cargo flock); the whole suite is the coordinator's `make ci`.
+- `--test it`: 15 passed, 0 failed, 7 Kani-lane ignored. The filters were the native-row table
+  tests, the deposit-body test, `bounded_kani_corpus::`, process settlement, `tc_002_` and the
+  scratch-lock test.
+- `--lib tractability`: 1 passed.
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-001 | fixed | The deposit test (kani_obligations_v2_clause_controls.rs:139-161) now asserts three things: the row's `declaring` node is the Account type, the body node's `node_tag` is `function`, and its body holds `filament.op.boolean.implies` over `Name("amount")`. A row pointed at a non-function node, or at another operation, now fails. The test passed at 1b4fb4c9. |
+| FND-002 | fixed | `TractabilityRow` gains an optional `provenance` (`#[serde(default, skip_serializing_if)]`). Neither the decider nor the lookup reads it, so it never selects a row, as FR-056 now documents. All six native rows name the TC-957 record and say the CG generator and kernel versions only make them current. `the_shipped_table_holds_the_kernel_native_division_rows_on_the_native_route` asserts that provenance on each native row, and it passed. FR-057 now states the least-tractable over-refusal (truncating quotient and remainder at 16 bits, constant divisors at 64 bits) as a known limitation until a profile or divisor-shape feature exists. The behaviour is unchanged and stays latent behind `NativeDivisionPlanUnavailable`, which the finding accepted. |
+| FND-003 | still-open: no change in 1b4fb4c9 | FR-015-AC-151 (spec/kani/functional/FR-015-bounded-kani-obligations.md:997), TC-025 and tests.md still read "unowned, planner to assign", and they cite no ticket for the CG subject-render step. Low severity, and it does not block merge on its own. The closing step is filing the ticket and citing it, which the planner or lead can do without a code change. |
+
+Disposition pass round 2: commit 74c66f2c, spec and docs only, on top of 1b4fb4c9. `quire validate` over spec/plan/reviews exits 0 at 74c66f2c.
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-003 | fixed | Ticket IR-1548 now exists ("CG: render the authored function node into crate::subject (IR-1509 AC-151 spec + code)"). All four places that said "unowned, planner to assign" for the pipeline-compiled subject now read "owned by IR-1548 (terra:IR writes the spec first, CG code after; it blocks IR-1509)": FR-015:997, TC-025:1077, tests.md:63 and docs/qualification/ir1509-kani-clause-controls.md. The commit touches no non-spec file. The "unowned" text that remains at FR-015-AC-154 and AC-155 is in other criteria and predates this PR. |

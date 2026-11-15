@@ -46,3 +46,11 @@ FR-057-AC-7 PARTIAL and FR-015-AC-151 PARTIAL are worded honestly.
 | FR-057-AC-7 | examined | stays PARTIAL; native route still refuses NativeDivisionPlanUnavailable |
 | FR-015-AC-151 | examined | PARTIAL; PLANNED pipeline subject, unowned, planner to assign |
 | TC-025 AC-151 step | examined | PLANNED: the subject compiled by the pipeline |
+
+## Dispositions
+
+Disposition pass round 1: fix commit 1b4fb4c9 (was a1a4c6b6).
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-001 | fixed | FR-053 now says "P1 is delivered for the comparisons, the only supported harnesses". The comparison natives are in filament-exact; the arithmetic natives (IR-1446, in progress) condition only the arithmetic rows, which the requirement refuses. AC-13 "runs today for the comparisons, whose natives are shipped; the arithmetic half ... cannot run until IR-1446". The AC preamble and the TC-067 step say the same. tests.md now reads "AC-13 is delivered for the comparisons". Status, prerequisites and matrix now agree. |
