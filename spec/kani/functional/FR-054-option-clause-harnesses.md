@@ -163,7 +163,7 @@ refuse the playback.
 
 All controls use admitted source-backed V2 inputs except FR-054-AC-5, which names its fixture.
 Every healthy proof is paired with a failing mutant that names its site, its distinguishing input
-and its failing step. No criterion below is implemented, and the probe record is not CG evidence.
+and its failing step. Implemented criteria are marked in the Status section; the probe record is not CG evidence.
 The failing step of a produced-result mutant is "produced result agrees with the independent
 checked condition".
 
@@ -204,5 +204,13 @@ checked condition".
 
 ## Status
 
-PLANNED (IR-1448 specifies; IR-1448 also owns the implementing code PR; no new ticket). No criterion is implemented or tagged. The installed-Kani measurement is a
-hand-written probe only. Drawing the `null` state of `field?` is not planned.
+PARTIAL (IR-1448; executed runs in `docs/qualification/ir1448-kani-option-clause-runs.md`).
+Implemented: AC-1, AC-2, AC-3, AC-4, AC-5, AC-7, AC-15, AC-22, AC-23. PARTIAL: AC-6 (healthy
+Kani run and a host stop probe; the unguarded mutant has no admitted package, so no Kani verdict),
+AC-8 and AC-9 (the checked package carries no record fields, so a composite option is refused
+`PayloadNotScalar`; unowned, planner to assign), AC-10 (only the bounded text family is run),
+AC-11 (Contract IR refuses an option of an option; a record-held option is not run), AC-16
+(package admission refuses an unbounded integer option, so `requires_bound` is not reached; the
+criterion text is to be corrected), AC-21 (AC-3, AC-4 and AC-7 are run; AC-6 and AC-8 are not).
+Not run: AC-12, AC-13, AC-14, AC-17, AC-18, AC-19, AC-20 (unowned, planner to assign). Drawing the
+`null` state of `field?` is not planned.

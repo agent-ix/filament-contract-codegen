@@ -12,7 +12,7 @@ relationships:
 
 Verify [FR-054](../functional/FR-054-option-clause-harnesses.md) through admitted V2 clause
 packages over option operands, public CG generation and, one run at a time, installed Kani
-through CG's runner. This case is planned. The scratch probe in
+through CG's runner. This case is partly implemented (see Status). The scratch probe in
 `docs/qualification/ir1448-kani-option-probe.md` measured the encoding only. Every produced-result
 mutant fails the step "produced result agrees with the independent checked condition".
 
@@ -71,4 +71,8 @@ distinguishing input; every refusal keeps its own reason and no harness.
 
 ## Status
 
-PLANNED (IR-1448): no FR-054 criterion is implemented or tagged.
+PARTIAL (IR-1448): tests are in `tests/it/kani_obligations_v2_option.rs`; installed runs are in
+`docs/qualification/ir1448-kani-option-clause-runs.md`. Steps 1 to 6 run (step 5 as a scratch-crate
+oracle probe, step 6 without a Kani mutant); step 7 is not reachable (the checked record carries no
+fields); step 8 runs for a bounded text payload only; step 9 runs the sibling rule; steps 10 and 11
+are not run. Unreached steps are unowned, planner to assign.
