@@ -34,6 +34,11 @@ pub enum RecordedType {
         /// The owner-issued kernel key, as `declaration_runtime_keys` spells it.
         key: String,
     },
+    /// A union member's ordered payload types; empty for a nullary member.
+    Payload {
+        /// The payload position types in declaration order.
+        positions: Vec<RecordedType>,
+    },
     /// Any other family; its bounds are not recorded.
     Other {
         /// The family name.
@@ -70,7 +75,7 @@ pub struct RecordedMember {
     pub name: String,
     /// Declared presence.
     pub presence: RecordedPresence,
-    /// Declared value type; a union member records its payload positions separately.
+    /// Declared value type; a union member records its payload positions.
     pub value_type: RecordedType,
 }
 
@@ -162,14 +167,12 @@ pub(super) fn recorded_declarations(
                     RecordedForm::Union,
                     members
                         .iter()
-                        .flat_map(|member| {
-                            member.positions().iter().enumerate().map(|(index, value)| {
-                                RecordedMember {
-                                    name: format!("{}.{index}", member.identifier()),
-                                    presence: RecordedPresence::Required,
-                                    value_type: recorded_type(value),
-                                }
-                            })
+                        .map(|member| RecordedMember {
+                            name: member.identifier().to_owned(),
+                            presence: RecordedPresence::Required,
+                            value_type: RecordedType::Payload {
+                                positions: member.positions().iter().map(recorded_type).collect(),
+                            },
                         })
                         .collect(),
                 ),

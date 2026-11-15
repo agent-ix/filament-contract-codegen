@@ -255,11 +255,15 @@ the enum-only owner facade does not excuse dropping it.
     snake_case `limit_kind`, with no panic and never `LoweringWorkExhausted`.
 13. Declaration closure (FR-018-AC-21, IR-264). For every item of the bounded corpus (the
     `bounded` source case: a record with an optional field under both operators, a tuple, an
-    option and a nested option over Boolean and `Int[0, 2]`), read the claim-map entry's closure (each declaration's
-    key, form, members in declaration order with name, presence and type, each leaf's family and
-    declared bound) and compare it member by member with the declarations of the
-    `TypeEnvironment` the item's generated environment constructor returns, held by the test and
-    not parsed from the source.
+    option, a nested option and a union `Empty | Flag(Boolean) | Both(Boolean, Int[0, 2])` over Boolean and
+    `Int[0, 2]`), read the claim-map entry's closure (each declaration's
+    key, form, members in declaration order with name, presence and type, a union member's ordered
+    payload types, empty for a nullary member, each leaf's family and declared bound) and the
+    operand comparison types, and compare them member by member with the declarations and the
+    prepared operand types of the `TypeEnvironment` the item's generated environment constructor
+    returns, held by the test and not parsed from the source. Hand the comparison a closure that
+    dropped a member, narrowed a bound, read an optional member as required, reordered members, or
+    dropped a nullary union member or a payload position, and read each fail.
 14. Totality and schedule over the refinement domain (FR-018-AC-22, partial, IR-264, IR-241). For the
     record, tuple and option items of step 13, whose declared integer ranges are chosen so the
     domain fits the case cap (both Booleans, an integer range of three values, every presence
@@ -269,11 +273,16 @@ the enum-only owner facade does not excuse dropping it.
     from the values, the admitted charges `equality.plan-form`, `equality.plan`, one
     `equality.pair` per node of the occurrence-pair tree counted by the test, then
     `equality.result-retain`, and no `Refused` or `Incomplete`.
-15. Independent closure (FR-018-AC-23, IR-264). For each item of step 13, read the
-    package's declared types through Contract IR's reader, not through the generator, and compare
-    member names, presence and each integer leaf's inclusive bounds with the claim-map closure;
-    then hand the check a closure that dropped a member, one whose bound was narrowed by one, and
-    one that read an optional member as required, and read each fail.
+15. Independent closure (FR-018-AC-23, IR-264). For each item of step 13 and for the retained
+    `option` case of step 1 (`Option<Int[-100, 100]>`), read the package's declared types through
+    Contract IR's reader, not through the generator, and compare member names, presence, union
+    payload types, the operand types and each integer leaf's inclusive bounds with the claim-map
+    closure; then hand the check a closure that dropped a member (a nullary union member and a
+    payload position included), one whose bound was narrowed by one (in a record member, an
+    option's payload and the retained case), one that read an optional member as required, one that
+    lost a nested option layer, one that read an option as its payload, and a record operand
+    replaced by a scalar, and read each fail. A reconstruction that narrowed an integer bound or
+    read `T?` as `T` is run as a source mutant and read to fail through the package read.
 16. Recursive records and authoritative shape reads (FR-018-AC-24, AC-26 and AC-27, planned,
     IR-643). Read the authoritative FSpec
     `proposals/checked-package-v2/fixtures/positive-recursive-records.json` through Contract IR's

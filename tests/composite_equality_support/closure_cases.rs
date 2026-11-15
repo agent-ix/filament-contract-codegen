@@ -28,7 +28,18 @@ use ix_trace_rs::trace;
 use serde_json::Value as Json;
 use support::rt_side::*;
 
-const ALIASES: [&str; 5] = [
+const ALIASES: [&str; 6] = [
+    "flags_equal",
+    "flags_not_equal",
+    "duo_equal",
+    "option_equal",
+    "nested_option_equal",
+    "shape_equal",
+];
+
+/// The union item has no value-level domain here: its closure is checked (AC-21), its
+/// oracle's totality is not (AC-22).
+const DOMAIN_ALIASES: [&str; 5] = [
     "flags_equal",
     "flags_not_equal",
     "duo_equal",
@@ -61,6 +72,16 @@ fn render_json_type(value: &Json) -> String {
         "int" => format!("int[{},{}]", value["lower"].as_str().unwrap(), value["upper"].as_str().unwrap()),
         "option" => format!("opt<{}>", render_json_type(&value["payload"])),
         "composite" => format!("comp:{}", value["key"].as_str().unwrap()),
+        "payload" => format!(
+            "payload({})",
+            value["positions"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(render_json_type)
+                .collect::<Vec<_>>()
+                .join(",")
+        ),
         other => format!("other:{other}"),
     }
 }
@@ -105,7 +126,21 @@ fn environment_closure(
                         .map(|(index, value)| (index.to_string(), false, render_type(value)))
                         .collect(),
                 ),
-                other => panic!("no union in this corpus: {other:?}"),
+                CompositeShape::Union(members) => (
+                    "union",
+                    members
+                        .iter()
+                        .map(|member| {
+                            let positions: Vec<String> =
+                                member.positions().iter().map(render_type).collect();
+                            (
+                                member.identifier().to_owned(),
+                                false,
+                                format!("payload({})", positions.join(",")),
+                            )
+                        })
+                        .collect(),
+                ),
             };
             (declaration.key().to_string(), (form.to_owned(), members))
         })
@@ -170,7 +205,7 @@ fn tc_029_ac21_closure_equals_the_constructed_environment_declarations() {
         compare_operands(&claim, &prepared).unwrap_or_else(|error| panic!("{alias}: {error}"));
         with_declarations += usize::from(!declarations.is_empty());
     }
-    assert_eq!(with_declarations, 3, "record x2 and tuple carry declarations; options carry none");
+    assert_eq!(with_declarations, 4, "record x2, tuple and union carry declarations; options carry none");
 
     // Controls: a closure that dropped a member, narrowed a bound, read an optional member as
     // required or swapped a type fails the same comparison.
@@ -197,6 +232,33 @@ fn tc_029_ac21_closure_equals_the_constructed_environment_declarations() {
         assert_ne!(changed, claim, "{label}: the mutation changes the closure");
         assert!(compare(&changed, &declarations).is_err(), "{label} must be refused");
     }
+
+    // The union keeps one member per declared member, a nullary one included.
+    let shape = self::claim("shape_equal");
+    let shape_declarations = generated::declarations(&environment_for("shape_equal"));
+    assert_eq!(compare(&shape, &shape_declarations), Ok(()));
+    assert_eq!(shape["declaration_closure"][0]["members"].as_array().unwrap().len(), 3);
+    let union_mutants: [(&str, fn(&mut Json)); 3] = [
+        ("dropped nullary member", |c| {
+            c["declaration_closure"][0]["members"].as_array_mut().unwrap().remove(0);
+        }),
+        ("dropped payload position", |c| {
+            c["declaration_closure"][0]["members"][2]["value_type"]["positions"]
+                .as_array_mut()
+                .unwrap()
+                .pop();
+        }),
+        ("narrowed payload bound", |c| {
+            c["declaration_closure"][0]["members"][2]["value_type"]["positions"][1]["upper"] =
+                "1".into();
+        }),
+    ];
+    for (label, mutate) in union_mutants {
+        let mut changed = shape.clone();
+        mutate(&mut changed);
+        assert_ne!(changed, shape, "{label}: the mutation changes the closure");
+        assert!(compare(&changed, &shape_declarations).is_err(), "{label} must be refused");
+    }
 }
 
 fn environment_for(alias: &str) -> generated::PreparedEqualityEnvironment<'static> {
@@ -207,6 +269,7 @@ fn environment_for(alias: &str) -> generated::PreparedEqualityEnvironment<'stati
         "duo_equal" => generated::environment_duo_equal(Some(context)),
         "option_equal" => generated::environment_option_equal(Some(context)),
         "nested_option_equal" => generated::environment_nested_option_equal(Some(context)),
+        "shape_equal" => generated::environment_shape_equal(Some(context)),
         other => panic!("unknown alias {other}"),
     }
     .expect("same original admitted context")
@@ -402,7 +465,7 @@ fn tc_029_ac22_oracle_completes_every_domain_pair_with_the_fr149_verdict_and_sch
     let mut pairs = 0_u64;
     let mut equal_seen = false;
     let mut unequal_seen = false;
-    for alias in ALIASES {
+    for alias in DOMAIN_ALIASES {
         let prepared = environment_for(alias);
         let environment = generated::environment(&prepared);
         let (models, shapes, names) = domain(alias);

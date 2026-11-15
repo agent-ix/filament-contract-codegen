@@ -15,12 +15,13 @@ use ix_trace_rs::trace;
 use quire_contract_model::{CheckedNodeId, CheckedPackageV2};
 
 /// `(alias, function, operator)`: the corpus items, named as `closure_cases.rs` expects.
-const ITEMS: [(&str, &str, EqualityOperatorKind); 5] = [
+const ITEMS: [(&str, &str, EqualityOperatorKind); 6] = [
     ("flags_equal", "fr", EqualityOperatorKind::Equal),
     ("flags_not_equal", "fr", EqualityOperatorKind::NotEqual),
     ("duo_equal", "ft", EqualityOperatorKind::Equal),
     ("option_equal", "fo", EqualityOperatorKind::Equal),
     ("nested_option_equal", "fq", EqualityOperatorKind::Equal),
+    ("shape_equal", "fu", EqualityOperatorKind::Equal),
 ];
 
 struct Corpus {
@@ -156,9 +157,25 @@ fn tc_029_ac22_native_run_refuses_an_oracle_of_the_other_operator() {
     let outcome = std::panic::catch_unwind(|| {
         run_composite_agreement_workspace(&scratch.path, &[staged]);
     });
+    let payload = outcome.expect_err("a flipped operator must fail the native domain run");
+    let message = payload
+        .downcast_ref::<String>()
+        .cloned()
+        .or_else(|| {
+            payload
+                .downcast_ref::<&str>()
+                .map(|text| (*text).to_owned())
+        })
+        .expect("the workspace failure carries a message");
     assert!(
-        outcome.is_err(),
-        "a flipped operator must fail the native domain run"
+        message.contains("composite agreement workspace failed")
+            && !message.contains("could not compile")
+            && message.contains(
+                "test tc_029_ac22_oracle_completes_every_domain_pair_with_the_fr149_verdict_and_schedule ... FAILED"
+            )
+            && message.contains("flags_equal")
+            && message.contains("Completed("),
+        "the failure must be the domain verdict assertion, not a build or setup error: {message}"
     );
 }
 
@@ -171,6 +188,7 @@ enum Read {
     Integer(Option<(i128, i128)>),
     Option(Box<Read>),
     Composite(CheckedNodeId),
+    Payload(Vec<Read>),
 }
 
 fn body(package: &CheckedPackageV2, id: &CheckedNodeId) -> serde_json::Value {
@@ -230,7 +248,10 @@ fn read_type(package: &CheckedPackageV2, id: &CheckedNodeId) -> Read {
             assert_eq!(payload.len(), 1, "an option has one payload reference");
             Read::Option(Box::new(read_type(package, &target(&payload[0]))))
         }
-        (tag, form) if tag == "composite_type" && (form == "record" || form == "tuple") => {
+        (tag, form)
+            if tag == "composite_type"
+                && (form == "record" || form == "tuple" || form == "union") =>
+        {
             Read::Composite(id.clone())
         }
         other => panic!("not a Boolean or bounded-integer shape: {other:?}"),
@@ -266,6 +287,19 @@ fn read_declaration(
                 }
             })
             .collect()
+    } else if form == "union" {
+        terms
+            .iter()
+            .map(|member| {
+                assert_eq!(member["term"], "binding", "{member}");
+                let name = member["name"].as_str().expect("member name").to_owned();
+                let payload = members(&member["value"])
+                    .iter()
+                    .map(|position| read_type(package, &target(position)))
+                    .collect();
+                (name, false, Read::Payload(payload))
+            })
+            .collect()
     } else {
         terms
             .iter()
@@ -297,6 +331,12 @@ fn describe(value: &RecordedType, closure: &[RecordedDeclaration]) -> Read {
                 .expect("a recorded composite is in the closure")
                 .node_id
                 .clone(),
+        ),
+        RecordedType::Payload { positions } => Read::Payload(
+            positions
+                .iter()
+                .map(|position| describe(position, closure))
+                .collect(),
         ),
         RecordedType::Other { name } => panic!("family {name} is outside this corpus"),
     }
@@ -356,7 +396,12 @@ fn check_against_package(
     Ok(())
 }
 
-type ClaimMutation = fn(&mut GeneratedCompositeEqualityClaim);
+/// A mutation of the claim at `item` (an index into [`ITEMS`]).
+type ClaimMutation = (
+    &'static str,
+    usize,
+    fn(&mut GeneratedCompositeEqualityClaim),
+);
 
 #[trace("TC-029", "FR-018-AC-23")]
 #[test]
@@ -375,32 +420,62 @@ fn tc_029_ac23_closure_equals_an_independent_read_of_the_checked_package() {
     }
     assert_eq!(
         members_checked,
-        3 * 2 + 2,
-        "two Flags items and one Duo item"
+        3 * 2 + 2 + 3,
+        "two Flags items, one Duo item and one three-member union"
     );
 
     // Controls: each fault of the closure is caught by the independent read, which the
     // generator's own reconstruction could not see (it would carry the same fault).
-    let claim = generated(&corpus, 0).clone();
-    assert_eq!(check_against_package(&corpus.package, &claim), Ok(()));
-    let mutants: [(&str, ClaimMutation); 4] = [
-        ("dropped member", |claim| {
+    let mutants: [ClaimMutation; 9] = [
+        ("dropped member", 0, |claim| {
             claim.declaration_closure[0].members.pop();
         }),
-        ("narrowed bound", |claim| {
+        ("narrowed bound", 0, |claim| {
             claim.declaration_closure[0].members[1].value_type = RecordedType::Int {
                 lower: "0".into(),
                 upper: "1".into(),
             };
         }),
-        ("optional read as required", |claim| {
+        ("optional read as required", 0, |claim| {
             claim.declaration_closure[0].members[2].presence = RecordedPresence::Required;
         }),
-        ("option payload dropped from the operand", |claim| {
+        ("record operand replaced by Boolean", 0, |claim| {
             claim.operand_types.left = RecordedType::Boolean;
         }),
+        ("option payload bound narrowed", 3, |claim| {
+            claim.operand_types.left = RecordedType::Option {
+                payload: Box::new(RecordedType::Int {
+                    lower: "0".into(),
+                    upper: "1".into(),
+                }),
+            };
+        }),
+        ("nested option layer dropped", 4, |claim| {
+            claim.operand_types.left = RecordedType::Option {
+                payload: Box::new(RecordedType::Boolean),
+            };
+        }),
+        ("option read as its payload", 3, |claim| {
+            claim.operand_types.right = RecordedType::Int {
+                lower: "0".into(),
+                upper: "2".into(),
+            };
+        }),
+        ("nullary union member dropped", 5, |claim| {
+            claim.declaration_closure[0].members.remove(0);
+        }),
+        ("union payload position dropped", 5, |claim| {
+            let RecordedType::Payload { positions } =
+                &mut claim.declaration_closure[0].members[2].value_type
+            else {
+                panic!("the Both member records its payload");
+            };
+            positions.pop();
+        }),
     ];
-    for (label, mutate) in mutants {
+    for (label, item, mutate) in mutants {
+        let claim = generated(&corpus, item).clone();
+        assert_eq!(check_against_package(&corpus.package, &claim), Ok(()));
         let mut changed = claim.clone();
         mutate(&mut changed);
         assert_ne!(changed, claim, "{label}: the mutation changes the claim");
@@ -409,4 +484,40 @@ fn tc_029_ac23_closure_equals_an_independent_read_of_the_checked_package() {
             "{label} must fail the independent read"
         );
     }
+}
+
+/// The retained TC-029 `option` case (`Option<Int[-100, 100]>` on both sides) also has only
+/// bounded-integer leaves, so its claim is read against its own package too.
+#[trace("TC-029", "FR-018-AC-23")]
+#[test]
+fn tc_029_ac23_retained_option_case_equals_an_independent_read() {
+    let compiled = fixture::compile("option");
+    let package = super::admitted_enum_equality::checked(&compiled, &[]);
+    let item = original_item_named(&package, "f", false);
+    let oracles = super::admitted_enum_equality::generate_items(
+        &package,
+        Some(compiled.context()),
+        std::slice::from_ref(&item),
+        &[],
+    )
+    .expect("the retained option case generates");
+    let ClaimDisposition::Generated(claim) = &oracles.claim_map.items[0].result else {
+        panic!("retained option case refused");
+    };
+    assert_eq!(check_against_package(&package, claim), Ok(()));
+    let bounded = RecordedType::Option {
+        payload: Box::new(RecordedType::Int {
+            lower: "-100".into(),
+            upper: "100".into(),
+        }),
+    };
+    assert_eq!(claim.operand_types.left, bounded);
+    let mut narrowed = claim.as_ref().clone();
+    narrowed.operand_types.left = RecordedType::Option {
+        payload: Box::new(RecordedType::Int {
+            lower: "-100".into(),
+            upper: "99".into(),
+        }),
+    };
+    assert!(check_against_package(&package, &narrowed).is_err());
 }
