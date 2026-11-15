@@ -726,7 +726,12 @@ FR-028-AC-16's Boolean and slot states). Installed backend, in the Kani lane (`m
 `composite_shadow_kani`): `tests/it/composite_shadow_kani.rs` (steps 34 and 35 and the budget probe).
 
 Not met, and unowned (planner to assign): step 33's `reference` composite row (FR-018-AC-7 is
-planned, so no package reaches it); step 34's second case is the corpus record under a case cap of
+planned, so no package reaches it), its `quantity` row and its `sequence`, `set`, `bag` and `ordered set`
+rows (the closure reader records those as `other` and `collection`; the other family names are fed to
+the generator as recorded type names), and the same-request clause (separate calls, no negotiated
+request); step 29's evidence in the run record (`KaniExecutionEvidence` carries neither the budget nor
+the count; the identity does, asserted in its serialised form); the parameter nodes of step 30's order
+check are the two argument references of the corpus equality application, read from the checked package; step 34's second case is the corpus record under a case cap of
 100 rather than two unconstrained `i64`-range leaves, and the shadow run's evidence names no tool
 versions (FR-028-AC-23); the generator is a public entry that takes the claim-map entry, and is not
 yet an item kind of the negotiated request.
@@ -765,7 +770,7 @@ cross-lane lock was held. The wall is the proof's; the peak covers the test proc
 | nested option | Verified, cover satisfied | 0.2 s | 145,530,880 B |
 | member order permuted | Verified | 0.3 s | 141,086,720 B |
 | mutant: `absent` equal to `null` | Falsified at the verdict assertion | 0.5 s | 141,496,320 B |
-| mutant: a field compared with itself | Falsified at the verdict assertion | 0.5 s | 137,097,216 B |
+| mutant: the left operand's first field compared with the right operand's second, on a two-Boolean record (healthy record Verified in 0.2 s) | Falsified at the verdict assertion | 0.4 s | 455,471,104 B (scope also ran the 4-node probe) |
 | mutant: option payload pair not counted | Falsified at the pair-count assertion | 0.4 s | 131,743,744 B |
 | mutant: count stops after the first unequal field | Falsified at the pair-count assertion | 0.5 s | 138,350,592 B |
 | mutant: `!=` rendered as `=` | Falsified at the verdict assertion | 0.5 s | 120,041,472 B |

@@ -241,7 +241,7 @@ The installed-backend test is `#[ignore]`d under the `kani lane:` convention and
 
 The Boolean and option or optional-slot boundary values of step 14 (FR-028-AC-16) are implemented with the composite family (IR-264 PR3): the composite shadow encodes a Boolean and a presence as the range 0 to 1 and a slot state as 0 to 2, so `plan_refinement`'s boundary rule draws every state of each, asserted over a sampled plan by `tc_025_a_sampled_plan_draws_every_boolean_presence_and_slot_state` (`tests/it/composite_shadow_native.rs`).
 
-The composite family (IR-264 PR3) implements steps 11, 12, 13, 14, 15, 16, 20 and 22 for the composite
+The composite family (IR-264 PR3) implements steps 11, 12, 13, 14, 15, 16, 17 (FR-028-AC-18: the closure-reader mutants and the member-order permutation), 20 and 22 for the composite
 shadow: the source check over the composite source and its seven spliced faults
 (`tc_039_the_composite_shadow_source_has_no_runtime_path_no_stub_and_no_assumption_beyond_its_domain`),
 the construction refusals and the composite observables

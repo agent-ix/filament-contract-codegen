@@ -5,8 +5,9 @@
 use std::{fs, path::PathBuf, time::Instant};
 
 use filament_contract_codegen::{
-    execute_kani_obligation, generate_composite_shadow_with_budget, KaniExecutionEvidence,
-    KaniExecutionRequest, KaniInstallation, KaniRunOutcome, KaniShadowHarness,
+    execute_kani_obligation, generate_composite_shadow, generate_composite_shadow_with_budget,
+    KaniExecutionEvidence, KaniExecutionRequest, KaniInstallation, KaniRunOutcome,
+    KaniShadowHarness,
 };
 use ix_trace_rs::trace;
 use quire_exact::Cancel;
@@ -205,7 +206,8 @@ fn tc_025_installed_kani_verifies_each_supported_corpus_shadow_with_its_cover_sa
     }
 }
 
-/// FR-015-AC-75 and FR-028-AC-22: each shadow mutant is falsified, and by the check it claims.
+/// FR-015-AC-75 and FR-028-AC-22: each shadow mutant that rewrites the corpus record is falsified, and by the check it claims;
+/// the misalignment mutant has its own test, on a record of two fields of one type.
 #[trace("TC-025", "FR-015-AC-75")]
 #[trace("TC-039", "FR-028-AC-22")]
 #[test]
@@ -219,19 +221,12 @@ fn tc_025_installed_kani_falsifies_each_shadow_mutant_by_the_check_it_claims() {
         &'static str,
         &'static str,
     );
-    let mutants: [Mutation; 6] = [
+    let mutants: [Mutation; 5] = [
         (
             "absent-equals-null",
             FLAGS_EQUAL,
             "(Slot::Absent, Slot::Absent) | (Slot::Null, Slot::Null) =>",
             "(Slot::Absent, Slot::Absent) | (Slot::Null, Slot::Null) | (Slot::Absent, Slot::Null) | (Slot::Null, Slot::Absent) =>",
-            VERDICT_ASSERT,
-        ),
-        (
-            "right-field-never-read",
-            FLAGS_EQUAL,
-            "let p1 = (l.f1 == r.f1, 1);",
-            "let p1 = (l.f1 == l.f1, 1);",
             VERDICT_ASSERT,
         ),
         (
@@ -284,6 +279,42 @@ fn tc_025_installed_kani_falsifies_each_shadow_mutant_by_the_check_it_claims() {
     }
 }
 
+/// FR-015-AC-75: the left operand's first field compared with the right operand's second
+/// field, on a record whose two fields are of one type, is falsified by the verdict check.
+#[trace("TC-025", "FR-015-AC-75")]
+#[trace("TC-039", "FR-028-AC-22")]
+#[test]
+#[ignore = "kani lane: run serially through make kani-gate"]
+fn tc_025_installed_kani_falsifies_a_field_compared_with_the_next_field_of_the_other_operand() {
+    if !selected("field-compared-with-next-field") {
+        return;
+    }
+    let corpus = corpus();
+    let base = entry(&corpus, FLAGS_EQUAL);
+    let claim = with_record(&base, vec![boolean("f0"), boolean("f1")]);
+    let mut harness = generate_composite_shadow(&item_of(&claim, "subject"))
+        .expect("a record of two Booleans generates");
+    let (healthy, _) = prove(&harness, "field-compared-with-next-field-healthy");
+    assert_eq!(healthy.outcome, KaniRunOutcome::Verified);
+    let line = line_of(&harness, VERDICT_ASSERT);
+    mutate(
+        &mut harness,
+        "let p0 = (l.f0 == r.f0, 1);",
+        "let p0 = (l.f0 == r.f1, 1);",
+    );
+    let (evidence, _) = prove(&harness, "field-compared-with-next-field");
+    assert!(
+        matches!(&evidence.outcome, KaniRunOutcome::Falsified { counterexample } if !counterexample.is_empty()),
+        "{:?}",
+        evidence.outcome
+    );
+    assert_eq!(
+        failed_lines(&evidence),
+        [line],
+        "falsified by the verdict check only"
+    );
+}
+
 /// The array literal `member_order` returns, reversed: a permutation of the order the members
 /// are walked and reported in, which no compared observable reads (FR-028-AC-18).
 fn permute_member_order(harness: &mut KaniShadowHarness) {
@@ -314,6 +345,7 @@ fn permute_member_order(harness: &mut KaniShadowHarness) {
 /// FR-015-AC-75: a permutation of the member order is not a mutant. It verifies, with its
 /// cover satisfied, exactly as the unmutated shadow does.
 #[trace("TC-025", "FR-015-AC-75")]
+#[trace("TC-039", "FR-028-AC-18")]
 #[test]
 #[ignore = "kani lane: run serially through make kani-gate"]
 fn tc_025_installed_kani_verifies_a_shadow_with_its_member_order_permuted() {

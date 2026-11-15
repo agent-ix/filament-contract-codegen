@@ -78,6 +78,34 @@ pub(super) fn parameter(entry: &CompositeEqualityClaim, second: bool) -> ShadowO
     }
 }
 
+/// The two parameter nodes the equality application of the `index`th corpus item references,
+/// read from the checked package: the real operand nodes, in operand order.
+pub(super) fn parameter_nodes(
+    corpus: &Corpus,
+    index: usize,
+) -> (
+    quire_contract_model::CheckedNodeId,
+    quire_contract_model::CheckedNodeId,
+) {
+    use quire_contract_model::CheckedTerm;
+    let application = super::admitted_enum_equality::application(&corpus.package, ITEMS[index].1);
+    let node = corpus
+        .package
+        .resolved_graph()
+        .nodes
+        .iter()
+        .find(|node| node.node_id == application)
+        .expect("the equality application");
+    let CheckedTerm::Application { arguments, .. } = &node.body else {
+        panic!("an application");
+    };
+    let target = |term: &CheckedTerm| match term {
+        CheckedTerm::Reference { target } => target.clone(),
+        other => panic!("an operand reference, not {other:?}"),
+    };
+    (target(&arguments[0]), target(&arguments[1]))
+}
+
 pub(super) fn item_of<'a>(
     entry: &'a CompositeEqualityClaim,
     subject: &str,
@@ -343,15 +371,44 @@ fn tc_025_the_harness_draws_one_value_per_leaf_in_node_then_path_order_and_no_co
 
     // Ascending order does not follow the operand order: the same claim with the operands'
     // nodes swapped draws the other parameter first.
+    // The operand nodes are the two parameter nodes the checked equality application
+    // references.
     let entry = entry(&corpus, FLAGS_EQUAL);
+    let (first, second) = parameter_nodes(&corpus, FLAGS_EQUAL);
+    assert_ne!(first, second);
+    let (low, high) = if first < second {
+        (first, second)
+    } else {
+        (second, first)
+    };
+    let operand =
+        |node: &quire_contract_model::CheckedNodeId, name: &str| ShadowOperand::Parameter {
+            node: node.clone(),
+            name: name.to_owned(),
+        };
+    let mut ordered = item_of(&entry, "subject");
+    ordered.left = operand(&low, "a");
+    ordered.right = operand(&high, "b");
+    let ascending = generate_composite_shadow(&ordered).unwrap();
     let mut swapped = item_of(&entry, "subject");
-    std::mem::swap(&mut swapped.left, &mut swapped.right);
+    swapped.left = operand(&high, "a");
+    swapped.right = operand(&low, "b");
     let harness = generate_composite_shadow(&swapped).unwrap();
-    assert!(harness.identity.leaves[0].node < harness.identity.leaves[4].node);
+    assert_ne!(
+        ascending.identity.leaves[0].node,
+        ascending.identity.leaves[4].node
+    );
+    assert!(ascending.identity.leaves[0].name.starts_with('a'));
+    // The operand drawn first is the one with the smaller node, whichever side it stands on.
     assert_eq!(
         harness.identity.leaves[0].node,
-        flags.identity.leaves[0].node
+        ascending.identity.leaves[0].node
     );
+    assert_eq!(
+        harness.identity.leaves[4].node,
+        ascending.identity.leaves[4].node
+    );
+    assert!(harness.identity.leaves[0].name.starts_with('b'));
 
     // A literal operand's leaves are pinned to exactly its value and are not drawn.
     let duo_entry = super::composite_shadow::entry(&corpus, DUO_EQUAL);
@@ -502,6 +559,11 @@ fn tc_025_the_shadow_is_straight_line_and_the_budget_refuses_one_node_over() {
             ),
             (nodes, nodes, budget)
         );
+        // The identity is the record serialised with the harness; it carries both figures.
+        let json = serde_json::to_value(&harness.identity).unwrap();
+        assert_eq!(json["sizeBudget"], budget);
+        assert_eq!(json["size"], nodes);
+        assert_eq!(json["composite"]["pairNodes"], nodes);
     }
     let over = record_of_nodes(&entry, budget + 1);
     assert_eq!(
@@ -857,6 +919,7 @@ fn tc_039_the_composite_shadow_source_has_no_runtime_path_no_stub_and_no_assumpt
 /// of FR-018-AC-23 catches it. The shadow generated from each faulty closure records that
 /// closure in its identity, and the read of the package fails on exactly what the identity holds.
 #[trace("TC-025", "FR-015-AC-75")]
+#[trace("TC-039", "FR-028-AC-18")]
 #[test]
 fn tc_025_a_closure_reader_mutant_is_caught_by_the_independent_read_not_by_the_shadow() {
     let corpus = corpus();

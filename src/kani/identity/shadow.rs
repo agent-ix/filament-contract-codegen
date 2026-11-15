@@ -150,7 +150,7 @@ pub struct CompositeIdentity {
     pub pinned: Vec<PinnedLeaf>,
     /// Each unexercised behaviour with its covering criterion and its backing state.
     pub coverage: Vec<UnexercisedCoverage>,
-    /// Whether any covering criterion is unbacked, so the result closes no family row.
+    /// Whether every covering criterion is backed, so the result may close its family row.
     pub closes_family_row: bool,
 }
 

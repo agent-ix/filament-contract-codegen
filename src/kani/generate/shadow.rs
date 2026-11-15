@@ -37,9 +37,9 @@ pub const TWO_LEAF_FAMILY: &str = "two_leaf_equality";
 
 /// The shadow families' size budget: the pair nodes a closure may have.
 ///
-/// Set by measurement (TC-025): a mixed closure of 128 pair nodes verifies in under a minute and
-/// stays well inside the 16 GiB memory ceiling the default identity records, while 192 nodes
-/// needs most of it, so the next size is not offered.
+/// Set by measurement (TC-025): a mixed closure of 128 pair nodes verifies in under a minute with
+/// a cgroup peak of 8.4 GB, while 192 nodes peaks at 18.9 GB, above a 16 GiB memory ceiling, so
+/// the next size is not offered.
 pub const SHADOW_PAIR_NODE_BUDGET: u32 = 128;
 
 /// The module the shadow, the expectation and their shared helpers live in.

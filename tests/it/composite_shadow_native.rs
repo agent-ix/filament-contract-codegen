@@ -497,9 +497,25 @@ fn tc_025_each_production_mutant_disagrees_with_the_shadow_for_the_reason_it_cla
         );
         assert!(count > 0);
         match member.label.as_str() {
-            "mutant_opposite_operator"
-            | "mutant_legal_pair_refused"
-            | "mutant_absent_equals_null" => {
+            "mutant_opposite_operator" => {
+                // The production oracle completes with the negated verdict and the same count.
+                let split = |text: &str| -> (bool, String) {
+                    let inner = text
+                        .strip_prefix("Completed(verdict=")
+                        .and_then(|rest| rest.strip_suffix(')'))
+                        .unwrap_or_else(|| panic!("a completed result: {text}"));
+                    let (verdict, pairs) = inner.split_once(",pairs=").expect("a count");
+                    (verdict == "true", pairs.to_owned())
+                };
+                let (production_verdict, production_pairs) = split(production);
+                let (shadow_verdict, shadow_pairs) = split(shadow);
+                assert_eq!(
+                    production_verdict, !shadow_verdict,
+                    "{production} / {shadow}"
+                );
+                assert_eq!(production_pairs, shadow_pairs, "the count does not change");
+            }
+            "mutant_legal_pair_refused" | "mutant_absent_equals_null" => {
                 assert!(
                     shadow.starts_with("Completed(verdict="),
                     "{}: {shadow}",
