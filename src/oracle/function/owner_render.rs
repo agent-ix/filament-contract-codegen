@@ -253,7 +253,7 @@ impl PreparedFunction {
         }
     }
     fn failure(&self, failure: sv::declaration::EnvironmentFailure) -> eval::BodyFailure {
-        eval::BodyFailure::qsv_environment(failure, Some(&self.cancel))
+        eval::BodyFailure::fsv_environment(failure, Some(&self.cancel))
     }
     fn finish(&self, mut evaluation: eval::Evaluation) -> Result<eval::Evaluation, eval::BodyFailure> {
         let FamilyOutcome::Evaluated(Outcome::Completed(value)) = &evaluation.outcome else { return Ok(evaluation); };

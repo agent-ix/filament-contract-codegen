@@ -437,7 +437,7 @@ fn environment_failure(
     let Err(CallFailure::Body(failure)) = result else {
         panic!("typed body failure: {result:?}");
     };
-    let BodyFailure::QsvEnvironment {
+    let BodyFailure::FsvEnvironment {
         failure,
         cancellation,
     } = *failure

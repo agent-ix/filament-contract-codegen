@@ -967,6 +967,16 @@ impl Twin {
         twin
     }
 
+    /// The same twin with `declaration` appended to its unit source, whose header profile is
+    /// replaced by the model profile an operation body needs.
+    pub fn with_model_profile_declaration(mut self, declaration: &str) -> Self {
+        let text = String::from_utf8(self.unit).expect("native unit");
+        let mut text = text.replace("filament.value.complete/v1", "filament.model.complete/v1");
+        text.push_str(declaration);
+        self.unit = text.into_bytes();
+        self
+    }
+
     /// The same twin with the `amount` parameter declared nullable, an option of its range.
     pub fn with_optional_amount(mut self) -> Self {
         let mut domain: Value = serde_json::from_slice(&self.domain).expect("domain document");

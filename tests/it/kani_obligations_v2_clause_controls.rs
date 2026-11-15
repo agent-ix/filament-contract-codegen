@@ -110,6 +110,42 @@ fn playback_test_with(subject_preamble: bool) -> String {
     )
 }
 
+/// FR-015-AC-151, the carrier half of the pipeline-compiled subject: the FSL source of the clause
+/// fixture, with the authored `deposit` body, compiles to a package whose `operation_bodies` row
+/// names the body as a function node of the checked graph. CG has no step that renders that node
+/// into the `crate::subject` module yet, so the executed runs keep the test-written subject.
+#[trace("FR-015-AC-151", "TC-025")]
+#[test]
+fn the_fsl_source_of_the_clause_fixture_carries_the_deposit_body_as_a_function_node() {
+    use filament_contract_model::OperationBody;
+    let (package, _) = Twin::with_bounded_amount_implication()
+        .with_model_profile_declaration(
+            "body DepositBody using v on Bank::Account::deposit(amount) { amount < 1000 implies amount + 1 <= 1000 }\n",
+        )
+        .emitted_package("BalanceNeverDrops");
+    let rows = package
+        .operation_body_rows()
+        .expect("the package carries the operation_bodies member");
+    let row = rows
+        .iter()
+        .find(|row| &*row.operation == "deposit")
+        .expect("a row for the deposit operation");
+    let OperationBody::Function { node } = &row.body else {
+        panic!(
+            "the authored deposit body is a function node: {:?}",
+            row.body
+        );
+    };
+    assert!(
+        package
+            .resolved_graph()
+            .nodes
+            .iter()
+            .any(|candidate| candidate.node_id == *node),
+        "the body node is in the checked graph"
+    );
+}
+
 fn fixture() -> KaniV2ClauseObligationHarness {
     fixture_of(Twin::with_bounded_amount_implication(), "BalanceNeverDrops")
 }

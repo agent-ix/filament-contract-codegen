@@ -1877,7 +1877,15 @@ pub fn corpus() -> Vec<Expression> {
             operands,
             "boolean",
             Op::IeeeComparison { comparison, width },
-            Vec::new(),
+            // Contract IR raises `requires_bound` for a float operand with no `float_rounding`
+            // bound, so the comparison's operand type carries one.
+            vec![Bound::Rounding(
+                match width {
+                    IeeeWidth::Binary32 => "float32",
+                    IeeeWidth::Binary64 => "float64",
+                },
+                "nearest-even",
+            )],
         )
     };
     let wide_decimal = || decimal_type(-1000, 1000, 0, 2, RoundingMode::NearestEven);
@@ -2116,7 +2124,12 @@ pub fn corpus() -> Vec<Expression> {
                 target: IeeeWidth::Binary32,
                 rounding: RoundingMode::NearestEven,
             },
-            vec![Bound::Rounding("float32", "nearest-even")],
+            // The `float64` operand type carries its own `float_rounding` bound too: Contract IR
+            // raises `requires_bound` for an unpinned float operand.
+            vec![
+                Bound::Rounding("float64", "nearest-even"),
+                Bound::Rounding("float32", "nearest-even"),
+            ],
         ),
         ieee(
             1065,
@@ -4881,7 +4894,7 @@ pub fn corpus_cohorts() -> Vec<(CheckedPackageV2, Vec<ExactScalarItem>)> {
     let mut requests = Vec::<Vec<ExactScalarItem>>::new();
     for item in items {
         let split = requests.last().is_none_or(|cohort| {
-            cohort.len() >= 6
+            cohort.len() >= 4
                 && cohort
                     .last()
                     .is_some_and(|last| last.node_id != item.node_id)
