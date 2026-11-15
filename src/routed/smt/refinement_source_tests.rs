@@ -73,7 +73,7 @@ fn model_with_fields(package: &str, operations: &[&str], field_count: usize) -> 
             let name = format!("flag{index}");
             let identity = key(package, &format!("Object/{name}"));
             json!({"identity": identity, "name": name,
-                "typeRef": "ix://quire/native/Boolean", "presence": "required",
+                "typeRef": "ix://filament/native/Boolean", "presence": "required",
                 "nullable": false, "defaultKind": "none",
                 "multiplicity": {"lower": 1, "upper": 1, "ordered": false, "unique": true},
                 "origin": origin(&identity)})

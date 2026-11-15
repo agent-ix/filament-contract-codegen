@@ -49,7 +49,8 @@ Each row carries its required `route` field, so general-route and native-route r
 file, and each applies only to its own route. The file name and the constructor name keep their
 historical `general_route` spelling; no rename is planned. Native-route rows measured in filament-exact
 (FR-409, TC-957 evidence) are copied into this table by the CG PR that consumes them. For integer
-`div`, `rem` and `mod`, that is the IR-854 coder's PR after IR-1541 lands (FR-057).
+`div`, `rem` and `mod`, the kernel's rows (IR-1541) are in the table: a `tractable` row at 8 bits and
+a `not_tractable` row at 16 bits per operation (FR-057).
 
 The generation-time decider runs AFTER the operator check of FR-015-AC-42: it sees only operations the V2 clause
 path accepts today (connectives, the six integer comparisons, integer add, subtract, multiply and

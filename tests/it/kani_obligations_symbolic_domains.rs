@@ -168,7 +168,7 @@ pub(crate) fn model_document() -> Value {
                     {
                         "identity": "ix://ir268.test/domain/SmallInt/min",
                         "keyword": "min", "operands": {"value": "0"},
-                        "appliesTo": "ix://quire/native/Integer", "diagnosticCode": "ir268.minimum",
+                        "appliesTo": "ix://filament/native/Integer", "diagnosticCode": "ir268.minimum",
                         "origin": {"generated": {
                             "generatorIdentity": SOURCE_ID,
                             "generatorVersion": "1.0.0",
@@ -178,7 +178,7 @@ pub(crate) fn model_document() -> Value {
                     {
                         "identity": "ix://ir268.test/domain/SmallInt/max",
                         "keyword": "max", "operands": {"value": "3"},
-                        "appliesTo": "ix://quire/native/Integer", "diagnosticCode": "ir268.maximum",
+                        "appliesTo": "ix://filament/native/Integer", "diagnosticCode": "ir268.maximum",
                         "origin": {"generated": {
                             "generatorIdentity": SOURCE_ID,
                             "generatorVersion": "1.0.0",
@@ -201,7 +201,7 @@ pub(crate) fn model_document() -> Value {
                 "unknownPolicy": "reject", "supertypes": [],
                 "fields": [
                     field("items", SMALL_ID, 0, 3, true, false, false, "required"),
-                    field("flags", "ix://quire/native/Boolean", 0, 2, true, false, false, "required"),
+                    field("flags", "ix://filament/native/Boolean", 0, 2, true, false, false, "required"),
                     field("next", NODE_ID, 1, 1, false, true, false, "required"),
                     field("maybe", NODE_ID, 1, 1, false, true, false, "optional"),
                     field("many", NODE_ID, 0, 2, true, false, false, "required")
@@ -3597,7 +3597,7 @@ fn finite_sequence_of_unbounded_integer_elements_requires_bound_when_fsl_admits_
         .iter_mut()
         .find(|field| field.get("name").and_then(Value::as_str) == Some("items"))
         .unwrap();
-    items["typeRef"] = json!("ix://quire/native/Integer");
+    items["typeRef"] = json!("ix://filament/native/Integer");
     let fixture = try_emitted_from_document_and_body(
         document,
         "forall(item in deref(input).items: item >= 0) and exists(item in deref(input).items: item = 2)",
@@ -3696,9 +3696,9 @@ fn finite_sequence_of_unbounded_integer_elements_requires_bound_when_fsl_admits_
 #[test]
 fn bounded_sequences_of_string_uuid_and_timestamp_require_element_bounds() {
     for (type_ref, expected, semantic_form) in [
-        ("ix://quire/native/String", "string", "string"),
-        ("ix://quire/native/UUID", "uuid", "uuid"),
-        ("ix://quire/native/Timestamp", "timestamp", "timestamp"),
+        ("ix://filament/native/String", "string", "string"),
+        ("ix://filament/native/UUID", "uuid", "uuid"),
+        ("ix://filament/native/Timestamp", "timestamp", "timestamp"),
     ] {
         let mut document = model_document();
         let node = document["types"]

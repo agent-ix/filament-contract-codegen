@@ -14,7 +14,7 @@ kani`. Every job ended well inside the 10 minute probe cap.
 ## Corpus
 
 A V1-draft QSL source (`filament.value.complete/v1`), functions over `Float64[nearest-even]` and
-`Float32[nearest-even]` parameters whose body is `quire::value::ieee::numericEqual(a, b)`,
+`Float32[nearest-even]` parameters whose body is `filament::value::ieee::numericEqual(a, b)`,
 `totalOrder(a, b)` or `bitIdentical(a, b)`, compiled by QSL, admitted by Contract IR, lowered through
 `generate_routed` by CG. QSL main at the time of the run (`f32450ae9`) admits float parameters, the operators `=` and `!=`
 (lowered to `filament.op.ieee.numeric_equal`), the three relation intrinsics, `+ - * /` over one

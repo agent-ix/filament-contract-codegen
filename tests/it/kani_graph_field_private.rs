@@ -333,7 +333,7 @@ fn real_kani_transitivity_without_closure_mutant_falsifies_a_field_claim_and_fsl
 
 fn scalar(name: &str, lower: u64, upper: u64, ordered: bool, presence: &str) -> Value {
     let mut member = field(name, lower, upper, ordered, false, presence);
-    member["typeRef"] = json!("ix://quire/native/Boolean");
+    member["typeRef"] = json!("ix://filament/native/Boolean");
     member
 }
 

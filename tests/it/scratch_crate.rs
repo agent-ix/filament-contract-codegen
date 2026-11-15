@@ -48,6 +48,54 @@ pub(crate) fn runtime_dependency(features: &[&str]) -> String {
     )
 }
 
+/// `manifest` with its `[package]` name suffixed by `label`.
+///
+/// Cargo names a test executable and its fingerprint after the package, so scratch crates that
+/// share a package name in the shared target directory can run one another's stale executable.
+/// Helpers that serve several labels with one manifest text name each crate after its label.
+pub(crate) fn per_label_package(manifest: &str, label: &str) -> String {
+    let mut in_package = false;
+    let mut renamed = 0;
+    let lines = manifest
+        .lines()
+        .map(|line| {
+            let trimmed = line.trim();
+            if trimmed.starts_with('[') {
+                in_package = trimmed == "[package]";
+            }
+            if in_package && renamed == 0 && trimmed.starts_with("name") {
+                if let Some((_, value)) = trimmed.split_once('=') {
+                    let name = value.trim().trim_matches('"');
+                    renamed += 1;
+                    return format!("name = \"{name}-{label}\"");
+                }
+            }
+            line.to_owned()
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        renamed, 1,
+        "the manifest names its package once: {manifest}"
+    );
+    let mut text = lines.join("\n");
+    text.push('\n');
+    text
+}
+
+/// Whether a `cargo test` run executed at least one test. A run whose stale or filtered
+/// executable selected nothing exits 0 with `running 0 tests`, which checked nothing.
+pub(crate) fn tests_ran(output: &str) -> bool {
+    output
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix("test result: ok. "))
+        .any(|rest| {
+            rest.split_whitespace()
+                .next()
+                .and_then(|count| count.parse::<u64>().ok())
+                .is_some_and(|count| count > 0)
+        })
+}
+
 /// Copies this repository's `Cargo.lock` beside the manifest in `directory`.
 pub(crate) fn seed_lock(directory: &Path) {
     fs::copy(

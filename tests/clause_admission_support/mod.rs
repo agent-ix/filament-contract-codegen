@@ -91,7 +91,7 @@ fn domain_document(granted: &[&str]) -> Vec<u8> {
             "identity": format!("{range}/constraints/{keyword}"),
             "keyword": keyword,
             "operands": {"value": value.to_string()},
-            "appliesTo": "ix://quire/native/Integer",
+            "appliesTo": "ix://filament/native/Integer",
             "diagnosticCode": format!("bound.{keyword}"),
             "origin": generated(&range),
         })
@@ -297,7 +297,7 @@ impl Twin {
             deposit["params"] = json!([{
                 "identity": identity,
                 "name": "other",
-                "typeRef": "ix://quire/native/Boolean",
+                "typeRef": "ix://filament/native/Boolean",
                 "presence": "required",
                 "nullable": false,
                 "defaultKind": "none",
@@ -307,7 +307,7 @@ impl Twin {
         }
         if result {
             deposit["returns"] = json!({
-                "typeRef": "ix://quire/native/Boolean",
+                "typeRef": "ix://filament/native/Boolean",
                 "multiplicity": {"lower": 1, "upper": 1, "ordered": false, "unique": true},
                 "nullable": false,
             });

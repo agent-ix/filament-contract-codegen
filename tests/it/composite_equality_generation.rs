@@ -1724,7 +1724,15 @@ fn tc_029_ac12_manifest_is_unpublished_and_charge_free() {
     let directory = TemporaryDirectory::new("filament-composite-equality-oracles");
     fs::create_dir_all(directory.path.join("src")).unwrap();
     for artifact in &oracles.artifacts {
-        fs::write(directory.path.join(&artifact.path), &artifact.contents).unwrap();
+        let contents = if artifact.path == "Cargo.toml" {
+            super::scratch_crate::per_label_package(
+                &artifact.contents,
+                "filament-composite-equality-oracles",
+            )
+        } else {
+            artifact.contents.clone()
+        };
+        fs::write(directory.path.join(&artifact.path), contents).unwrap();
     }
     super::scratch_crate::resolve_seeded_lock(&directory.path);
     let output = Command::new(env!("CARGO"))

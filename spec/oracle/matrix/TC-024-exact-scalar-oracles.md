@@ -498,7 +498,7 @@ agreement with the FSL value authority.
 
 1. Through the public FSL facade, emit a carried-source quantity conversion
    (TC-187 U01 by reference), `a = b` over IEEE operands, and all three
-   `quire::value::ieee::*` comparison intrinsics. Pass the emitted bytes unchanged
+   `filament::value::ieee::*` comparison intrinsics. Pass the emitted bytes unchanged
    to Contract IR's strict reader. Select actual admitted node identities and
    derive their descriptors; do not substitute hand-built packages for these
    source-emission controls. Record the existing carried-operand type mismatch
@@ -539,7 +539,7 @@ CG-to-owner agreement evidence only; the Kani row for these identities is
 FR-053 and TC-067, and agreement with the FSL value authority stays with
 filament-integration IR-842.
 
-1. Through the public FSL facade, emit `quire::value::ieee::sqrt` and `fma`
+1. Through the public FSL facade, emit `filament::value::ieee::sqrt` and `fma`
    calls at `Float32[r]` and `Float64[r]`, pass the bytes unchanged to Contract
    IR's strict reader, select the actual admitted node ids and derive their
    items. Assert each item is derived and `ir_confirmed`, and that each

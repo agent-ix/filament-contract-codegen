@@ -24,7 +24,7 @@ pub(super) fn document() -> Value {
         let owner = format!("{OBJECT}/{name}");
         let mut value = json!({"identity":owner,"name":name,"params":[slot(&owner,parameter,ty)],"pre":[],"post":[],"origin":origin(),"frame":{"modifies":[format!("{OBJECT}/n"),format!("{OBJECT}/flag"),format!("{OBJECT}/aux")],"creates":[],"deletes":[]}});
         if result {
-            value["returns"] = json!({"typeRef":"ix://quire/native/Boolean","nullable":false,"multiplicity":{"lower":1,"upper":1,"ordered":false,"unique":true}});
+            value["returns"] = json!({"typeRef":"ix://filament/native/Boolean","nullable":false,"multiplicity":{"lower":1,"upper":1,"ordered":false,"unique":true}});
         }
         value
     };
@@ -34,9 +34,9 @@ pub(super) fn document() -> Value {
         {"kind":{"module":MODEL,"name":"value_type"},"moduleVersion":"1.0.0","construct":{"identity":"none","shape":"record","members":{},"meaning":"filament.meaning.model.value-type/v1"}}
     ],"occurrences":[],"extensions":[],"types":[
         {"identity":SMALL,"displayName":"Small","kind":{"module":MODEL,"name":"value_type"},"roles":[],"origin":origin(),"extensions":[],"unknownPolicy":"reject","scalar":"integer","constraints":[
-            {"identity":format!("{SMALL}/min"),"keyword":"min","operands":{"value":"0"},"appliesTo":"ix://quire/native/Integer","diagnosticCode":"small.minimum","origin":origin()},
-            {"identity":format!("{SMALL}/max"),"keyword":"max","operands":{"value":"3"},"appliesTo":"ix://quire/native/Integer","diagnosticCode":"small.maximum","origin":origin()}]},
-        {"identity":OBJECT,"displayName":"Node","kind":{"module":MODEL,"name":"entity"},"roles":[],"origin":origin(),"constraints":[],"extensions":[],"unknownPolicy":"reject","supertypes":[],"fields":[slot(OBJECT,"n",SMALL),slot(OBJECT,"flag","ix://quire/native/Boolean"),slot(OBJECT,"aux",SMALL)],"operations":[op("nudge","delta",SMALL,false),op("idle","enabled","ix://quire/native/Boolean",true)]}
+            {"identity":format!("{SMALL}/min"),"keyword":"min","operands":{"value":"0"},"appliesTo":"ix://filament/native/Integer","diagnosticCode":"small.minimum","origin":origin()},
+            {"identity":format!("{SMALL}/max"),"keyword":"max","operands":{"value":"3"},"appliesTo":"ix://filament/native/Integer","diagnosticCode":"small.maximum","origin":origin()}]},
+        {"identity":OBJECT,"displayName":"Node","kind":{"module":MODEL,"name":"entity"},"roles":[],"origin":origin(),"constraints":[],"extensions":[],"unknownPolicy":"reject","supertypes":[],"fields":[slot(OBJECT,"n",SMALL),slot(OBJECT,"flag","ix://filament/native/Boolean"),slot(OBJECT,"aux",SMALL)],"operations":[op("nudge","delta",SMALL,false),op("idle","enabled","ix://filament/native/Boolean",true)]}
     ],"populations":[{"identity":format!("ix://{MODEL}/nodes"),"displayName":"nodes","kind":{"module":MODEL,"name":"population"},"members":[OBJECT],"extent":"closed","origin":origin()}]})
 }
 

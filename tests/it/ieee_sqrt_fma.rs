@@ -34,7 +34,7 @@ impl Case {
             )
         };
         format!(
-            "function subject using v({parameters}): {width}[{rounding}] pure {{ quire::value::ieee::{}({arguments}) }}",
+            "function subject using v({parameters}): {width}[{rounding}] pure {{ filament::value::ieee::{}({arguments}) }}",
             self.callee
         )
     }
@@ -231,8 +231,8 @@ fn refusal_of(
 fn defensive_seam_refuses_other_shapes_for_sqrt_and_fma() {
     let package = compiled(
         "function add32 using v(a: Float32[nearest-even], b: Float32[nearest-even]): Float32[nearest-even] pure { a + b }\n\
-         function cmp32 using v(a: Float32[nearest-even], b: Float32[nearest-even]): Boolean pure { quire::value::ieee::totalOrder(a, b) }\n\
-         function root32 using v(a: Float32[nearest-even]): Float32[nearest-even] pure { quire::value::ieee::sqrt(a) }",
+         function cmp32 using v(a: Float32[nearest-even], b: Float32[nearest-even]): Boolean pure { filament::value::ieee::totalOrder(a, b) }\n\
+         function root32 using v(a: Float32[nearest-even]): Float32[nearest-even] pure { filament::value::ieee::sqrt(a) }",
     );
     let descriptor = |operator| ExactScalarOperation::IeeeArithmetic {
         operator,
@@ -294,7 +294,7 @@ fn from_exact_to_rational_and_negate_stay_not_derivable() {
     let package = compiled(
         "function neg32 using v(a: Float32[nearest-even]): Float32[nearest-even] pure { -a }\n\
          function neg64 using v(a: Float64[nearest-even]): Float64[nearest-even] pure { -a }\n\
-         function root using v(a: Float32[nearest-even]): Float32[nearest-even] pure { quire::value::ieee::sqrt(a) }",
+         function root using v(a: Float32[nearest-even]): Float32[nearest-even] pure { filament::value::ieee::sqrt(a) }",
     );
     let sibling = only_node(&package, "filament.op.ieee.float32.sqrt")
         .node_id

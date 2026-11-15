@@ -130,7 +130,7 @@ fn domain_document(granted: &[&str]) -> Vec<u8> {
             "identity": format!("{range}/constraints/{keyword}"),
             "keyword": keyword,
             "operands": {"value": value.to_string()},
-            "appliesTo": "ix://quire/native/Integer",
+            "appliesTo": "ix://filament/native/Integer",
             "diagnosticCode": format!("bound.{keyword}"),
             "origin": generated(&range),
         })
@@ -691,7 +691,7 @@ impl Twin {
     /// integer (no `i64` accessor range).
     pub fn with_unbounded_audit_invariant() -> Self {
         Self::invariant_from(
-            Self::with_field_native_type("audit", "ix://quire/native/Integer"),
+            Self::with_field_native_type("audit", "ix://filament/native/Integer"),
             "self.balance >= 0",
         )
     }
@@ -916,7 +916,7 @@ impl Twin {
             .iter_mut()
             .find(|operation| operation["name"] == "deposit")
             .expect("deposit operation");
-        deposit["params"][1]["typeRef"] = json!("ix://quire/native/Integer");
+        deposit["params"][1]["typeRef"] = json!("ix://filament/native/Integer");
         twin.domain = domain.to_string().into_bytes();
         twin
     }
@@ -1034,7 +1034,7 @@ impl Twin {
             .find(|operation| operation["name"] == "deposit")
             .expect("deposit operation");
         deposit["returns"] = json!({
-            "typeRef": "ix://quire/native/Boolean",
+            "typeRef": "ix://filament/native/Boolean",
             "multiplicity": {"lower": 1, "upper": 1, "ordered": false, "unique": true},
             "nullable": false,
         });
@@ -1126,7 +1126,7 @@ impl Twin {
             .iter_mut()
             .find(|operation| operation["name"] == "deposit")
             .expect("deposit operation");
-        deposit["returns"]["typeRef"] = json!("ix://quire/native/Integer");
+        deposit["returns"]["typeRef"] = json!("ix://filament/native/Integer");
         twin.domain = domain.to_string().into_bytes();
         let source = String::from_utf8(twin.unit).expect("native unit");
         let changed = source.replace(
@@ -1231,7 +1231,7 @@ impl Twin {
             deposit["params"] = json!([{
                 "identity": identity,
                 "name": "other",
-                "typeRef": "ix://quire/native/Boolean",
+                "typeRef": "ix://filament/native/Boolean",
                 "presence": "required",
                 "nullable": false,
                 "defaultKind": "none",
@@ -1241,7 +1241,7 @@ impl Twin {
         }
         if result {
             deposit["returns"] = json!({
-                "typeRef": "ix://quire/native/Boolean",
+                "typeRef": "ix://filament/native/Boolean",
                 "multiplicity": {"lower": 1, "upper": 1, "ordered": false, "unique": true},
                 "nullable": false,
             });
@@ -1274,17 +1274,17 @@ impl Twin {
 
     /// A twin whose present, unread `audit` field is Boolean, with no `i64` range.
     pub fn without_audit_range() -> Self {
-        Self::with_field_native_type("audit", "ix://quire/native/Boolean")
+        Self::with_field_native_type("audit", "ix://filament/native/Boolean")
     }
 
     /// A selected model whose `balance` field is an unbounded integer.
     pub fn without_balance_range() -> Self {
-        Self::with_field_native_type("balance", "ix://quire/native/Integer")
+        Self::with_field_native_type("balance", "ix://filament/native/Integer")
     }
 
     /// Both clauses over a selected model whose `audit` field is an unbounded integer.
     pub fn with_unbounded_audit_clause() -> Self {
-        let mut twin = Self::with_field_native_type("audit", "ix://quire/native/Integer");
+        let mut twin = Self::with_field_native_type("audit", "ix://filament/native/Integer");
         twin.unit = unit_source(
             &[
                 CLAUSES[0],

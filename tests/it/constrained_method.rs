@@ -435,15 +435,15 @@ fn boolean_and_partial_conditions_use_the_owner_oracle_and_unbounded_domains_ref
         let mut doc = document();
         match slot {
             "unread-field" => {
-                doc["types"][1]["fields"][2]["typeRef"] = json!("ix://quire/native/Integer")
+                doc["types"][1]["fields"][2]["typeRef"] = json!("ix://filament/native/Integer")
             }
             "uncalled-parameter" => {
                 doc["types"][1]["operations"][0]["params"][0]["typeRef"] =
-                    json!("ix://quire/native/Integer")
+                    json!("ix://filament/native/Integer")
             }
             "uncalled-result" => {
                 doc["types"][1]["operations"][1]["returns"]["typeRef"] =
-                    json!("ix://quire/native/Integer")
+                    json!("ix://filament/native/Integer")
             }
             _ => unreachable!(),
         }

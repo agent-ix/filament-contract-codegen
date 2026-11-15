@@ -18,23 +18,23 @@ use super::routed_generation::{
 
 const SOURCE: &str = "language \"ix:native\" edition \"1-draft\";\n\
 profile v = \"filament.value.complete/v1\";\n\
-function numeq64 using v(a: Float64[nearest-even], b: Float64[nearest-even]): Boolean pure { quire::value::ieee::numericEqual(a, b) }\n\
-function total64 using v(a: Float64[nearest-even], b: Float64[nearest-even]): Boolean pure { quire::value::ieee::totalOrder(a, b) }\n\
-function bitid64 using v(a: Float64[nearest-even], b: Float64[nearest-even]): Boolean pure { quire::value::ieee::bitIdentical(a, b) }\n\
-function numeq32 using v(a: Float32[nearest-even], b: Float32[nearest-even]): Boolean pure { quire::value::ieee::numericEqual(a, b) }\n\
-function total32 using v(a: Float32[nearest-even], b: Float32[nearest-even]): Boolean pure { quire::value::ieee::totalOrder(a, b) }\n\
-function bitid32 using v(a: Float32[nearest-even], b: Float32[nearest-even]): Boolean pure { quire::value::ieee::bitIdentical(a, b) }\n\
+function numeq64 using v(a: Float64[nearest-even], b: Float64[nearest-even]): Boolean pure { filament::value::ieee::numericEqual(a, b) }\n\
+function total64 using v(a: Float64[nearest-even], b: Float64[nearest-even]): Boolean pure { filament::value::ieee::totalOrder(a, b) }\n\
+function bitid64 using v(a: Float64[nearest-even], b: Float64[nearest-even]): Boolean pure { filament::value::ieee::bitIdentical(a, b) }\n\
+function numeq32 using v(a: Float32[nearest-even], b: Float32[nearest-even]): Boolean pure { filament::value::ieee::numericEqual(a, b) }\n\
+function total32 using v(a: Float32[nearest-even], b: Float32[nearest-even]): Boolean pure { filament::value::ieee::totalOrder(a, b) }\n\
+function bitid32 using v(a: Float32[nearest-even], b: Float32[nearest-even]): Boolean pure { filament::value::ieee::bitIdentical(a, b) }\n\
 function eq64 using v(a: Float64[nearest-even], b: Float64[nearest-even]): Boolean pure { a = b }\n\
 function add64 using v(a: Float64[nearest-even], b: Float64[nearest-even]): Float64[nearest-even] pure { a + b }\n\
 function sub32 using v(a: Float32[nearest-even], b: Float32[nearest-even]): Float32[nearest-even] pure { a - b }\n\
 function mul64 using v(a: Float64[nearest-even], b: Float64[nearest-even]): Float64[nearest-even] pure { a * b }\n\
 function div32 using v(a: Float32[nearest-even], b: Float32[nearest-even]): Float32[nearest-even] pure { a / b }\n\
 function div64 using v(a: Float64[nearest-even], b: Float64[nearest-even]): Float64[nearest-even] pure { a / b }\n\
-function same64 using v(a: Float64[nearest-even]): Boolean pure { quire::value::ieee::numericEqual(a, a) }\n\
-function guarded64 using v(flag: Boolean, a: Float64[nearest-even], b: Float64[nearest-even]): Boolean pure { if flag then quire::value::ieee::numericEqual(a, b) else false }\n\
-function lit64 using v(a: Float64[nearest-even]): Boolean pure { quire::value::ieee::numericEqual(a, float64(bits: 0x3ff0000000000000)) }\n\
-function nested64 using v(a: Float64[nearest-even], b: Float64[nearest-even]): Boolean pure { quire::value::ieee::numericEqual(a + b, b) }\n\
-function unpinned64 using v(a: Float64, b: Float64): Boolean pure { quire::value::ieee::numericEqual(a, b) }\n\
+function same64 using v(a: Float64[nearest-even]): Boolean pure { filament::value::ieee::numericEqual(a, a) }\n\
+function guarded64 using v(flag: Boolean, a: Float64[nearest-even], b: Float64[nearest-even]): Boolean pure { if flag then filament::value::ieee::numericEqual(a, b) else false }\n\
+function lit64 using v(a: Float64[nearest-even]): Boolean pure { filament::value::ieee::numericEqual(a, float64(bits: 0x3ff0000000000000)) }\n\
+function nested64 using v(a: Float64[nearest-even], b: Float64[nearest-even]): Boolean pure { filament::value::ieee::numericEqual(a + b, b) }\n\
+function unpinned64 using v(a: Float64, b: Float64): Boolean pure { filament::value::ieee::numericEqual(a, b) }\n\
 function not_float using v(a: Int[0, 9], b: Int[0, 9]): Boolean pure { a < b }\n";
 
 struct Corpus {

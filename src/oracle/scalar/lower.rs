@@ -1623,7 +1623,7 @@ impl Shape {
         }
     }
 
-    /// `quire::value::ieee::sqrt` and `fma`: the catalogued `call` body operator with the
+    /// `filament::value::ieee::sqrt` and `fma`: the catalogued `call` body operator with the
     /// `call` semantic form only. IEEE `add`'s binary shape is not reused.
     fn call(operands: &'static [ScalarForm], result: ScalarForm) -> Self {
         Self {

@@ -163,9 +163,9 @@ fn genuine_ieee_equality_and_intrinsics_generate() {
     let mut ordinal = 0;
     for (expression, identity) in [
         ("a = b", "numeric_equal"),
-        ("quire::value::ieee::numericEqual(a, b)", "numeric_equal"),
-        ("quire::value::ieee::totalOrder(a, b)", "total_order"),
-        ("quire::value::ieee::bitIdentical(a, b)", "bit_identical"),
+        ("filament::value::ieee::numericEqual(a, b)", "numeric_equal"),
+        ("filament::value::ieee::totalOrder(a, b)", "total_order"),
+        ("filament::value::ieee::bitIdentical(a, b)", "bit_identical"),
     ] {
         for width in ["Float32", "Float64"] {
             let package = compiled(&format!("function subject using v(a: {width}[nearest-even], b: {width}[nearest-even]): Boolean pure {{ {expression} }}"));
@@ -232,6 +232,7 @@ pub(crate) fn run_native(label: &str, manifest: &str, source: &str, dependencies
     use std::{fs, process::Command};
     let scratch = crate::scratch_crate::TemporaryDirectory::new(label);
     fs::create_dir_all(scratch.path.join("src")).unwrap();
+    let manifest = crate::scratch_crate::per_label_package(manifest, label);
     let manifest = format!("{manifest}\n[dev-dependencies]\nfilament-exact = {{ git = \"https://github.com/agent-ix/filament-exact\", branch = \"main\", features = [\"test-support\"] }}\n{dependencies}");
     fs::write(scratch.path.join("Cargo.toml"), manifest).unwrap();
     fs::write(scratch.path.join("src/lib.rs"), source).unwrap();
@@ -249,6 +250,10 @@ pub(crate) fn run_native(label: &str, manifest: &str, source: &str, dependencies
         "native scalar execution failed:\n{}\n{}",
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(
+        crate::scratch_crate::tests_ran(&String::from_utf8_lossy(&output.stdout)),
+        "the native scalar crate ran no tests"
     );
     assert!(
         String::from_utf8_lossy(&output.stdout).contains("test native::values_and_ledgers ... ok"),
@@ -318,7 +323,7 @@ fn ieee_extension_preserves_binary_support_and_refuses_other_shapes() {
         ExactScalarItem, ExactScalarOperation, ExactScalarRefusal, ScalarForm,
     };
     use filament_exact::{IeeeComparison, IeeeWidth};
-    let bytes = emitted("function subject using v(a: Float64[nearest-even], b: Float64[nearest-even]): Boolean pure { a = b }\nfunction sibling using v(a: Float64[nearest-even], b: Float64[nearest-even]): Boolean pure { quire::value::ieee::totalOrder(a, b) }");
+    let bytes = emitted("function subject using v(a: Float64[nearest-even], b: Float64[nearest-even]): Boolean pure { a = b }\nfunction sibling using v(a: Float64[nearest-even], b: Float64[nearest-even]): Boolean pure { filament::value::ieee::totalOrder(a, b) }");
     let original: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
     for form in ["binary", "unary", "conversion"] {
         let mut wire = original.clone();

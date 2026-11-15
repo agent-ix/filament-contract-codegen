@@ -345,7 +345,7 @@ fn case_{index}() {{
 
 pub(crate) fn run_generated_native(native: &str, count: usize, label: &str) {
     let scratch = scratch_crate::TemporaryDirectory::new(label);
-    let manifest = format!("[package]\nname=\"integer-division-derived-native\"\nversion=\"0.0.0\"\nedition=\"2021\"\n[dependencies]\nfilament-exact = {{ {EXACT_DEPENDENCY_SOURCE} }}\n[workspace]\n");
+    let manifest = scratch_crate::per_label_package(&format!("[package]\nname=\"integer-division-derived-native\"\nversion=\"0.0.0\"\nedition=\"2021\"\n[dependencies]\nfilament-exact = {{ {EXACT_DEPENDENCY_SOURCE} }}\n[workspace]\n"), label);
     scratch_crate::write_manifest(&scratch.path, &manifest);
     fs::write(scratch.path.join("src/lib.rs"), native).unwrap();
     scratch_crate::resolve_seeded_lock(&scratch.path);
@@ -362,6 +362,10 @@ pub(crate) fn run_generated_native(native: &str, count: usize, label: &str) {
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(output.status.success(), "{stdout}\n{stderr}");
+    assert!(
+        scratch_crate::tests_ran(&stdout),
+        "the generated native crate ran no tests: {stdout}"
+    );
     assert!(
         stdout.contains(&format!("{} passed; 0 failed", count)),
         "all generated cases execute: {stdout}"

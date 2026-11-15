@@ -148,6 +148,11 @@ fn fsl_emitted_state_clause_derives_a_confirmed_field_backed_oracle() {
         "generated clause failed: {}",
         String::from_utf8_lossy(&output.stderr)
     );
+    assert!(
+        super::scratch_crate::tests_ran(&String::from_utf8_lossy(&output.stdout)),
+        "the generated crate ran no tests: {}",
+        String::from_utf8_lossy(&output.stdout)
+    );
 }
 
 #[trace("FR-014-AC-38")]
@@ -305,6 +310,11 @@ fn admitted_inline_clause_keeps_the_clause_identity() {
         "inline clause failed: {}",
         String::from_utf8_lossy(&output.stderr)
     );
+    assert!(
+        super::scratch_crate::tests_ran(&String::from_utf8_lossy(&output.stdout)),
+        "the generated crate ran no tests: {}",
+        String::from_utf8_lossy(&output.stdout)
+    );
 }
 
 #[trace("FR-014-AC-38")]
@@ -395,6 +405,11 @@ fn fsl_bounded_operation_parameter_becomes_a_clause_input() {
         output.status.success(),
         "parameter clause failed: {}",
         String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(
+        super::scratch_crate::tests_ran(&String::from_utf8_lossy(&output.stdout)),
+        "the generated crate ran no tests: {}",
+        String::from_utf8_lossy(&output.stdout)
     );
 }
 
@@ -2211,6 +2226,11 @@ fn fsl_emitted_clause_composes_boolean_and_integer_operations() {
         output.status.success(),
         "generated clause corpus failed: {}",
         String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(
+        super::scratch_crate::tests_ran(&String::from_utf8_lossy(&output.stdout)),
+        "the generated crate ran no tests: {}",
+        String::from_utf8_lossy(&output.stdout)
     );
 }
 

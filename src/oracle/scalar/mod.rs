@@ -204,9 +204,9 @@ pub enum IeeeArithmeticOperator {
     Multiply,
     /// `a / b`.
     Divide,
-    /// `quire::value::ieee::sqrt(a)`, one rounding.
+    /// `filament::value::ieee::sqrt(a)`, one rounding.
     SquareRoot,
-    /// `quire::value::ieee::fma(a, b, c)`: `a * b + c` with a single rounding.
+    /// `filament::value::ieee::fma(a, b, c)`: `a * b + c` with a single rounding.
     FusedMultiplyAdd,
 }
 

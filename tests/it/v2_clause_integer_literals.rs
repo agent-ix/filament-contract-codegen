@@ -556,6 +556,10 @@ fn controlled_{index}() {{
         output.status.success(),
         "controlled native agreement failed: {stdout}\n{stderr}"
     );
+    assert!(
+        scratch_crate::tests_ran(&stdout),
+        "the native crate ran no tests: {stdout}"
+    );
     for index in 0..=cases.len() {
         assert!(
             stdout

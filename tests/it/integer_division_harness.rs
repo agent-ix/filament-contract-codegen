@@ -1439,9 +1439,11 @@ fn the_shipped_table_holds_the_measured_division_rows_with_their_route() {
             .as_array()
             .unwrap()
             .iter()
-            .filter(|row| row["operation_ids"] == serde_json::json!([id]))
+            .filter(|row| {
+                row["operation_ids"] == serde_json::json!([id]) && row["route"] == "general"
+            })
             .collect::<Vec<_>>();
-        assert_eq!(rows.len(), 1, "one row for {id}");
+        assert_eq!(rows.len(), 1, "one general-route row for {id}");
         let row = rows[0];
         assert_eq!(row["route"], "general");
         assert_eq!(row["verdict"], "not_tractable");
@@ -1462,6 +1464,71 @@ fn the_shipped_table_holds_the_measured_division_rows_with_their_route() {
     }
     filament_contract_codegen::TractabilityTable::shipped_general_route_scalar()
         .expect("the embedded table loads with the division rows");
+}
+
+/// FR-057-AC-7: the native-route rows copied from the kernel's measured record (FR-409, TC-957)
+/// are in the shipped table with their required `route`: per operation one `tractable` row at the
+/// 8-bit symbolic width every profile verified, and one `not_tractable` row at the smallest
+/// symbolic width that timed out under any profile. They refuse only native-route clauses.
+#[trace("TC-071", "FR-057-AC-7")]
+#[test]
+fn the_shipped_table_holds_the_kernel_native_division_rows_on_the_native_route() {
+    use filament_contract_codegen::{
+        ClauseFeatures, Decision, InputBound, IntegerRoute, OperationWidth, RowVerdict,
+        TractabilityDecider, TractabilityTable,
+    };
+    let table = TractabilityTable::shipped_general_route_scalar().expect("the shipped table");
+    for operation in ["div", "rem", "mod"] {
+        let id = format!("filament.op.integer.{operation}");
+        let native = table
+            .rows()
+            .iter()
+            .filter(|row| row.route == IntegerRoute::Native && row.operation_ids == [id.clone()])
+            .collect::<Vec<_>>();
+        assert_eq!(native.len(), 2, "two native rows for {id}");
+        let verified = native
+            .iter()
+            .find(|row| row.verdict == RowVerdict::Tractable)
+            .expect("a tractable native row");
+        let timed_out = native
+            .iter()
+            .find(|row| row.verdict == RowVerdict::NotTractable)
+            .expect("a not-tractable native row");
+        assert_eq!(verified.max_operand_bits, 8);
+        assert_eq!(timed_out.max_operand_bits, 16);
+        assert_eq!(timed_out.wall_seconds.millis(), 600_000);
+        for features_route in [IntegerRoute::Native, IntegerRoute::General] {
+            let decide = |bits| {
+                table.decide(&ClauseFeatures::new(
+                    features_route,
+                    vec![OperationWidth {
+                        operation_id: id.clone(),
+                        bits: Some(bits),
+                    }],
+                    vec![InputBound {
+                        lower: 0,
+                        upper: 1,
+                        boolean: false,
+                    }],
+                    None,
+                ))
+            };
+            // At 8 bits the native tractable row refuses nothing; the general row (4 bits)
+            // refuses on its own route, and native 16 bits is refused by the native row.
+            assert_eq!(
+                matches!(decide(8), Decision::Refuse { .. }),
+                features_route == IntegerRoute::General
+            );
+            assert!(matches!(decide(16), Decision::Refuse { .. }));
+            if features_route == IntegerRoute::Native {
+                let Decision::Refuse { evidence_row, .. } = decide(16) else {
+                    unreachable!()
+                };
+                assert_eq!(evidence_row.route, IntegerRoute::Native);
+                assert_eq!(evidence_row.max_operand_bits, 16);
+            }
+        }
+    }
 }
 
 /// FR-057-AC-9: a division harness at or above the row's width is refused before any Kani
