@@ -36,14 +36,64 @@ pub(crate) fn lock_agreement_build() -> MutexGuard<'static, ()> {
 /// The `filament-contract-runtime` dependency line of a scratch manifest, with `features`.
 pub(crate) fn runtime_dependency(features: &[&str]) -> String {
     if features.is_empty() {
-        return format!("quire-contract-runtime = {{ {RUNTIME_DEPENDENCY_SOURCE} }}");
+        return format!("filament-contract-runtime = {{ {RUNTIME_DEPENDENCY_SOURCE} }}");
     }
     let features = features
         .iter()
         .map(|feature| format!("\"{feature}\""))
         .collect::<Vec<_>>()
         .join(", ");
-    format!("quire-contract-runtime = {{ {RUNTIME_DEPENDENCY_SOURCE}, features = [{features}] }}")
+    format!(
+        "filament-contract-runtime = {{ {RUNTIME_DEPENDENCY_SOURCE}, features = [{features}] }}"
+    )
+}
+
+/// `manifest` with its `[package]` name suffixed by `label`.
+///
+/// Cargo names a test executable and its fingerprint after the package, so scratch crates that
+/// share a package name in the shared target directory can run one another's stale executable.
+/// Helpers that serve several labels with one manifest text name each crate after its label.
+pub(crate) fn per_label_package(manifest: &str, label: &str) -> String {
+    let mut in_package = false;
+    let mut renamed = 0;
+    let lines = manifest
+        .lines()
+        .map(|line| {
+            let trimmed = line.trim();
+            if trimmed.starts_with('[') {
+                in_package = trimmed == "[package]";
+            }
+            if in_package && renamed == 0 && trimmed.starts_with("name") {
+                if let Some((_, value)) = trimmed.split_once('=') {
+                    let name = value.trim().trim_matches('"');
+                    renamed += 1;
+                    return format!("name = \"{name}-{label}\"");
+                }
+            }
+            line.to_owned()
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        renamed, 1,
+        "the manifest names its package once: {manifest}"
+    );
+    let mut text = lines.join("\n");
+    text.push('\n');
+    text
+}
+
+/// Whether a `cargo test` run executed at least one test. A run whose stale or filtered
+/// executable selected nothing exits 0 with `running 0 tests`, which checked nothing.
+pub(crate) fn tests_ran(output: &str) -> bool {
+    output
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix("test result: ok. "))
+        .any(|rest| {
+            rest.split_whitespace()
+                .next()
+                .and_then(|count| count.parse::<u64>().ok())
+                .is_some_and(|count| count > 0)
+        })
 }
 
 /// Copies this repository's `Cargo.lock` beside the manifest in `directory`.
@@ -274,7 +324,7 @@ mod tests {
     fn locked_runtime_source(lock: &str) -> String {
         let block = lock
             .split("[[package]]")
-            .find(|block| block.contains("name = \"quire-contract-runtime\""))
+            .find(|block| block.contains("name = \"filament-contract-runtime\""))
             .expect("CG's lock names the runtime");
         block
             .lines()
@@ -287,7 +337,7 @@ mod tests {
     /// Architecture evidence: AD-004 L-11.
     #[test]
     fn a_scratch_crate_resolves_the_runtime_commit_cg_locks() {
-        let scratch = super::TemporaryDirectory::new("quire-codegen-scratch-lock");
+        let scratch = super::TemporaryDirectory::new("filament-codegen-scratch-lock");
         let directory = scratch.path.clone();
         std::fs::write(directory.join("src/lib.rs"), "").unwrap();
         write_manifest(
@@ -313,7 +363,7 @@ mod tests {
             .as_array()
             .unwrap()
             .iter()
-            .find(|package| package["name"] == "quire-contract-runtime")
+            .find(|package| package["name"] == "filament-contract-runtime")
             .expect("the scratch crate depends on the runtime")["source"]
             .as_str()
             .unwrap()

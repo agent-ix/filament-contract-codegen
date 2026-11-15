@@ -11,7 +11,7 @@
 //! - `rem` and `mod` take the `i64` Euclidean remainder (with its `b == -1` arm, the one
 //!   overflowing case) and shift it into the window over `i128`.
 
-use quire_exact::DivisionProfile;
+use filament_exact::DivisionProfile;
 
 use super::{LoweredScalarClaim, ScalarOperation};
 use crate::kani::{

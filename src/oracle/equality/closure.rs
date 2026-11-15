@@ -3,9 +3,9 @@
 //! [`CompositeDeclaration`]s the item's environment constructor is emitted from.
 
 use super::admitted::CompositeBinding;
-use quire_contract_model::CheckedNodeId;
-use quire_exact::{NodeKey, Presence, ValueType};
-use quire_semantic_value::declaration::{CompositeDeclaration, CompositeShape};
+use filament_contract_model::CheckedNodeId;
+use filament_exact::{NodeKey, Presence, ValueType};
+use filament_semantic_value::declaration::{CompositeDeclaration, CompositeShape};
 use serde::Serialize;
 use std::collections::BTreeMap;
 

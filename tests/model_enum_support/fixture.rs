@@ -1,28 +1,28 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Genuine model enum values reconstructed from native-admitted equality witnesses.
 
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedNodeId, CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
     CheckedPackageV2ReadResult,
 };
-use quire_semantic_value::enumeration::{EnumDeclaration, EnumValue};
+use filament_semantic_value::enumeration::{EnumDeclaration, EnumValue};
 use std::collections::BTreeMap;
 
 pub fn compile(
     source: &str,
     document: &str,
-) -> (qsl_replay::AdmittedCompilation, CheckedPackageV2) {
-    let compiled = qsl_replay::compile_admitted(
-        qsl_replay::CompileUnit {
-            source: qsl_replay::SourceIdentity::new("agent-ix", "enum-comparison"),
+) -> (fsl_replay::AdmittedCompilation, CheckedPackageV2) {
+    let compiled = fsl_replay::compile_admitted(
+        fsl_replay::CompileUnit {
+            source: fsl_replay::SourceIdentity::new("agent-ix", "enum-comparison"),
             package_name: "agent-ix/enum-comparison".to_owned(),
             path: "enum-comparison.native",
             bytes: source.as_bytes(),
         },
         [document.as_bytes()],
-        &qsl_replay::DependencyInput::default(),
-        qsl_replay::StageLimits::default(),
-        qsl_replay::ReplayLimits::default(),
+        &fsl_replay::DependencyInput::default(),
+        fsl_replay::StageLimits::default(),
+        fsl_replay::ReplayLimits::default(),
     )
     .expect("the original FSpec color source and model compile");
     let wire: serde_json::Value =
@@ -48,7 +48,7 @@ pub fn compile(
 }
 
 pub fn colors(
-    compiled: &qsl_replay::AdmittedCompilation,
+    compiled: &fsl_replay::AdmittedCompilation,
     package: &CheckedPackageV2,
 ) -> BTreeMap<String, EnumValue> {
     let term_data = package

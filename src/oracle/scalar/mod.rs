@@ -59,16 +59,16 @@ use crate::core::contract_package::{
 };
 use crate::oracle::claim::{ClaimDisposition, ClaimMap, OracleGenerationError, UpstreamBlocker};
 
-use lower::selected_scalar_key;
-use quire_contract_model::{
+use filament_contract_model::{
     BoundedDomainForm, CheckedNodeId, CheckedNodeTag, CheckedPackageV2, CheckedSourceMapEntry,
     ContractFeatureRecordV1, ContractPackageV1, ContractSourceV1, LiteralKind,
 };
-use quire_exact::{
+use filament_exact::{
     ComparisonOperator, DecimalType, DivisionProfile, IeeeComparison, IeeeWidth, IntegerDomain,
     OrderingOperator, RationalDomain, RoundingMode, TextType,
 };
-use quire_semantic_value::declaration::EqualityOperator;
+use filament_semantic_value::declaration::EqualityOperator;
+use lower::selected_scalar_key;
 use serde::Serialize;
 
 /// Why a node has no derivable [`ExactScalarItem`], beyond the refusals
@@ -115,7 +115,7 @@ impl ClaimDerivationRefusal {
 }
 
 /// The operation identity of a quantity conversion.
-pub(crate) const QUANTITY_CONVERT_IDENTITY: &str = "quire.op.quantity.convert";
+pub(crate) const QUANTITY_CONVERT_IDENTITY: &str = "filament.op.quantity.convert";
 
 /// Work budget for lowering one requested scalar node and its closure.
 pub const SCALAR_LOWERING_WORK_LIMIT: u64 = 65_536;
@@ -204,9 +204,9 @@ pub enum IeeeArithmeticOperator {
     Multiply,
     /// `a / b`.
     Divide,
-    /// `quire::value::ieee::sqrt(a)`, one rounding.
+    /// `filament::value::ieee::sqrt(a)`, one rounding.
     SquareRoot,
-    /// `quire::value::ieee::fma(a, b, c)`: `a * b + c` with a single rounding.
+    /// `filament::value::ieee::fma(a, b, c)`: `a * b + c` with a single rounding.
     FusedMultiplyAdd,
 }
 
@@ -347,7 +347,7 @@ pub enum ExactScalarOperation {
         /// Admitted target unit declaration.
         unit: CheckedNodeId,
         /// Retained bounded carrier and placement mode.
-        carrier: quire_exact::QuantityCarrier,
+        carrier: filament_exact::QuantityCarrier,
     },
     /// `evaluate_quantity`.
     QuantityArithmetic {
@@ -507,7 +507,7 @@ pub enum OperationProvenance {
     /// against the descriptor's shape, then read the node's own catalogued
     /// operation identity from `body.operation.identity` -- confirmed by
     /// Contract IR's `validate_operations` against the closed
-    /// `quire.checked-operation-catalog/v1` at package admission, before
+    /// `filament.checked-operation-catalog/v1` at package admission, before
     /// this generator ever saw the package. A consumer may treat the
     /// operation identity as checked.
     IrConfirmed,

@@ -7,7 +7,7 @@ use filament_contract_codegen::{
     GenerationErrorCode, GenerationTerminalState, StrategyCampaign, StrategyConstraint,
     StrategyErrorCode, StrategyRequest, MAX_GENERATED_SOURCE_BYTES,
 };
-use quire_contract_model::{PackageId, RequirementId, RequirementRef, RequirementRevision};
+use filament_contract_model::{PackageId, RequirementId, RequirementRef, RequirementRevision};
 
 fn requirement() -> RequirementRef {
     RequirementRef::new(
@@ -167,11 +167,11 @@ mod generated_tests {{
                 assert_eq!(format!("{{:?}}", case.expected), "Accepted");
                 assert!(!case.expected.expects_rejection());
                 case.expected
-                    .verify(quire_contract_runtime::VerdictKind::Passed)
+                    .verify(filament_contract_runtime::VerdictKind::Passed)
                     .unwrap();
                 assert!(case
                     .expected
-                    .verify(quire_contract_runtime::VerdictKind::RejectedPrecondition)
+                    .verify(filament_contract_runtime::VerdictKind::RejectedPrecondition)
                     .is_err());
                 if !tree.simplify() {{
                     break;
@@ -198,14 +198,14 @@ mod generated_tests {{
             match format!("{{:?}}", case.expected).as_str() {{
                 "Accepted" => {{
                     case.expected
-                        .verify(quire_contract_runtime::VerdictKind::FailedPostcondition)
+                        .verify(filament_contract_runtime::VerdictKind::FailedPostcondition)
                         .unwrap();
                     accepted += 1;
                 }}
                 "Rejected" => {{
                     assert!(case.expected.expects_rejection());
                     case.expected
-                        .verify(quire_contract_runtime::VerdictKind::RejectedPrecondition)
+                        .verify(filament_contract_runtime::VerdictKind::RejectedPrecondition)
                         .unwrap();
                     rejected += 1;
                 }}
@@ -430,9 +430,9 @@ mod generated_tests {{
         let boundary = {boundary_function}().new_tree(&mut runner).unwrap().current();
         boundary.expected.verify(if (0..=10).contains(&boundary.primary)
             && ![4, 8].contains(&boundary.primary) {{
-            quire_contract_runtime::VerdictKind::Passed
+            filament_contract_runtime::VerdictKind::Passed
         }} else {{
-            quire_contract_runtime::VerdictKind::RejectedPrecondition
+            filament_contract_runtime::VerdictKind::RejectedPrecondition
         }}).unwrap();
         let pinned = {pinned_function}().new_tree(&mut runner).unwrap().current();
         assert_eq!(pinned.primary, 3);
@@ -678,18 +678,18 @@ mod generated_tests {{
             assert!(case.related.is_none());
             assert!(!case.expected.expects_rejection());
             case.expected
-                .verify(quire_contract_runtime::VerdictKind::Passed)
+                .verify(filament_contract_runtime::VerdictKind::Passed)
                 .unwrap();
             assert!(case
                 .expected
-                .verify(quire_contract_runtime::VerdictKind::RejectedPrecondition)
+                .verify(filament_contract_runtime::VerdictKind::RejectedPrecondition)
                 .is_err());
         }}
         let case = {no_event_function}().new_tree(&mut runner).unwrap().current();
         assert!(matches!(case.current, Mode::Idle));
         assert!(matches!(case.related, Some(Mode::Idle)));
         case.expected
-            .verify(quire_contract_runtime::VerdictKind::Passed)
+            .verify(filament_contract_runtime::VerdictKind::Passed)
             .unwrap();
     }}
 }}

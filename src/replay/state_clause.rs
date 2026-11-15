@@ -2,7 +2,7 @@
 //! operation-contract harness (FR-015-AC-26) is put before FSL's `replay_state_clause` as a
 //! request and an envelope built here (FR-024-AC-11 to AC-19).
 //!
-//! The clause's identities are not computed by this crate: [`qsl_replay::call_site`] compiles the
+//! The clause's identities are not computed by this crate: [`fsl_replay::call_site`] compiles the
 //! proved unit, with its domain packages and dependencies, and names the clause, so the envelope's
 //! `clause_node` and `occurrence_key` are FSL's own answer for the clause name. The payload carries
 //! neither identity (FSL FR-122).
@@ -26,7 +26,9 @@ pub mod invariant;
 
 use std::{collections::BTreeMap, fmt};
 
-use qsl_replay::{
+use filament_contract_model::{CheckedModelFieldsError, CheckedNodeId, CheckedPackageV2};
+use filament_semantic_value::catalog::Category;
+use fsl_replay::{
     call_site, replay_state_clause, CallSiteRefusal, ClauseName, ClauseSelectionInput,
     DeclaredDomain, DocumentRef, DomainKey, DomainKind, EmptyQualifiedName, EnvelopeSource,
     FiniteBound, Integer, MalformedTranscript, OperationName, ProofBound, ProofBoundRefusal,
@@ -35,8 +37,6 @@ use qsl_replay::{
     WitnessEnvelope, WitnessPacket, WitnessRefusal, WitnessSettlement, WitnessValue,
 };
 use quire_canonical::{Encode, FixedShape, ReadError};
-use quire_contract_model::{CheckedModelFieldsError, CheckedNodeId, CheckedPackageV2};
-use quire_semantic_value::catalog::Category;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -112,7 +112,7 @@ pub struct StateClauseReplayInputs<'a> {
     /// natively over the pre state.
     pub post_state: Vec<(String, i64)>,
     /// The identity of the obligation the counterexample falsified.
-    pub obligation_identity: qsl_replay::ObligationIdentity,
+    pub obligation_identity: fsl_replay::ObligationIdentity,
 }
 
 /// Why the framed model declaration does not supply the requested field list.
@@ -471,7 +471,8 @@ impl<'a> From<&'a StateClauseReplayResult> for ReplaySettlement<'a> {
             // one this adapter asked for.
             ReplayResult::Input(_)
             | ReplayResult::ObservedTemporal(_)
-            | ReplayResult::ModelGraph(_) => Self::CgDefect,
+            | ReplayResult::ModelGraph(_)
+            | ReplayResult::ProtocolAnalysis(_) => Self::CgDefect,
         }
     }
 }
@@ -484,7 +485,7 @@ pub struct StateClauseReplay {
     /// The envelope's members. `clause_node` and `occurrence_key` are the `ClauseSite`'s.
     pub packet: WitnessPacket<StateClauseCounterexample>,
     /// The caller's configured replay reader bound.
-    replay_limits: qsl_replay::ReplayLimits,
+    replay_limits: fsl_replay::ReplayLimits,
 }
 
 impl StateClauseReplayInputs<'_> {
@@ -617,7 +618,7 @@ impl StateClauseReplayInputs<'_> {
 
 impl StateClauseReplay {
     /// The caller's reader bound used to admit this request and envelope.
-    pub fn replay_limits(&self) -> qsl_replay::ReplayLimits {
+    pub fn replay_limits(&self) -> fsl_replay::ReplayLimits {
         self.replay_limits
     }
 
@@ -659,7 +660,7 @@ impl StateClauseReplay {
             &clause,
         )
         .map_err(StateClauseReplayError::CallSite)?;
-        let raw_package = qsl_replay::ReplayPackage::read(&located.package, u64::MAX)
+        let raw_package = fsl_replay::ReplayPackage::read(&located.package, u64::MAX)
             .map_err(StateClauseReplayError::RawPackage)?;
         let site = located.site;
         if package
@@ -694,7 +695,7 @@ impl StateClauseReplay {
         let post_snapshot = snapshot(&model, &object, &post_label, "post", &post)
             .map_err(StateClauseReplayError::Document)?;
         let invocation_document = InvocationDocument {
-            format: "quire.state.invocation/v1",
+            format: "filament.state.invocation/v1",
             identity: (&invocation_label).into(),
             model: model.clone(),
             context: object.object_type.clone(),
@@ -764,7 +765,7 @@ impl StateClauseReplay {
         })
     }
 
-    /// Replays the counterexample through [`qsl_replay::replay_state_clause`].
+    /// Replays the counterexample through [`fsl_replay::replay_state_clause`].
     ///
     /// # Errors
     ///
@@ -775,7 +776,7 @@ impl StateClauseReplay {
     }
 
     /// Admits the envelope and hands the request and the envelope to `executor`, returning the
-    /// executor's result as it is. [`Self::replay`] passes `qsl_replay::replay_state_clause`; a
+    /// executor's result as it is. [`Self::replay`] passes `fsl_replay::replay_state_clause`; a
     /// caller that observes or wraps the call passes a function that ends in it.
     ///
     /// # Errors
@@ -997,7 +998,7 @@ fn snapshot(
     values: &[(String, i64)],
 ) -> Result<Snapshot, DocumentError> {
     let document = SnapshotDocument {
-        format: "quire.state.snapshot/v1",
+        format: "filament.state.snapshot/v1",
         identity: label.into(),
         observation,
         model: model.clone(),

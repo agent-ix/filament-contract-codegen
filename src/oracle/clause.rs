@@ -4,7 +4,7 @@ mod native;
 
 use std::collections::BTreeMap;
 
-use quire_contract_model::{CheckedNodeId, CheckedPackageV2};
+use filament_contract_model::{CheckedNodeId, CheckedPackageV2};
 use serde::{Deserialize, Serialize};
 
 use crate::core::artifact::MAX_GENERATED_SOURCE_BYTES;
@@ -311,11 +311,11 @@ fn image(operator: IntegerOperator, operands: &[Option<Interval>]) -> Option<Int
 
 /// The values that complete the semantic-domain check: the image clipped to a bounded domain,
 /// the whole image when the clip is empty (as the native rendering retains it).
-fn clip(capacity: Interval, domain: &quire_exact::IntegerDomain) -> Interval {
-    let quire_exact::IntegerDomain::Bounded(bound) = domain else {
+fn clip(capacity: Interval, domain: &filament_exact::IntegerDomain) -> Interval {
+    let filament_exact::IntegerDomain::Bounded(bound) = domain else {
         return capacity;
     };
-    let Ok(bound) = quire_exact::NativeIntegerInterval::try_from(bound) else {
+    let Ok(bound) = filament_exact::NativeIntegerInterval::try_from(bound) else {
         return capacity;
     };
     let (lower, upper) = (capacity.0.max(bound.lower()), capacity.1.min(bound.upper()));
@@ -336,7 +336,7 @@ pub fn generate_v2_clause_claim_map(
         Err(refusal) => ClaimDisposition::Refused { refusal },
     };
     ClaimMap {
-        source: quire_contract_model::ContractSourceV1 {
+        source: filament_contract_model::ContractSourceV1 {
             name: package.name().into(),
             lock: package.lock().clone(),
         },
@@ -721,7 +721,7 @@ enum StepTerm {
         operation: ExactScalarOperation,
         arguments: Vec<usize>,
     },
-    /// `quire.op.option.value`: the payload leaf where the presence input is true, else the
+    /// `filament.op.option.value`: the payload leaf where the presence input is true, else the
     /// undefined stop.
     OptionValue {
         presence: ClauseInput,
@@ -768,7 +768,7 @@ pub(crate) fn admitted_literal_narrow(term: &ClauseTerm) -> Option<&ClauseTerm> 
     else {
         return None;
     };
-    if identity != "quire.op.numeric.narrow" {
+    if identity != "filament.op.numeric.narrow" {
         return None;
     }
     let [literal @ ClauseTerm::Integer(value)] = arguments.as_slice() else {
@@ -932,7 +932,7 @@ fn lower_in(
             arguments,
             result_bound,
         } => {
-            if identity == "quire.op.numeric.narrow" {
+            if identity == "filament.op.numeric.narrow" {
                 let literal =
                     admitted_literal_narrow(term).ok_or(V2ClauseRefusal::UnsupportedCondition)?;
                 return lower_in(literal, names, plan, scope);
@@ -1308,7 +1308,7 @@ mod tests {
     #[test]
     fn a_literal_narrow_is_elided_only_when_its_value_is_inside_the_target() {
         let narrow = |value: &str, bound| ClauseTerm::Operation {
-            identity: "quire.op.numeric.narrow".to_owned(),
+            identity: "filament.op.numeric.narrow".to_owned(),
             arguments: vec![ClauseTerm::Integer(value.to_owned())],
             result_bound: bound,
         };
@@ -1352,12 +1352,12 @@ mod tests {
             narrow("0", None),
             narrow("outside-i128", Some((0, 1000))),
             ClauseTerm::Operation {
-                identity: "quire.op.numeric.narrow".to_owned(),
+                identity: "filament.op.numeric.narrow".to_owned(),
                 arguments: Vec::new(),
                 result_bound: Some((0, 1000)),
             },
             ClauseTerm::Operation {
-                identity: "quire.op.numeric.narrow".to_owned(),
+                identity: "filament.op.numeric.narrow".to_owned(),
                 arguments: vec![ClauseTerm::Input(ClauseInput {
                     leaf: ClauseLeaf::Whole,
                     name: "amount".to_owned(),
@@ -1370,12 +1370,12 @@ mod tests {
                 result_bound: Some((0, 1000)),
             },
             ClauseTerm::Operation {
-                identity: "quire.op.numeric.narrow".to_owned(),
+                identity: "filament.op.numeric.narrow".to_owned(),
                 arguments: vec![ClauseTerm::Boolean(true)],
                 result_bound: Some((0, 1000)),
             },
             ClauseTerm::Operation {
-                identity: "quire.op.quantity.convert".to_owned(),
+                identity: "filament.op.quantity.convert".to_owned(),
                 arguments: vec![ClauseTerm::Integer("0".to_owned())],
                 result_bound: Some((0, 1000)),
             },

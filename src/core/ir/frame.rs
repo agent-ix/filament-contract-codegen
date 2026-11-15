@@ -3,7 +3,9 @@
 
 //! Typed access to admitted state-frame graph nodes and operation payloads.
 
-use quire_contract_model::{CheckedNodeId, CheckedNodeKind, CheckedTerm, LiteralKind, StateForm};
+use filament_contract_model::{
+    CheckedNodeId, CheckedNodeKind, CheckedTerm, LiteralKind, StateForm,
+};
 
 use super::checked_term::{aggregate_members, bound_members, literal, reference};
 use super::clause::ClauseGraphView;
@@ -131,7 +133,7 @@ pub(crate) fn parameter_references(term: &CheckedTerm) -> Option<Vec<CheckedNode
 #[cfg(test)]
 mod tests {
     use super::unpointed_anchor_members;
-    use quire_contract_model::{
+    use filament_contract_model::{
         CheckedOperationAnchorBody, CheckedTerm, ExecutionPoint, ExecutionPointName,
     };
 

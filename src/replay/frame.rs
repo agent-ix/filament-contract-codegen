@@ -3,7 +3,7 @@
 //!
 //! The driver supplies its selected CG frame item and FSL's typed frame target. This adapter
 //! compares their package, request, and complete occurrence association with the checked package
-//! and operation site that [`qsl_replay::call_site`] locates for the proved unit. The target is
+//! and operation site that [`fsl_replay::call_site`] locates for the proved unit. The target is
 //! copied into the packet and request; the packet retains the selected frame occurrence.
 //!
 //! The obligation identity comes from FSL's selected producer claim. The witness is the real playback:
@@ -18,15 +18,15 @@
 
 use std::{collections::BTreeMap, fmt};
 
-use qsl_replay::{
+use filament_contract_model::{CheckedPackageLockV2, CheckedPackageV2, ContractSourceV1};
+use filament_exact::NodeKey;
+use fsl_replay::{
     call_site, replay_frame, CallSiteRefusal, ClaimedChange, DocumentRef, EmptyQualifiedName,
     EnvelopeSource, FrameCounterexample, FrameOperation, FrameReplayResult, MalformedTranscript,
     ObligationIdentity, OccurrenceKey, OperationName, OperationSite, ReplayLimits, ReplayRefusal,
     ReplayRequest, ReplayRequestWire, ReplaySource, ReplayTargetMembers, RequestTargetWire,
     WitnessEnvelope, WitnessPacket, WitnessRefusal, WitnessValue,
 };
-use quire_contract_model::{CheckedPackageLockV2, CheckedPackageV2, ContractSourceV1};
-use quire_exact::NodeKey;
 use serde::Deserialize;
 
 use crate::{
@@ -60,7 +60,7 @@ pub struct FrameReplayInputs<'a> {
     pub selected_item: SelectedFrameItem<'a>,
     /// The driver's FSL target and its association to that item.
     pub selected_target: Option<SelectedFrameTarget>,
-    /// The `quire.state.invocation/v1` document.
+    /// The `filament.state.invocation/v1` document.
     pub invocation: DocumentRef,
     /// The change the counterexample claims.
     pub change: ClaimedChange,
@@ -700,9 +700,9 @@ fn tie_pre_state(
 /// `member` of the harness's scope against the node the call site names.
 fn same_node(
     member: ScopeMember,
-    harness: &quire_contract_model::CheckedNodeId,
-    keys: Option<&qsl_replay::WireGraph>,
-    named: &quire_exact::NodeKey,
+    harness: &filament_contract_model::CheckedNodeId,
+    keys: Option<&fsl_replay::WireGraph>,
+    named: &filament_exact::NodeKey,
 ) -> Result<(), FrameReplayError> {
     if keys.and_then(|keys| keys.key(harness).ok()).as_ref() == Some(named) {
         Ok(())
@@ -777,7 +777,7 @@ impl FrameReplay {
         let keys = crate::core::ir::node_key::producer_node_keys(&located.package);
         let located_identity: LocatedPackageIdentity = serde_json::from_slice(&located.package)
             .map_err(|_| FrameReplayError::SelectedTarget(SelectedTargetMember::Package))?;
-        let raw_package = qsl_replay::ReplayPackage::read(&located.package, u64::MAX)
+        let raw_package = fsl_replay::ReplayPackage::read(&located.package, u64::MAX)
             .map_err(FrameReplayError::RawPackage)?;
         let site = located.site;
         let selected_target = selected_target.ok_or(FrameReplayError::SelectedTarget(
@@ -873,7 +873,7 @@ impl FrameReplay {
         })
     }
 
-    /// Replays the counterexample through [`qsl_replay::replay_frame`].
+    /// Replays the counterexample through [`fsl_replay::replay_frame`].
     ///
     /// # Errors
     ///

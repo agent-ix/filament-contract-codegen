@@ -141,7 +141,7 @@ fn resolve_path(
     }
     if relative
         .first()
-        .is_some_and(|part| part == "quire_contract_ir")
+        .is_some_and(|part| part == "filament_contract_ir")
     {
         return relative;
     }
@@ -162,7 +162,10 @@ fn resolve_path(
 }
 
 fn banned_name(path: &[String]) -> Option<&str> {
-    if path.first().is_some_and(|part| part == "quire_contract_ir") {
+    if path
+        .first()
+        .is_some_and(|part| part == "filament_contract_ir")
+    {
         path.iter()
             .skip(1)
             .map(String::as_str)
@@ -231,7 +234,7 @@ fn fsl_replay_types_are_neither_defined_nor_imported_from_contract_ir() {
             }
         }
         fn visit_item_extern_crate(&mut self, item: &syn::ItemExternCrate) {
-            if item.ident == "quire_contract_ir" {
+            if item.ident == "filament_contract_ir" {
                 let mut key = self.module.clone();
                 key.push(
                     item.rename
@@ -239,7 +242,7 @@ fn fsl_replay_types_are_neither_defined_nor_imported_from_contract_ir() {
                         .map_or_else(|| item.ident.to_string(), |(_, name)| name.to_string()),
                 );
                 self.aliases
-                    .insert(key, vec!["quire_contract_ir".to_owned()]);
+                    .insert(key, vec!["filament_contract_ir".to_owned()]);
             }
         }
     }
@@ -297,7 +300,7 @@ fn fsl_replay_types_are_neither_defined_nor_imported_from_contract_ir() {
                         let resolved = resolve_path(&path, &self.module, self.aliases, 0);
                         if resolved
                             .first()
-                            .is_some_and(|part| part == "quire_contract_ir")
+                            .is_some_and(|part| part == "filament_contract_ir")
                         {
                             for name in FSL_OWNED_TYPES {
                                 self.report(

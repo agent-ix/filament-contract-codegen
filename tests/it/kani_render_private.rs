@@ -27,7 +27,7 @@ fn unsatisfiable_assume_is_cover_unsatisfied_under_real_kani() {
     .unwrap();
     let installation = KaniInstallation::discover().expect("installed cargo-kani");
     let evidence = execute_kani_obligation(&KaniExecutionRequest {
-        cancel: &quire_exact::Cancel::new(),
+        cancel: &filament_exact::Cancel::new(),
         installation: &installation,
         harness: (&harness).into(),
         crate_directory: &directory,

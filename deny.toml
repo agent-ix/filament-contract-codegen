@@ -4,9 +4,6 @@ allow = [
     "MIT",
     "Apache-2.0",
     "BSD-2-Clause",
-    "BSD-3-Clause",
-    "CDLA-Permissive-2.0",
-    "ISC",
     "Unicode-3.0",
     "Zlib",
     # Reached through the operation catalog's home: `borrow-or-share` (MIT-0) via
@@ -23,7 +20,6 @@ confidence-threshold = 0.9
 # permissive-only.
 exceptions = [
     { allow = ["AGPL-3.0-or-later"], crate = "filament-contract-codegen" },
-    { allow = ["AGPL-3.0-or-later"], crate = "ix-cli-kit" },
     # First-party compile-time macro for production #[implements] markers. Scoped to
     # ix-trace-rs; remove this exception when CG removes those markers and the dependency.
     { allow = ["AGPL-3.0-or-later"], crate = "ix-trace-rs" },
@@ -31,13 +27,9 @@ exceptions = [
     { allow = ["AGPL-3.0-or-later"], crate = "filament-contract-model" },
     { allow = ["AGPL-3.0-or-later"], crate = "filament-contract-runtime" },
     { allow = ["AGPL-3.0-or-later"], crate = "filament-verification-contracts" },
-    # filament-spec-language is reached through filament-contract-ir and
-    # declares AGPL-3.0-or-later, the same first-party decision as above.
-    { allow = ["AGPL-3.0-or-later"], crate = "filament-spec-language" },
     # IR-254: fsl-replay (the only FSL crate this repository may depend on, per
     # FSL arch-lint T12-A) and its own transitive closure -- all first-party
     # agent-ix crates under the same AGPL-3.0-or-later decision above.
-    { allow = ["AGPL-3.0-or-later"], crate = "fsl-attrs" },
     { allow = ["AGPL-3.0-or-later"], crate = "fsl-cst" },
     { allow = ["AGPL-3.0-or-later"], crate = "fsl-eval" },
     { allow = ["AGPL-3.0-or-later"], crate = "fsl-forms" },
@@ -53,13 +45,9 @@ exceptions = [
     { allow = ["AGPL-3.0-or-later"], crate = "filament-semantic-value" },
     { allow = ["AGPL-3.0-or-later"], crate = "filament-walk" },
     { allow = ["AGPL-3.0-or-later"], crate = "quire-rs" },
-    # quire-rs 0.50.1 reaches this first-party AGPL crate through its extraction stack.
-    { allow = ["AGPL-3.0-or-later"], crate = "quire-rust-extraction" },
-    # The extraction stack resolves this first-party AGPL parser from quire-code-rs.
-    { allow = ["AGPL-3.0-or-later"], crate = "quire-code-parse" },
     { allow = ["AGPL-3.0-or-later"], crate = "agent-ix-extraction-frontend" },
     { allow = ["AGPL-3.0-or-later"], crate = "agent-ix-semantic-ir" },
-    # quire-rs 0.50.1 resolves this first-party AGPL schema from filament-core-data.
+    # quire-rs resolves this first-party AGPL schema from filament-core-data.
     { allow = ["AGPL-3.0-or-later"], crate = "agent-ix-semantic-schema" },
 ]
 
@@ -69,9 +57,6 @@ wildcards = "warn"
 
 [advisories]
 version = 2
-# RUSTSEC-2026-0009 is in `time`, reached through jsonschema; it is reachable only through an
-# unused RFC-2822 parser.
-ignore = ["RUSTSEC-2026-0009"]
 
 [sources]
 unknown-registry = "deny"
@@ -81,11 +66,8 @@ unknown-git = "deny"
 # dependency and fails.
 allow-git = [
     "https://github.com/agent-ix/filament-core-data",
-    "https://github.com/agent-ix/ix-cli-kit",
     "https://github.com/agent-ix/ix-trace-rs",
     "https://github.com/agent-ix/quire-canonical",
-    # quire-rs 0.50.1 reaches the first-party parser through quire-rust-extraction.
-    "https://github.com/agent-ix/quire-code-rs",
     "https://github.com/agent-ix/filament-contract-ir",
     "https://github.com/agent-ix/filament-contract-runtime",
     "https://github.com/agent-ix/filament-exact",

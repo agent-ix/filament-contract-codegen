@@ -17,25 +17,25 @@ use filament_contract_codegen::{
     checked_composite_declarations, checked_function_declarations, generate_kani_function_harness,
     select_checked_callable, CheckedFunctionResources, CheckedFunctionSource, KaniFunctionRequest,
 };
-use ix_trace_rs::trace;
-use qsl_replay::{
-    acquire_checked_closure, CompileUnit, DependencyInput, ReplayLimits, SourceIdentity,
-    StageLimits,
-};
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedNodeId, CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
     CheckedPackageV2ReadResult,
 };
+use fsl_replay::{
+    acfilament_checked_closure, CompileUnit, DependencyInput, ReplayLimits, SourceIdentity,
+    StageLimits,
+};
+use ix_trace_rs::trace;
 
 const SAME: &str = concat!(
     "language \"ix:native\" edition \"1-draft\";\n",
-    "profile v = \"quire.value.complete/v1\";\n",
+    "profile v = \"filament.value.complete/v1\";\n",
     "function same using v(left: Int[0, 0], right: Int[0, 0]): Boolean pure { left = right }\n",
 );
 
 const COMPOSITE: &str = concat!(
     "language \"ix:native\" edition \"1-draft\";\n",
-    "profile v = \"quire.value.complete/v1\";\n",
+    "profile v = \"filament.value.complete/v1\";\n",
     "tuple Pair(Boolean, Integer);\n",
     "union Choice { Empty, Some(Pair) }\n",
     "record Holder { pair: Pair; shape: Choice; flag: Boolean?; }\n",
@@ -55,7 +55,7 @@ mod kani {
 
 const SECOND: &str = concat!(
     "language \"ix:native\" edition \"1-draft\";\n",
-    "profile v = \"quire.value.complete/v1\";\n",
+    "profile v = \"filament.value.complete/v1\";\n",
     "function alpha using v(left: Int[0, 0], right: Int[0, 0]): Boolean pure { left = right }\n",
     "function beta using v(left: Int[0, 0], right: Int[0, 0]): Boolean pure { left = right }\n",
 );
@@ -71,7 +71,7 @@ fn host_prepared(
     source: &str,
     name: &str,
 ) -> (String, CheckedNodeId, Vec<u8>, CheckedPackageEvidence) {
-    let compiled = acquire_checked_closure(
+    let compiled = acfilament_checked_closure(
         CompileUnit {
             source: identity(),
             package_name: "function-owner".to_owned(),
@@ -86,7 +86,7 @@ fn host_prepared(
     .expect("genuine checked source");
     let bytes = compiled.package().bytes().to_vec();
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     let CheckedPackageV2ReadResult::Admitted(package) =
         CheckedPackageV2::read(&bytes, CheckedPackageReadLimits::bounded(), &evidence)
     else {
@@ -110,7 +110,7 @@ fn host_prepared(
         select_checked_callable(&package, &package, &function, &compiled).expect("selection");
     let owner = checked_function_declarations(&package, &compiled, &selection).expect("owner");
     let resources = CheckedFunctionResources::default();
-    let environment = quire_semantic_value::declaration::TypeEnvironment::bounded_with_cancel(
+    let environment = filament_semantic_value::declaration::TypeEnvironment::bounded_with_cancel(
         checked_composite_declarations(&owner).expect("declarations"),
         [],
         resources.environment_limits,
@@ -118,12 +118,12 @@ fn host_prepared(
     )
     .and_then(|mut environment| {
         for view in &owner {
-            if view.form() == qsl_replay::NominalDeclarationForm::Union {
+            if view.form() == fsl_replay::NominalDeclarationForm::Union {
                 let bindings = view
                     .members()
                     .iter()
                     .filter_map(|member| match member {
-                        qsl_replay::NominalDeclarationMember::UnionMember { member, .. } => {
+                        fsl_replay::NominalDeclarationMember::UnionMember { member, .. } => {
                             Some(member.clone())
                         }
                         _ => None,
@@ -145,8 +145,8 @@ fn host_prepared(
         .filter(|line| line.starts_with("function "))
         .position(|line| line.starts_with(&format!("function {name} ")))
         .expect("the named function is declared in the source");
-    let location = quire_semantic_value::location::ExpressionLocation::root(
-        quire_semantic_value::location::ExpressionOwner::Body {
+    let location = filament_semantic_value::location::ExpressionLocation::root(
+        filament_semantic_value::location::ExpressionOwner::Body {
             function: name.to_owned(),
             index,
         },
@@ -270,7 +270,7 @@ fn rebuilt_scalar_equality_matches_the_genuine_path_and_runs() {
 #[cfg(kani)]
 #[test]
 fn kani_probe() {
-    use quire_exact::{Integer, Meter, ScalarLimits};
+    use filament_exact::{Integer, Meter, ScalarLimits};
     let factory = kani_factory_same();
     let prepared = factory.0.clone();
     assert!(prepared.ready().expect("ready").is_none());

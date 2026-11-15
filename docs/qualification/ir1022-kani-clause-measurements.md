@@ -16,13 +16,13 @@ what it was run on, what came back, and what was not exercised.
   a hand-written `pub mod request { pub fn unrelated(amount: i64) -> bool { .. } }` was appended,
   because the harness calls the subject at `request::unrelated`.
   - healthy subject: `!(amount < 1000) || (amount + 1 <= 1000)`; it does NOT call
-    `quire_contract_runtime::operators::implies_short_circuit`.
+    `filament_contract_runtime::operators::implies_short_circuit`.
   - mutant 1 subject: `!(amount < 1000) || (amount + 2 <= 1000)`; does not call the helper either.
   - helper control and helper mutant subject:
-    `quire_contract_runtime::operators::implies_short_circuit(amount < 1000, || amount + 1 <= 1000)`.
-- Dependencies: quire-exact `main` at the commit CG's `Cargo.lock` records (it includes the
+    `filament_contract_runtime::operators::implies_short_circuit(amount < 1000, || amount + 1 <= 1000)`.
+- Dependencies: filament-exact `main` at the commit CG's `Cargo.lock` records (it includes the
   `evaluate_native_boolean_equality` kernel, FR-397-AC-5, and the u64-native schedule); the lock
-  was seeded from CG's own. The helper mutant used an isolated copy of quire-contract-runtime wired
+  was seeded from CG's own. The helper mutant used an isolated copy of filament-contract-runtime wired
   by a Cargo `[patch]` path, with the body of `implies_short_circuit` replaced by
   `let _ = (antecedent, consequent); R::from(false)`.
 - Mutant 2 (oracle): in the embedded oracle `scalar_8` the call

@@ -9,7 +9,7 @@ mod model;
 #[path = "../../../../tests/state_frame_support/native_twin.rs"]
 mod native_twin;
 
-use quire_contract_model::{
+use filament_contract_model::{
     ApplicationOperator, CheckedMemberType, CheckedModelOperations, CheckedNodeId, CheckedNodeKind,
     CheckedOperationParameter, CheckedOperationReadError, CheckedPackageV2, CheckedTerm,
     CompositeTypeForm, ContractSourceV1, LiteralKind, ScalarTypeForm,
@@ -18,7 +18,7 @@ use quote::ToTokens;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
 
-use qsl_replay::ObligationIdentity;
+use fsl_replay::ObligationIdentity;
 
 use crate::kani::tractability::{
     ClauseFeatures, Decision, InputBound, IntegerRoute, OperationWidth, TractabilityDecider,
@@ -430,10 +430,10 @@ fn lower_with_census<'a>(
             .any(|identity| {
                 matches!(
                     identity.as_str(),
-                    "quire.op.integer.add"
-                        | "quire.op.integer.sub"
-                        | "quire.op.integer.mul"
-                        | "quire.op.integer.negate"
+                    "filament.op.integer.add"
+                        | "filament.op.integer.sub"
+                        | "filament.op.integer.mul"
+                        | "filament.op.integer.negate"
                 )
             })
     {
@@ -764,10 +764,10 @@ fn read_state_postcondition(
             .any(|identity| {
                 matches!(
                     identity.as_str(),
-                    "quire.op.integer.add"
-                        | "quire.op.integer.sub"
-                        | "quire.op.integer.mul"
-                        | "quire.op.integer.negate"
+                    "filament.op.integer.add"
+                        | "filament.op.integer.sub"
+                        | "filament.op.integer.mul"
+                        | "filament.op.integer.negate"
                 )
             })
         {
@@ -891,7 +891,7 @@ fn binder_matches_scalar(
             };
             view.kind(&node.semantic_type)
                 == Some(CheckedNodeKind::BoundedDomain(
-                    quire_contract_model::BoundedDomainForm::IntegerRange,
+                    filament_contract_model::BoundedDomainForm::IntegerRange,
                 ))
                 && number("min") == Some(*minimum)
                 && number("max") == Some(*maximum)
@@ -934,7 +934,7 @@ fn read_postcondition_signature<'a>(
     let [binders, anchor, _] = application(
         package.term(clause).ok_or_else(mismatch)?,
         ApplicationOperator::StateClause,
-        "quire.op.state.clause",
+        "filament.op.state.clause",
     )
     .ok_or_else(mismatch)?
     else {
@@ -1093,7 +1093,9 @@ fn type_family(view: &ClauseGraphView<'_>, type_node: &CheckedNodeId) -> Family 
         Some(CheckedNodeKind::ScalarType(ScalarTypeForm::Boolean)) => Family::Boolean,
         Some(
             CheckedNodeKind::ScalarType(ScalarTypeForm::Integer)
-            | CheckedNodeKind::BoundedDomain(quire_contract_model::BoundedDomainForm::IntegerRange),
+            | CheckedNodeKind::BoundedDomain(
+                filament_contract_model::BoundedDomainForm::IntegerRange,
+            ),
         ) => Family::Integer,
         _ => Family::Other,
     }
@@ -1181,7 +1183,7 @@ fn unsupported_checked_clause_operator(
     let [declared, _, condition] = application(
         view.package().term(clause)?,
         ApplicationOperator::StateClause,
-        "quire.op.state.clause",
+        "filament.op.state.clause",
     )?
     else {
         return None;
@@ -1221,7 +1223,7 @@ fn unsupported_checked_clause_operator(
                 ..
             } => {
                 let identity = operation.identity()?;
-                if identity == "quire.op.record.project" {
+                if identity == "filament.op.record.project" {
                     // A projection of an option payload (FR-054-AC-8) walks its option read.
                     if let [argument] = arguments.as_slice() {
                         let read = match argument {
@@ -1238,10 +1240,13 @@ fn unsupported_checked_clause_operator(
                     }
                     continue;
                 }
-                if matches!(identity, "quire.op.state.pre" | "quire.op.model.deref") {
+                if matches!(
+                    identity,
+                    "filament.op.state.pre" | "filament.op.model.deref"
+                ) {
                     continue;
                 }
-                if identity.starts_with("quire.op.option.") {
+                if identity.starts_with("filament.op.option.") {
                     if let Some((reason, detail)) = option_refusal(view, identity, arguments) {
                         return Some(ClauseRefusal::Option {
                             reason,
@@ -1297,7 +1302,7 @@ fn option_symbolics(name: &str, leaves: &[OptionLeaf]) -> Vec<(ClauseLeaf, Strin
     draws
 }
 
-/// The refusal of one `quire.op.option.*` application, from its operation and the shape of the
+/// The refusal of one `filament.op.option.*` application, from its operation and the shape of the
 /// option it reads (FR-054-AC-10 to FR-054-AC-13). `None` when it is lowered, or when its refusal
 /// belongs to another route (an unbounded integer payload keeps its bound refusal).
 fn option_refusal(
@@ -1320,10 +1325,10 @@ fn option_refusal(
         other => other,
     };
     if let CheckedTerm::Application { operation, .. } = read {
-        if operation.identity()? == "quire.op.record.project" {
+        if operation.identity()? == "filament.op.record.project" {
             return Some((
                 OptionNotLoweredReason::NullablePresence,
-                "quire.op.record.project".to_owned(),
+                "filament.op.record.project".to_owned(),
             ));
         }
     }
@@ -1366,24 +1371,24 @@ fn unsupported_clause_operator(term: &ClauseTerm) -> Option<&str> {
 fn supported_clause_operator(identity: &str) -> bool {
     matches!(
         identity,
-        "quire.op.boolean.and"
-            | "quire.op.boolean.or"
-            | "quire.op.boolean.not"
-            | "quire.op.boolean.implies"
-            | "quire.op.boolean.eq"
-            | "quire.op.boolean.ne"
-            | "quire.op.integer.eq"
-            | "quire.op.integer.ne"
-            | "quire.op.integer.lt"
-            | "quire.op.integer.le"
-            | "quire.op.integer.gt"
-            | "quire.op.integer.ge"
-            | "quire.op.integer.add"
-            | "quire.op.integer.sub"
-            | "quire.op.integer.mul"
-            | "quire.op.integer.negate"
-            | "quire.op.option.present"
-            | "quire.op.option.value"
+        "filament.op.boolean.and"
+            | "filament.op.boolean.or"
+            | "filament.op.boolean.not"
+            | "filament.op.boolean.implies"
+            | "filament.op.boolean.eq"
+            | "filament.op.boolean.ne"
+            | "filament.op.integer.eq"
+            | "filament.op.integer.ne"
+            | "filament.op.integer.lt"
+            | "filament.op.integer.le"
+            | "filament.op.integer.gt"
+            | "filament.op.integer.ge"
+            | "filament.op.integer.add"
+            | "filament.op.integer.sub"
+            | "filament.op.integer.mul"
+            | "filament.op.integer.negate"
+            | "filament.op.option.present"
+            | "filament.op.option.value"
     )
 }
 
@@ -1396,7 +1401,7 @@ fn result_expectation_term(term: &ClauseTerm) -> Option<&ClauseTerm> {
     else {
         return None;
     };
-    if identity != "quire.op.boolean.eq" {
+    if identity != "filament.op.boolean.eq" {
         return None;
     }
     let [left, right] = arguments.as_slice() else {
@@ -2878,14 +2883,14 @@ fn native_term(
             arguments,
             ..
         } => {
-            if identity == "quire.op.numeric.narrow" {
+            if identity == "filament.op.numeric.narrow" {
                 let literal = crate::oracle::clause::admitted_literal_narrow(term)?;
                 return native_term(literal, bindings, scope, arithmetic);
             }
             if let [left, right] = arguments.as_slice() {
                 let gate = match identity.as_str() {
-                    "quire.op.boolean.and" | "quire.op.boolean.implies" => Some(false),
-                    "quire.op.boolean.or" => Some(true),
+                    "filament.op.boolean.and" | "filament.op.boolean.implies" => Some(false),
+                    "filament.op.boolean.or" => Some(true),
                     _ => None,
                 };
                 if let Some(invert) = gate {
@@ -2901,9 +2906,9 @@ fn native_term(
                         probe.guard = format!("({}) && ({condition})", probe.guard);
                     }
                     let expression = match identity.as_str() {
-                        "quire.op.boolean.and" => format!("({left} && {right})"),
-                        "quire.op.boolean.or" => format!("({left} || {right})"),
-                        "quire.op.boolean.implies" => format!("(!{left} || {right})"),
+                        "filament.op.boolean.and" => format!("({left} && {right})"),
+                        "filament.op.boolean.or" => format!("({left} || {right})"),
+                        "filament.op.boolean.implies" => format!("(!{left} || {right})"),
                         _ => return None,
                     };
                     return Some(NativeTerm::Boolean(expression));
@@ -2914,26 +2919,24 @@ fn native_term(
                 .map(|argument| native_term(argument, bindings, scope, arithmetic))
                 .collect::<Option<Vec<_>>>()?;
             match (identity.as_str(), values.as_slice()) {
-                ("quire.op.boolean.not", [value]) => Some(NativeTerm::Boolean(format!(
+                ("filament.op.boolean.not", [value]) => Some(NativeTerm::Boolean(format!(
                     "(!{})",
                     value.clone_boolean()?
                 ))),
-                ("quire.op.boolean.and", [left, right]) => Some(NativeTerm::Boolean(format!(
+                ("filament.op.boolean.and", [left, right]) => Some(NativeTerm::Boolean(format!(
                     "({} && {})",
                     left.clone_boolean()?,
                     right.clone_boolean()?
                 ))),
-                ("quire.op.boolean.or", [left, right]) => Some(NativeTerm::Boolean(format!(
+                ("filament.op.boolean.or", [left, right]) => Some(NativeTerm::Boolean(format!(
                     "({} || {})",
                     left.clone_boolean()?,
                     right.clone_boolean()?
                 ))),
-                ("quire.op.boolean.implies", [left, right]) => Some(NativeTerm::Boolean(format!(
-                    "(!{} || {})",
-                    left.clone_boolean()?,
-                    right.clone_boolean()?
-                ))),
-                ("quire.op.integer.negate", [value]) => {
+                ("filament.op.boolean.implies", [left, right]) => Some(NativeTerm::Boolean(
+                    format!("(!{} || {})", left.clone_boolean()?, right.clone_boolean()?),
+                )),
+                ("filament.op.integer.negate", [value]) => {
                     let (expression, lower, upper, small) = value.clone_integer()?;
                     let operand_bounds = vec![(lower, upper)];
                     let expected = format!("(-{expression})");
@@ -2966,19 +2969,21 @@ fn native_term(
                     })
                 }
                 (
-                    "quire.op.integer.add" | "quire.op.integer.sub" | "quire.op.integer.mul",
+                    "filament.op.integer.add"
+                    | "filament.op.integer.sub"
+                    | "filament.op.integer.mul",
                     [left, right],
                 ) => {
                     let (a, al, ah, a_small) = left.clone_integer()?;
                     let (b, bl, bh, b_small) = right.clone_integer()?;
                     let (operator, operation, bounds) = match identity.as_str() {
-                        "quire.op.integer.add" => {
+                        "filament.op.integer.add" => {
                             ("+", "Add", (al.checked_add(bl)?, ah.checked_add(bh)?))
                         }
-                        "quire.op.integer.sub" => {
+                        "filament.op.integer.sub" => {
                             ("-", "Subtract", (al.checked_sub(bh)?, ah.checked_sub(bl)?))
                         }
-                        "quire.op.integer.mul" => {
+                        "filament.op.integer.mul" => {
                             let corners = [
                                 al.checked_mul(bl)?,
                                 al.checked_mul(bh)?,
@@ -3025,27 +3030,27 @@ fn native_term(
                     })
                 }
                 (
-                    "quire.op.integer.lt"
-                    | "quire.op.integer.le"
-                    | "quire.op.integer.gt"
-                    | "quire.op.integer.ge",
+                    "filament.op.integer.lt"
+                    | "filament.op.integer.le"
+                    | "filament.op.integer.gt"
+                    | "filament.op.integer.ge",
                     [left, right],
                 ) => {
                     let (a, _, _, _) = left.clone_integer()?;
                     let (b, _, _, _) = right.clone_integer()?;
                     let operator = match identity.as_str() {
-                        "quire.op.integer.lt" => "<",
-                        "quire.op.integer.le" => "<=",
-                        "quire.op.integer.gt" => ">",
-                        "quire.op.integer.ge" => ">=",
+                        "filament.op.integer.lt" => "<",
+                        "filament.op.integer.le" => "<=",
+                        "filament.op.integer.gt" => ">",
+                        "filament.op.integer.ge" => ">=",
                         _ => return None,
                     };
                     Some(NativeTerm::Boolean(format!("({a} {operator} {b})")))
                 }
-                ("quire.op.integer.eq" | "quire.op.integer.ne", [left, right]) => {
+                ("filament.op.integer.eq" | "filament.op.integer.ne", [left, right]) => {
                     let (a, _, _, _) = left.clone_integer()?;
                     let (b, _, _, _) = right.clone_integer()?;
-                    let operator = if identity == "quire.op.integer.eq" {
+                    let operator = if identity == "filament.op.integer.eq" {
                         "=="
                     } else {
                         "!="
@@ -3089,10 +3094,10 @@ mod unsupported_operator_tests {
     #[test]
     fn nested_absolute_value_names_its_exact_operator() {
         let term = ClauseTerm::Operation {
-            identity: "quire.op.integer.ge".to_owned(),
+            identity: "filament.op.integer.ge".to_owned(),
             arguments: vec![
                 ClauseTerm::Operation {
-                    identity: "quire.op.integer.abs".to_owned(),
+                    identity: "filament.op.integer.abs".to_owned(),
                     arguments: vec![ClauseTerm::Integer("-2".to_owned())],
                     result_bound: None,
                 },
@@ -3102,7 +3107,7 @@ mod unsupported_operator_tests {
         };
         assert_eq!(
             unsupported_clause_operator(&term),
-            Some("quire.op.integer.abs")
+            Some("filament.op.integer.abs")
         );
     }
 }
@@ -3110,8 +3115,8 @@ mod unsupported_operator_tests {
 #[cfg(test)]
 mod postcondition_signature_tests {
     use super::*;
+    use filament_contract_model::CheckedOperationReadErrorCode;
     use ix_trace_rs::trace;
-    use quire_contract_model::CheckedOperationReadErrorCode;
 
     #[trace("FR-025-AC-11", "TC-036")]
     #[test]
@@ -3128,7 +3133,7 @@ mod postcondition_signature_tests {
                 record: crate::kani::identity::V2ClauseObligationRecord {
                     occurrence: crate::core::requirement::RequirementOccurrence {
                         node_id: clause.clone(),
-                        role: quire_contract_model::CheckedOccurrenceRole::Expression,
+                        role: filament_contract_model::CheckedOccurrenceRole::Expression,
                         ordinal: 0,
                     },
                     kind: ObligationKind::Postcondition,
@@ -3185,7 +3190,7 @@ mod postcondition_signature_tests {
         ] {
             let read_context = context.clone();
             let refusal = match read_postcondition_signature(&view, &clause, move |_, _| {
-                Err(quire_contract_model::CheckedOperationReadError {
+                Err(filament_contract_model::CheckedOperationReadError {
                     code,
                     context: read_context,
                     work: 7,
@@ -3229,7 +3234,7 @@ mod postcondition_signature_tests {
         let [CheckedTerm::Aggregate { members }, _, _] = application(
             package.term(&clause).expect("admitted clause body"),
             ApplicationOperator::StateClause,
-            "quire.op.state.clause",
+            "filament.op.state.clause",
         )
         .expect("admitted state clause") else {
             panic!("admitted ordered binders");
@@ -3290,7 +3295,7 @@ mod native_probe_tests {
     #[test]
     fn native_clause_expectation_accepts_only_in_range_literal_narrows() {
         let narrow = |value: &str| ClauseTerm::Operation {
-            identity: "quire.op.numeric.narrow".to_owned(),
+            identity: "filament.op.numeric.narrow".to_owned(),
             arguments: vec![ClauseTerm::Integer(value.to_owned())],
             result_bound: Some((0, 1000)),
         };
@@ -3317,7 +3322,7 @@ mod native_probe_tests {
         let wide = |value: &str, lower: i128, upper: i128| {
             native_term(
                 &ClauseTerm::Operation {
-                    identity: "quire.op.numeric.narrow".to_owned(),
+                    identity: "filament.op.numeric.narrow".to_owned(),
                     arguments: vec![ClauseTerm::Integer(value.to_owned())],
                     result_bound: Some((lower, upper)),
                 },
@@ -3357,7 +3362,7 @@ mod native_probe_tests {
     #[trace("FR-015-AC-125", "TC-025")]
     #[test]
     fn bounded_add_feeding_multiply_uses_the_typed_completed_interval() {
-        let node_id: quire_contract_model::CheckedNodeId =
+        let node_id: filament_contract_model::CheckedNodeId =
             serde_json::from_value(serde_json::json!({
                 "package": "kani-clause-v2-test",
                 "path": ["bounded-add"],
@@ -3373,7 +3378,7 @@ mod native_probe_tests {
             Decision {
                 node_id: node_id.clone(),
                 step: 0,
-                operation_identity: "quire.op.integer.add".to_owned(),
+                operation_identity: "filament.op.integer.add".to_owned(),
                 operands: vec![interval(0, 1000), interval(1, 1)],
                 capacity: Some(interval(1, 1001)),
                 semantic_domain: Some(interval(0, 1000)),
@@ -3381,7 +3386,7 @@ mod native_probe_tests {
             Decision {
                 node_id,
                 step: 1,
-                operation_identity: "quire.op.integer.mul".to_owned(),
+                operation_identity: "filament.op.integer.mul".to_owned(),
                 operands: vec![interval(1, 1000), interval(2, 2)],
                 capacity: Some(interval(2, 2000)),
                 semantic_domain: None,
@@ -3389,7 +3394,7 @@ mod native_probe_tests {
         ];
         let mut probes = vec![
             ArithmeticProbe {
-                operation_identity: "quire.op.integer.add".to_owned(),
+                operation_identity: "filament.op.integer.add".to_owned(),
                 operation: "Add",
                 operands: vec!["amount".to_owned(), "1".to_owned()],
                 expected: "amount + 1".to_owned(),
@@ -3398,7 +3403,7 @@ mod native_probe_tests {
                 guard: "true".to_owned(),
             },
             ArithmeticProbe {
-                operation_identity: "quire.op.integer.mul".to_owned(),
+                operation_identity: "filament.op.integer.mul".to_owned(),
                 operation: "Multiply",
                 operands: vec!["amount + 1".to_owned(), "2".to_owned()],
                 expected: "(amount + 1) * 2".to_owned(),
@@ -3420,8 +3425,8 @@ mod state_postcondition_shape_tests {
         ResultPostcondition, StateFieldDomains, StateParameter,
     };
     use crate::core::ir::clause::{ClauseInput, ClauseInputSide, ClauseLeaf};
+    use filament_contract_model::CheckedNodeId;
     use ix_trace_rs::trace;
-    use quire_contract_model::CheckedNodeId;
 
     fn node(name: &str) -> CheckedNodeId {
         serde_json::from_value(serde_json::json!({
@@ -3556,7 +3561,7 @@ mod control_expectation_tests {
     fn a_binder_read_resolves_to_the_innermost_binding() {
         let amount = ClauseTerm::Input(input("amount", 999));
         let add = |left: ClauseTerm, right: &str| ClauseTerm::Operation {
-            identity: "quire.op.integer.add".to_owned(),
+            identity: "filament.op.integer.add".to_owned(),
             arguments: vec![left, integer(right)],
             result_bound: None,
         };
@@ -3603,9 +3608,9 @@ mod control_expectation_tests {
             result_bound: None,
         };
         let term = ClauseTerm::If {
-            condition: Box::new(operation("quire.op.integer.lt", "500")),
-            then: Box::new(operation("quire.op.integer.add", "1")),
-            other: Box::new(operation("quire.op.integer.sub", "1")),
+            condition: Box::new(operation("filament.op.integer.lt", "500")),
+            then: Box::new(operation("filament.op.integer.add", "1")),
+            other: Box::new(operation("filament.op.integer.sub", "1")),
         };
         let mut arithmetic = Vec::new();
         native_term(

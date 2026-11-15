@@ -17,13 +17,13 @@ use crate::core::profile::oracle_crate_manifest;
 use crate::core::source_map::SourceProbe;
 use crate::oracle::claim::{ClaimDisposition, ClaimMap, OracleGenerationError};
 use crate::oracle::operator_catalog::IntegerOperator;
-use quire_contract_model::ContractPackageV1;
-use quire_contract_model::{CheckedNodeId, CheckedPackageV2};
-use quire_exact::{
+use filament_contract_model::ContractPackageV1;
+use filament_contract_model::{CheckedNodeId, CheckedPackageV2};
+use filament_exact::{
     ComparisonOperator, DecimalType, DivisionProfile, IeeeComparison, IeeeWidth, IntegerDomain,
     IntegerInterval, OrderingOperator, RoundingMode, TextProfile,
 };
-use quire_semantic_value::declaration::EqualityOperator;
+use filament_semantic_value::declaration::EqualityOperator;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -47,7 +47,7 @@ const SOURCE_HEADER: &str = "\
 // The source has no inner attributes so that it can be `include!`d; the manifest forbids
 // unsafe code instead.
 
-use quire_exact as rt;
+use filament_exact as rt;
 
 /// Why a generated oracle stopped before an operator outcome.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -178,7 +178,7 @@ impl SourceBuilder {
 
     pub(super) fn finish(self) -> String {
         let quantity_refusal = if self.functions.contains("quantity_owner::") {
-            "/// FSV quantity type checking or result-unit identity refused before evaluation.\n    Quantity(quire_semantic_value::quantity::QuantityRefusal),"
+            "/// FSV quantity type checking or result-unit identity refused before evaluation.\n    Quantity(filament_semantic_value::quantity::QuantityRefusal),"
         } else {
             ""
         };
@@ -190,16 +190,16 @@ impl SourceBuilder {
         source.push_str(quantity_refusal);
         source.push_str("\n}\n");
         if self.functions.contains("quantity_owner::") {
-            source.push_str("use quire_semantic_value::quantity as quantity_owner;\n");
+            source.push_str("use filament_semantic_value::quantity as quantity_owner;\n");
         }
         if self.functions.contains("sv::") {
-            source.push_str("use quire_semantic_value::declaration as sv;\n");
+            source.push_str("use filament_semantic_value::declaration as sv;\n");
         }
         if self.functions.contains("enum_owner::") {
-            source.push_str("use quire_semantic_value::enumeration as enum_owner;\n");
+            source.push_str("use filament_semantic_value::enumeration as enum_owner;\n");
         }
         if self.functions.contains("scalar_owner::") {
-            source.push_str("use quire_contract_runtime::scalar as scalar_owner;\n");
+            source.push_str("use filament_contract_runtime::scalar as scalar_owner;\n");
         }
         if self.needs_integer {
             source.push_str(INTEGER_HELPER);
@@ -323,7 +323,7 @@ impl SourceBuilder {
                     parameters: binary(ty),
                     output: OracleOutput::Value("bool"),
                     prelude: vec![format!(
-                        "let environment = sv::TypeEnvironment::default();\n    let checked = environment.check_equality(sv::EqualityOperator::{operator}, sv::EqualityOperand::typed(rt::ValueType::{value_type}), sv::EqualityOperand::typed(rt::ValueType::{value_type}), &quire_semantic_value::enumeration::EnumMemberIndex::default()).map_err(OracleStop::IllTyped)?;"
+                        "let environment = sv::TypeEnvironment::default();\n    let checked = environment.check_equality(sv::EqualityOperator::{operator}, sv::EqualityOperand::typed(rt::ValueType::{value_type}), sv::EqualityOperand::typed(rt::ValueType::{value_type}), &filament_semantic_value::enumeration::EnumMemberIndex::default()).map_err(OracleStop::IllTyped)?;"
                     )],
                     call: format!("Ok(checked.evaluate(&environment, &rt::Value::{value}({left}), &rt::Value::{value}({right}), meter))"),
                 }
@@ -578,9 +578,9 @@ impl SourceBuilder {
             }
             ExactScalarOperation::CarriedQuantityConversion { carrier, .. } => {
                 let carrier = match carrier {
-                    quire_exact::QuantityCarrier::Decimal(decimal) => format!("rt::QuantityCarrier::Decimal({})", self.decimal_type(decimal)?),
-                    quire_exact::QuantityCarrier::Integer { domain, rounding } => format!("rt::QuantityCarrier::Integer {{ domain: {}, rounding: {} }}", self.interval(domain), rounding_path(*rounding)?),
-                    quire_exact::QuantityCarrier::Rational(domain) => format!("rt::QuantityCarrier::Rational(rt::RationalDomain::new({}, {}).map_err(|_| OracleStop::InvalidConstant)?)", self.interval(domain.numerator()), self.interval(domain.denominator())),
+                    filament_exact::QuantityCarrier::Decimal(decimal) => format!("rt::QuantityCarrier::Decimal({})", self.decimal_type(decimal)?),
+                    filament_exact::QuantityCarrier::Integer { domain, rounding } => format!("rt::QuantityCarrier::Integer {{ domain: {}, rounding: {} }}", self.interval(domain), rounding_path(*rounding)?),
+                    filament_exact::QuantityCarrier::Rational(domain) => format!("rt::QuantityCarrier::Rational(rt::RationalDomain::new({}, {}).map_err(|_| OracleStop::InvalidConstant)?)", self.interval(domain.numerator()), self.interval(domain.denominator())),
                 };
                 Body {
                     parameters: vec![("operand", "quantity_owner::UnitQuantity<'_>"), ("unit", "&quantity_owner::IdentifiedUnit")],
@@ -1166,8 +1166,8 @@ pub(super) fn build_contract_scalar_oracles(
 mod native_publication_tests {
     use super::*;
     use crate::oracle::scalar::{GeneratedScalarClaim, OperationClaim, OperationProvenance};
+    use filament_contract_model::ContractSourceV1;
     use ix_trace_rs::trace;
-    use quire_contract_model::ContractSourceV1;
 
     fn node_id(digit: char) -> CheckedNodeId {
         serde_json::from_value(serde_json::json!({
@@ -1200,7 +1200,7 @@ mod native_publication_tests {
             let node = node_id(char::from(b'b' + u8::try_from(index).expect("two items")));
             let (_, selection) = super::super::native::select(
                 &node,
-                "quire.op.integer.add",
+                "filament.op.integer.add",
                 symbol,
                 IntegerOperator::Add,
                 &[(0, 9), (1, 1)],
@@ -1211,7 +1211,7 @@ mod native_publication_tests {
             items.push(ExactScalarClaim {
                 node_id: node.clone(),
                 operation: OperationClaim {
-                    identity: "quire.op.integer.add".to_owned(),
+                    identity: "filament.op.integer.add".to_owned(),
                     provenance: OperationProvenance::IrConfirmed,
                 },
                 result: ClaimDisposition::Generated(Box::new(GeneratedScalarClaim {

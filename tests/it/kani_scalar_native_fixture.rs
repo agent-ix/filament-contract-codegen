@@ -8,11 +8,11 @@ use super::{
 };
 use super::{package, proof_ceilings_with_wall_clock};
 use filament_contract_codegen::generate_routed_native;
-use package::Bound;
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedPackageReadLimits, ContractDependencies, ContractPackageReadResult,
     ContractPackageWireV1,
 };
+use package::Bound;
 use std::time::Duration;
 pub(super) fn routed_scalar_with_artifacts(
     builder: package::PackageBuilder,
@@ -80,26 +80,26 @@ fn scalar_with_policy(
         ContractPackageReadResult::Admitted(package) => package,
         other => panic!("IR must admit the routed scalar package: {other:?}"),
     };
-    let occurrence = |node: &quire_contract_model::CheckedNodeId| {
+    let occurrence = |node: &filament_contract_model::CheckedNodeId| {
         let entries = package
             .source_map()
             .iter()
             .filter(|entry| {
                 &entry.node_id == node
-                    && entry.role == quire_contract_model::CheckedOccurrenceRole::Expression
+                    && entry.role == filament_contract_model::CheckedOccurrenceRole::Expression
             })
             .collect::<Vec<_>>();
         let [entry] = entries.as_slice() else {
             panic!("one caller-authored expression occurrence");
         };
-        quire_contract_model::ContractOccurrenceKeyV1 {
+        filament_contract_model::ContractOccurrenceKeyV1 {
             node_id: node.clone(),
             role: entry.role.clone(),
             ordinal: entry.ordinal,
         }
     };
     let to_requirement =
-        |key: &quire_contract_model::ContractOccurrenceKeyV1| RequirementOccurrence {
+        |key: &filament_contract_model::ContractOccurrenceKeyV1| RequirementOccurrence {
             node_id: key.node_id.clone(),
             role: key.role.clone(),
             ordinal: key.ordinal,

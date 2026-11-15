@@ -43,7 +43,7 @@ mutant fails the step "produced result agrees with the independent checked condi
    mutate the absent Boolean to free; the absent value must appear twice (FR-054-AC-9).
 8. Request one clause per refusal: a payload leaf of each family of FR-054-AC-10, an option of an
    option and a record payload holding an option leaf, a record field declared `field?`, and a
-   clause applying `quire.op.option.some`. Assert the typed reason, the node and no harness, and
+   clause applying `filament.op.option.some`. Assert the typed reason, the node and no harness, and
    that none is `NoFiniteEncoding`, `StateFrameRefused` or `V2ClauseOperatorNotSupported`
    (FR-054-AC-10 to FR-054-AC-14). Mutate by returning `V2ClauseOperatorNotSupported`, by
    classifying the record-held option leaf as `PayloadNotScalar`, and by lowering `field?` as a

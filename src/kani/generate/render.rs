@@ -185,7 +185,7 @@ fn render_statements(
         .iter()
         .any(|statement| matches!(statement, Statement::SubjectImplicationCall))
     {
-        line(&mut source, "#[inline(never)]\nfn subject_boolean_implication(left: bool, right: bool) -> bool {\nlet subject = quire_contract_runtime::operators::implies_short_circuit(left, || right);\nsubject\n}\n#[inline(never)]\nfn expected_boolean_implication(left: bool, right: bool) -> bool {\n!left || right\n}");
+        line(&mut source, "#[inline(never)]\nfn subject_boolean_implication(left: bool, right: bool) -> bool {\nlet subject = filament_contract_runtime::operators::implies_short_circuit(left, || right);\nsubject\n}\n#[inline(never)]\nfn expected_boolean_implication(left: bool, right: bool) -> bool {\n!left || right\n}");
     }
     match proof {
         ProofKind::Proof => source.push_str("#[kani::proof]\n"),

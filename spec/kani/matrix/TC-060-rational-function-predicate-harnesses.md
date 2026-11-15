@@ -26,7 +26,7 @@ runner and budget; a parked CG-self-proof gate is not feature evidence.
 
    ```text
    language "ix:native" edition "1-draft";
-   profile v = "quire.value.complete/v1";
+   profile v = "filament.value.complete/v1";
    function rational_commutative using v(a: Rational[-9, 9; 1, 9], b: Rational[-9, 9; 1, 9]): Boolean pure {
        a + b = b + a
    }

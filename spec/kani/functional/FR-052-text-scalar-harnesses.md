@@ -43,7 +43,7 @@ relationships:
 ## Description
 
 When an admitted request selects a reader-admitted `text` scalar comparison
-(`quire.op.text.eq`, `.ne`, `.lt`, `.le`, `.gt`, `.ge`) over two parameters each
+(`filament.op.text.eq`, `.ne`, `.lt`, `.le`, `.gt`, `.ge`) over two parameters each
 typed by a `text_bounds` domain, and the planned prerequisite below is available,
 CG SHALL generate a bounded Kani harness that proves the generated text oracle of
 [FR-014](../../oracle/functional/FR-014-exact-scalar-oracles.md) agrees with an
@@ -107,11 +107,11 @@ operand bound itself and refuses defensively (AC-4).
 A comparison returns `Outcome<bool>`, takes no `TextType` and has no result bound.
 Only the two operands carry bounds.
 
-Three neighbours are outside this requirement. `quire.op.text.size` is refused by
+Three neighbours are outside this requirement. `filament.op.text.size` is refused by
 FR-014 as `OperationNotDerivable`, so no oracle exists to prove. Text admission
 (`admit_text` into a declared `TextType`) is a caller-ingress operation owned by
 [FR-035](../../oracle/functional/FR-035-caller-text-admission.md). CG's derivation
-does build a `TextAdmission` descriptor from a `quire.op.numeric.convert` node with
+does build a `TextAdmission` descriptor from a `filament.op.numeric.convert` node with
 a text result, and capability settlement routes it to the Text family, but Contract
 IR refuses such a node and its six test nodes (FR-035-AC-6). This row selects only
 the six comparisons, so such a node keeps its existing disposition and never gets a
@@ -284,7 +284,7 @@ are also conditional on P4 (IR-1501).
 
 | ID | Criteria | Verification |
 | --- | --- | --- |
-| FR-052-AC-1 | Each admitted `quire.op.text.eq`, `.ne`, `.lt`, `.le`, `.gt` and `.ge` node over two parameters typed by `text_bounds` selects a harness naming the operation identity, both operand forms and their bounds from the admitted node; the oracle is FR-014's and the expected side is an independent native expression, not a second call of the oracle. `quire.op.text.size` selects no harness and keeps FR-014's `OperationNotDerivable`. A text admission claim selects no harness here and stays FR-035's. A text literal operand is accounted `unsupported` naming `TextLiteralOperand` and the operand node, and an operand that is neither a parameter nor a literal is accounted `unsupported` naming FR-015's `OperandNotSupported` and the node, each with no harness. A `numeric.convert` node with a text result selects no harness and keeps its existing disposition. | Test |
+| FR-052-AC-1 | Each admitted `filament.op.text.eq`, `.ne`, `.lt`, `.le`, `.gt` and `.ge` node over two parameters typed by `text_bounds` selects a harness naming the operation identity, both operand forms and their bounds from the admitted node; the oracle is FR-014's and the expected side is an independent native expression, not a second call of the oracle. `filament.op.text.size` selects no harness and keeps FR-014's `OperationNotDerivable`. A text admission claim selects no harness here and stays FR-035's. A text literal operand is accounted `unsupported` naming `TextLiteralOperand` and the operand node, and an operand that is neither a parameter nor a literal is accounted `unsupported` naming FR-015's `OperandNotSupported` and the node, each with no harness. A `numeric.convert` node with a text result selects no harness and keeps its existing disposition. | Test |
 | FR-052-AC-2 | Each operand is drawn as a byte length in `0..=C` and C payload bytes, zero from the length on, valid UTF-8, and admitted by the declared `TextType` through the carrier's loop-free length check. Every admitted payload is reachable exactly once, including normal-form variants of one text, and an independent host enumeration of every byte string up to a stated small length, filtered by `std::str::from_utf8` and the host-side owner `TextType::admits` over the profile's retained sequence, matches the encoding. Clipping the length at `C - 1`, accepting an invalid UTF-8 prefix, accepting nonzero bytes past the length (two encodings for one text), admitting a payload the declared type refuses, rejecting a payload it admits, and swapping the scalar-count and byte-count length measures between `binary-utf8` and the other profiles (which needs a bound where the measures split, such as U+00E9, 2 bytes and 1 scalar, under `Text[0,1]`, admitted by the scalar measure and refused by the byte measure; under `Text[0,2]` with strings up to two bytes both measures admit every string and the mutant cannot fail) each fail the correspondence check (FSpec FR-196-AC-5). | Test |
 | FR-052-AC-3 | The payload-byte bound P is `max` for `binary-utf8`, 4 x `max` (checked arithmetic) for `unicode-scalars`, and the bound IR-1500 states (filament-exact FR-400, `payload_byte_bound`) for `nfc`, `nfd`, `nfkc` and `nfkd`. P is an upper bound, which may exceed every admitted payload length (AC-13). An operand with P not greater than C is supported. An operand with P greater than C, a `max` or product beyond the carrier's length width or `u64`, or a normalizing profile whose bound IR-1500 does not state, yields named `unsupported` retaining the declared `max`, the profile, P (or its absence) and C; generation never clips, narrows or substitutes a smaller domain. | Test |
 | FR-052-AC-4 | A text operand typed by no `text_bounds` (a plain `text`) yields source-associated `requires-bound` naming the operand's type node with no harness. A `text_bounds` that is unreadable yields named `unsupported` retaining its cause: a missing, duplicate or unlisted member (FR-014-AC-16), or a non-canonical or beyond-`u64` count, `min` above `max` or an unknown profile (each yields no bound from CG's own reader `read_text_bounds`, which returns no `TextType` for them). Operands whose profiles differ are refused with `DistinctTextProfiles` and no harness. No result bound is required, read or reported, because a comparison has none. | Test |

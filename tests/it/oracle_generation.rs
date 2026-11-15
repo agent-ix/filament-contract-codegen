@@ -6,14 +6,14 @@ use filament_contract_codegen::{
     generate_boolean_oracle, GenerationDiagnostic, GenerationErrorCode, GenerationTerminalState,
     OracleRequest, MAX_GENERATED_SOURCE_BYTES,
 };
-use jsonschema::{Draft, JSONSchema};
-use quire_contract_model::{
+use filament_contract_model::{
     AnchorName, BooleanOperator, ClauseId, ComparisonOperator, DeclarationEnvironment,
     ExecutionPoint, Expression, ExpressionKind, IntegerDomain, IntegerType, NumericOperator,
     OverflowPolicy, PackageId, RationalType, RequirementId, RequirementRef, RequirementRevision,
     SourceDocumentId, SourceIdentity, SourceLocation, SourceRevision, SourceSpan, StateObservation,
     SymbolName, ValueDeclaration, ValueDeclarationKind, ValueType,
 };
+use jsonschema::{Draft, JSONSchema};
 
 fn name(value: &str) -> SymbolName {
     SymbolName::new(value).unwrap()
@@ -517,15 +517,15 @@ fn tc_001_boolean_oracle_bundle_is_deterministic_traceable_and_schema_valid() {
     assert!(first
         .rust
         .contents
-        .contains("quire_contract_runtime::RequirementId::new(\"FR-001\")"));
+        .contains("filament_contract_runtime::RequirementId::new(\"FR-001\")"));
     assert!(first
         .rust
         .contents
-        .contains("quire_contract_runtime::RevisionId::new(\"7\")"));
+        .contains("filament_contract_runtime::RevisionId::new(\"7\")"));
     assert!(first
         .rust
         .contents
-        .contains("quire_contract_runtime::ClauseId::new(\"clause-main\")"));
+        .contains("filament_contract_runtime::ClauseId::new(\"clause-main\")"));
 
     let source_map: Vec<filament_contract_codegen::SourceRegion> =
         serde_json::from_str(&first.source_map.contents).unwrap();
@@ -813,7 +813,7 @@ fn tc_002_supported_boolean_grammar_compiles_and_matches_an_independent_evaluato
                 BooleanOperator::Implication => "implies_short_circuit",
             };
             assert!(bundle.rust.contents.contains(&format!(
-                "quire_contract_runtime::operators::{expected_function}("
+                "filament_contract_runtime::operators::{expected_function}("
             )));
         }
         for function in [
@@ -909,7 +909,7 @@ fn tc_002_supported_boolean_grammar_compiles_and_matches_an_independent_evaluato
 /// Writes `program` as the `main.rs` of a scratch binary crate named `crate_name` that depends
 /// on the runtime, then builds and runs it with warnings denied, asserting it exits cleanly.
 fn run_generated_program(crate_name: &str, program: &str) {
-    let directory = TemporaryDirectory::new(&format!("quire-codegen-{crate_name}"));
+    let directory = TemporaryDirectory::new(&format!("filament-codegen-{crate_name}"));
     let source_directory = directory.path.join("src");
     fs::create_dir_all(&source_directory).unwrap();
     fs::write(source_directory.join("main.rs"), program).unwrap();
@@ -1045,7 +1045,7 @@ fn tc_002_integer_and_state_comparisons_are_deterministic_compile_and_match_the_
     assertions.push_str("}\n");
     generated_program.push_str(&assertions);
 
-    let directory = TemporaryDirectory::new("quire-codegen-numeric-differential");
+    let directory = TemporaryDirectory::new("filament-codegen-numeric-differential");
     let source_directory = directory.path.join("src");
     fs::create_dir_all(&source_directory).unwrap();
     fs::write(source_directory.join("main.rs"), generated_program).unwrap();

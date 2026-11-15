@@ -15,10 +15,10 @@ use generated::{
     integer_lt, integer_ne, OracleStop,
 };
 use ix_trace_rs::trace;
-use quire_exact::ValueType;
-use quire_exact::{Outcome, Refusal};
-use quire_semantic_value::declaration::{EqualityOperand, EqualityOperator, TypeEnvironment};
-use quire_semantic_value::enumeration::EnumMemberIndex;
+use filament_exact::ValueType;
+use filament_exact::{Outcome, Refusal};
+use filament_semantic_value::declaration::{EqualityOperand, EqualityOperator, TypeEnvironment};
+use filament_semantic_value::enumeration::EnumMemberIndex;
 
 fn done(result: Result<Outcome<bool>, OracleStop>) -> Outcome<bool> {
     result.expect("a generated oracle over admitted operands does not stop")
@@ -56,7 +56,7 @@ fn boolean_connectives_agree_in_outcome_charges_counters_and_denials() {
             Outcome::Completed(false),
             Outcome::Completed(true),
             Outcome::Refused(Refusal::CheckedInvariant {
-                cause: quire_exact::CheckedInvariantCause::GeneratedDescriptorReconstructionFailed,
+                cause: filament_exact::CheckedInvariantCause::GeneratedDescriptorReconstructionFailed,
             }),
         ] {
             agree2! {

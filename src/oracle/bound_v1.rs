@@ -1,6 +1,6 @@
 //! Complete-package oracle lowering through the public IR binding boundary.
 
-use quire_contract_model::{BoundPackage, ClauseRef};
+use filament_contract_model::{BoundPackage, ClauseRef};
 
 use crate::{
     core::artifact::{

@@ -15,7 +15,7 @@
 //! The block selection, the refusal codes and the rendered-value cross-check preserve the
 //! witness reader's behavior while keeping Kani wording in the output reader.
 //!
-//! The values come out as [`qsl_replay::WitnessValue`], the type FSL's replay envelope carries,
+//! The values come out as [`fsl_replay::WitnessValue`], the type FSL's replay envelope carries,
 //! so [`crate::replay::function`] hands them to FSL without a conversion. The output reader
 //! handles Kani's transcript grammar; FSL's `Witness::decode` reads a different grammar.
 //!
@@ -34,7 +34,7 @@ mod collection_operation;
 
 use std::collections::BTreeSet;
 
-use qsl_replay::WitnessValue;
+use fsl_replay::WitnessValue;
 
 use crate::kani::{
     abi::{KaniBindingRole, KaniPrimitiveType},
@@ -424,8 +424,8 @@ pub(crate) fn first_out_of_domain<'a>(
 
 #[cfg(test)]
 mod tests {
+    use filament_contract_model::{IntegerDomain, OverflowPolicy};
     use ix_trace_rs::trace;
-    use quire_contract_model::{IntegerDomain, OverflowPolicy};
 
     use super::*;
     use crate::kani::abi::KaniIntegerBounds;

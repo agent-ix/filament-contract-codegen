@@ -4,7 +4,7 @@
 //! `PublicationDiagnostic`, so the vocabulary moves out of `oracle` with it rather than leaving
 //! `core` importing the oracle subsystem.
 
-use quire_contract_model::SourceSpan;
+use filament_contract_model::SourceSpan;
 use serde::{Deserialize, Serialize};
 
 /// Interface-001 terminal state for a generation result.

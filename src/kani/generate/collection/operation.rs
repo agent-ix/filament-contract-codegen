@@ -17,7 +17,7 @@ use crate::kani::{
         CollectionOperationValueIdentity, SymbolicBounds,
     },
 };
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedCollectionKind, CheckedMemberType, CheckedNodeId, CheckedTerm, LiteralKind,
     StateClauseKind,
 };
@@ -31,7 +31,7 @@ struct ConditionBindings<'a> {
 
 pub(super) struct LoweredOperation {
     pub(super) spec: CollectionOperationSpec,
-    pub(super) obligation: qsl_replay::ObligationIdentity,
+    pub(super) obligation: fsl_replay::ObligationIdentity,
 }
 
 fn refused(reason: CollectionUnsupportedReason) -> CollectionDomainRefusal {
@@ -284,7 +284,7 @@ pub(super) fn lower(
 pub(super) fn first_quantifier<'a>(
     graph: &CollectionGraph<'a>,
     body: &CheckedNodeId,
-) -> Option<&'a quire_contract_model::CheckedSemanticNodeV2> {
+) -> Option<&'a filament_contract_model::CheckedSemanticNodeV2> {
     let mut pending = vec![body.clone()];
     let mut budget = 256usize;
     while let Some(id) = pending.pop() {
@@ -299,8 +299,8 @@ pub(super) fn first_quantifier<'a>(
             continue;
         };
         match operation.identity()? {
-            "quire.op.collection.forall" | "quire.op.collection.exists" => return Some(node),
-            "quire.op.boolean.and" => {
+            "filament.op.collection.forall" | "filament.op.collection.exists" => return Some(node),
+            "filament.op.boolean.and" => {
                 for argument in arguments.iter().rev() {
                     if let Some(target) = term_target(argument) {
                         pending.push(target);
@@ -329,10 +329,10 @@ fn collection_read(
     else {
         return None;
     };
-    if operation.identity()? == "quire.op.state.pre" {
+    if operation.identity()? == "filament.op.state.pre" {
         return collection_read(graph, clause, arguments.first()?, context, "pre");
     }
-    if operation.identity()? != "quire.op.record.project" {
+    if operation.identity()? != "filament.op.record.project" {
         return None;
     }
     let (declaration, name) = operation.projection_field().ok()??;
@@ -366,7 +366,7 @@ fn condition(
         ..
     }) = graph.index.term(node)
     {
-        if operation.identity()? == "quire.op.boolean.and" {
+        if operation.identity()? == "filament.op.boolean.and" {
             let [left, right] = arguments.as_slice() else {
                 return None;
             };
@@ -379,7 +379,7 @@ fn condition(
                 )?),
             ));
         }
-        if operation.identity()? == "quire.op.structural.eq" {
+        if operation.identity()? == "filament.op.structural.eq" {
             let [left, right] = arguments.as_slice() else {
                 return None;
             };
@@ -483,7 +483,7 @@ fn scalar_condition(
                 match value.domain {
                     CollectionElementIdentity::Boolean => value.binding.clone(),
                     CollectionElementIdentity::Integer { .. } => {
-                        format!("quire_exact::Integer::from({})", value.binding)
+                        format!("filament_exact::Integer::from({})", value.binding)
                     }
                 }
             } else {
@@ -511,7 +511,7 @@ fn scalar_condition(
             ..
         } => {
             let value = value.as_str()?.parse::<i64>().ok()?;
-            Some(format!("quire_exact::Integer::from({value}_i64)"))
+            Some(format!("filament_exact::Integer::from({value}_i64)"))
         }
         CheckedTerm::Application {
             operation,
@@ -519,7 +519,7 @@ fn scalar_condition(
             ..
         } => {
             let identity = operation.identity()?;
-            if identity == "quire.op.record.project" {
+            if identity == "filament.op.record.project" {
                 let (declaration, name) = operation.projection_field().ok()??;
                 let deref = graph.index.node(&term_target(arguments.first()?)?)?;
                 let CheckedTerm::Application {
@@ -531,7 +531,7 @@ fn scalar_condition(
                 else {
                     return None;
                 };
-                if deref_operation.identity()? != "quire.op.model.deref"
+                if deref_operation.identity()? != "filament.op.model.deref"
                     || result_type != declaration
                 {
                     return None;
@@ -561,26 +561,28 @@ fn scalar_condition(
                 .map(|arg| scalar_condition(graph, clause, arg, context, visiting, budget, current))
                 .collect::<Option<Vec<_>>>()?;
             match (identity, args.as_slice()) {
-                ("quire.op.boolean.not", [a]) => Some(format!("!({a})")),
-                ("quire.op.boolean.and", [a, b]) => Some(format!("({a}) && ({b})")),
-                ("quire.op.boolean.or", [a, b]) => Some(format!("({a}) || ({b})")),
-                ("quire.op.boolean.implies", [a, b]) => Some(format!("!({a}) || ({b})")),
-                ("quire.op.boolean.eq" | "quire.op.integer.eq" | "quire.op.numeric.eq", [a, b]) => {
-                    Some(format!("({a}) == ({b})"))
-                }
-                ("quire.op.boolean.ne" | "quire.op.integer.ne" | "quire.op.numeric.ne", [a, b]) => {
-                    Some(format!("({a}) != ({b})"))
-                }
-                ("quire.op.integer.ge" | "quire.op.numeric.ge", [a, b]) => {
+                ("filament.op.boolean.not", [a]) => Some(format!("!({a})")),
+                ("filament.op.boolean.and", [a, b]) => Some(format!("({a}) && ({b})")),
+                ("filament.op.boolean.or", [a, b]) => Some(format!("({a}) || ({b})")),
+                ("filament.op.boolean.implies", [a, b]) => Some(format!("!({a}) || ({b})")),
+                (
+                    "filament.op.boolean.eq" | "filament.op.integer.eq" | "filament.op.numeric.eq",
+                    [a, b],
+                ) => Some(format!("({a}) == ({b})")),
+                (
+                    "filament.op.boolean.ne" | "filament.op.integer.ne" | "filament.op.numeric.ne",
+                    [a, b],
+                ) => Some(format!("({a}) != ({b})")),
+                ("filament.op.integer.ge" | "filament.op.numeric.ge", [a, b]) => {
                     Some(format!("({a}) >= ({b})"))
                 }
-                ("quire.op.integer.le" | "quire.op.numeric.le", [a, b]) => {
+                ("filament.op.integer.le" | "filament.op.numeric.le", [a, b]) => {
                     Some(format!("({a}) <= ({b})"))
                 }
-                ("quire.op.integer.gt" | "quire.op.numeric.gt", [a, b]) => {
+                ("filament.op.integer.gt" | "filament.op.numeric.gt", [a, b]) => {
                     Some(format!("({a}) > ({b})"))
                 }
-                ("quire.op.integer.lt" | "quire.op.numeric.lt", [a, b]) => {
+                ("filament.op.integer.lt" | "filament.op.numeric.lt", [a, b]) => {
                     Some(format!("({a}) < ({b})"))
                 }
                 _ => None,
@@ -600,7 +602,7 @@ pub(super) fn validate(
         node_id: node_id.clone(),
         reason,
     };
-    let value_bytes = u64::try_from(std::mem::size_of::<quire_exact::Value>())
+    let value_bytes = u64::try_from(std::mem::size_of::<filament_exact::Value>())
         .map_err(|_| failure(CollectionUnsupportedReason::DomainNotRepresentableInHarness))?;
     let mut bytes = 0u64;
     let mut capacity_failure = None;

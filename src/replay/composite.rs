@@ -4,7 +4,7 @@
 //! including the observation, equals the identity retained at the call site.
 // Implements: FR-033-AC-9, FR-029-AC-28
 
-use qsl_replay::{
+use fsl_replay::{
     CompositeIdentity, CompositeParityReport, CompositeParityResult, TerminalValue,
     VerifiedShadowReport, VerifiedShadowResult,
 };

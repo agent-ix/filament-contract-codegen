@@ -6,11 +6,11 @@
 //! field-edge claim, from the field's `CheckedMemberType`. No caller bound, inferred population
 //! or reduced domain stands in for either. The harness carries every
 //! count, degree and target as a native `i64`; it never builds a general-route `rt::Integer`.
-use quire_contract_model::selected_population::{
+use filament_contract_model::selected_population::{
     select_population, CheckedSelectedPopulation, CheckedSelectedPopulationOutcome as Population,
     CheckedSelectedPopulationSource,
 };
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedCollectionKind, CheckedMemberType, CheckedNodeId, CheckedOccurrence,
     CheckedOperationMember, CheckedPackageV2, CheckedReachesPopulationError,
     CheckedRelationshipEndError, CheckedTerm, ContractSourceV1, StateClauseKind,
@@ -137,7 +137,7 @@ fn operation_identity(term: &CheckedTerm) -> Option<&str> {
 fn is_reachability(term: &CheckedTerm) -> bool {
     matches!(
         operation_identity(term),
-        Some("quire.op.model.reaches" | "quire.op.model.reaches_field")
+        Some("filament.op.model.reaches" | "filament.op.model.reaches_field")
     )
 }
 
@@ -363,7 +363,7 @@ pub(crate) fn field_of<'a>(
     identity: Option<&str>,
     member: Option<&'a CheckedOperationMember>,
 ) -> Result<Option<(&'a CheckedNodeId, &'a str)>, GraphRefusal> {
-    if identity != Some("quire.op.model.reaches_field") {
+    if identity != Some("filament.op.model.reaches_field") {
         return Ok(None);
     }
     match member {
@@ -567,7 +567,7 @@ impl Shape<'_> {
         let Some(CheckedTerm::Application { operation, .. }) = self.package.term(collection) else {
             return Err(unsupported());
         };
-        if operation.identity() != Some("quire.op.model.all_instances")
+        if operation.identity() != Some("filament.op.model.all_instances")
             || !operation
                 .member_declaration()
                 .ok()
@@ -617,8 +617,12 @@ impl Shape<'_> {
             return self.reaches(id.ok_or_else(unsupported)?, arguments);
         }
         match operation.identity() {
-            Some("quire.op.collection.forall") => return self.quantifier(true, arguments, depth),
-            Some("quire.op.collection.exists") => return self.quantifier(false, arguments, depth),
+            Some("filament.op.collection.forall") => {
+                return self.quantifier(true, arguments, depth)
+            }
+            Some("filament.op.collection.exists") => {
+                return self.quantifier(false, arguments, depth)
+            }
             _ => {}
         }
         let mut rendered = Vec::with_capacity(arguments.len());
@@ -632,19 +636,19 @@ impl Shape<'_> {
             operands.next(),
             operands.next(),
         ) {
-            (Some("quire.op.boolean.not"), Some(argument), None, None) => {
+            (Some("filament.op.boolean.not"), Some(argument), None, None) => {
                 Ok(Claim::Not(Box::new(argument)))
             }
-            (Some("quire.op.boolean.and"), Some(left), Some(right), None) => {
+            (Some("filament.op.boolean.and"), Some(left), Some(right), None) => {
                 Ok(Claim::And(Box::new(left), Box::new(right)))
             }
-            (Some("quire.op.boolean.or"), Some(left), Some(right), None) => {
+            (Some("filament.op.boolean.or"), Some(left), Some(right), None) => {
                 Ok(Claim::Or(Box::new(left), Box::new(right)))
             }
-            (Some("quire.op.boolean.implies"), Some(left), Some(right), None) => {
+            (Some("filament.op.boolean.implies"), Some(left), Some(right), None) => {
                 Ok(Claim::Implies(Box::new(left), Box::new(right)))
             }
-            (Some("quire.op.boolean.eq"), Some(left), Some(right), None) => {
+            (Some("filament.op.boolean.eq"), Some(left), Some(right), None) => {
                 Ok(Claim::Equal(Box::new(left), Box::new(right)))
             }
             _ => Err(unsupported()),

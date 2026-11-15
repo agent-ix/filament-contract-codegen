@@ -6,14 +6,14 @@ use filament_contract_codegen::{
     generate_v2_numeric_strategy, Population, V2NumericErrorCode, V2NumericPolicy,
     V2NumericRequest, V2SelectedClaimKey,
 };
+use filament_contract_model::{CheckedOccurrence, CheckedOccurrenceRole};
 use ix_trace_rs::trace;
-use quire_contract_model::{CheckedOccurrence, CheckedOccurrenceRole};
 
 use super::{scratch_crate, v2_integer_comparison_admission::admitted};
 
 fn request<'a>(
-    package: &'a quire_contract_model::CheckedPackageV2,
-    clause: &'a quire_contract_model::CheckedNodeId,
+    package: &'a filament_contract_model::CheckedPackageV2,
+    clause: &'a filament_contract_model::CheckedNodeId,
     claim: &'a CheckedOccurrence,
 ) -> V2NumericRequest<'a> {
     V2NumericRequest {
@@ -186,12 +186,12 @@ fn population_and_census() {
             proptest::test_runner::RngAlgorithm::ChaCha,
         ),
     );
-    let mut report = quire_contract_runtime::CampaignReport::new(generated::V2_NUMERIC_IDENTITY);
+    let mut report = filament_contract_runtime::CampaignReport::new(generated::V2_NUMERIC_IDENTITY);
     let summary = generated::run_v2_numeric_population(&mut runner, &mut report).unwrap();
     assert_eq!(summary.attempted, 32);
     assert_eq!(summary.discard_rate(), Some((0, 32)));
     assert_eq!(runner.config().max_global_rejects, 0);
-    let mut census_report = quire_contract_runtime::CampaignReport::new(generated::V2_NUMERIC_IDENTITY);
+    let mut census_report = filament_contract_runtime::CampaignReport::new(generated::V2_NUMERIC_IDENTITY);
     let census = generated::run_v2_numeric_census(&mut census_report).unwrap();
     assert_eq!(census.attempted, 10);
     assert_eq!(census.discard_rate(), Some((0, 10)));
@@ -200,10 +200,10 @@ fn population_and_census() {
 #[test]
 fn identity_mismatch_precedes_a_prior_discard_ceiling() {
     use v2_numeric_campaign_generated as generated;
-    let mut report = quire_contract_runtime::CampaignReport::new(
-        quire_contract_runtime::ContractIdentity::new(
-            quire_contract_runtime::RequirementId::new("WRONG"),
-            quire_contract_runtime::RevisionId::new("WRONG"),
+    let mut report = filament_contract_runtime::CampaignReport::new(
+        filament_contract_runtime::ContractIdentity::new(
+            filament_contract_runtime::RequirementId::new("WRONG"),
+            filament_contract_runtime::RevisionId::new("WRONG"),
         ),
     );
     report.record_discard();
@@ -267,7 +267,7 @@ fn oracle_negation_is_a_typed_conformance_failure() {
             proptest::test_runner::RngAlgorithm::ChaCha,
         ),
     );
-    let mut report = quire_contract_runtime::CampaignReport::new(generated::V2_NUMERIC_IDENTITY);
+    let mut report = filament_contract_runtime::CampaignReport::new(generated::V2_NUMERIC_IDENTITY);
     let result = generated::run_v2_numeric_population(&mut runner, &mut report);
     assert!(matches!(result,
         Err(generated::V2NumericCampaignError::ConformanceMismatch {
@@ -344,7 +344,7 @@ fn v2_numeric_refusals_keep_first_typed_cause() {
     assert_eq!(comparison.occurrence, wrong_role);
     assert_eq!(
         comparison.path,
-        quire_contract_model::CheckedComparisonPath::Clause
+        filament_contract_model::CheckedComparisonPath::Clause
     );
     assert_eq!(comparison.child, Some(clause.clone()));
     assert_eq!(diagnostic.path, "Clause");
@@ -352,7 +352,7 @@ fn v2_numeric_refusals_keep_first_typed_cause() {
         comparison.cause,
         filament_contract_codegen::V2ComparisonRefusal::Ir(ref error)
             if error.kind
-                == quire_contract_model::CheckedComparisonRefusal::MissingClaimOccurrence
+                == filament_contract_model::CheckedComparisonRefusal::MissingClaimOccurrence
     ));
 
     let wrong_ordinal = CheckedOccurrence {
@@ -368,7 +368,7 @@ fn v2_numeric_refusals_keep_first_typed_cause() {
     let mut mismatched_owner = request(&package, &clause, &claim);
     // A package is identified by its name and lock; the lock names its sources by authority and
     // identity only, so a foreign package of the same source carries a name of its own.
-    let foreign_source = quire_contract_model::ContractSourceV1 {
+    let foreign_source = filament_contract_model::ContractSourceV1 {
         name: format!("foreign-{}", foreign_package.name()).into(),
         lock: foreign_package.lock().clone(),
     };

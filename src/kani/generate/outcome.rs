@@ -2,12 +2,12 @@
 //! request names, the records it returns and the reasons an item has no harness. A leaf inside
 //! `generate/`: it imports no family.
 
-use qsl_replay::ObligationIdentity;
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedModelFieldsError, CheckedNodeId, CheckedNodeTag, CheckedOccurrence,
     CheckedPackageIncomplete, CheckedPackageLimit, CheckedPackageRefusal, CheckedPackageV2,
     CheckedSourceMapEntry, ContractPackageV1,
 };
+use fsl_replay::ObligationIdentity;
 use serde::{Serialize, Serializer};
 
 use crate::{
@@ -321,7 +321,7 @@ pub enum UnsupportedObligation {
         node_id: CheckedNodeId,
         /// Original typed census refusal with its code, context, work and limit.
         #[serde(serialize_with = "constrained::serialize_census")]
-        source: quire_contract_model::CheckedOperationReadError,
+        source: filament_contract_model::CheckedOperationReadError,
     },
     /// The clause's anchor or ordered binders disagree with its effective signature.
     V2ClauseSignatureMismatch {
@@ -784,7 +784,7 @@ pub enum GraphUnsupportedReason {
 pub enum GraphAccessorRefusal {
     /// The application node is absent from the graph.
     UnknownNode,
-    /// The node is not a `quire.op.model.reaches` or `quire.op.model.reaches_field`
+    /// The node is not a `filament.op.model.reaches` or `filament.op.model.reaches_field`
     /// application.
     NotReachesApplication,
     /// The application's population no longer resolves.
@@ -1385,7 +1385,7 @@ mod tests {
     fn node(seed: u8) -> CheckedNodeId {
         CheckedNodeId {
             package: "state-frame-test".into(),
-            path: vec![quire_contract_model::CheckedNodePathSegment::Name(
+            path: vec![filament_contract_model::CheckedNodePathSegment::Name(
                 format!("node-{seed}").into(),
             )],
             ordinal: 0,
@@ -1422,12 +1422,12 @@ mod tests {
     /// refusal arms of `NotLowered`, and the variants a request reaches only with a defective
     /// generator or a source over 1 MiB.
     fn table() -> Vec<(&'static str, StateFrameRefusal, ObligationDisposition)> {
-        let refusal_detail = match quire_contract_model::CheckedPackageV2::read(
+        let refusal_detail = match filament_contract_model::CheckedPackageV2::read(
             b"{}",
-            quire_contract_model::CheckedPackageReadLimits::bounded(),
-            &quire_contract_model::CheckedPackageEvidence::new(),
+            filament_contract_model::CheckedPackageReadLimits::bounded(),
+            &filament_contract_model::CheckedPackageEvidence::new(),
         ) {
-            quire_contract_model::CheckedPackageV2ReadResult::Refused(refusal) => refusal,
+            filament_contract_model::CheckedPackageV2ReadResult::Refused(refusal) => refusal,
             other => panic!("an empty package is refused by the reader: {other:?}"),
         };
         let incomplete = CheckedPackageIncomplete {

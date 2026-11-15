@@ -8,20 +8,20 @@ mod generated {
     include!(concat!(env!("CARGO_MANIFEST_DIR"), "/names.rs"));
 }
 
-use qsl_replay::{
-    acquire_checked_closure, ApplicationEnvironment, CompileUnit, DependencyInput, LibraryName,
+use fsl_replay::{
+    acfilament_checked_closure, ApplicationEnvironment, CompileUnit, DependencyInput, LibraryName,
     ReplayLimits, SourceIdentity, StageLimits,
 };
 use filament_contract_codegen::{checked_function_key, CheckedFunctionError, CheckedFunctionSource};
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedNodeId, CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
     CheckedPackageV2ReadResult,
 };
-use quire_eval::FamilyOutcome;
-use quire_exact::{
+use filament_eval::FamilyOutcome;
+use filament_exact::{
     ChargePoint, InjectedDenial, Integer, LimitKind, Meter, Outcome, ScalarLimits, Value,
 };
-use quire_semantic_value::object_closure::ObjectClosure;
+use filament_semantic_value::object_closure::ObjectClosure;
 use std::num::NonZeroU64;
 
 fn source_identity() -> SourceIdentity {
@@ -42,7 +42,7 @@ fn source<'a>(dependencies: &'a DependencyInput) -> CheckedFunctionSource<'a> {
 }
 
 fn package() -> CheckedPackageV2 {
-    let acquired = acquire_checked_closure(
+    let acquired = acfilament_checked_closure(
         CompileUnit {
             source: source_identity(),
             package_name: "ir595-agreement".to_owned(),
@@ -56,7 +56,7 @@ fn package() -> CheckedPackageV2 {
     )
     .expect("FSL admits the exact source used by the generator");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     let read = CheckedPackageV2::read(
         acquired.package().bytes(),
         CheckedPackageReadLimits::bounded(),
@@ -71,10 +71,10 @@ fn package() -> CheckedPackageV2 {
 fn unrelated_package() -> CheckedPackageV2 {
     const OTHER: &str = concat!(
         "language \"ix:native\" edition \"1-draft\";\n",
-        "profile v = \"quire.value.complete/v1\";\n",
+        "profile v = \"filament.value.complete/v1\";\n",
         "function unrelated using v(x: Int[0, 9], y: Int[0, 9]): Integer pure { x - y }\n",
     );
-    let acquired = acquire_checked_closure(
+    let acquired = acfilament_checked_closure(
         CompileUnit {
             source: source_identity(),
             package_name: "ir595-agreement".to_owned(),
@@ -88,7 +88,7 @@ fn unrelated_package() -> CheckedPackageV2 {
     )
     .expect("FSL admits the unrelated source");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     let read = CheckedPackageV2::read(
         acquired.package().bytes(),
         CheckedPackageReadLimits::bounded(),
@@ -152,8 +152,8 @@ fn direct(
     package: &CheckedPackageV2,
     arguments: Vec<Value>,
     meter: &mut Meter,
-) -> quire_eval::Evaluation {
-    let acquired = acquire_checked_closure(
+) -> filament_eval::Evaluation {
+    let acquired = acfilament_checked_closure(
         CompileUnit {
             source: source_identity(),
             package_name: "ir595-agreement".to_owned(),
@@ -186,7 +186,7 @@ fn generated(
     package: &CheckedPackageV2,
     arguments: Vec<Value>,
     meter: &mut Meter,
-) -> quire_eval::Evaluation {
+) -> filament_eval::Evaluation {
     let dependencies = DependencyInput::default();
     let source = source(&dependencies);
     let result = match name {
@@ -313,7 +313,7 @@ fn stopped_result_expression_keeps_checked_body_location() {
         .expect("stopped expression identifies its checked body");
     assert!(matches!(
         location.origin,
-        quire_semantic_value::location::ExpressionOwner::Body { ref function, index: 0 }
+        filament_semantic_value::location::ExpressionOwner::Body { ref function, index: 0 }
             if function == "add"
     ));
     assert_eq!(location.depth(), 0);
@@ -336,8 +336,8 @@ fn direct_begin_refusal(
     package: &CheckedPackageV2,
     arguments: Vec<Value>,
     meter: &mut Meter,
-) -> qsl_replay::ApplicationBeginRefusal {
-    let acquired = acquire_checked_closure(
+) -> fsl_replay::ApplicationBeginRefusal {
+    let acquired = acfilament_checked_closure(
         CompileUnit {
             source: source_identity(),
             package_name: "ir595-agreement".to_owned(),

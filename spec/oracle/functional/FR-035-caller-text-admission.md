@@ -33,7 +33,7 @@ IR-837's slice.
 [FR-014](./FR-014-exact-scalar-oracles.md) continues to own generated oracles
 for admitted, catalogued text comparison nodes. A comparison's existing
 agreement evidence does not establish that its operands were admitted by this
-route. `quire.op.numeric.convert` has an `exact_numeric` operand and is never
+route. `filament.op.numeric.convert` has an `exact_numeric` operand and is never
 the identity of caller Text admission. [ADR-006](../../decisions/ADR-006-caller-text-admission-boundary.md)
 records the architecture boundary.
 

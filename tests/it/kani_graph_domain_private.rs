@@ -28,14 +28,14 @@ use crate::{
     kani_graph_private::{authored, harness, run_falsified, run_outcome, Authored},
     KaniObligationRequest,
 };
-use ix_trace_rs::trace;
-use quire_contract_model::{
+use filament_contract_model::{
     selected_population::{
         select_population, CheckedSelectedPopulationOutcome as Population,
         CheckedSelectedPopulationSource,
     },
     CheckedNodeId, CheckedTerm,
 };
+use ix_trace_rs::trace;
 use std::{collections::HashMap, time::Duration};
 
 /// The authored population maximum of the fixture's `bound Nodes on M::CollectionNodes [4]`.
@@ -660,7 +660,7 @@ fn projected(authored: &Authored) -> Declared {
             matches!(
                 authored.package.term(id),
                 Some(CheckedTerm::Application { operation, .. })
-                    if operation.identity() == Some("quire.op.model.reaches")
+                    if operation.identity() == Some("filament.op.model.reaches")
             )
         })
         .expect("the claim's reachability application");

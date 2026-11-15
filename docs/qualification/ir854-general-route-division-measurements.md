@@ -27,19 +27,19 @@ carries no claim.
 
 | Operation | Law | Shape and operand ranges | Route | Unwind | Outcome | Wall (s) | Peak (bytes) |
 |---|---|---|---|---|---|---|---|
-| `quire.op.integer.div` | floor | constant divisor `Int[8, 8]`, dividend `Int[-128, 127]` (8 bits) | general | 10 | TimedOut | 600.0 | 8502534144 |
-| `quire.op.integer.div` | truncating | symbolic divisor, both operands `Int[-8, 7]` (4 bits, zero and both signs) | general | 10 | TimedOut | 600.0 | 8541622272 |
-| `quire.op.integer.div` | floor | symbolic divisor, both operands `Int[-8, 7]` (4 bits, zero and both signs) | general | 10 | TimedOut | 600.0 | 8579940352 |
-| `quire.op.integer.rem` | truncating | symbolic divisor, both operands `Int[-8, 7]` (4 bits, zero and both signs) | general | 10 | TimedOut | 600.0 | 8522305536 |
-| `quire.op.integer.mod` | Euclidean | symbolic divisor, both operands `Int[-8, 7]` (4 bits, zero and both signs) | general | 10 | TimedOut | 600.0 | 8538312704 |
-| `quire.op.integer.rem` | truncating | constant divisor `Int[8, 8]`, dividend `Int[-128, 127]` (8 bits) | general | 10 | TimedOut | 600.0 | 8525271040 |
-| `quire.op.integer.mod` | Euclidean | constant divisor `Int[8, 8]`, dividend `Int[-128, 127]` (8 bits) | general | 10 | TimedOut | 600.0 | 8550948864 |
-| `quire.op.integer.div` | truncating | constant divisor `Int[8, 8]`, dividend `Int[-128, 127]` (8 bits) | general | 10 | TimedOut | 600.0 | 8563646464 |
-| `quire.op.integer.div` | Euclidean | symbolic divisor, both operands `Int[-8, 7]` (4 bits, zero and both signs) | general | 10 | TimedOut | 600.0 | 8566710272 |
-| `quire.op.integer.rem` | floor | symbolic divisor, both operands `Int[-8, 7]` (4 bits, zero and both signs) | general | 10 | TimedOut | 600.0 | 8541540352 |
-| `quire.op.integer.rem` | Euclidean | symbolic divisor, both operands `Int[-8, 7]` (4 bits, zero and both signs) | general | 10 | TimedOut | 600.0 | 8547880960 |
-| `quire.op.integer.div` | floor | constant divisor `Int[-8, -8]`, dividend `Int[-128, 127]` (8 bits) | general | 10 | TimedOut | 600.0 | 8573677568 |
-| `quire.op.integer.div` | floor | mutant: oracle completes at a zero divisor; dividend `Int[-9, 9]`, divisor `Int[-4, 4]`, explicit result `Int[-3, 3]` (5 bits) | general | 10 | TimedOut | 600.0 | 8556896256 |
+| `filament.op.integer.div` | floor | constant divisor `Int[8, 8]`, dividend `Int[-128, 127]` (8 bits) | general | 10 | TimedOut | 600.0 | 8502534144 |
+| `filament.op.integer.div` | truncating | symbolic divisor, both operands `Int[-8, 7]` (4 bits, zero and both signs) | general | 10 | TimedOut | 600.0 | 8541622272 |
+| `filament.op.integer.div` | floor | symbolic divisor, both operands `Int[-8, 7]` (4 bits, zero and both signs) | general | 10 | TimedOut | 600.0 | 8579940352 |
+| `filament.op.integer.rem` | truncating | symbolic divisor, both operands `Int[-8, 7]` (4 bits, zero and both signs) | general | 10 | TimedOut | 600.0 | 8522305536 |
+| `filament.op.integer.mod` | Euclidean | symbolic divisor, both operands `Int[-8, 7]` (4 bits, zero and both signs) | general | 10 | TimedOut | 600.0 | 8538312704 |
+| `filament.op.integer.rem` | truncating | constant divisor `Int[8, 8]`, dividend `Int[-128, 127]` (8 bits) | general | 10 | TimedOut | 600.0 | 8525271040 |
+| `filament.op.integer.mod` | Euclidean | constant divisor `Int[8, 8]`, dividend `Int[-128, 127]` (8 bits) | general | 10 | TimedOut | 600.0 | 8550948864 |
+| `filament.op.integer.div` | truncating | constant divisor `Int[8, 8]`, dividend `Int[-128, 127]` (8 bits) | general | 10 | TimedOut | 600.0 | 8563646464 |
+| `filament.op.integer.div` | Euclidean | symbolic divisor, both operands `Int[-8, 7]` (4 bits, zero and both signs) | general | 10 | TimedOut | 600.0 | 8566710272 |
+| `filament.op.integer.rem` | floor | symbolic divisor, both operands `Int[-8, 7]` (4 bits, zero and both signs) | general | 10 | TimedOut | 600.0 | 8541540352 |
+| `filament.op.integer.rem` | Euclidean | symbolic divisor, both operands `Int[-8, 7]` (4 bits, zero and both signs) | general | 10 | TimedOut | 600.0 | 8547880960 |
+| `filament.op.integer.div` | floor | constant divisor `Int[-8, -8]`, dividend `Int[-128, 127]` (8 bits) | general | 10 | TimedOut | 600.0 | 8573677568 |
+| `filament.op.integer.div` | floor | mutant: oracle completes at a zero divisor; dividend `Int[-9, 9]`, divisor `Int[-4, 4]`, explicit result `Int[-3, 3]` (5 bits) | general | 10 | TimedOut | 600.0 | 8556896256 |
 
 `TimedOut` is `Inconclusive { reason: TimedOut }`: no verdict, no proof credit. No shape finished,
 so no harness classified `Verified` and the one mutant tried classified neither `Falsified` nor
@@ -70,7 +70,7 @@ they are not in the `make kani` / `make kani-gate` filter list; run one by name 
 ## Table rows
 
 The shipped scalar table (`docs/qualification/ir1530-general-route-scalar-table.json`) gains one
-`not_tractable` row per operation (`quire.op.integer.div`, `rem`, `mod`), route `general`,
+`not_tractable` row per operation (`filament.op.integer.div`, `rem`, `mod`), route `general`,
 `max_operand_bits` 4, `wall_seconds` 600 and the largest peak measured for that operation's 4-bit
 shapes. 4 bits is the smallest listed width that did not finish. The constant-divisor shape at 8
 bits also did not finish, so no shape was measured `Verified` at any width and the rows show no

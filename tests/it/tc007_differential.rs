@@ -11,8 +11,8 @@ use std::{
 use filament_contract_codegen::{
     generate_bound_oracles, BoundOracleGeneration, BoundStrategyPopulation,
 };
+use filament_contract_model::{ClauseId, ClauseRef, RequirementRef};
 use ix_trace_rs::trace;
-use quire_contract_model::{ClauseId, ClauseRef, RequirementRef};
 use serde::Deserialize;
 
 use crate::{
@@ -282,7 +282,7 @@ fn generated_observations() -> (Vec<Comparable>, Vec<OutsideDomain>, (u64, u64, 
     strategy_source.push_str(&format!(
         r#"
 /// Test-only observation of one generated census runner verdict.
-pub fn tc007_verdict(case: &{case_type}) -> quire_contract_runtime::VerdictKind {{
+pub fn tc007_verdict(case: &{case_type}) -> filament_contract_runtime::VerdictKind {{
     let bound_case = {bound_case_type} {{
         amount_current: case.amount_current,
         expected: match case.tag {{
@@ -290,17 +290,17 @@ pub fn tc007_verdict(case: &{case_type}) -> quire_contract_runtime::VerdictKind 
             {census_tag_type}::Violated => {expectation_type}::Violated,
         }},
     }};
-    let mut report = quire_contract_runtime::CampaignReport::new(
-        quire_contract_runtime::ContractIdentity::new(
-            quire_contract_runtime::RequirementId::new("FR-100"),
-            quire_contract_runtime::RevisionId::new("3"),
+    let mut report = filament_contract_runtime::CampaignReport::new(
+        filament_contract_runtime::ContractIdentity::new(
+            filament_contract_runtime::RequirementId::new("FR-100"),
+            filament_contract_runtime::RevisionId::new("3"),
         ),
     );
     {evaluator}(&bound_case, &mut report).expect("one generated census case evaluates");
     let counts = report.counts();
     match (counts.accepted(), counts.failed(), counts.rejected(), counts.discarded()) {{
-        (1, 0, 0, 0) => quire_contract_runtime::VerdictKind::Passed,
-        (1, 1, 0, 0) => quire_contract_runtime::VerdictKind::FailedPostcondition,
+        (1, 0, 0, 0) => filament_contract_runtime::VerdictKind::Passed,
+        (1, 1, 0, 0) => filament_contract_runtime::VerdictKind::FailedPostcondition,
         other => panic!("unexpected one-case campaign counts: {{other:?}}"),
     }}
 }}
@@ -313,10 +313,10 @@ mod executable_oracle;
 mod bound_strategy;
 
 fn main() {{
-    let mut report = quire_contract_runtime::CampaignReport::new(
-        quire_contract_runtime::ContractIdentity::new(
-            quire_contract_runtime::RequirementId::new("FR-100"),
-            quire_contract_runtime::RevisionId::new("3"),
+    let mut report = filament_contract_runtime::CampaignReport::new(
+        filament_contract_runtime::ContractIdentity::new(
+            filament_contract_runtime::RequirementId::new("FR-100"),
+            filament_contract_runtime::RevisionId::new("3"),
         ),
     );
     let summary = bound_strategy::{census_runner}(&mut report).expect("complete census runner");

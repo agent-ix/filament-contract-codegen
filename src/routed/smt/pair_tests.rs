@@ -5,8 +5,8 @@ use std::{
     time::Duration,
 };
 
+use filament_exact::Cancel;
 use ix_trace_rs::trace;
-use quire_exact::Cancel;
 
 use super::{
     classify_pair, run_solver_query, PairEvidence, QueryAssociation, QuerySelection, ReachedLimit,

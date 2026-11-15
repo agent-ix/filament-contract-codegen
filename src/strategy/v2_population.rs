@@ -3,7 +3,7 @@
 
 //! V2 constructive populations and complete census from one admitted typed relation.
 
-use quire_contract_model::{CheckedNodeId, CheckedOccurrence};
+use filament_contract_model::{CheckedNodeId, CheckedOccurrence};
 
 use super::bound::census::{
     compute_census, render_v2_census_constants, BoundaryCensus, CensusNames,

@@ -1,12 +1,14 @@
 //! Checked scalar plans. Execution and the FSL facade call belong to the driver.
 
-use qsl_replay::{
+use filament_contract_model::{
+    CheckedPackageReadLimits, CheckedPackageV2, CheckedScalarOperandChild,
+};
+use filament_exact::{Integer, IntegerInterval};
+use fsl_replay::{
     Domain, NativeOutcome, OperandIdentity, OperatorClaim, OperatorIdentity, OperatorParityReport,
     ParityArgument, ParityPreimage, ReplayLimits, ReplayRequestWire, ReplaySource,
     RequestTargetWire, ScalarOperand, ScalarOperation,
 };
-use quire_contract_model::{CheckedPackageReadLimits, CheckedPackageV2, CheckedScalarOperandChild};
-use quire_exact::{Integer, IntegerInterval};
 
 use super::{
     composite_builder::{origin, wire_node, CompositeBuildError, OriginalReplayContext},
@@ -40,7 +42,7 @@ pub enum ScalarBuildError {
     /// refusal's cause and, like the absent capability itself, yields no terminal record.
     UnavailableFamily(Box<ScalarBuildError>),
     /// The FSL-owned structural mint refused the original claim.
-    Identity(qsl_replay::IdentityEncodeError),
+    Identity(fsl_replay::IdentityEncodeError),
     /// This generated family has no integer operator-parity observation route.
     Operation,
     /// The driver's authenticated execution assertion differs from the original staged context.
@@ -65,7 +67,7 @@ impl OriginalScalarContext {
     /// Refuses absent source/function or inconsistent original dependency context.
     pub fn new(
         original: CheckedPackageV2,
-        raw_package: qsl_replay::ReplayPackage,
+        raw_package: fsl_replay::ReplayPackage,
         original_source: &LockedSource,
         inputs: ReplayInputs,
         function: &str,
@@ -189,19 +191,19 @@ impl OriginalScalarContext {
             })
             .collect::<Result<Vec<_>, ScalarBuildError>>()?;
         let operation = match (identity.operation_identity.as_str(), operands.as_slice()) {
-            ("quire.op.integer.add", [left, right]) => ScalarOperation::Add {
+            ("filament.op.integer.add", [left, right]) => ScalarOperation::Add {
                 left: left.clone(),
                 right: right.clone(),
             },
-            ("quire.op.integer.sub", [left, right]) => ScalarOperation::Subtract {
+            ("filament.op.integer.sub", [left, right]) => ScalarOperation::Subtract {
                 left: left.clone(),
                 right: right.clone(),
             },
-            ("quire.op.integer.mul", [left, right]) => ScalarOperation::Multiply {
+            ("filament.op.integer.mul", [left, right]) => ScalarOperation::Multiply {
                 left: left.clone(),
                 right: right.clone(),
             },
-            ("quire.op.integer.negate", [operand]) => ScalarOperation::Negate {
+            ("filament.op.integer.negate", [operand]) => ScalarOperation::Negate {
                 operand: operand.clone(),
             },
             _ => return Err(ScalarBuildError::Operation),
@@ -219,12 +221,12 @@ impl OriginalScalarContext {
                 .collect(),
         };
         let obligation =
-            qsl_replay::parity_obligation(&preimage).map_err(ScalarBuildError::Identity)?;
+            fsl_replay::parity_obligation(&preimage).map_err(ScalarBuildError::Identity)?;
         let wire = self.context.inputs.wire(
             self.context.raw_package.clone(),
             RequestTargetWire::function(
                 self.context.selection.clone(),
-                qsl_replay::OccurrenceKey::new(node.clone(), occurrence.clone()),
+                fsl_replay::OccurrenceKey::new(node.clone(), occurrence.clone()),
             ),
             ReplaySource::Input(Vec::new()),
             obligation,
@@ -280,7 +282,7 @@ pub struct ScalarDriverObservation {
     /// Actual operand vector in symbolic draw order.
     pub operands: Vec<i64>,
     /// Actual meter limits installed in that invocation.
-    pub limits: quire_exact::ScalarLimits,
+    pub limits: filament_exact::ScalarLimits,
     /// Independently retained original source bytes for that invocation.
     pub source: LockedSource,
     /// Admitted original package for the invocation, including its full context.
@@ -292,12 +294,12 @@ pub struct ScalarDriverObservation {
 /// Prepared scalar replay, before a driver has authenticated a native observation.
 pub struct ScalarReplayPlan {
     wire: ReplayRequestWire,
-    node: quire_exact::NodeKey,
-    occurrence: qsl_replay::Origin,
+    node: filament_exact::NodeKey,
+    occurrence: fsl_replay::Origin,
     kind: String,
     operation: ScalarOperation,
     result_range: IntegerInterval,
-    limits: quire_exact::ScalarLimits,
+    limits: filament_exact::ScalarLimits,
     replay_limits: ReplayLimits,
     staged_entries: Vec<(String, Vec<u8>)>,
     identity: ScalarObligationIdentity,
@@ -319,7 +321,7 @@ impl ScalarReplayPlan {
         &self.staged_entries
     }
     /// Original meter limits, supplied by the renderer rather than a replay budget.
-    pub const fn scalar_limits(&self) -> quire_exact::ScalarLimits {
+    pub const fn scalar_limits(&self) -> filament_exact::ScalarLimits {
         self.limits
     }
     /// Check the driver's execution assertion against every original retained tie.

@@ -6,19 +6,19 @@ use filament_contract_codegen::{
     admit_v2_integer_comparison, ComparisonOperator, Domain, OperandPosition, Partner,
     V2ComparisonRefusal, V2SelectedClaimKey,
 };
-use ix_trace_rs::trace;
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedComparisonOperator, CheckedComparisonRefusal, CheckedOccurrence, CheckedOccurrenceRole,
     ExecutionPoint, ExecutionPointName,
 };
+use ix_trace_rs::trace;
 
 use super::{kani_obligations_state_frame::native_twin::Twin, scratch_crate};
 
 pub(super) fn admitted(
     condition: &str,
 ) -> (
-    quire_contract_model::CheckedPackageV2,
-    quire_contract_model::CheckedNodeId,
+    filament_contract_model::CheckedPackageV2,
+    filament_contract_model::CheckedNodeId,
     CheckedOccurrence,
 ) {
     let twin = if condition == "self.balance >= pre(self.balance)" {
@@ -32,8 +32,8 @@ pub(super) fn admitted(
 pub(super) fn admit_twin(
     twin: Twin,
 ) -> (
-    quire_contract_model::CheckedPackageV2,
-    quire_contract_model::CheckedNodeId,
+    filament_contract_model::CheckedPackageV2,
+    filament_contract_model::CheckedNodeId,
     CheckedOccurrence,
 ) {
     let point = ExecutionPoint::Post {
@@ -41,7 +41,7 @@ pub(super) fn admit_twin(
     };
     let (package, clauses) =
         twin.emitted_package_with_execution_points(&[("BalanceNeverDrops", point)]);
-    let [clause] = <[quire_contract_model::CheckedNodeId; 1]>::try_from(clauses)
+    let [clause] = <[filament_contract_model::CheckedNodeId; 1]>::try_from(clauses)
         .expect("one FSL-authored clause");
     let claim = package
         .resolved_graph()
@@ -248,7 +248,7 @@ fn v2_comparison_refusals_preserve_selected_key_and_ir_cause() {
 #[test]
 fn v2_accessor_population_and_refusal_fields_agree() {
     use filament_contract_codegen::{prepare_v2_numeric_population, CensusTag, Population};
-    use quire_contract_model::{
+    use filament_contract_model::{
         CheckedComparisonObservation as Observation, CheckedComparisonOperandKind as Kind,
         CheckedComparisonRead as Read,
     };

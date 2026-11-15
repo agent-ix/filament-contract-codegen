@@ -4,11 +4,11 @@
 
 use std::{collections::TryReserveError, ffi::OsString, num::NonZeroU64, path::Path};
 
-use qsl_replay::{
+use filament_exact::{Cancel, CancelCause};
+use fsl_replay::{
     encode_refinement_query, NodeKey, RefinementQueryKind, RefinementQueryRequest,
     SmtEncodingRefusal,
 };
-use quire_exact::{Cancel, CancelCause};
 
 use super::{
     refinement::{

@@ -15,12 +15,12 @@ use filament_contract_codegen::{
     KaniGraphObligationHarness, KaniInstallation, KaniObligationOutcome, KaniObligationRequest,
     KaniRunOutcome, ObligationDisposition, ObligationItem, ProofCeilings, UnsupportedObligation,
 };
-use ix_trace_rs::trace;
-use qsl_replay::{call_site, ClauseName, DependencyInput, Identifier, SourceIdentity};
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedNodeId, CheckedOccurrence, CheckedOccurrenceRole, CheckedPackageEvidence,
     CheckedPackageReadLimits, CheckedPackageV2, CheckedPackageV2ReadResult, CheckedTerm,
 };
+use fsl_replay::{call_site, ClauseName, DependencyInput, Identifier, SourceIdentity};
+use ix_trace_rs::trace;
 use serde_json::{json, Value};
 use std::{fs, path::PathBuf, time::Duration};
 
@@ -114,7 +114,7 @@ fn try_authored_clause(
     let limits = quire_canonical::Limits::new(1 << 20);
     let bytes = quire_canonical::to_vec(document, limits).unwrap();
     let source = format!(
-        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.model.complete/v1\";\nmodel M = \"ir268.test/domain\";\n{bound}predicate inspect using v (input: M::Node): Boolean {{ true }}\n{}\n",
+        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.model.complete/v1\";\nmodel M = \"ir268.test/domain\";\n{bound}predicate inspect using v (input: M::Node): Boolean {{ true }}\n{}\n",
         declarations.join("\n")
     );
     let site = call_site(
@@ -128,7 +128,7 @@ fn try_authored_clause(
     )
     .map_err(|error| format!("{error:?}"))?;
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     evidence
         .insert_domain_package_document("ir268.test/domain", bytes)
         .unwrap();
@@ -342,7 +342,7 @@ fn field_application(package: &CheckedPackageV2) -> CheckedNodeId {
         .iter()
         .find(|node| {
             matches!(&node.body, CheckedTerm::Application { operation, .. }
-                if operation.identity() == Some("quire.op.model.reaches_field"))
+                if operation.identity() == Some("filament.op.model.reaches_field"))
         })
         .expect("the claim lowers to a field-edge application")
         .node_id
@@ -792,7 +792,7 @@ fn graph_run_evidence_preserves_every_ordered_identity_option() {
     let target_directory = scratch.path.join("target");
     fs::create_dir(&target_directory).unwrap();
     let installation = KaniInstallation::new(&launcher);
-    let cancel = quire_exact::Cancel::new();
+    let cancel = filament_exact::Cancel::new();
     let evidence = execute_kani_obligation(&KaniExecutionRequest {
         cancel: &cancel,
         installation: &installation,
@@ -1054,7 +1054,7 @@ fn run_graph_kani(
         "fn main() { println!(\"cargo:rustc-check-cfg=cfg(kani)\"); }\n",
     )
     .expect("allow Kani's generated cfg");
-    let cancel = quire_exact::Cancel::new();
+    let cancel = filament_exact::Cancel::new();
     let started = std::time::Instant::now();
     let evidence = execute_kani_obligation(&KaniExecutionRequest {
         cancel: &cancel,

@@ -3,7 +3,7 @@
 
 //! Typed scalar access to admitted application operations and node shape.
 
-use quire_contract_model::{
+use filament_contract_model::{
     CheckedApplicationOperation, CheckedNodeId, CheckedTerm, OperationModeKind,
 };
 
@@ -49,16 +49,16 @@ pub(crate) fn quantity_conversion_target(
 /// Read a carried target's admitted unit, carrier and placement mode.
 pub(crate) fn carried_target(
     term: Option<&CheckedTerm>,
-) -> Option<(&CheckedNodeId, &CheckedNodeId, quire_exact::RoundingMode)> {
+) -> Option<(&CheckedNodeId, &CheckedNodeId, filament_exact::RoundingMode)> {
     use super::checked_term::{aggregate_members, bound_members, literal, reference};
     let [unit, carrier, rounding] =
         bound_members(aggregate_members(term)?, ["unit", "carrier", "rounding"])?;
     Some((
         reference(unit)?,
         reference(carrier)?,
-        quire_exact::RoundingMode::from_code(literal(
+        filament_exact::RoundingMode::from_code(literal(
             rounding,
-            quire_contract_model::LiteralKind::Text,
+            filament_contract_model::LiteralKind::Text,
         )?)?,
     ))
 }

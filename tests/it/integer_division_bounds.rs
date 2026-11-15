@@ -9,15 +9,15 @@ use filament_contract_codegen::{
     derive_exact_scalar_items, generate_exact_scalar_oracles, ClaimDisposition, ExactScalarItem,
     ExactScalarOperation, ExactScalarRefusal, OperationProvenance, EXACT_DEPENDENCY_SOURCE,
 };
-use ix_trace_rs::trace;
-use qsl_replay::{
+use filament_contract_model::{
+    CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2, CheckedPackageV2ReadResult,
+};
+use filament_exact::{DivisionProfile, IntegerDomain, IntegerInterval};
+use fsl_replay::{
     admit_integer_division, compile_package, compile_package_with_integer_division, CompileUnit,
     DefinitionRole, DependencyInput, ReplayLimits, SourceIdentity, StageLimits,
 };
-use quire_contract_model::{
-    CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2, CheckedPackageV2ReadResult,
-};
-use quire_exact::{DivisionProfile, IntegerDomain, IntegerInterval};
+use ix_trace_rs::trace;
 
 use crate::{exact_function_agreement::body_id, scratch_crate};
 
@@ -35,7 +35,7 @@ fn compiled_with_profile(
     profile: Option<DivisionProfile>,
 ) -> CheckedPackageV2 {
     let source = format!(
-        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"quire.value.complete/v1\";\nfunction subject using v({parameters}): {result} pure {{ {expression} }}\n"
+        "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nfunction subject using v({parameters}): {result} pure {{ {expression} }}\n"
     );
     let unit = CompileUnit {
         source: SourceIdentity::new("test", "integer-division-bounds"),
@@ -70,7 +70,7 @@ fn compiled_with_profile(
     }
     .expect("FSL compiles genuine integer source under the supplied owner selection");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     match CheckedPackageV2::read(
         compiled.bytes(),
         CheckedPackageReadLimits::bounded(),
@@ -280,12 +280,12 @@ fn generated_values(modulo_only: bool) {
             .iter()
             .find(|node| node.node_id == claim.node_id)
             .unwrap();
-        let quire_contract_model::CheckedTerm::Application { arguments, .. } = &node.body else {
+        let filament_contract_model::CheckedTerm::Application { arguments, .. } = &node.body else {
             panic!("original checked application");
         };
         let mut operand_bounds = Vec::new();
         for argument in arguments {
-            let quire_contract_model::CheckedTerm::Reference { target } = argument else {
+            let filament_contract_model::CheckedTerm::Reference { target } = argument else {
                 continue;
             };
             let operand = package
@@ -345,7 +345,7 @@ fn case_{index}() {{
 
 pub(crate) fn run_generated_native(native: &str, count: usize, label: &str) {
     let scratch = scratch_crate::TemporaryDirectory::new(label);
-    let manifest = format!("[package]\nname=\"integer-division-derived-native\"\nversion=\"0.0.0\"\nedition=\"2021\"\n[dependencies]\nquire-exact = {{ {EXACT_DEPENDENCY_SOURCE} }}\n[workspace]\n");
+    let manifest = scratch_crate::per_label_package(&format!("[package]\nname=\"integer-division-derived-native\"\nversion=\"0.0.0\"\nedition=\"2021\"\n[dependencies]\nfilament-exact = {{ {EXACT_DEPENDENCY_SOURCE} }}\n[workspace]\n"), label);
     scratch_crate::write_manifest(&scratch.path, &manifest);
     fs::write(scratch.path.join("src/lib.rs"), native).unwrap();
     scratch_crate::resolve_seeded_lock(&scratch.path);
@@ -362,6 +362,10 @@ pub(crate) fn run_generated_native(native: &str, count: usize, label: &str) {
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(output.status.success(), "{stdout}\n{stderr}");
+    assert!(
+        scratch_crate::tests_ran(&stdout),
+        "the generated native crate ran no tests: {stdout}"
+    );
     assert!(
         stdout.contains(&format!("{} passed; 0 failed", count)),
         "all generated cases execute: {stdout}"
@@ -389,7 +393,7 @@ fn unbounded_and_mismatch(expressions: &[&str]) {
             let domain = IntegerDomain::Bounded(interval("-100", "100"));
             let operation = if expression.contains("div") {
                 ExactScalarOperation::IntegerDivision {
-                    profile: quire_exact::DivisionProfile::Truncating,
+                    profile: filament_exact::DivisionProfile::Truncating,
                     domain,
                 }
             } else {
@@ -434,7 +438,7 @@ fn explicit_result_narrowing_keeps_its_own_bound() {
 
 fn explicit_result_bounds() {
     for (code, profile) in [
-        (914_000, Some(quire_exact::DivisionProfile::Truncating)),
+        (914_000, Some(filament_exact::DivisionProfile::Truncating)),
         (914_010, None),
     ] {
         let (package, node_id) =
@@ -455,7 +459,7 @@ fn explicit_result_bounds() {
 }
 
 const NATIVE_SUPPORT: &str = r#"
-use quire_exact as rt;
+use filament_exact as rt;
 fn meter() -> rt::Meter {
     let ceiling = u64::from(u32::MAX);
     rt::Meter::new(rt::ScalarLimits {
@@ -471,15 +475,15 @@ fn meter() -> rt::Meter {
 /// range prover may reject before emission.
 fn reader_integer_operation(
     code: u32,
-    profile: Option<quire_exact::DivisionProfile>,
+    profile: Option<filament_exact::DivisionProfile>,
     left: Option<(i64, i64)>,
     right: Option<(i64, i64)>,
     narrowed: bool,
-) -> (CheckedPackageV2, quire_contract_model::CheckedNodeId) {
+) -> (CheckedPackageV2, filament_contract_model::CheckedNodeId) {
     let identity = if profile.is_some() {
-        "quire.op.integer.div"
+        "filament.op.integer.div"
     } else {
-        "quire.op.integer.mod"
+        "filament.op.integer.mod"
     };
     reader_division_operation(
         code,
@@ -496,11 +500,11 @@ fn reader_integer_operation(
 pub(crate) fn reader_division_operation(
     code: u32,
     identity: &str,
-    profile: Option<quire_exact::DivisionProfile>,
+    profile: Option<filament_exact::DivisionProfile>,
     left: Option<(i64, i64)>,
     right: Option<(i64, i64)>,
     narrow: Option<(i64, i64)>,
-) -> (CheckedPackageV2, quire_contract_model::CheckedNodeId) {
+) -> (CheckedPackageV2, filament_contract_model::CheckedNodeId) {
     use crate::exact_scalar_generation::package as fixture;
     let mut builder = fixture::corpus_package_for_codes(&[fixture::T_INTEGER, fixture::T_TEXT]);
     let integer = fixture::key(fixture::T_INTEGER);
@@ -554,7 +558,7 @@ pub(crate) fn reader_division_operation(
 #[trace("TC-024", "FR-014-AC-18")]
 #[test]
 fn reader_admitted_division_laws_derive_from_both_operand_domains() {
-    use quire_exact::DivisionProfile;
+    use filament_exact::DivisionProfile;
     let mut native = String::from(NATIVE_SUPPORT);
     for (index, profile) in DivisionProfile::ALL.into_iter().enumerate() {
         let (package, node) = reader_integer_operation(
@@ -632,7 +636,7 @@ fn remainder_oracle(
     let generated = generate_exact_scalar_oracles(&package, &[item]).expect("generate rem oracle");
     let claim = &generated.claim_map.items[0];
     assert_eq!(claim.operation.provenance, OperationProvenance::IrConfirmed);
-    assert_eq!(claim.operation.identity, "quire.op.integer.rem");
+    assert_eq!(claim.operation.identity, "filament.op.integer.rem");
     let ClaimDisposition::Generated(claim) = &claim.result else {
         panic!("a derived remainder generates: {claim:?}")
     };
@@ -778,7 +782,7 @@ fn remainder_inferred_interval_and_explicit_result_refusal() {
     for (index, profile) in DivisionProfile::ALL.into_iter().enumerate() {
         let (package, node) = reader_division_operation(
             915_000 + 10 * u32::try_from(index).unwrap(),
-            "quire.op.integer.rem",
+            "filament.op.integer.rem",
             Some(profile),
             Some((-9, 9)),
             Some((1, 4)),

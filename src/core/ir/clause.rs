@@ -3,7 +3,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::checked_term::{application, reference};
-use quire_contract_model::{
+use filament_contract_model::{
     ApplicationOperator, BoundedDomainForm, CheckedMemberType, CheckedNodeId, CheckedNodeKind,
     CheckedPackageV2, CheckedSemanticNodeV2, CheckedTerm, CompositeTypeForm, LiteralKind,
     ScalarTypeForm,
@@ -51,7 +51,7 @@ pub(crate) enum ClauseTerm {
         arguments: Vec<ClauseTerm>,
         result_bound: Option<(i128, i128)>,
     },
-    /// `quire.op.option.value` of an option operand: the payload leaf, defined only where the
+    /// `filament.op.option.value` of an option operand: the payload leaf, defined only where the
     /// presence draw is true.
     OptionValue {
         presence: ClauseInput,
@@ -61,20 +61,20 @@ pub(crate) enum ClauseTerm {
     Binder {
         binder: usize,
     },
-    /// `quire.op.control.let`: the value is evaluated once, outside the binder's scope, and the
+    /// `filament.op.control.let`: the value is evaluated once, outside the binder's scope, and the
     /// body reads it by `binder`.
     Let {
         binder: usize,
         value: Box<ClauseTerm>,
         body: Box<ClauseTerm>,
     },
-    /// `quire.op.control.if`: only the selected branch is evaluated.
+    /// `filament.op.control.if`: only the selected branch is evaluated.
     If {
         condition: Box<ClauseTerm>,
         then: Box<ClauseTerm>,
         other: Box<ClauseTerm>,
     },
-    /// `quire.op.control.case` over an arity-0 union operation parameter drawn as a member index:
+    /// `filament.op.control.case` over an arity-0 union operation parameter drawn as a member index:
     /// one arm body per member in declaration order, only the selected arm is evaluated.
     Case {
         scrutinee: ClauseInput,
@@ -83,8 +83,8 @@ pub(crate) enum ClauseTerm {
 }
 
 /// Option identities the clause readers lower (FR-054).
-pub(crate) const OPTION_PRESENT: &str = "quire.op.option.present";
-pub(crate) const OPTION_VALUE: &str = "quire.op.option.value";
+pub(crate) const OPTION_PRESENT: &str = "filament.op.option.present";
+pub(crate) const OPTION_VALUE: &str = "filament.op.option.value";
 
 /// The draws of one option operand: its presence and its payload leaves in ascending path order.
 struct OptionOperand {
@@ -222,9 +222,9 @@ fn integer_bound(package: &CheckedPackageV2, id: &CheckedNodeId) -> Option<(i128
 }
 
 /// Control identities the clause readers lower.
-pub(crate) const CONTROL_LET: &str = "quire.op.control.let";
-pub(crate) const CONTROL_IF: &str = "quire.op.control.if";
-pub(crate) const CONTROL_CASE: &str = "quire.op.control.case";
+pub(crate) const CONTROL_LET: &str = "filament.op.control.let";
+pub(crate) const CONTROL_IF: &str = "filament.op.control.if";
+pub(crate) const CONTROL_CASE: &str = "filament.op.control.case";
 
 pub(crate) struct ClauseCondition {
     pub(crate) term: ClauseTerm,
@@ -333,7 +333,7 @@ impl Reader<'_, '_> {
                     }
                     let boolean = self.nodes.kind(&node.semantic_type)
                         == Some(CheckedNodeKind::ScalarType(
-                            quire_contract_model::ScalarTypeForm::Boolean,
+                            filament_contract_model::ScalarTypeForm::Boolean,
                         ));
                     let bound = if boolean {
                         (0, 1)
@@ -403,7 +403,7 @@ impl Reader<'_, '_> {
             } => {
                 let identity = operation.identity()?;
                 match identity {
-                    "quire.op.state.pre" if args.len() == 1 => {
+                    "filament.op.state.pre" if args.len() == 1 => {
                         let read = self.term_body(&args[0])?;
                         let CheckedTerm::Application {
                             operation,
@@ -413,7 +413,7 @@ impl Reader<'_, '_> {
                         else {
                             return None;
                         };
-                        if operation.identity()? != "quire.op.record.project" {
+                        if operation.identity()? != "filament.op.record.project" {
                             return None;
                         }
                         let [deref] = arguments.as_slice() else {
@@ -421,7 +421,7 @@ impl Reader<'_, '_> {
                         };
                         self.field(&read, deref, ClauseInputSide::Pre)
                     }
-                    "quire.op.record.project" if args.len() == 1 => {
+                    "filament.op.record.project" if args.len() == 1 => {
                         if let Some(read) = self.option_leaf_read(value, &args[0], side) {
                             return read;
                         }
@@ -531,7 +531,7 @@ impl Reader<'_, '_> {
         Some(OptionOperand { presence, payload })
     }
 
-    /// `quire.op.record.project` of `quire.op.option.value` of an option parameter: the payload
+    /// `filament.op.record.project` of `filament.op.option.value` of an option parameter: the payload
     /// leaf named by the projected field. `None` when `deref` is not such a read; `Some(None)`
     /// when it is and the read cannot be lowered.
     fn option_leaf_read(
@@ -663,7 +663,11 @@ impl Reader<'_, '_> {
         if result_type != declaration {
             return None;
         }
-        let [subject] = application(&deref, ApplicationOperator::Deref, "quire.op.model.deref")?
+        let [subject] = application(
+            &deref,
+            ApplicationOperator::Deref,
+            "filament.op.model.deref",
+        )?
         else {
             return None;
         };
@@ -738,7 +742,7 @@ pub(crate) fn read_clause(
     let [parameters, _anchor, condition] = application(
         package.term(id)?,
         ApplicationOperator::StateClause,
-        "quire.op.state.clause",
+        "filament.op.state.clause",
     )?
     else {
         return None;

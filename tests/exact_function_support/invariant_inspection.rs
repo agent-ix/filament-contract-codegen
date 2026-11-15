@@ -2,8 +2,8 @@
 // original constructor result for diagnostic evidence, without replacing it.
 pub(super) fn inspect_environment(
     declaring_package: &CheckedPackageV2,
-    acquired: &qsl_replay::CheckedClosureCompilation,
-    selection: &qsl_replay::CallableSelection,
+    acquired: &fsl_replay::CheckedClosureCompilation,
+    selection: &fsl_replay::CallableSelection,
     resources: &filament_contract_codegen::CheckedFunctionResources,
 ) -> Result<sv::declaration::TypeEnvironment, sv::declaration::EnvironmentFailure> {
     PreparedFunction::new(

@@ -4,7 +4,7 @@
 //! separate from rendering and from the former Contract Runtime `exact` adapter. The caller only
 //! publishes a schedule after this module has validated the entire reachable body.
 
-use quire_contract_model::CheckedNodeId;
+use filament_contract_model::CheckedNodeId;
 use serde::Serialize;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -60,13 +60,13 @@ pub enum Operation {
 impl Operation {
     fn from_identity(identity: &str, node: &CheckedNodeId) -> Result<Self, ScheduleRefusal> {
         match identity {
-            "quire.op.integer.add" => Ok(Self::Add),
-            "quire.op.integer.sub" => Ok(Self::Subtract),
-            "quire.op.integer.mul" => Ok(Self::Multiply),
-            "quire.op.integer.eq" => Ok(Self::IntegerEqual),
-            "quire.op.integer.ne" => Ok(Self::IntegerNotEqual),
-            "quire.op.boolean.eq" => Ok(Self::BooleanEqual),
-            "quire.op.boolean.ne" => Ok(Self::BooleanNotEqual),
+            "filament.op.integer.add" => Ok(Self::Add),
+            "filament.op.integer.sub" => Ok(Self::Subtract),
+            "filament.op.integer.mul" => Ok(Self::Multiply),
+            "filament.op.integer.eq" => Ok(Self::IntegerEqual),
+            "filament.op.integer.ne" => Ok(Self::IntegerNotEqual),
+            "filament.op.boolean.eq" => Ok(Self::BooleanEqual),
+            "filament.op.boolean.ne" => Ok(Self::BooleanNotEqual),
             _ => Err(ScheduleRefusal::UnsupportedOperation(node.clone())),
         }
     }
@@ -1014,7 +1014,7 @@ mod tests {
     fn id(value: u8) -> CheckedNodeId {
         CheckedNodeId {
             package: "fixture".into(),
-            path: vec![quire_contract_model::CheckedNodePathSegment::Name(
+            path: vec![filament_contract_model::CheckedNodePathSegment::Name(
                 value.to_string().into(),
             )],
             ordinal: 0,
@@ -1044,7 +1044,7 @@ mod tests {
     fn deep_id(value: u32) -> CheckedNodeId {
         CheckedNodeId {
             package: "fixture".into(),
-            path: vec![quire_contract_model::CheckedNodePathSegment::Name(
+            path: vec![filament_contract_model::CheckedNodePathSegment::Name(
                 value.to_string().into(),
             )],
             ordinal: 0,
@@ -1070,7 +1070,7 @@ mod tests {
         let declaration = deep_id(0);
         let integer_type = deep_id(CALLS + 2);
         use crate::oracle::checked_graph::fixture::Node;
-        use quire_contract_model::{ApplicationOperator, CheckedTerm};
+        use filament_contract_model::{ApplicationOperator, CheckedTerm};
         let reference = |target: &CheckedNodeId| CheckedTerm::Reference {
             target: target.clone(),
         };
@@ -1079,7 +1079,7 @@ mod tests {
             super::super::CheckedSemanticNodeV2 {
                 node_id: parameter.clone(),
                 owner_model: None,
-                schema_version: "quire.checked-semantic-graph/v2".into(),
+                schema_version: "filament.checked-semantic-graph/v2".into(),
                 node_tag: "value".into(),
                 semantic_form: "parameter".into(),
                 semantic_type: integer_type.clone(),
@@ -1103,7 +1103,7 @@ mod tests {
                 super::super::CheckedSemanticNodeV2 {
                     node_id,
                     owner_model: None,
-                    schema_version: "quire.checked-semantic-graph/v2".into(),
+                    schema_version: "filament.checked-semantic-graph/v2".into(),
                     node_tag: "expression".into(),
                     semantic_form: "call".into(),
                     semantic_type: integer_type.clone(),
@@ -1117,7 +1117,7 @@ mod tests {
                 Some(CheckedTerm::Application {
                     operator: ApplicationOperator::Call,
                     operation: serde_json::from_value(
-                        serde_json::json!({"identity": "quire.op.function.call"}),
+                        serde_json::json!({"identity": "filament.op.function.call"}),
                     )
                     .expect("fixture operation"),
                     result_type: integer_type.clone(),
@@ -1324,7 +1324,7 @@ mod tests {
                 2,
                 ValueKind::Integer,
                 NodeKind::Binary {
-                    operation_identity: "quire.op.integer.add".to_owned(),
+                    operation_identity: "filament.op.integer.add".to_owned(),
                     left: id(1).into(),
                     right: id(5).into(),
                 },
@@ -1336,7 +1336,7 @@ mod tests {
                 3,
                 ValueKind::Integer,
                 NodeKind::Binary {
-                    operation_identity: "quire.op.integer.mul".to_owned(),
+                    operation_identity: "filament.op.integer.mul".to_owned(),
                     left: left.clone().into(),
                     right: id(1).into(),
                 },
@@ -1460,7 +1460,7 @@ mod tests {
                     3,
                     ValueKind::Integer,
                     NodeKind::Binary {
-                        operation_identity: "quire.op.integer.add".to_owned(),
+                        operation_identity: "filament.op.integer.add".to_owned(),
                         left: GraphOperand::Literal {
                             value_kind: ValueKind::Integer,
                             value: "5".to_owned(),
@@ -1495,11 +1495,11 @@ mod tests {
     #[test]
     fn equality_operation_identity_preserves_its_scalar_domain() {
         assert_eq!(
-            Operation::from_identity("quire.op.integer.eq", &id(3)).unwrap(),
+            Operation::from_identity("filament.op.integer.eq", &id(3)).unwrap(),
             Operation::IntegerEqual
         );
         assert_eq!(
-            Operation::from_identity("quire.op.boolean.eq", &id(3)).unwrap(),
+            Operation::from_identity("filament.op.boolean.eq", &id(3)).unwrap(),
             Operation::BooleanEqual
         );
         let root = id(3);
@@ -1512,7 +1512,7 @@ mod tests {
                     3,
                     ValueKind::Boolean,
                     NodeKind::Binary {
-                        operation_identity: "quire.op.integer.eq".to_owned(),
+                        operation_identity: "filament.op.integer.eq".to_owned(),
                         left: id(1).into(),
                         right: id(2).into(),
                     },
@@ -1596,7 +1596,7 @@ mod tests {
                     3,
                     ValueKind::Integer,
                     NodeKind::Binary {
-                        operation_identity: "quire.op.integer.div".to_owned(),
+                        operation_identity: "filament.op.integer.div".to_owned(),
                         left: id(1).into(),
                         right: id(2).into(),
                     },
@@ -1625,7 +1625,7 @@ mod tests {
                     3,
                     ValueKind::Integer,
                     NodeKind::Binary {
-                        operation_identity: "quire.op.integer.add".to_owned(),
+                        operation_identity: "filament.op.integer.add".to_owned(),
                         left: id(1).into(),
                         right: id(2).into(),
                     },
@@ -1676,7 +1676,7 @@ mod tests {
                 2,
                 ValueKind::Integer,
                 NodeKind::Binary {
-                    operation_identity: "quire.op.integer.add".to_owned(),
+                    operation_identity: "filament.op.integer.add".to_owned(),
                     left: root.clone().into(),
                     right: root.clone().into(),
                 },
@@ -1718,7 +1718,7 @@ mod tests {
                     1,
                     ValueKind::Integer,
                     NodeKind::Binary {
-                        operation_identity: "quire.op.integer.add".to_owned(),
+                        operation_identity: "filament.op.integer.add".to_owned(),
                         left: id(3).into(),
                         right: id(4).into(),
                     },
@@ -1730,7 +1730,7 @@ mod tests {
                     2,
                     ValueKind::Integer,
                     NodeKind::Binary {
-                        operation_identity: "quire.op.integer.add".to_owned(),
+                        operation_identity: "filament.op.integer.add".to_owned(),
                         left: id(1).into(),
                         right: id(1).into(),
                     },

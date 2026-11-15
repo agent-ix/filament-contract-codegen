@@ -21,12 +21,14 @@ use filament_contract_codegen::{
     OperationProvenance, OracleGenerationError, RationalOperator, ScalarForm, UpstreamBlocker,
     EXACT_SCALAR_CRATE_NAME, SCALAR_LOWERING_SUPPORTED_TAGS, SCALAR_LOWERING_WORK_LIMIT,
 };
-use quire_contract_model::{
+use filament_contract_model::{
     ApplicationOperator, CheckedNodeId, CheckedPackageEvidence, CheckedPackageReadLimits,
     CheckedPackageRefusalCause, CheckedPackageRefusalCode, CheckedPackageV2,
     CheckedPackageV2ReadResult, CheckedTerm, ContractSourceV1,
 };
-use quire_exact::{ComparisonOperator, DivisionProfile, Integer, IntegerDomain, IntegerInterval};
+use filament_exact::{
+    ComparisonOperator, DivisionProfile, Integer, IntegerDomain, IntegerInterval,
+};
 use serde_json::{json, Value};
 
 // package.rs holds a process-global `application_registry()` static keyed by small integer
@@ -73,7 +75,7 @@ fn contents<'o>(oracles: &'o ExactScalarOracles, path: &str) -> &'o str {
 fn dispositions(
     oracles: &ExactScalarOracles,
 ) -> BTreeMap<
-    quire_contract_model::CheckedNodeId,
+    filament_contract_model::CheckedNodeId,
     &ClaimDisposition<GeneratedScalarClaim, ExactScalarRefusal>,
 > {
     oracles
@@ -84,7 +86,7 @@ fn dispositions(
         .collect()
 }
 
-fn claim_id(_oracles: &ExactScalarOracles, code: u32) -> quire_contract_model::CheckedNodeId {
+fn claim_id(_oracles: &ExactScalarOracles, code: u32) -> filament_contract_model::CheckedNodeId {
     code_id(code)
 }
 
@@ -153,7 +155,7 @@ fn resolved_items(items: &[ExactScalarItem], ids: &FixtureIds) -> Vec<ExactScala
 
 /// UNBACKED today: the six text admissions (FR-014-AC-2's text
 /// admission case) are refused by Contract IR at admission, so no oracle is generated for them
-/// and no agreement or generation test can run over them. `quire.op.numeric.convert` takes
+/// and no agreement or generation test can run over them. `filament.op.numeric.convert` takes
 /// `exact_numeric`, no catalogued `convert` identity takes `text`, and FSL lowers no text
 /// admission; it is unblocked by a catalogued text-admission operation. This test pins the exact
 /// refusal of each node (code, cause, pointer, locus), so the behaviour is recorded and a change
@@ -1069,13 +1071,13 @@ fn tc_024_claim_map_carries_identity_source_bounds_and_operation_per_item() {
         // `SCALAR_LOWERING_SUPPORTED_TAGS`, the tag set `scalar_profile()` itself builds from, so
         // either list changing without the other now fails here, while the lowering profile below
         // still never calls `scalar_profile()`.
-        let claim_supported_tags: BTreeSet<quire_contract_model::CheckedNodeTag> = [
-            quire_contract_model::CheckedNodeTag::Model,
-            quire_contract_model::CheckedNodeTag::ScalarType,
-            quire_contract_model::CheckedNodeTag::BoundedDomain,
-            quire_contract_model::CheckedNodeTag::Value,
-            quire_contract_model::CheckedNodeTag::Expression,
-            quire_contract_model::CheckedNodeTag::Claim,
+        let claim_supported_tags: BTreeSet<filament_contract_model::CheckedNodeTag> = [
+            filament_contract_model::CheckedNodeTag::Model,
+            filament_contract_model::CheckedNodeTag::ScalarType,
+            filament_contract_model::CheckedNodeTag::BoundedDomain,
+            filament_contract_model::CheckedNodeTag::Value,
+            filament_contract_model::CheckedNodeTag::Expression,
+            filament_contract_model::CheckedNodeTag::Claim,
         ]
         .into();
         assert_eq!(
@@ -1085,8 +1087,8 @@ fn tc_024_claim_map_carries_identity_source_bounds_and_operation_per_item() {
          supported_tags (cg#134) -- update whichever one is stale"
     );
 
-        let profile = quire_contract_model::CompleteLoweringProfileV2 {
-            reference: quire_contract_model::LoweringProfileRef {
+        let profile = filament_contract_model::CompleteLoweringProfileV2 {
+            reference: filament_contract_model::LoweringProfileRef {
                 authority: "agent-ix".into(),
                 identity: "filament.codegen.exact-scalar/v1".into(),
             },
@@ -1112,7 +1114,7 @@ fn tc_024_claim_map_carries_identity_source_bounds_and_operation_per_item() {
             &profile,
         );
         for (expression, record) in expressions.iter().zip(&lowered.records) {
-            let quire_contract_model::CompleteLoweringRecordV2::Lowered { node } = record else {
+            let filament_contract_model::CompleteLoweringRecordV2::Lowered { node } = record else {
                 panic!("corpus node {} lowers", expression.code);
             };
             let claim = map
@@ -1182,7 +1184,7 @@ fn tc_024_claim_map_carries_identity_source_bounds_and_operation_per_item() {
         // codes 1011 and 1014 are both `division(_, Truncating, ...)`, differing only in bound
         // (`[-1000,1000]` vs `[-5,5]`) -- codegen's own descriptor-derived string used to embed the
         // bound and so differed between them; the catalog does not, and both now report the same
-        // `quire.op.integer.div`.
+        // `filament.op.integer.div`.
         for code in [1011, 1014] {
             if let Some(claim) = map
                 .items
@@ -1194,8 +1196,8 @@ fn tc_024_claim_map_carries_identity_source_bounds_and_operation_per_item() {
         }
     }
     assert_eq!(operation_identities.len(), 2);
-    assert_eq!(operation_identities[&1011], "quire.op.integer.div");
-    assert_eq!(operation_identities[&1014], "quire.op.integer.div");
+    assert_eq!(operation_identities[&1011], "filament.op.integer.div");
+    assert_eq!(operation_identities[&1014], "filament.op.integer.div");
 }
 
 /// Operations whose parameters the IR carries no bound for.
@@ -1216,9 +1218,9 @@ fn checks_no_bound(operation: &ExactScalarOperation) -> bool {
 #[test]
 fn tc_024_claim_map_entries_ascend_by_structural_node_key() {
     let package = corpus_package_for_codes(&[1001, 1002]).admit();
-    let other_domain = quire_contract_model::CheckedNodeId {
+    let other_domain = filament_contract_model::CheckedNodeId {
         package: "a-earlier".into(),
-        path: vec![quire_contract_model::CheckedNodePathSegment::Name(
+        path: vec![filament_contract_model::CheckedNodePathSegment::Name(
             "zzzz".into(),
         )],
         ordinal: 0,
@@ -1252,7 +1254,7 @@ fn tc_024_claim_map_entries_ascend_by_structural_node_key() {
 }
 
 /// Node 1011 is a truncating division whose own `operation.laws` does not name the floor
-/// definition. A floor descriptor implies the same catalogued identity (`quire.op.integer.div`),
+/// definition. A floor descriptor implies the same catalogued identity (`filament.op.integer.div`),
 /// so this is not AC-12's different-operation case, and the item's disposition is `Generated`, so
 /// it is neither half of AC-14's never-inspected-or-refused case. It is the third state: the item
 /// generates the oracle its descriptor
@@ -1315,13 +1317,13 @@ fn tc_024_a_mislabelled_descriptor_is_refused_where_bounds_disagree_and_marked_o
 /// `Shape::of` gives `Add`, `Subtract`, `Multiply`, `IntegerDivision` and `IntegerModulo` the
 /// identical binary `&rt::Integer` shape, so `check_item`'s shape checks alone cannot distinguish
 /// an `Add` descriptor from a `Multiply` one over the same bounds. Node 1004 is
-/// `quire.op.integer.mul` over `[-1000,1000]`; naming `Add` against it, with the identical
+/// `filament.op.integer.mul` over `[-1000,1000]`; naming `Add` against it, with the identical
 /// `[-1000,1000]` domain, passes every shape and bound check `check_item` makes. Confirming it
 /// anyway -- the defect this ticket exists to close -- would render an oracle that adds where the
 /// catalog says multiply and a harness whose `operation_identity` says `mul`.
 ///
 ///
-/// Backs AC-12: an `Add` descriptor against node 1004's catalogued `quire.op.integer.mul`, over
+/// Backs AC-12: an `Add` descriptor against node 1004's catalogued `filament.op.integer.mul`, over
 /// the identical `[-1000,1000]` bound and the identical binary `&rt::Integer` shape, is not
 /// confirmed. The mismatched case is asserted first; the agreeing case second, which is AC-11
 /// for that one node. AC-11 over the whole corpus is discharged by
@@ -1368,7 +1370,7 @@ fn tc_024_operator_confusion_within_one_shape_is_not_silently_confirmed() {
         }],
     );
     let matched_claim = &matched.claim_map.items[0];
-    assert_eq!(matched_claim.operation.identity, "quire.op.integer.mul");
+    assert_eq!(matched_claim.operation.identity, "filament.op.integer.mul");
     assert_eq!(
         matched_claim.operation.provenance,
         OperationProvenance::IrConfirmed
@@ -1487,7 +1489,7 @@ fn work_exhausted_builder(references: usize) -> PackageBuilder {
         &key(T_INTEGER),
         application(
             "binary",
-            op("quire.op.integer.add"),
+            op("filament.op.integer.add"),
             &key(T_INTEGER),
             vec![reference(&key(3003)), reference(&key(V_INTEGER))],
         ),
@@ -1521,7 +1523,7 @@ fn tc_052_aggregate_integer_operand_is_refused_by_reader() {
         &key(T_INTEGER),
         application(
             "binary",
-            op("quire.op.integer.add"),
+            op("filament.op.integer.add"),
             &key(T_INTEGER),
             vec![
                 reference(&key(V_INTEGER)),
@@ -1566,9 +1568,9 @@ fn tc_052_aggregate_integer_operand_is_refused_by_reader() {
 /// scalar lowering allows. Both stress tests construct the same minimal shape.
 fn work_exhausted_fixture() -> (CheckedPackageV2, ExactScalarItem) {
     let builder = work_exhausted_builder(40_000);
-    let limits = quire_contract_model::CheckedPackageReadLimits {
+    let limits = filament_contract_model::CheckedPackageReadLimits {
         bytes: 16 * 1024 * 1024,
-        ..quire_contract_model::CheckedPackageReadLimits::bounded()
+        ..filament_contract_model::CheckedPackageReadLimits::bounded()
     };
     (
         builder.admit_with(limits),
@@ -1997,7 +1999,7 @@ fn tc_024_anonymous_integer_range_generates_one_addition() {
         &integer,
         application(
             "binary",
-            op("quire.op.integer.add"),
+            op("filament.op.integer.add"),
             &integer,
             vec![reference(&key(OPERAND)), typed_literal("2")],
         ),
@@ -2068,7 +2070,10 @@ fn tc_024_corpus_reader_admits_anonymous_integer_ranges() {
         .mode()
         .expect("authenticated operation view")
         .expect("admitted rounding mode");
-    assert_eq!(mode.kind, quire_contract_model::OperationModeKind::Rounding);
+    assert_eq!(
+        mode.kind,
+        filament_contract_model::OperationModeKind::Rounding
+    );
     assert_eq!(mode.value, "nearest-away");
 }
 
@@ -2129,7 +2134,7 @@ fn tc_024_generated_source_over_the_ceiling_is_refused_whole() {
             &key(T_INTEGER),
             application(
                 "binary",
-                op("quire.op.integer.add"),
+                op("filament.op.integer.add"),
                 &key(T_INTEGER),
                 vec![
                     reference(&key(V_INTEGER)),
@@ -2145,7 +2150,7 @@ fn tc_024_generated_source_over_the_ceiling_is_refused_whole() {
     };
     let wire_bytes = serde_json::to_vec(&wire).expect("fixture wire").len();
     assert!(
-        wire_bytes <= quire_contract_model::CheckedPackageReadLimits::bounded().bytes as usize,
+        wire_bytes <= filament_contract_model::CheckedPackageReadLimits::bounded().bytes as usize,
         "fixture wire {wire_bytes} exceeds bounded reader limit"
     );
     let items = codes
@@ -2200,7 +2205,7 @@ fn tc_024_literal_operands_are_classified_by_value_kind_and_constants_stop_typed
         &key(T_INTEGER),
         application(
             "binary",
-            op("quire.op.integer.add"),
+            op("filament.op.integer.add"),
             &key(T_INTEGER),
             vec![
                 reference(&key(V_INTEGER)),
@@ -2471,7 +2476,7 @@ fn fspec_package(fixture: &str) -> CheckedPackageV2 {
     let wire: Value = serde_json::from_slice(&bytes).expect("FSpec fixture JSON");
     let canonical = serde_json::to_vec(&wire).expect("canonical FSpec fixture bytes");
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     crate::checked_package_evidence::retain_selected_extensions(&root, &wire, &mut evidence);
     // The domain document FSpec publishes for this fixture, if any, resolves its selected model owner.
     crate::checked_package_evidence::retain_selected_document(&root, fixture, &mut evidence);
@@ -2538,7 +2543,7 @@ fn tc_031_ac33_direct_control_case_is_unsupported() {
     use filament_contract_codegen::{
         generate_exact_function_oracles, ExactFunctionItem, ExactFunctionRefusal,
     };
-    use quire_contract_model::{
+    use filament_contract_model::{
         CheckedNodeTag, CompleteLoweringProfileV2, ContractDependencies, ContractPackageReadResult,
         ContractPackageWireV1, LoweringProfileRef,
     };
@@ -2657,7 +2662,7 @@ fn two_parameter_refusal(code: u32, operation: ExactScalarOperation) -> Admitted
 fn two_parameter_checked_bounds(
     code: u32,
     operation: ExactScalarOperation,
-) -> (Vec<quire_contract_model::CheckedNodeId>, FixtureIds) {
+) -> (Vec<filament_contract_model::CheckedNodeId>, FixtureIds) {
     let (_oracles, disposition) = two_parameter_disposition(code, operation);
     match disposition {
         ClaimDisposition::Generated(generated) => (generated.checked_bounds, FixtureIds),
@@ -2917,7 +2922,7 @@ fn derive_one_resolved(
 fn fsl_checked_bounds(
     code: u32,
     operation: ExactScalarOperation,
-) -> (Vec<quire_contract_model::CheckedNodeId>, FixtureIds) {
+) -> (Vec<filament_contract_model::CheckedNodeId>, FixtureIds) {
     let (package, ids) = fsl_admitted();
     let item = ExactScalarItem {
         node_id: ids.resolve(&code_id(code)),
@@ -2932,7 +2937,7 @@ fn fsl_checked_bounds(
     }
 }
 
-fn bound_ids(bounds: &[Bound], ids: &FixtureIds) -> Vec<quire_contract_model::CheckedNodeId> {
+fn bound_ids(bounds: &[Bound], ids: &FixtureIds) -> Vec<filament_contract_model::CheckedNodeId> {
     bounds
         .iter()
         .map(|bound| ids.resolve(&id(&bound.key())))
@@ -3230,7 +3235,7 @@ fn tc_024_each_overloaded_identity_derives_by_its_own_selector() {
     assert_eq!(
         operation(DERIVE_MIXED_DIV),
         Err(no_claim(ClaimDerivationRefusal::OperandFormsNotDerivable {
-            operation_identity: "quire.op.rational.div".to_owned()
+            operation_identity: "filament.op.rational.div".to_owned()
         }))
     );
     // numeric.convert_rounding to a decimal is a rounding conversion.
@@ -3247,7 +3252,7 @@ fn tc_024_each_overloaded_identity_derives_by_its_own_selector() {
     assert_eq!(
         operation(DERIVE_CONVERT_TO_INTEGER),
         Err(no_claim(ClaimDerivationRefusal::OperandFormsNotDerivable {
-            operation_identity: "quire.op.numeric.convert".to_owned()
+            operation_identity: "filament.op.numeric.convert".to_owned()
         }))
     );
     // integer.div takes its profile from the laws: the three corpus nodes differ only by it.
@@ -3274,7 +3279,7 @@ fn tc_024_derivation_refuses_what_it_cannot_derive_with_a_typed_reason() {
     assert_eq!(
         derive_one(&package, DERIVE_REFUSED),
         Err(no_claim(ClaimDerivationRefusal::OperationNotDerivable {
-            operation_identity: "quire.op.numeric.narrow".to_owned()
+            operation_identity: "filament.op.numeric.narrow".to_owned()
         }))
     );
     assert!(
@@ -3981,12 +3986,12 @@ fn quantity_conversion_derives_and_preserves_target_provenance() {
 /// The Contract IR package of a request for `nodes`, and its driver positions in the same order.
 fn contract_request(
     package: &CheckedPackageV2,
-    nodes: &[quire_contract_model::CheckedNodeId],
+    nodes: &[filament_contract_model::CheckedNodeId],
 ) -> (
-    quire_contract_model::ContractPackageV1,
+    filament_contract_model::ContractPackageV1,
     Vec<filament_contract_codegen::ContractRequestPosition>,
 ) {
-    use quire_contract_model::{
+    use filament_contract_model::{
         CheckedNodeTag, CompleteLoweringProfileV2, ContractDependencies, ContractPackageReadResult,
         ContractPackageWireV1, LoweringProfileRef,
     };

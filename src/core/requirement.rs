@@ -7,7 +7,7 @@
 
 use std::collections::BTreeMap;
 
-use quire_contract_model::{CheckedNodeId, CheckedOccurrenceRole, ContractOccurrenceKeyV1};
+use filament_contract_model::{CheckedNodeId, CheckedOccurrenceRole, ContractOccurrenceKeyV1};
 use serde::Serialize;
 
 /// CG's key for one FSL `OccurrenceKey`, field for field the IR `ContractOccurrenceKeyV1`.

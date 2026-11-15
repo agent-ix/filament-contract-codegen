@@ -18,16 +18,16 @@ use filament_contract_codegen::{
     SelectedFrameItem, SelectedFrameTarget, StateClauseReplayInputs, StateFrameIdentity,
     StateObjectAddress,
 };
-use qsl_replay::{
+use filament_contract_model::{
+    CheckedNodeId, CheckedNodePathSegment, CheckedOccurrenceRole, CheckedPackageEvidence,
+    CheckedPackageReadLimits, CheckedPackageV2, CheckedPackageV2ReadResult, ExecutionPoint,
+};
+use fsl_replay::{
     call_site, compile_package_with_execution_points, AnchorKind, CallSiteRefusal, ClaimedChange,
     ClauseName, ClauseSite, DependencyInput, DocumentRef, FrameReplayResult, Identifier,
     OccurrenceKey, OperationName, OperationSite, ReplayLimits, ReplayRefusal, ScalarLimits,
     SelectedAnchor, SelectedObject, SourceIdentity, StageLimits, WitnessEnvelope,
     DEFAULT_REPLAY_INPUT_BYTES,
-};
-use quire_contract_model::{
-    CheckedNodeId, CheckedNodePathSegment, CheckedOccurrenceRole, CheckedPackageEvidence,
-    CheckedPackageReadLimits, CheckedPackageV2, CheckedPackageV2ReadResult, ExecutionPoint,
 };
 use serde_json::{json, Value};
 
@@ -35,7 +35,7 @@ const AUTHORITY: &str = "agent-ix";
 const IDENTITY: &str = "test:state-frame-twin";
 const PACKAGE: &str = "test/bank";
 
-pub(crate) fn node_matches_site(id: &CheckedNodeId, key: quire_exact::NodeKeyView<'_>) -> bool {
+pub(crate) fn node_matches_site(id: &CheckedNodeId, key: filament_exact::NodeKeyView<'_>) -> bool {
     if id.package.as_ref() != key.package() || id.ordinal != key.ordinal() {
         return false;
     }
@@ -44,11 +44,11 @@ pub(crate) fn node_matches_site(id: &CheckedNodeId, key: quire_exact::NodeKeyVie
         let matches = match (segment, path.next()) {
             (
                 CheckedNodePathSegment::Name(left),
-                Some(quire_exact::PathSegmentView::Text(right)),
+                Some(filament_exact::PathSegmentView::Text(right)),
             ) => left.as_ref() == right,
             (
                 CheckedNodePathSegment::Node(left),
-                Some(quire_exact::PathSegmentView::Node(right)),
+                Some(filament_exact::PathSegmentView::Node(right)),
             ) => node_matches_site(left, right),
             _ => false,
         };
@@ -144,7 +144,7 @@ fn domain_document(granted: &[&str]) -> Vec<u8> {
             "identity": format!("{range}/constraints/{keyword}"),
             "keyword": keyword,
             "operands": {"value": value.to_string()},
-            "appliesTo": "ix://quire/native/Integer",
+            "appliesTo": "ix://filament/native/Integer",
             "diagnosticCode": format!("bound.{keyword}"),
             "origin": generated(&range),
         })
@@ -215,9 +215,9 @@ fn domain_document(granted: &[&str]) -> Vec<u8> {
         "occurrences": [],
         "extensions": [],
         "constructs": [
-            construct("object_type", "quire.meaning.model.object-type/v1"),
-            construct("population", "quire.meaning.model.population/v1"),
-            construct("value_type", "quire.meaning.model.value-type/v1"),
+            construct("object_type", "filament.meaning.model.object-type/v1"),
+            construct("population", "filament.meaning.model.population/v1"),
+            construct("value_type", "filament.meaning.model.value-type/v1"),
         ],
         "types": types,
         "populations": [{
@@ -243,7 +243,7 @@ pub const CLAUSES: [(&str, &str, &str); 2] = [
 fn unit_source(clauses: &[(&str, &str, &str)], blank_lines: usize) -> String {
     let header = format!(
         "language \"ix:native\" edition \"1-draft\";\n\
-         profile v = \"quire.value.complete/v1\";\n\
+         profile v = \"filament.value.complete/v1\";\n\
          model Bank = {PACKAGE:?};\n"
     );
     let clauses = clauses
@@ -658,9 +658,9 @@ impl Twin {
 
     /// The `contract` identity FSL's selected clause site mints for `clause`: the identity a
     /// caller supplies for a postcondition harness (FR-024-AC-71).
-    pub fn clause_identity(&self, clause: &str) -> qsl_replay::ObligationIdentity {
+    pub fn clause_identity(&self, clause: &str) -> fsl_replay::ObligationIdentity {
         let site = self.clause_site(clause).expect("FSL clause site");
-        qsl_replay::ObligationIdentity::new(
+        fsl_replay::ObligationIdentity::new(
             site.node,
             None,
             u32::try_from(site.occurrence.origin().ordinal()).expect("claim ordinal"),
@@ -705,7 +705,7 @@ impl Twin {
     /// integer (no `i64` accessor range).
     pub fn with_unbounded_audit_invariant() -> Self {
         Self::invariant_from(
-            Self::with_field_native_type("audit", "ix://quire/native/Integer"),
+            Self::with_field_native_type("audit", "ix://filament/native/Integer"),
             "self.balance >= 0",
         )
     }
@@ -930,7 +930,7 @@ impl Twin {
             .iter_mut()
             .find(|operation| operation["name"] == "deposit")
             .expect("deposit operation");
-        deposit["params"][1]["typeRef"] = json!("ix://quire/native/Integer");
+        deposit["params"][1]["typeRef"] = json!("ix://filament/native/Integer");
         twin.domain = domain.to_string().into_bytes();
         twin
     }
@@ -979,6 +979,16 @@ impl Twin {
             .replace("self.balance >= pre(self.balance)", condition)
             .into_bytes();
         twin
+    }
+
+    /// The same twin with `declaration` appended to its unit source, whose header profile is
+    /// replaced by the model profile an operation body needs.
+    pub fn with_model_profile_declaration(mut self, declaration: &str) -> Self {
+        let text = String::from_utf8(self.unit).expect("native unit");
+        let mut text = text.replace("filament.value.complete/v1", "filament.model.complete/v1");
+        text.push_str(declaration);
+        self.unit = text.into_bytes();
+        self
     }
 
     /// The same twin with the `amount` parameter declared nullable, an option of its range.
@@ -1101,7 +1111,7 @@ impl Twin {
         self.with_amount_type(
             vec![construct(
                 "record_value_type",
-                "quire.meaning.model.record-value-type/v1",
+                "filament.meaning.model.record-value-type/v1",
             )],
             declarations,
             option,
@@ -1112,7 +1122,7 @@ impl Twin {
     pub fn with_record_option_amount(self) -> Self {
         self.with_record_option_amount_of(&[
             ("n", range_type("balance")),
-            ("flag", "ix://quire/native/Boolean".to_owned()),
+            ("flag", "ix://filament/native/Boolean".to_owned()),
         ])
     }
 
@@ -1189,7 +1199,7 @@ impl Twin {
             .find(|operation| operation["name"] == "deposit")
             .expect("deposit operation");
         deposit["returns"] = json!({
-            "typeRef": "ix://quire/native/Boolean",
+            "typeRef": "ix://filament/native/Boolean",
             "multiplicity": {"lower": 1, "upper": 1, "ordered": false, "unique": true},
             "nullable": false,
         });
@@ -1281,7 +1291,7 @@ impl Twin {
             .iter_mut()
             .find(|operation| operation["name"] == "deposit")
             .expect("deposit operation");
-        deposit["returns"]["typeRef"] = json!("ix://quire/native/Integer");
+        deposit["returns"]["typeRef"] = json!("ix://filament/native/Integer");
         twin.domain = domain.to_string().into_bytes();
         let source = String::from_utf8(twin.unit).expect("native unit");
         let changed = source.replace(
@@ -1386,7 +1396,7 @@ impl Twin {
             deposit["params"] = json!([{
                 "identity": identity,
                 "name": "other",
-                "typeRef": "ix://quire/native/Boolean",
+                "typeRef": "ix://filament/native/Boolean",
                 "presence": "required",
                 "nullable": false,
                 "defaultKind": "none",
@@ -1396,7 +1406,7 @@ impl Twin {
         }
         if result {
             deposit["returns"] = json!({
-                "typeRef": "ix://quire/native/Boolean",
+                "typeRef": "ix://filament/native/Boolean",
                 "multiplicity": {"lower": 1, "upper": 1, "ordered": false, "unique": true},
                 "nullable": false,
             });
@@ -1429,17 +1439,17 @@ impl Twin {
 
     /// A twin whose present, unread `audit` field is Boolean, with no `i64` range.
     pub fn without_audit_range() -> Self {
-        Self::with_field_native_type("audit", "ix://quire/native/Boolean")
+        Self::with_field_native_type("audit", "ix://filament/native/Boolean")
     }
 
     /// A selected model whose `balance` field is an unbounded integer.
     pub fn without_balance_range() -> Self {
-        Self::with_field_native_type("balance", "ix://quire/native/Integer")
+        Self::with_field_native_type("balance", "ix://filament/native/Integer")
     }
 
     /// Both clauses over a selected model whose `audit` field is an unbounded integer.
     pub fn with_unbounded_audit_clause() -> Self {
-        let mut twin = Self::with_field_native_type("audit", "ix://quire/native/Integer");
+        let mut twin = Self::with_field_native_type("audit", "ix://filament/native/Integer");
         twin.unit = unit_source(
             &[
                 CLAUSES[0],
@@ -1678,7 +1688,7 @@ impl Twin {
         twin
     }
 
-    /// The `OperationSite` `qsl_replay::call_site` returns for `Bank::Account::<operation>`,
+    /// The `OperationSite` `fsl_replay::call_site` returns for `Bank::Account::<operation>`,
     /// read directly and not through the crate under test.
     pub fn operation_site(&self, operation: &str) -> Result<OperationSite, Box<CallSiteRefusal>> {
         self.operation_site_for_object("Account", operation)
@@ -1703,7 +1713,7 @@ impl Twin {
     }
 
     /// The checked package FSL compiles from the twin's unit and the node of the clause named
-    /// `clause`, both as `qsl_replay::call_site` returns them: the package bytes are read and
+    /// `clause`, both as `fsl_replay::call_site` returns them: the package bytes are read and
     /// admitted by the model reader, with the twin's domain package as the evidence of its model
     /// selection. Nothing here is hand-built, so a harness generated from it carries the node
     /// ids FSL itself names.
@@ -1738,7 +1748,7 @@ impl Twin {
         evidence
             .insert_domain_package_document(PACKAGE, self.domain.clone())
             .expect("retain emitted model document");
-        evidence.support_feature("quire.value.complete/v1");
+        evidence.support_feature("filament.value.complete/v1");
         let package = match CheckedPackageV2::read(
             compiled.bytes(),
             CheckedPackageReadLimits::bounded(),
@@ -1838,7 +1848,7 @@ impl Twin {
         clause: &str,
     ) -> (CheckedPackageV2, CheckedNodeId) {
         let mut document: Value = serde_json::from_slice(&self.domain).expect("domain document");
-        let mut variant = construct("variant_type", "quire.meaning.model.variant-type/v1");
+        let mut variant = construct("variant_type", "filament.meaning.model.variant-type/v1");
         variant["construct"]["shape"] = json!("enumeration");
         variant["construct"]["members"] = json!({"variants": "required"});
         document["constructs"]
@@ -1909,7 +1919,7 @@ impl Twin {
         evidence
             .insert_domain_package_document(PACKAGE, selected_document)
             .expect("retain emitted model document");
-        evidence.support_feature("quire.value.complete/v1");
+        evidence.support_feature("filament.value.complete/v1");
         let package = match CheckedPackageV2::read(
             &located.package,
             CheckedPackageReadLimits::bounded(),
@@ -1939,7 +1949,7 @@ impl Twin {
         let snapshot = |name: &str, observation: &str, (balance, audit): (i64, i64)| {
             let label = label(name);
             let bytes = json!({
-                "format": "quire.state.snapshot/v1",
+                "format": "filament.state.snapshot/v1",
                 "identity": identity_json(&label),
                 "observation": observation,
                 "model": model_header,
@@ -1962,7 +1972,7 @@ impl Twin {
         let (post_ref, post_bytes) = snapshot("twin-post", "post", post);
         let invocation_label = label("twin-invocation");
         let invocation_bytes = json!({
-            "format": "quire.state.invocation/v1",
+            "format": "filament.state.invocation/v1",
             "identity": identity_json(&invocation_label),
             "model": model_header,
             "context": account_type(),
@@ -2106,7 +2116,7 @@ impl Twin {
             });
         let mut selected_target = selected_site.map(|site| SelectedFrameTarget {
             operation: site.frame_operation,
-            package_id: quire_contract_model::ContractSourceV1 {
+            package_id: filament_contract_model::ContractSourceV1 {
                 name: selected_package.name().into(),
                 lock: selected_package.lock().clone(),
             },
@@ -2176,7 +2186,7 @@ impl Twin {
         }]
     }
 
-    /// The `ClauseSite` `qsl_replay::call_site` returns for the clause named `clause`: the
+    /// The `ClauseSite` `fsl_replay::call_site` returns for the clause named `clause`: the
     /// identities FSL itself gives it, read directly and not through the crate under test.
     pub fn clause_site(&self, clause: &str) -> Result<ClauseSite, Box<CallSiteRefusal>> {
         let name = ClauseName(Identifier::new(clause).expect("identifier"));
@@ -2243,7 +2253,7 @@ impl Twin {
             post_state: vec![(balance, post.0), (audit, post.1)],
             obligation_identity: {
                 let site = self.clause_site(clause).expect("FSL clause site");
-                qsl_replay::ObligationIdentity::new(
+                fsl_replay::ObligationIdentity::new(
                     site.node,
                     None,
                     u32::try_from(site.occurrence.origin().ordinal()).expect("claim ordinal"),
@@ -2295,7 +2305,7 @@ impl Twin {
         let replay_limits = ReplayLimits::default();
         let envelope = WitnessEnvelope::reconstruct(packet, replay_limits)
             .expect("a complete packet reconstructs");
-        qsl_replay::replay_frame(wire, &envelope, replay_limits)
+        fsl_replay::replay_frame(wire, &envelope, replay_limits)
     }
 }
 

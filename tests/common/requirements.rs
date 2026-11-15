@@ -9,7 +9,7 @@ use filament_contract_codegen::{
     KaniGenerationContext, RequirementOccurrence, RequirementRecordInput, RequirementRecords,
     RoutedGenerationItem, RoutedRequirement,
 };
-use quire_contract_model::{CheckedNodeId, CheckedPackageV2, ContractOccurrenceKeyV1};
+use filament_contract_model::{CheckedNodeId, CheckedPackageV2, ContractOccurrenceKeyV1};
 
 /// The occurrence key of an IR occurrence.
 pub fn occurrence(key: &ContractOccurrenceKeyV1) -> RequirementOccurrence {

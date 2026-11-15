@@ -8,11 +8,11 @@
 use super::Graph;
 use super::{narrowing, references, Narrowing};
 use crate::core::canonical;
-use ix_trace_rs::trace;
-use quire_contract_model::{
+use filament_contract_model::{
     ApplicationOperator, CheckedNodeId, CheckedPackageEvidence, CheckedPackageReadLimits,
     CheckedPackageV2, CheckedPackageV2ReadResult, CheckedTerm,
 };
+use ix_trace_rs::trace;
 use serde_json::{json, Value};
 use std::{fs, path::PathBuf};
 
@@ -94,7 +94,7 @@ fn opaque_operation_member_does_not_add_a_consumer_to_true_narrowing() {
     )
     .unwrap();
     let mut evidence = CheckedPackageEvidence::new();
-    evidence.support_feature("quire.value.complete/v1");
+    evidence.support_feature("filament.value.complete/v1");
     // The fixture's model-root owner is resolved from the domain document FSpec publishes
     // for it, as for every published fixture read.
     checked_package_evidence::retain_selected_document(
@@ -106,7 +106,7 @@ fn opaque_operation_member_does_not_add_a_consumer_to_true_narrowing() {
     let original = read(&original_bytes, &evidence, "ORIGINAL");
     // Extend a detached inspection draft, then explicitly author its new local
     // operand rows at encode_draft. Unchanged published bytes were admitted above.
-    let frame = qsl_replay::WireGraph::of_package_value(&wire).unwrap();
+    let frame = fsl_replay::WireGraph::of_package_value(&wire).unwrap();
     for (holder, node) in wire["semantic_graph"]["nodes"]
         .as_array_mut()
         .unwrap()
@@ -116,7 +116,7 @@ fn opaque_operation_member_does_not_add_a_consumer_to_true_narrowing() {
         *node = frame.document_value_in_row(holder, node).unwrap();
     }
     let target = original.resolved_graph().nodes.iter().find(|n| matches!(original.term(&n.node_id),
-        Some(CheckedTerm::Application { operation, .. }) if operation.identity() == Some("quire.op.integer.mul"))).unwrap();
+        Some(CheckedTerm::Application { operation, .. }) if operation.identity() == Some("filament.op.integer.mul"))).unwrap();
     let bound = original
         .resolved_graph()
         .nodes
@@ -129,14 +129,14 @@ fn opaque_operation_member_does_not_add_a_consumer_to_true_narrowing() {
     assert_eq!(bound_body["members"][0]["value"]["value"], "-9");
     assert_eq!(bound_body["members"][1]["value"]["value"], "9");
     let catalogue: Value = serde_json::from_str(
-        quire_verification_contracts::operation_catalog::CHECKED_OPERATION_CATALOG_V1,
+        filament_verification_contracts::operation_catalog::CHECKED_OPERATION_CATALOG_V1,
     )
     .unwrap();
     let entry = catalogue["operations"]
         .as_array()
         .unwrap()
         .iter()
-        .find(|e| e["identity"] == "quire.op.numeric.narrow")
+        .find(|e| e["identity"] == "filament.op.numeric.narrow")
         .unwrap();
     assert_eq!(entry["operator"], "convert");
     assert_eq!(entry["operands"], json!(["exact_numeric"]));
@@ -203,7 +203,7 @@ fn opaque_operation_member_does_not_add_a_consumer_to_true_narrowing() {
     let baseline_bytes = encode_draft(&wire);
     let baseline = read(&baseline_bytes, &evidence, "TRUE_NARROW_BASELINE");
     let opaque_node = baseline.resolved_graph().nodes.iter().find(|n| matches!(baseline.term(&n.node_id),
-        Some(CheckedTerm::Application { operation, .. }) if operation.identity() == Some("quire.op.integer.add"))).unwrap();
+        Some(CheckedTerm::Application { operation, .. }) if operation.identity() == Some("filament.op.integer.add"))).unwrap();
     let CheckedTerm::Application { operation, .. } = &opaque_node.body else {
         panic!("admitted opaque node is an application");
     };

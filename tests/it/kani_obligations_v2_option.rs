@@ -1,4 +1,4 @@
-//! FR-054: `quire.op.option.present` and `quire.op.option.value` in a V2 clause harness.
+//! FR-054: `filament.op.option.present` and `filament.op.option.value` in a V2 clause harness.
 //!
 //! Each fixture is a clause compiled from FSL source through `Twin`, over an operation parameter
 //! `amount` typed by an option type (an `Option<Int[0, 1000]>`, or a record `Pair` of `n` and

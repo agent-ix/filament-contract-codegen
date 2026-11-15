@@ -37,7 +37,7 @@ use crate::scratch_crate::{
 
 pub(crate) const SUBJECT: &str = "crate::subject::check";
 const DOMAIN_SIZE: usize = 1001;
-const HEALTHY_SUBJECT: &str = "quire_contract_runtime::operators::implies_short_circuit(amount < 1000, || amount + 1 <= 1000)";
+const HEALTHY_SUBJECT: &str = "filament_contract_runtime::operators::implies_short_circuit(amount < 1000, || amount + 1 <= 1000)";
 const ARITHMETIC_MESSAGE: &str = "arithmetic subterm agrees with independent i128 expectation";
 const EXACT_SITE: &str = "left.0.checked_add(right.0)";
 const HELPER_SITE: &str =
@@ -110,6 +110,57 @@ fn playback_test_with(subject_preamble: bool) -> String {
     )
 }
 
+/// FR-015-AC-151, the carrier half of the pipeline-compiled subject: the FSL source of the clause
+/// fixture, with the authored `deposit` body, compiles to a package whose `operation_bodies` row
+/// names the body as a function node of the checked graph. CG has no step that renders that node
+/// into the `crate::subject` module yet, so the executed runs keep the test-written subject.
+#[trace("FR-015-AC-151", "TC-025")]
+#[test]
+fn the_fsl_source_of_the_clause_fixture_carries_the_deposit_body_as_a_function_node() {
+    use filament_contract_model::OperationBody;
+    let (package, _) = Twin::with_bounded_amount_implication()
+        .with_model_profile_declaration(
+            "body DepositBody using v on Bank::Account::deposit(amount) { amount < 1000 implies amount + 1 <= 1000 }\n",
+        )
+        .emitted_package("BalanceNeverDrops");
+    let rows = package
+        .operation_body_rows()
+        .expect("the package carries the operation_bodies member");
+    let row = rows
+        .iter()
+        .find(|row| &*row.operation == "deposit")
+        .expect("a row for the deposit operation");
+    let OperationBody::Function { node } = &row.body else {
+        panic!(
+            "the authored deposit body is a function node: {:?}",
+            row.body
+        );
+    };
+    let graph = package.resolved_graph();
+    let body = graph
+        .nodes
+        .iter()
+        .find(|candidate| candidate.node_id == *node)
+        .expect("the body node is in the checked graph");
+    // The row is the authored operation's: it is declared on the Account type, and the node is
+    // the function whose body is the authored implication over the amount parameter.
+    let declaring = graph
+        .nodes
+        .iter()
+        .find(|candidate| candidate.node_id == row.declaring)
+        .expect("the declaring node is in the checked graph");
+    assert!(
+        format!("{declaring:?}").contains("Account"),
+        "declared on the Account type: {declaring:?}"
+    );
+    assert_eq!(&*body.node_tag, "function", "{:?}", body.node_tag);
+    let content = format!("{:?}", body.body);
+    assert!(
+        content.contains("filament.op.boolean.implies") && content.contains("Name(\"amount\")"),
+        "the body is the authored implication over the amount parameter: {content}"
+    );
+}
+
 fn fixture() -> KaniV2ClauseObligationHarness {
     fixture_of(Twin::with_bounded_amount_implication(), "BalanceNeverDrops")
 }
@@ -179,19 +230,19 @@ pub(crate) struct OwnerMutation {
 }
 
 const PLUS_ONE: OwnerMutation = OwnerMutation {
-    package: "quire-exact",
+    package: "filament-exact",
     file: "src/native_integer.rs",
     original: EXACT_SITE,
     mutated: "left.0.checked_add(right.0)?.checked_add(1)",
 };
 const LEFT_ONLY: OwnerMutation = OwnerMutation {
-    package: "quire-exact",
+    package: "filament-exact",
     file: "src/native_integer.rs",
     original: EXACT_SITE,
     mutated: "Some(left.0)",
 };
 const HELPER_FALSE: OwnerMutation = OwnerMutation {
-    package: "quire-contract-runtime",
+    package: "filament-contract-runtime",
     file: "src/operators.rs",
     original: HELPER_SITE,
     mutated: "    let _ = (antecedent, consequent);\n    R::from(false)",
@@ -270,7 +321,7 @@ impl ScratchCrate {
         // test's sources are older than another's build. Each crate is named after its own label.
         let package = format!("ir1509-clause-controls-{label}");
         let manifest = format!(
-            "[package]\nname = \"{package}\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nquire-exact = {{ git = \"https://github.com/agent-ix/quire-exact\", branch = \"main\" }}\nquire-semantic-value = {{ git = \"https://github.com/agent-ix/quire-semantic-value\", branch = \"main\" }}\n{patch}\n[workspace]\n",
+            "[package]\nname = \"{package}\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nfilament-exact = {{ git = \"https://github.com/agent-ix/filament-exact\", branch = \"main\" }}\nfilament-semantic-value = {{ git = \"https://github.com/agent-ix/filament-semantic-value\", branch = \"main\" }}\n{patch}\n[workspace]\n",
             runtime_dependency(&["exact"])
         );
         write_manifest(&directory.path, &manifest);
@@ -480,17 +531,17 @@ fn compiled_subject_mutants_fail_exactly_their_values() {
     for (label, body, expected) in [
         (
             "ir1509-enum-plus-two",
-            "quire_contract_runtime::operators::implies_short_circuit(amount < 1000, || amount + 2 <= 1000)",
+            "filament_contract_runtime::operators::implies_short_circuit(amount < 1000, || amount + 2 <= 1000)",
             vec![999],
         ),
         (
             "ir1509-enum-strict",
-            "quire_contract_runtime::operators::implies_short_circuit(amount < 1000, || amount + 1 < 1000)",
+            "filament_contract_runtime::operators::implies_short_circuit(amount < 1000, || amount + 1 < 1000)",
             vec![999],
         ),
         (
             "ir1509-enum-antecedent",
-            "quire_contract_runtime::operators::implies_short_circuit(amount <= 1000, || amount + 1 <= 1000)",
+            "filament_contract_runtime::operators::implies_short_circuit(amount <= 1000, || amount + 1 <= 1000)",
             vec![1000],
         ),
     ] {
@@ -659,7 +710,7 @@ fn the_sealed_playback_at_999_fails_the_generated_arithmetic_assertion_under_the
     let other_lib = format!(
         "{}{HOST_KANI}{}",
         host_source(&with_bare_test),
-        subject_module("quire_contract_runtime::operators::implies_short_circuit(amount < 1000, || amount + 2 <= 1000)")
+        subject_module("filament_contract_runtime::operators::implies_short_circuit(amount < 1000, || amount + 2 <= 1000)")
     );
     let other = ScratchCrate::new("ir1509-playback-other-check", &other_lib, None);
     let (success, output) = other.host_test("playback_999");
@@ -700,7 +751,7 @@ pub(crate) fn run_installed(
     scratch: &ScratchCrate,
     harness: &KaniV2ClauseObligationHarness,
 ) -> InstalledRun {
-    let cancel = quire_exact::Cancel::new();
+    let cancel = filament_exact::Cancel::new();
     let installation = KaniInstallation::discover().expect("cargo-kani is installed");
     let target = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("ir1509-kani-target");
     let started = Instant::now();
@@ -869,7 +920,7 @@ fn tc_025_real_kani_runner_falsifies_the_exact_999_subject_mutant_at_999() {
     let (scratch, harness) = kani_crate(
         "ir1509-kani-plus-two",
         None,
-        "quire_contract_runtime::operators::implies_short_circuit(amount < 1000, || amount + 2 <= 1000)",
+        "filament_contract_runtime::operators::implies_short_circuit(amount < 1000, || amount + 2 <= 1000)",
     );
     let run = run_installed(&scratch, &harness);
     let values = assert_two_phase_falsified(&run, &harness, RESULT_CHECK);
@@ -959,7 +1010,7 @@ impl PlaybackStandIn {
         test_name: &str,
         appended: &str,
     ) -> Result<KaniConcretePlaybackOutcome, filament_contract_codegen::KaniExecutionRefusal> {
-        let cancel = quire_exact::Cancel::new();
+        let cancel = filament_exact::Cancel::new();
         execute_kani_concrete_playback(
             &KaniExecutionRequest {
                 cancel: &cancel,
@@ -1214,7 +1265,7 @@ fn run_installed_playback(
     )
     .unwrap();
     let test_name = format!("{}::{name}", harness.identity.module_symbol);
-    let cancel = quire_exact::Cancel::new();
+    let cancel = filament_exact::Cancel::new();
     let installation = KaniInstallation::discover()
         .expect("cargo-kani is installed")
         .with_peak_memory_source(std::sync::Arc::new(ScopePeak));
@@ -1327,7 +1378,7 @@ fn tc_027_kani_playback_at_999_controls_do_not_satisfy_the_arithmetic_expectatio
 
     // The compiled-subject `+ 2` mutant reaches the produced-result comparison, not the
     // arithmetic assertion.
-    let other = "quire_contract_runtime::operators::implies_short_circuit(amount < 1000, || amount + 2 <= 1000)";
+    let other = "filament_contract_runtime::operators::implies_short_circuit(amount < 1000, || amount + 2 <= 1000)";
     let (scratch, harness) = kani_crate("ir917-playback-control-subject", None, other);
     let appended = kani_playback_test(name, true, false);
     let (succeeded, _, stdout, _, _) =
@@ -1464,7 +1515,7 @@ fn tc_070_real_kani_runs_the_clause_the_table_lets_through_and_refuses_the_measu
     fs::write(
         &table,
         serde_json::to_vec(&[serde_json::json!({
-            "operation_ids": ["quire.op.integer.mul"],
+            "operation_ids": ["filament.op.integer.mul"],
             "route": "general",
             "max_operand_bits": 21,
             "collection_bound": null,
@@ -1483,8 +1534,8 @@ fn tc_070_real_kani_runs_the_clause_the_table_lets_through_and_refuses_the_measu
     let options = GenerationOptions {
         tractability_table: Some(table),
     };
-    let negotiate = |package: &quire_contract_model::CheckedPackageV2,
-                     clause: &quire_contract_model::CheckedNodeId,
+    let negotiate = |package: &filament_contract_model::CheckedPackageV2,
+                     clause: &filament_contract_model::CheckedNodeId,
                      route: IntegerRoute| {
         negotiate_kani_obligations_with_options(
             &KaniObligationRequest {

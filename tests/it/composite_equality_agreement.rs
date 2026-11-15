@@ -175,21 +175,21 @@ fn tc_029_generated_composite_equality_crate_agrees_with_direct_runtime() {
 pub(super) mod fixture;
 
 pub(super) fn original_item(
-    package: &quire_contract_model::CheckedPackageV2,
+    package: &filament_contract_model::CheckedPackageV2,
     converted: bool,
 ) -> filament_contract_codegen::CompositeEqualityItem {
     original_item_named(package, "f", converted)
 }
 
 pub(super) fn original_item_named(
-    package: &quire_contract_model::CheckedPackageV2,
+    package: &filament_contract_model::CheckedPackageV2,
     function: &str,
     converted: bool,
 ) -> filament_contract_codegen::CompositeEqualityItem {
     use filament_contract_codegen::{
         CompositeEqualityItem, EqualityOperandDescriptor, EqualityOperatorKind,
     };
-    use quire_contract_model::{ApplicationOperator, CheckedTerm};
+    use filament_contract_model::{ApplicationOperator, CheckedTerm};
     let node_id = super::admitted_enum_equality::application(package, function);
     let expression = package
         .resolved_graph()

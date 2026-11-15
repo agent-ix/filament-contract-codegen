@@ -4,7 +4,7 @@
 //! returns the complete per-construct disposition census for a request, so a generator can
 //! render an artifact for every construct rather than stopping at the first non-supported one.
 
-use quire_contract_ir::kani::{CapabilityEntry, KaniOutcome, KaniProfile};
+use filament_contract_ir::kani::{CapabilityEntry, KaniOutcome, KaniProfile};
 
 /// Selected public Contract IR profile as consumed by code generation.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -49,11 +49,11 @@ pub fn classify_bounded_kani_profile(
 
 #[cfg(test)]
 mod tests {
-    use ix_trace_rs::trace;
-    use quire_contract_ir::kani::{
+    use filament_contract_ir::kani::{
         CapabilityDisposition, CapabilityEntry, KaniProfile, ProfileSelection,
     };
-    use quire_contract_model::{std001_code, Std001Code};
+    use filament_contract_model::{std001_code, Std001Code};
+    use ix_trace_rs::trace;
 
     use super::classify_bounded_kani_profile;
 
@@ -184,7 +184,7 @@ mod tests {
 
         assert_eq!(
             outcome.kind(),
-            quire_contract_ir::kani::KaniOutcomeKind::Refused
+            filament_contract_ir::kani::KaniOutcomeKind::Refused
         );
         assert_eq!(outcome.code(), Std001Code::KANI_CAPABILITY_MISSING);
     }
@@ -237,7 +237,7 @@ mod tests {
             .expect_err("invalid names cannot return a partial census");
             assert_eq!(
                 failure.kind(),
-                quire_contract_ir::kani::KaniOutcomeKind::Refused
+                filament_contract_ir::kani::KaniOutcomeKind::Refused
             );
             assert_eq!(failure.code(), Std001Code::KANI_CAPABILITY_REQUEST_INVALID);
             assert_eq!(failure.source_id(), "source:invalid");
