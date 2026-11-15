@@ -421,7 +421,7 @@ fn walk_name(ty: &Ty) -> String {
     match ty {
         Ty::Decl(index) => format!("walk_decl{index}"),
         Ty::Option(_) => format!("walk_{}", slug(ty)),
-        _ => unreachable!("leaves are compared inline"),
+        Ty::Bool | Ty::Int(..) => "compare_leaf".to_string(),
     }
 }
 
