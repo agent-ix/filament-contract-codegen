@@ -5,7 +5,10 @@ use quire_contract_model::Std001Code;
 use serde::Serialize;
 
 use crate::kani::{
-    identity::ObligationKind,
+    identity::{
+        refinement::{ProofSubject, RefinementClass, RefinementSummary},
+        ObligationKind,
+    },
     output::{
         playback::{
             parse_assertion_playback, CounterexamplePlayback, Playback, PlaybackRefusal,
@@ -286,6 +289,55 @@ fn classify_success(report: &KaniHarnessReport, kind: Option<ObligationKind>) ->
 
 fn inconclusive(reason: KaniInconclusiveReason) -> KaniRunOutcome {
     KaniRunOutcome::Inconclusive { reason }
+}
+
+/// How strongly a verified harness, with its refinement run if it has one, proves the production
+/// subject (FR-028-AC-17). A `bounded_shadow` result is never `production_proved`.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ProofStrength {
+    /// A verified `production` harness.
+    ProductionProved,
+    /// A verified shadow whose refinement run was exhaustive and agreed.
+    ShadowProvedRefinementExhaustive,
+    /// A verified shadow whose refinement run was sampled and agreed.
+    ShadowProvedRefinementSampled,
+    /// A verified shadow with no refinement run.
+    ShadowProvedRefinementNotRun,
+    /// A verified shadow whose refinement run reached a ceiling.
+    ShadowProvedRefinementInconclusive,
+    /// The refinement run found a disagreement.
+    RefinementFailed,
+}
+
+/// The strength of one harness's result, or none where the harness itself did not verify and
+/// no refinement disagreement was found.
+#[must_use]
+pub fn proof_strength(
+    subject: ProofSubject,
+    outcome: &KaniRunOutcome,
+    refinement: Option<RefinementSummary>,
+) -> Option<ProofStrength> {
+    if subject == ProofSubject::BoundedShadow && refinement == Some(RefinementSummary::Disagreed) {
+        return Some(ProofStrength::RefinementFailed);
+    }
+    if !matches!(outcome, KaniRunOutcome::Verified) {
+        return None;
+    }
+    Some(match (subject, refinement) {
+        (ProofSubject::Production, _) => ProofStrength::ProductionProved,
+        (ProofSubject::BoundedShadow, None) => ProofStrength::ShadowProvedRefinementNotRun,
+        (ProofSubject::BoundedShadow, Some(RefinementSummary::Agreed(class))) => match class {
+            RefinementClass::Exhaustive => ProofStrength::ShadowProvedRefinementExhaustive,
+            RefinementClass::Sampled => ProofStrength::ShadowProvedRefinementSampled,
+        },
+        (ProofSubject::BoundedShadow, Some(RefinementSummary::ReachedCeiling)) => {
+            ProofStrength::ShadowProvedRefinementInconclusive
+        }
+        (ProofSubject::BoundedShadow, Some(RefinementSummary::Disagreed)) => {
+            ProofStrength::RefinementFailed
+        }
+    })
 }
 
 #[cfg(test)]

@@ -107,6 +107,8 @@ use serde::Serialize;
 use std::collections::{BTreeMap, BTreeSet};
 
 pub(crate) mod admitted;
+pub mod closure;
+use closure::{RecordedDeclaration, RecordedOperandTypes};
 mod resolution;
 #[cfg(test)]
 mod union_tests;
@@ -662,6 +664,12 @@ pub struct GeneratedCompositeEqualityClaim {
     /// The original owner-issued kernel declaration keys, in the corresponding
     /// `declaration_keys` order; these are distinct from the V2 composite node ids.
     pub declaration_runtime_keys: Vec<String>,
+    /// The declaration closure of the item, ascending by V2 node id, read from the
+    /// reconstruction the environment constructor is emitted from.
+    pub declaration_closure: Vec<RecordedDeclaration>,
+    /// The comparison types of both operands: an `Option` operand is recorded here,
+    /// since the runtime declares no composite for it.
+    pub operand_types: RecordedOperandTypes,
     /// The schedule `CheckedEquality::schedule()` selected.
     pub schedule: RecordedSchedule,
 }
@@ -1090,6 +1098,26 @@ pub fn generate_composite_equality_oracles(
                                 descriptor: recorded_descriptor(item),
                                 declaration_keys: generated.declaration_keys.clone(),
                                 declaration_runtime_keys: runtime_keys,
+                                declaration_closure: closure::recorded_declarations(
+                                    &generated.composites,
+                                    &generated.composite_bindings,
+                                    |id| id.clone(),
+                                )
+                                .ok_or(OracleGenerationError::InvalidPlanState)?,
+                                operand_types: RecordedOperandTypes {
+                                    left: closure::recorded_type(
+                                        generated
+                                            .left_target
+                                            .as_ref()
+                                            .unwrap_or(&generated.left_source),
+                                    ),
+                                    right: closure::recorded_type(
+                                        generated
+                                            .right_target
+                                            .as_ref()
+                                            .unwrap_or(&generated.right_source),
+                                    ),
+                                },
                                 schedule: generated.checked.schedule().try_into()?,
                             },
                         ));
@@ -4684,6 +4712,11 @@ fn deep_matches_shallow() {
                 },
                 declaration_keys: Vec::new(),
                 declaration_runtime_keys: Vec::new(),
+                declaration_closure: Vec::new(),
+                operand_types: RecordedOperandTypes {
+                    left: closure::RecordedType::Boolean,
+                    right: closure::RecordedType::Boolean,
+                },
                 schedule: RecordedSchedule::Plan,
             })),
         }

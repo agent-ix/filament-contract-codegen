@@ -1462,3 +1462,9 @@ mod obligation_wire;
 
 // Method-qualified state search shares the existing subsystem boundary.
 pub(crate) mod constrained;
+
+// The refinement plan and the values a refinement run is stated in (FR-028-AC-15 to AC-17).
+pub(crate) mod refinement;
+
+// The identity of a bounded-shadow harness and its refinement obligation (FR-028-AC-14, AC-18).
+pub(crate) mod shadow;

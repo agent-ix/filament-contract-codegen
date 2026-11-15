@@ -63,6 +63,7 @@ mod bounded_kani_corpus;
 mod capability_settlement;
 mod composite_artifact_binding;
 mod composite_equality_agreement;
+mod composite_equality_closure;
 mod composite_equality_generation;
 mod composite_original_eq;
 mod composite_parity_converter;
@@ -139,3 +140,5 @@ mod constrained_method;
 mod native_driver_artifacts;
 
 mod scalar_source_forms;
+mod shadow_kani;
+mod shadow_refinement;
