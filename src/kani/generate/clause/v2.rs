@@ -3419,7 +3419,7 @@ mod state_postcondition_shape_tests {
         record_state_input, state_parameters, state_reads, MachineScalar, ResultParameter,
         ResultPostcondition, StateFieldDomains, StateParameter,
     };
-    use crate::core::ir::clause::{ClauseInput, ClauseInputSide};
+    use crate::core::ir::clause::{ClauseInput, ClauseInputSide, ClauseLeaf};
     use ix_trace_rs::trace;
     use quire_contract_model::CheckedNodeId;
 
