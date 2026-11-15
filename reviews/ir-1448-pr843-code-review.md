@@ -67,6 +67,12 @@ Gate at ce2221e9:
 | FND-007 | low | Dead code in the test module keeps unused imports alive: `let _ = (ObligationDisposition::Unsupported { .. },);` in the AC-15 test, and `#[allow(dead_code)] fn _types(..)`. Drop the unused imports instead. | tests/it/kani_obligations_v2_option.rs:490-492,599-605 |
 | FND-008 | low | The `option_refusal` doc says "an unbounded integer payload keeps its bound refusal". No bound refusal exists on this path. `OptionShape::Unbounded` makes `option_operand` return `None`, which yields `V2ClauseConditionNotRendered`. The comment is stale against the rewritten FR-054-AC-16. This path is reachable: `Option<native Integer>` reaches it (spec-review SR FND-001). | src/kani/generate/clause/v2.rs:1305-1307; src/core/ir/clause.rs:112-114,138 |
 
+## New findings (disposition pass 2)
+
+| ID | Severity | Summary | Refs |
+| --- | --- | --- | --- |
+| FND-009 | low | The new evidence claims a non-Boolean `result = value(amount)` is refused by the FSL checker (`ill_typed`). The fixture is `option_twin`, i.e. `with_bounded_amount_implication_condition`, which declares the `deposit` result `ix://filament/native/Boolean`. The refusal is therefore a plain type mismatch of an integer against a Boolean result. It is not evidence about an option read in a postcondition with a non-Boolean (integer) result. Either build an integer-result fixture and record what it yields, or reword the run doc and test comment to say only that `result = value(amount)` is ill-typed against a Boolean result. | docs/qualification/ir1448-kani-option-clause-runs.md:62-65; tests/it/kani_obligations_v2_option.rs:709-736 |
+
 ## Dispositions
 
 Disposition pass round 1: fix commit 651e88f5 (was ce2221e9). Gate at 651e88f5: fmt, clippy `-D warnings`, `cargo deny check` and `make spec` exit 0; whole `--lib` 604 passed, 0 failed, 36 ignored; whole `--test it` 1131 passed, 0 failed, 120 ignored (the option module alone: 16 passed, 5 ignored). The committed `reviews/` copies of the three SR files cmp-match the review-pass files.
@@ -81,3 +87,12 @@ Disposition pass round 1: fix commit 651e88f5 (was ce2221e9). Gate at 651e88f5: 
 | FND-006 | fixed | The AC-15 test now asserts `sibling.rust.contents == harness_of(&option_twin(GUARDED)).rust.contents`. |
 | FND-007 | fixed | The `let _ = (ObligationDisposition::Unsupported .., );` and `fn _types` are removed, with their imports. |
 | FND-008 | fixed | The `option_refusal` doc now says the unbounded integer payload and option reads outside a Boolean-result postcondition over a parameter are refused later by the generic `V2ClauseConditionNotRendered`. |
+
+Disposition pass round 2: fix commit 50713836 (was 651e88f5). Gate at 50713836: fmt, clippy `-D warnings`, `cargo deny check` and `make spec` exit 0; whole `--lib` 606 passed, 0 failed, 36 ignored (both `option_refusal_tests` ran); whole `--test it` 1133 passed, 0 failed, 120 ignored (option module 18 passed, 5 ignored). The committed `reviews/` copies cmp-match the round-1 files.
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-003 | fixed | - |
+| FND-009 | still-open | New this round: the non-Boolean-result claim rests on a Boolean-result fixture. |
+
+`option_refusal` is now split into `operation_refusal(identity)` and `shape_refusal(shape)`. The split is a pure refactor: the same predicate (`!matches!(identity, OPTION_PRESENT | OPTION_VALUE)`) and the same match arms, in the same order. `option_refusal_tests` (labelled constructed input) asserts `NestedOption` with detail `option` and `OptionOperationNotLowered` with detail `filament.op.option.some`, plus `None` for present, value, `Leaves` and `Unbounded`. AC-11 and AC-13 stay PARTIAL in FR-054 Status, so the tags claim nothing beyond that.

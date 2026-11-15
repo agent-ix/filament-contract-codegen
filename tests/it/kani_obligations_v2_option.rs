@@ -711,9 +711,10 @@ fn tc_068_a_rewritten_option_operation_identity_is_refused_at_package_admission(
 fn tc_068_an_option_read_in_a_precondition_is_refused_generically() {
     // Measured: a precondition reading the option parameter reaches the lowering and is refused by
     // the generic `V2ClauseConditionNotRendered`. An invariant has no operation parameter, so
-    // `present(self.amount)` is refused by the FSL checker (`ill_typed`, type-mismatch) and a
-    // non-Boolean `result = value(amount)` likewise; an option state field fixture is not built
-    // (unowned, planner to assign).
+    // `present(self.amount)` is refused by the FSL checker (`ill_typed`, type-mismatch) and
+    // `result = value(amount)` is ill-typed against the fixture's Boolean result (an
+    // integer-vs-Boolean mismatch only, nothing about an integer result); integer-result and
+    // option state field fixtures are not built (unowned, planner to assign).
     let pre = Twin::with_bounded_amount_implication_condition("present(amount)")
         .with_option_amount()
         .with_clause_head("pre BalanceNeverDrops using v on Bank::Account::deposit");
