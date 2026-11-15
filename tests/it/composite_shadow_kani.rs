@@ -20,6 +20,12 @@ use filament_contract_codegen::{
     KaniCheckClass, KaniCheckStatus, RecordedMember, RecordedPresence,
 };
 
+/// Whether the row `label` is run: every row when `COMPOSITE_KANI_ROW` is unset, so that a
+/// measuring script can run one row to a scope of its own.
+fn selected(label: &str) -> bool {
+    std::env::var("COMPOSITE_KANI_ROW").map_or(true, |row| row == label)
+}
+
 fn scratch(name: &str) -> PathBuf {
     let path = PathBuf::from(env!("CARGO_TARGET_TMPDIR"))
         .join("composite-shadow-kani")
@@ -182,6 +188,9 @@ fn tc_025_installed_kani_verifies_each_supported_corpus_shadow_with_its_cover_sa
         ("option-equal", OPTION_EQUAL),
         ("nested-option-equal", NESTED_OPTION_EQUAL),
     ] {
+        if !selected(label) {
+            continue;
+        }
         let harness = generate(&corpus, index);
         let (evidence, _) = prove(&harness, label);
         assert_eq!(evidence.outcome, KaniRunOutcome::Verified, "{label}");
@@ -254,6 +263,9 @@ fn tc_025_installed_kani_falsifies_each_shadow_mutant_by_the_check_it_claims() {
         ),
     ];
     for (label, index, from, to, claimed) in mutants {
+        if !selected(label) {
+            continue;
+        }
         let mut harness = generate(&corpus, index);
         let line = line_of(&harness, claimed);
         mutate(&mut harness, from, to);
@@ -269,4 +281,47 @@ fn tc_025_installed_kani_falsifies_each_shadow_mutant_by_the_check_it_claims() {
             "{label}: falsified by the {claimed} check only"
         );
     }
+}
+
+/// The array literal `member_order` returns, reversed: a permutation of the order the members
+/// are walked and reported in, which no compared observable reads (FR-028-AC-18).
+fn permute_member_order(harness: &mut KaniShadowHarness) {
+    let permute = |text: &str| -> String {
+        let lines: Vec<&str> = text.split('\n').collect();
+        let at = lines
+            .iter()
+            .position(|line| line.contains("pub fn member_order()"))
+            .expect("the order helper is emitted");
+        let literal = lines[at + 1].trim();
+        let inner = literal
+            .strip_prefix('[')
+            .and_then(|rest| rest.strip_suffix(']'))
+            .expect("the order is an array literal");
+        let mut items: Vec<&str> = inner.split(", ").collect();
+        assert!(items.len() > 1);
+        items.reverse();
+        let mut changed: Vec<String> = lines.iter().map(|line| (*line).to_owned()).collect();
+        changed[at + 1] = format!("        [{}]", items.join(", "));
+        changed.join("\n")
+    };
+    let rust = permute(&harness.rust.contents);
+    assert_ne!(rust, harness.rust.contents);
+    harness.rust.contents = rust;
+    harness.obligation.source.contents = permute(&harness.obligation.source.contents);
+}
+
+/// FR-015-AC-75: a permutation of the member order is not a mutant. It verifies, with its
+/// cover satisfied, exactly as the unmutated shadow does.
+#[trace("TC-025", "FR-015-AC-75")]
+#[test]
+#[ignore = "kani lane: run serially through make kani-gate"]
+fn tc_025_installed_kani_verifies_a_shadow_with_its_member_order_permuted() {
+    if !selected("member-order-permuted") {
+        return;
+    }
+    let corpus = corpus();
+    let mut harness = generate(&corpus, FLAGS_EQUAL);
+    permute_member_order(&mut harness);
+    let (evidence, _) = prove(&harness, "member-order-permuted");
+    assert_eq!(evidence.outcome, KaniRunOutcome::Verified);
 }

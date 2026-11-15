@@ -61,10 +61,16 @@ const SUBJECT_ADAPTER: &str = r#"
         }
 
         pub fn declaration_key(
-            _environment: &Environment,
+            environment: &Environment,
             key: &str,
         ) -> Result<exact::NodeKey, String> {
-            exact::NodeKey::from_hex(key).ok_or_else(|| format!("{key} is not a node key"))
+            environment
+                .prepared
+                .environment
+                .composites()
+                .find(|declaration| declaration.key().to_string() == key)
+                .map(|declaration| declaration.key().clone())
+                .ok_or_else(|| format!("the environment declares no {key}"))
         }
 
         pub fn compare(
@@ -78,7 +84,7 @@ const SUBJECT_ADAPTER: &str = r#"
                     let pairs = meter
                         .admitted_charges()
                         .iter()
-                        .filter(|point| **point == exact::ChargePoint::EqualityPair)
+                        .filter(|charge| charge.point == exact::ChargePoint::EqualityPair)
                         .count() as u64;
                     Outcome::Completed { verdict, pairs }
                 }
@@ -137,7 +143,7 @@ pub(super) fn example(label: &str, corpus: &Corpus, index: usize) -> Example {
     let claim = generated(corpus, index);
     Example {
         label: label.to_owned(),
-        harness: generate(corpus, index),
+        harness: super::composite_shadow::generate_for(corpus, index, "generated::subject"),
         names: format!(
             "pub use self::{{{} as environment_subject, {} as oracle_subject}};\n",
             claim.environment_symbol, claim.oracle_symbol
@@ -166,7 +172,7 @@ pub(super) fn artifacts(
 /// `from` replaced by `to` inside the body of the oracle function of `symbol` only.
 pub(super) fn in_oracle(source: &str, symbol: &str, from: &str, to: &str) -> String {
     let start = source
-        .find(&format!("pub fn oracle_{symbol}("))
+        .find(&format!("pub fn {symbol}("))
         .expect("the oracle function is emitted");
     let end = start + source[start..].find("\n}\n").expect("the function ends");
     let body = &source[start..end];
@@ -334,7 +340,14 @@ fn mutant_absent_is_null(left: &exact::Value, right: &exact::Value) -> bool {
         (exact::Value::Composite(a), exact::Value::Composite(b)) => {
             a.slots().len() == b.slots().len()
                 && a.slots().iter().zip(b.slots()).all(|pair| match pair {
-                    (exact::FieldValue::Present(x), exact::FieldValue::Present(y)) => x == y,
+                    (
+                        exact::FieldValue::Present(exact::Value::Boolean(x)),
+                        exact::FieldValue::Present(exact::Value::Boolean(y)),
+                    ) => x == y,
+                    (
+                        exact::FieldValue::Present(exact::Value::Integer(x)),
+                        exact::FieldValue::Present(exact::Value::Integer(y)),
+                    ) => x == y,
                     (exact::FieldValue::Present(_), _) | (_, exact::FieldValue::Present(_)) => false,
                     _ => true,
                 })

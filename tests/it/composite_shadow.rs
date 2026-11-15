@@ -94,8 +94,14 @@ pub(super) fn item_of<'a>(
 }
 
 pub(super) fn generate(corpus: &Corpus, index: usize) -> KaniShadowHarness {
+    generate_for(corpus, index, "subject")
+}
+
+/// The harness of the `index`th corpus item whose obligation names `subject` as its production
+/// subject.
+pub(super) fn generate_for(corpus: &Corpus, index: usize, subject: &str) -> KaniShadowHarness {
     let entry = entry(corpus, index);
-    generate_composite_shadow(&item_of(&entry, "subject")).expect("the corpus item generates")
+    generate_composite_shadow(&item_of(&entry, subject)).expect("the corpus item generates")
 }
 
 #[trace("TC-025", "FR-015-AC-69")]
