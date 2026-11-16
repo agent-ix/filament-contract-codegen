@@ -63,3 +63,9 @@ Round 1, checked at 1c768610 (`git diff 9e98185c..1c768610 -- spec docs src`). `
 | FND-002 | fixed | The FR-053 matrix row is now headed `🚧 PARTIAL (IR-260)` and states what is delivered and what stays PARTIAL. |
 | FND-003 | fixed | The FR-056 matrix row is now `🚧 PARTIAL (IR-1526, IR-1530, IR-260)`, covers AC-1..AC-15, says the decider, table and corpus exist, and its AC list matches FR-056 Status. |
 | FND-004 | fixed | FR-057 Status, AC-7 disposition, matrix row and IR-854 doc now say IR-1541 is Done and its plan is in the locked kernel, and name CG's `select_native_integer` returning `NativeDivisionPlanUnavailable` as what keeps AC-7 PARTIAL. The stale comment at `src/kani/generate/scalar.rs:588` was also fixed. The owner text is FND-005. |
+
+Round 2, checked at ec373dc1 (`git diff 1c768610..ec373dc1 -- spec docs`). `make spec` exit 0.
+
+| FND | outcome | reason |
+|---|---|---|
+| FND-005 | fixed | "owner: planner to assign" is replaced with "owner: IR-854 (next PR)" in FR-057 Status (349), AC-9 (377), AC-12 (388), the Not-delivered heading (390), the AC-7 disposition (432-434), the FR-057 matrix row (head and AC-8 tail) and the IR-854 doc (100), which also states the planner's scope for that PR. `grep 'planner to assign'` finds no FR-057 or IR-854 hit; the remaining hits are the FR-054, FR-015 and FR-028 matrix rows, all outside this PR. |
