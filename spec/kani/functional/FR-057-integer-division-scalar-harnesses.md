@@ -412,6 +412,23 @@ Not delivered (PARTIAL, owner IR-1541):
   16 bits (truncating quotient and remainder) and constant divisors at 64 bits, because
   the table keys on operation id and width alone. That over-refusal is a known
   limitation until a profile or divisor-shape feature exists.
+  AC-7 disposition (IR-854, planner's rule: an executed native verdict, or a recorded measured
+  not-tractable row; input `evidence/proofs-2/NOTES.md`, 2026-11-14). Every native shape of the
+  kernel's record has one or the other and nothing else is claimed. Executed native verdicts: the
+  constant-divisor and symbolic-divisor shapes the record lists as VERIFIED, among them the
+  symbolic 8-bit width for `div`, `rem` and `mod` under every profile and member (the table's
+  `tractable` rows). Measured not-tractable: the 20 timeout rows, which proofs-2 analysed
+  and found all to be one solver query that never returns (a divider against an independent
+  multiply, about a million variables, under 2.3 GiB), independent of width and of a constant
+  divisor; the recorded rows are right and no rerun changes them. They are Verus-class (the
+  full-width statement `a - q*b` in the law's window); the 16-bit rows stay as measured. The
+  lemma split proofs-2 probed (five harnesses over all `i128` relating the law adjustment to a
+  truncating pair, each verified in under 15 s) is a scratch probe of an unlanded refactor; it is
+  not a CG or kernel row and nothing is claimed from it. What keeps AC-7 PARTIAL is its own text:
+  it asks for CG's generated harnesses to classify `Verified` on the native route, and CG
+  generates none (`NativeDivisionPlanUnavailable`, AC-6), so the verdicts above are the
+  kernel's, not CG's. Owner of that residual: IR-1541 for the plan, the deductive lane for the
+  timeout shapes.
 - AC-8's installed-Kani mutant falsification and its playback replay. No
   general-route shape is tractable, and the one mutant tried on the general route
   (completing at a zero divisor, over a 5-bit explicit-result fixture) also

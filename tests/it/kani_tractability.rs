@@ -1080,7 +1080,79 @@ fn tc_070_the_embedded_general_route_table_is_the_docs_file() {
         TractabilityTable::load(&Path::new(env!("CARGO_MANIFEST_DIR")).join(GENERAL_SCALAR_TABLE))
             .expect("the docs file loads");
     assert_eq!(general_scalar_table(), from_file);
-    assert_eq!(from_file.rows().len(), 16);
+    assert_eq!(from_file.rows().len(), 74);
+}
+
+/// FR-056-AC-15 (IR-260, IR-258, IR-854): the native-route float and rational rows copied from the
+/// kernel's TC-953 and TC-956 records. Every row is on the native route and names its record and
+/// harness; the counts are those of the records (44 float rows, 32 of them VERIFIED and 12 timeouts;
+/// 14 rational rows, 8 VERIFIED in the CG domain and 6 timeouts over the full `i64` domain), and each
+/// `not_tractable` row names the owner of the deductive lane.
+#[trace("TC-070", "FR-056-AC-15")]
+#[test]
+fn tc_070_the_shipped_table_holds_the_kernel_native_float_and_rational_rows() {
+    use filament_contract_codegen::{IntegerRoute, RowVerdict};
+    let table = general_scalar_table();
+    let native = |prefix: &str| {
+        table
+            .rows()
+            .iter()
+            .filter(|row| {
+                row.route == IntegerRoute::Native
+                    && row.operation_ids.iter().all(|id| id.starts_with(prefix))
+            })
+            .collect::<Vec<_>>()
+    };
+    let float = native("filament.op.ieee.");
+    let rational = native("filament.op.rational.")
+        .into_iter()
+        .chain(native("filament.native.rational."))
+        .collect::<Vec<_>>();
+    assert_eq!(float.len(), 44);
+    assert_eq!(rational.len(), 14);
+    let verdicts = |rows: &[&filament_contract_codegen::TractabilityRow]| {
+        let tractable = rows
+            .iter()
+            .filter(|row| row.verdict == RowVerdict::Tractable)
+            .count();
+        (tractable, rows.len() - tractable)
+    };
+    assert_eq!(verdicts(&float), (32, 12));
+    assert_eq!(verdicts(&rational), (8, 6));
+    for row in float.iter().chain(&rational) {
+        let provenance = row.provenance.as_deref().expect("a native row names its record");
+        assert!(
+            provenance.contains("85034c5c")
+                && (provenance.contains("TC-953") || provenance.contains("TC-956"))
+                && provenance.contains("harness "),
+            "{row:?}"
+        );
+        if row.verdict == RowVerdict::NotTractable {
+            let owner = if row.operation_ids[0].contains("ieee") {
+                "IR-1551"
+            } else {
+                "IR-1544"
+            };
+            assert!(
+                provenance.contains(owner) && provenance.contains("claims no proof"),
+                "{row:?}"
+            );
+        }
+    }
+    // The float timeouts: seven at the 600 s probe, five at the 1800 s cap.
+    let seconds = |limit: u64| {
+        float
+            .iter()
+            .filter(|row| {
+                row.verdict == RowVerdict::NotTractable && row.wall_seconds.millis() == limit
+            })
+            .count()
+    };
+    assert_eq!((seconds(600_000), seconds(1_800_000)), (7, 5));
+    assert!(rational
+        .iter()
+        .filter(|row| row.verdict == RowVerdict::NotTractable)
+        .all(|row| row.wall_seconds.millis() == 900_000 && row.max_operand_bits == 64));
 }
 
 /// A request whose launcher and crate do not exist: any attempt to run it would be a different

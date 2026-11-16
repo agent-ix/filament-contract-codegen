@@ -52,6 +52,29 @@ historical `general_route` spelling; no rename is planned. Native-route rows mea
 `div`, `rem` and `mod`, the kernel's rows (IR-1541) are in the table: a `tractable` row at 8 bits and
 a `not_tractable` row at 16 bits per operation (FR-057).
 
+The kernel's native float and rational rows (filament-exact #172, merged as 85034c5c; FR-405 and
+TC-953, FR-408 and TC-956) are in the table too, one row per harness of the records with `route`
+`native`, so the table holds 74 rows: 16 general-route and integer rows, 44 float rows and 14
+rational rows. A float row is one operation, width and rounding class (`NearestEven`, `Exact`, or
+directed and nearest-away together), its `max_operand_bits` the float width (32 or 64); the class and
+the kernel harness id are in its `provenance`, which the decider never reads. Of the 44, 32 are
+`tractable` (VERIFIED, covers reached) and 12 are `not_tractable` solver hangs (seven at the 600 s
+probe, not extended; five at the 1800 s cap after a 600 s probe that timed out), each with no
+verdict and no proof claimed, owner IR-1551 (named in `provenance`, since a row has no owner field).
+A rational row is one CG-domain operation (`max_operand_bits` 8, magnitudes below 256: 8
+`tractable`) or one full-`i64` operation (`max_operand_bits` 64: from-parts admission, equality,
+ordering, add, subtract and multiply, six `not_tractable` rows at 900 s, no verdict, owner IR-1544).
+The from-parts row's id `filament.native.rational.from_i64_parts` names the subject of the harness
+and is not a catalog operation. The tier lemma harnesses and the charge-denial harnesses of TC-956
+are not operations and have no row; their record stays in TC-956. The rows keep the kernel's
+numbers (wall seconds of the whole `cargo kani` invocation, or the limit; `memory.peak` bytes) and
+carry CG's current generator and kernel versions so they are current. Like the five general-route
+float rows, they are a record: the decider matches on operation id and width, and a float clause
+carries no integer operand width, so no float row selects a clause. Rows of one operation and width
+that differ only in rounding class share a key, so a `not_tractable` row would also refuse a verified
+class of the same operation and width if a width were ever supplied; the table has no rounding feature
+(the same limitation as the division rows).
+
 The generation-time decider runs AFTER the operator check of FR-015-AC-42: it sees only operations the V2 clause
 path accepts today (connectives, the six integer comparisons, integer add, subtract, multiply and
 negate). An operation refused earlier as `V2ClauseOperatorNotSupported` never reaches it. A row for
@@ -169,6 +192,10 @@ harnesses come from `negotiate_kani_native_obligations`; see
 run-level refusal of the general-route scalar harness, `src/kani/terminal/tractable.rs`) is
 implemented and host-tested. The host test `tc_070_the_ac13_multiply_fixtures_split_on_the_row_bound`
 negotiates on both routes: the general-route row refuses the general clause and not the native one.
+FR-056-AC-15 also covers the shipped native float and rational rows (IR-260, IR-258, IR-854): the table
+loads 74 rows, and `tc_070_the_shipped_table_holds_the_kernel_native_float_and_rational_rows` checks
+the counts, the verdicts, the limits and that every row names its record, its harness and (for
+`not_tractable`) its owner. The rows are copied, not re-measured; no Kani run is part of this change.
 FR-056-AC-1 to AC-9 and AC-11 to AC-12 are implemented and test-backed on the host
 (`tests/it/kani_tractability.rs`; corpus and baseline in `tests/fixtures/tractability/`).
 FR-056-AC-10 is partial: the shipped corpus holds twenty-six measured rows. Ten are `verified` or

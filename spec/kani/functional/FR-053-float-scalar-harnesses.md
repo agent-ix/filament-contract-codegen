@@ -479,6 +479,18 @@ Delivered for the comparisons, tagged and passing (`tests/it/float_scalar_harnes
   and a mutant that makes it call the native comparison, the decode or the carrier fails the
   inspection.
 
+Measured native record (IR-260, IR-1446): filament-exact #172 (85034c5c) records, per operation, width
+and rounding class, 32 VERIFIED harnesses and 12 solver-hang timeout rows (owner IR-1551), and CG's
+shipped table holds them as native-route rows (FR-056; they are a record, not a mechanism: the
+decider does not select a float clause). They do not change the dispositions below, and this change implements none of them. The
+revisit condition below is now met for Add and Subtract at both widths and Multiply at Binary32,
+whose every spelling group is VERIFIED in the record; revisiting the refusal ruling for them, and
+with it CG's own AC-13 differential over the native arithmetic, is open work for IR-260 and needs the
+dependency lock moved to a revision that has the arithmetic natives, which a docs and table change
+does not do. The kernel's own host differential against the owner (TC-953 steps 1 to 4, 50 host
+mutants) runs in filament-exact. AC-13's arithmetic half therefore stays undelivered in CG
+(PARTIAL), and no arithmetic criterion is claimed delivered.
+
 Dispositioned by the refusal ruling, with no arithmetic harness to test: the arithmetic halves of
 AC-4, AC-5, AC-7, AC-9, AC-10, AC-13 and AC-14, the arithmetic requires-bound half of AC-3, and the
 `exact` and directed spelling rows of every arithmetic operation. They are revisited only if

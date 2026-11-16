@@ -79,3 +79,41 @@ harness, and the bracketing of the quotient in exact integers that filament-exac
 is solver-bound (no `div` verdict at either width). The finding is recorded in this document, in
 the `div` row of the tractability table and in the refusal detail of
 `float.div.not_kani_tractable`.
+
+## Native-route float and rational rows (IR-260, IR-258)
+
+The shipped scalar table (`ir1530-general-route-scalar-table.json`, FR-056) holds the kernel's measured
+record as native-route rows. They are copied from filament-exact #172 (merged as 85034c5c): FR-405 and
+the TC-953 evidence record for float, FR-408 and the TC-956 evidence record for rational. They are the
+kernel's own harnesses, not CG-generated ones, and CG did not re-measure them. `wall_seconds` is the
+wall time of the whole `cargo kani` invocation (Kani's own verification time is in each row's
+`provenance`), or the limit a run was killed at; `peak_bytes` is the scope's `memory.peak`.
+
+Float, 44 rows (one per operation, width and rounding class of TC-953): 32 are VERIFIED with their
+covers reached. 12 are timeouts that hang in the solver and return no verdict, so nothing is claimed
+for them. They are measured not-tractable rows owned by IR-1551 and wait on the deductive lane. Seven are at the
+600 s probe, not extended: Divide, SquareRoot and FusedMultiplyAdd `NearestEven` at Binary32; Multiply,
+Divide, SquareRoot and FusedMultiplyAdd `NearestEven` at Binary64. Five are at the 1800 s cap after a
+600 s probe that also timed out: Divide `Exact` at both widths, Divide directed at Binary64,
+SquareRoot `Exact` at Binary64 and FusedMultiplyAdd `Exact` at Binary64. The all-VERIFIED combinations
+(every spelling group) are Negate, the three comparisons, Add and Subtract at both widths and Multiply
+at Binary32. The rounding class is not a key of the table, so the rows of one operation and width share
+a key and are told apart by their `provenance` (harness id).
+
+Fused multiply-add. CBMC's `fma` model has two faults of its own (an infinite addend and a zero product),
+so the fused harnesses decide those two regions by IEEE rule and use the model elsewhere. The faults
+are recorded in TC-953 with their reproductions; no row records a kernel failure.
+
+Rational, 14 rows (TC-956): eight CG-domain rows are VERIFIED (equality, ordering, multiply, add,
+subtract, subtract with carriers from `from_i64_parts`, and the two composed add-commutativity forms),
+with `max_operand_bits` 8 because the formed magnitudes are below 256. Six full-`i64` rows are TIMED OUT at
+900 s with no verdict: admission from `i64` parts, equality, ordering, add, subtract and multiply
+(`max_operand_bits` 64). They are number theory (two gcd algorithms against each other, a coprimality
+fact) or a 128-bit product against a reference product, owned by IR-1544, and add, subtract and
+multiply sit at 14.3 to 14.5 GiB, below the 16 GiB ceiling. The tier-lemma and charge-denial harnesses
+of TC-956 are not operations and have no row; their record is TC-956. The admission row's id
+`filament.native.rational.from_i64_parts` names the harness subject and is not a catalog operation.
+
+IR-258 AC-11 names the full-`i64` admission (a) and the CG-domain operations (b) and the composed
+predicate (c). (b) and (c) are executed VERIFIED rows above; (a) is a measured not-tractable row, so
+AC-11 cannot be fully executed in Kani, and whether it closes on that is the planner's ruling.

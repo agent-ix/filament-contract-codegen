@@ -1663,7 +1663,7 @@ fn the_identity_records_the_operation_bindings_options_and_dependency_cohort() {
     );
 }
 
-/// The five float arithmetic rows of the shipped tractability table are a record the decider does
+/// The five general-route float arithmetic rows of the shipped tractability table are a record the decider does
 /// not select (a float clause has no integer operand width), they carry no tool versions, and
 /// each carries the peak measured for the row's non-Verified harnesses.
 #[trace("TC-067", "FR-053-AC-6")]
@@ -1679,9 +1679,10 @@ fn the_shipped_float_rows_are_a_version_free_record_with_measured_peaks() {
         .expect("rows")
         .iter()
         .filter(|row| {
-            row["operation_ids"][0]
-                .as_str()
-                .is_some_and(|id| id.starts_with("filament.op.ieee."))
+            row["route"] == "general"
+                && row["operation_ids"][0]
+                    .as_str()
+                    .is_some_and(|id| id.starts_with("filament.op.ieee."))
         })
         .collect::<Vec<_>>();
     assert_eq!(float_rows.len(), 5);

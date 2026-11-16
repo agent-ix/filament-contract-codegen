@@ -73,6 +73,12 @@ installed Kani through CG's runner. This case is planned. Every mutant fails at 
     at 3 bits run (the sub row starts at 4 bits), and native-route features at the same widths run
     (FR-056-AC-15).
 
+15. Load the shipped table and assert it holds 74 rows, of which the native-route float rows are 44
+    (32 `tractable`, 12 `not_tractable`: seven at 600 s and five at 1800 s) and the native-route
+    rational rows 14 (8 `tractable` at 8 bits, 6 `not_tractable` at 64 bits and 900 s); assert each
+    row names the filament-exact record, the harness and, when `not_tractable`, its owner (IR-1551 for
+    float, IR-1544 for rational) (FR-056-AC-15).
+
 ## Expected Results
 
 Steps 1 to 12 (including 7a) and 14 pass on the host with no Kani. Step 13 records one executed verdict and one
@@ -81,4 +87,4 @@ unchanged.
 
 ## Status
 
-Steps 1 to 9, 11 and 12 are implemented and tagged (IR-1526) and the route additions (steps 2 to 4, 7a and 10) are implemented (IR-1530); step 14 is implemented and tagged (IR-1530); step 10 is partial (see FR-056 Status). Step 13 is coded as a kani-lane test and was executed under installed Kani 0.68.0 (Verified, 235.5 s); the multiply refusal half runs as a host test until an installed-Kani run covers it.
+Steps 1 to 9, 11 and 12 are implemented and tagged (IR-1526) and the route additions (steps 2 to 4, 7a and 10) are implemented (IR-1530); step 14 is implemented and tagged (IR-1530); step 15 is implemented and tagged (IR-260, IR-258, IR-854); step 10 is partial (see FR-056 Status). Step 13 is coded as a kani-lane test and was executed under installed Kani 0.68.0 (Verified, 235.5 s); the multiply refusal half runs as a host test until an installed-Kani run covers it.

@@ -77,3 +77,23 @@ bits also did not finish, so no shape was measured `Verified` at any width and t
 constant/symbolic split: no `divisor_constant` extension is added and no row refuses a shape
 measured `Verified`. Each row applies to every law of its operation; the 4-bit symbolic shape was measured under each
 law.
+
+## Native-route disposition of FR-057-AC-7 (IR-854)
+
+Rule (planner): each native shape ends as an executed native verdict, or as a recorded measured
+not-tractable row. Input: the proofs-2 analysis of the kernel's record (filament-exact TC-957, #171).
+
+- Executed native verdicts: the shapes the kernel's record lists as VERIFIED, including the symbolic
+  8-bit width for `div`, `rem` and `mod` under every profile and member. They are the `tractable`
+  native rows already in the shipped table.
+- Measured not-tractable: the 20 timeout rows. proofs-2 found each is one solver query that never
+  returns (a divider against an independent multiply, about a million variables, under 2.3 GiB),
+  independent of width and of a constant divisor; the recorded rows are right and a rerun changes
+  nothing. They are the `not_tractable` native rows at 16 bits.
+- Not a row: proofs-2 probed a split of the division plan at the truncating pair (five harnesses over
+  all `i128`, each verified in under 15 s). It is an unlanded scratch refactor with no committed
+  harness, so no row and no claim.
+
+These verdicts belong to the kernel's harnesses. FR-057-AC-7 asks for CG's generated harnesses to
+classify `Verified` on the native route, and the native route still refuses division
+(`NativeDivisionPlanUnavailable`), so AC-7 stays PARTIAL.
