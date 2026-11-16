@@ -424,8 +424,10 @@ retain the partial/planned statuses below; falsified native/generated-family wor
 AC-25 and AC-30 conflict as stated. AC-25 maps a `bounded_shadow` inconclusive or cover-unsatisfied
 outcome (no retained disagreement) through the ordinary rows, for example vacuous proof to
 Proved0. AC-30 sends every `bounded_shadow` outcome only to the composite parity route and never to
-`run_terminal_value`, and FSL's `settle_verified_shadow` accepts only a verified shadow. No
-function therefore maps a non-verified shadow outcome to a terminal value. Which does: a
+`run_terminal_value`. A falsified shadow outcome has a route: FSL's `replay_composite_parity`
+takes a `FalsifiedParity` and AC-20 and AC-24 state its rows. A verified one has
+`settle_verified_shadow`. The gap is only the inconclusive and cover-unsatisfied outcomes AC-25
+names: no function maps them to a terminal value. Which does: a
 shadow-aware entry in CG that reuses the ordinary rows, or a different FSL route? The owning ticket
 is IR-806 PR-3, which owns the production parity invocation; this requirement states no answer.
 AC-25 stays PLANNED until it is decided.
