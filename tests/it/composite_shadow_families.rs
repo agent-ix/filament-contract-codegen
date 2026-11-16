@@ -72,12 +72,9 @@ fn tc_025_a_sequence_a_set_a_bag_an_ordered_set_and_a_quantity_settle_each_with_
     }
     // FR-018 does not yet read the bound of a set, a bag or an ordered set, and its refusal is
     // what settles those items.
-    for position in 1..=3 {
-        let ClaimDisposition::Refused { refusal: oracle } = &entries[position].result else {
-            panic!(
-                "FR-018 refuses item {position}: {:?}",
-                entries[position].result
-            );
+    for (position, entry) in entries.iter().enumerate().take(4).skip(1) {
+        let ClaimDisposition::Refused { refusal: oracle } = &entry.result else {
+            panic!("FR-018 refuses item {position}: {:?}", entry.result);
         };
         assert!(
             matches!(
@@ -90,7 +87,7 @@ fn tc_025_a_sequence_a_set_a_bag_an_ordered_set_and_a_quantity_settle_each_with_
             "{oracle:?}"
         );
         assert_eq!(
-            refusal(&entries[position]),
+            refusal(entry),
             CompositeShadowRefusal::Oracle {
                 refusal: oracle.clone()
             }
