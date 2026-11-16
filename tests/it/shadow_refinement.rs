@@ -629,9 +629,15 @@ fn tc_039_a_refinement_at_a_ceiling_or_ended_by_a_signal_is_inconclusive_with_it
     assert_eq!(stopped.memory.source.as_deref(), Some("test_peak_source"));
     assert_eq!(stopped.memory.peak_resident_bytes, Some(2 * 1024 * 1024));
 
+    // The aborting subject ends itself at once, so its wall ceiling is one it cannot reach even
+    // when a loaded machine delays the process start; the 2 s ceiling belongs to the slow case.
+    let mut patient = item();
+    patient.ceilings = ceilings(600);
+    let patient = generate_shadow(&patient).unwrap();
     let killed = subject(BUILD_OK, "std::process::abort()");
-    let ended = refine_with("signal", &harness, &killed, budget(1000), &installation).unwrap();
+    let ended = refine_with("signal", &patient, &killed, budget(1000), &installation).unwrap();
     assert_eq!(ended.outcome, RefinementOutcome::EndedBySignal);
+    assert_eq!(ended.ceilings, ceilings(600));
     assert_eq!(ended.ceilings.memory_bytes, ceilings(2).memory_bytes);
     assert_eq!(
         proof_strength(
@@ -645,7 +651,7 @@ fn tc_039_a_refinement_at_a_ceiling_or_ended_by_a_signal_is_inconclusive_with_it
     // A program that exits unsuccessfully on its own is a refusal, not an outcome.
     let panicking = subject(BUILD_OK, "panic!(\"stand-in failure\")");
     assert!(matches!(
-        refine_with("panic", &harness, &panicking, budget(1000), &installation),
+        refine_with("panic", &patient, &panicking, budget(1000), &installation),
         Err(KaniRefinementRefusal::ProcessFailed {
             exit_code: Some(101)
         })
@@ -653,7 +659,7 @@ fn tc_039_a_refinement_at_a_ceiling_or_ended_by_a_signal_is_inconclusive_with_it
     // The agreeing run records the peak beside its class and count.
     let agreed = refine_with(
         "peak",
-        &harness,
+        &patient,
         &subject(BUILD_OK, COMPARE_OK),
         budget(1000),
         &installation,

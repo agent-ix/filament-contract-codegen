@@ -58,6 +58,7 @@ pub(crate) fn synthetic_evidence(
         diagnostics: None,
         failure_cause: None,
         proof_phase: None,
+        shadow_size: None,
     }
 }
 

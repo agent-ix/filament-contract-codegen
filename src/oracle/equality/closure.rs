@@ -4,7 +4,7 @@
 
 use super::admitted::CompositeBinding;
 use filament_contract_model::CheckedNodeId;
-use filament_exact::{NodeKey, Presence, ValueType};
+use filament_exact::{CollectionKind, NodeKey, Presence, ValueType};
 use filament_semantic_value::declaration::{CompositeDeclaration, CompositeShape};
 use serde::Serialize;
 use std::collections::BTreeMap;
@@ -120,7 +120,18 @@ pub(super) fn recorded_type(value: &ValueType) -> RecordedType {
         ValueType::Float(_) => RecordedType::Other { name: "float" },
         ValueType::Text(_) => RecordedType::Other { name: "text" },
         ValueType::Enum(_) => RecordedType::Other { name: "enum" },
-        ValueType::Collection(_) => RecordedType::Other { name: "collection" },
+        ValueType::Collection(collection) => RecordedType::Other {
+            name: match collection.kind() {
+                CollectionKind::Sequence => "sequence",
+                CollectionKind::Set => "set",
+                CollectionKind::Bag => "bag",
+                CollectionKind::OrderedSet => "ordered_set",
+            },
+        },
+        ValueType::Quantity(_) | ValueType::CarriedQuantity(_) | ValueType::BoundedQuantity(_) => {
+            RecordedType::Other { name: "quantity" }
+        }
+        ValueType::Reference(_) => RecordedType::Other { name: "reference" },
         _ => RecordedType::Other { name: "other" },
     }
 }
@@ -187,4 +198,36 @@ pub(super) fn recorded_declarations(
         .collect::<Option<Vec<_>>>()?;
     declarations.sort_by(|left, right| left.node_id.cmp(&right.node_id));
     Some(declarations)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use filament_exact::{CardinalityBound, CollectionType};
+    use ix_trace_rs::trace;
+
+    /// Every collection kind is recorded under its own family name, so the shadow's
+    /// unsupported-shape rows name the kind (FR-015-AC-73).
+    #[trace("FR-018-AC-21", "TC-029")]
+    #[test]
+    fn tc_029_a_collection_is_recorded_under_the_name_of_its_kind() {
+        let name = |kind| {
+            let bound = CardinalityBound::new(0, 2).unwrap();
+            let collection = CollectionType::new(kind, ValueType::Boolean, Some(bound));
+            match recorded_type(&ValueType::collection(collection)) {
+                RecordedType::Other { name } => name,
+                other => panic!("{other:?}"),
+            }
+        };
+        assert_eq!(
+            [
+                CollectionKind::Sequence,
+                CollectionKind::Set,
+                CollectionKind::Bag,
+                CollectionKind::OrderedSet
+            ]
+            .map(name),
+            ["sequence", "set", "bag", "ordered_set"]
+        );
+    }
 }

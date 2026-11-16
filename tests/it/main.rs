@@ -69,6 +69,7 @@ mod composite_original_eq;
 mod composite_parity_converter;
 mod composite_record_residuals;
 mod composite_shadow;
+mod composite_shadow_families;
 mod composite_shadow_kani;
 mod composite_shadow_native;
 mod cover_last;

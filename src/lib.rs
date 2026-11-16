@@ -208,8 +208,9 @@ pub use kani::generate::float_scalar::{
     FloatScalarRefusal, FloatScalarRequest,
 };
 pub use kani::generate::shadow::composite::{
-    generate_composite_shadow, generate_composite_shadow_with_budget, CompositeShadowItem,
-    CompositeShadowRefusal, ShadowOperand, COMPOSITE_FAMILY, UNEXERCISED_COVERAGE,
+    generate_composite_shadow, generate_composite_shadow_with_budget, generate_composite_shadows,
+    CompositeShadowItem, CompositeShadowRefusal, ShadowOperand, COMPOSITE_FAMILY,
+    UNEXERCISED_COVERAGE,
 };
 pub use kani::generate::shadow::source_check::{
     check_shadow_source, check_straight_line, contains_loop, DrawnBound, ShadowSourceViolation,
@@ -226,7 +227,7 @@ pub use kani::identity::refinement::{
 pub use kani::identity::shadow::{
     AbstractionEvidence, AbstractionRecord, BackingState, CompositeIdentity, HelperMark,
     KaniShadowHarness, LeafKind, LeafRecord, PinnedLeaf, ProductionRead, RefinementObligation,
-    ShadowIdentity, SharedHelperClaim, UnexercisedCoverage,
+    ShadowIdentity, ShadowSizeRecord, SharedHelperClaim, UnexercisedCoverage,
 };
 pub use kani::identity::{DivisionScalarIdentity, EnumScalarIdentity, FloatScalarIdentity};
 pub use kani::output::diagnostics::{
