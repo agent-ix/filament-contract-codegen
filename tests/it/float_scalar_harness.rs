@@ -1316,6 +1316,14 @@ fn owner_compare(comparison: filament_exact::IeeeComparison, wide: bool, a: u64,
 type ArithmeticView =
     Result<(u64, filament_exact::IeeeFlags, filament_exact::RoundingMode), String>;
 
+type NativeArithmetic = dyn Fn(
+    Arithmetic,
+    filament_exact::IeeeWidth,
+    (u64, u64),
+    filament_exact::RoundingMode,
+    &mut filament_exact::Meter,
+) -> ArithmeticView;
+
 #[derive(Clone, Copy, Debug)]
 enum Arithmetic {
     Add,
@@ -1379,13 +1387,7 @@ fn owner_arithmetic(
 fn first_arithmetic_disagreement(
     operation: Arithmetic,
     wide: bool,
-    native: &dyn Fn(
-        Arithmetic,
-        filament_exact::IeeeWidth,
-        (u64, u64),
-        filament_exact::RoundingMode,
-        &mut filament_exact::Meter,
-    ) -> ArithmeticView,
+    native: &NativeArithmetic,
 ) -> Option<String> {
     use filament_exact::{IeeeWidth, LimitKind, Meter, RoundingMode};
     let width = if wide {
