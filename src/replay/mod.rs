@@ -10,6 +10,9 @@ pub(crate) mod composite;
 pub(crate) mod composite_artifact;
 // Original checked-package Eq construction and public verified-shadow invocation.
 pub(crate) mod composite_builder;
+// Playback decode and operand rebuild through a composite shadow identity's leaf bindings.
+// Implements: FR-025-AC-9, FR-033-AC-2, FR-033-AC-3, FR-033-AC-4, FR-033-AC-5
+pub(crate) mod composite_leaves;
 // Native replay of a frame counterexample.
 // Implements: FR-015-AC-33
 pub(crate) mod frame;

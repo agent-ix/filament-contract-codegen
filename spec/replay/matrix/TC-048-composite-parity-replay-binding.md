@@ -59,7 +59,7 @@ and never replace positive FSL evaluation with a verdict double.
    `CompositeBuildError::Operands` with no report. The non-integer case (AC-17) is tested with an inline `none` literal of an Option type that IR's reader admits, against a graph-`none` control whose refusal is a different cause; the integer case (AC-16) is verified by Inspection of the shared `Operands` conversion. Record public builder inputs and the FSL request; change source, package, selected node,
    operation and operand declaration individually and require refusal. No hand-built source/package
    replacement or enclosing Boolean function satisfies selection.
-2. Assert FR-025 AC-9's persisted bindings against actual draw order and reconstruct the selected
+2. (Executed for the shadow's families, IR-806 PR-2.) Assert FR-025 AC-9's persisted bindings against actual draw order and reconstruct the selected
    backend playback through them. Swap or remove a leaf, repeat a draw, change a typed path or
    domain, alter primitive width and select another harness. Check that each refuses rather than
    silently binding a different operand, without retained Disagreed. A mismatched persisted
@@ -84,7 +84,10 @@ and never replace positive FSL evaluation with a verdict double.
    byte guard before parsing/unescaping. Exhaust checked occurrence and work counters separately.
    Exercise a legal 100,000-link recursive value on a 512 KiB native stack through decode, clone,
    equality, redacted Debug and drop; a one-byte-too-small budget refuses and no depth cap is
-   invented. FR-017 launcher capture alone cannot establish the public guard.
+   invented. FR-017 launcher capture alone cannot establish the public guard. Executed (IR-806
+   PR-2): the byte and value limits of the playback reader and decoder at and one over the limit,
+   and the 100,000-link nested value on a 512 KiB stack through FSL's value type; the recursive
+   declaration and FSL's replay-limit budgets await the production route.
 5. In the named real-Kani lane for each lawful generated family, retain an unmutated verified
    control and actual falsification playback from independent equality-result and pair-count
    mutations, plus an assertion-only mutation leaving the comparison correct. Execute that same

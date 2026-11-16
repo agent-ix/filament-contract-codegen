@@ -208,8 +208,9 @@ pub use kani::generate::float_scalar::{
     FloatScalarRefusal, FloatScalarRequest,
 };
 pub use kani::generate::shadow::composite::{
-    generate_composite_shadow, generate_composite_shadow_with_budget, CompositeShadowItem,
-    CompositeShadowRefusal, ShadowOperand, COMPOSITE_FAMILY, UNEXERCISED_COVERAGE,
+    check_leaf_call_order, generate_composite_shadow, generate_composite_shadow_with_budget,
+    CompositeShadowItem, CompositeShadowRefusal, ShadowOperand, COMPOSITE_FAMILY,
+    UNEXERCISED_COVERAGE,
 };
 pub use kani::generate::shadow::source_check::{
     check_shadow_source, check_straight_line, contains_loop, DrawnBound, ShadowSourceViolation,
@@ -218,6 +219,7 @@ pub use kani::generate::shadow::{
     generate_shadow, generate_shadows, independent_helper_check, AbstractionClaim,
     ShadowDisposition, ShadowItem, ShadowLeaf, ShadowRefusal, ShadowShape, SHADOW_PAIR_NODE_BUDGET,
 };
+pub use kani::identity::leaf_binding::{check_leaf_bindings, LeafBindingRefusal};
 pub use kani::identity::refinement::{
     plan_refinement, CaseCount, DomainBound, ProofSubject, RefinementBudget, RefinementClass,
     RefinementDisagreement, RefinementOutcome, RefinementPlan, RefinementPlanError,
@@ -225,8 +227,8 @@ pub use kani::identity::refinement::{
 };
 pub use kani::identity::shadow::{
     AbstractionEvidence, AbstractionRecord, BackingState, CompositeIdentity, HelperMark,
-    KaniShadowHarness, LeafKind, LeafRecord, PinnedLeaf, ProductionRead, RefinementObligation,
-    ShadowIdentity, ShadowSizeRecord, SharedHelperClaim, UnexercisedCoverage,
+    KaniShadowHarness, LeafKind, LeafRecord, OperandSource, PinnedLeaf, ProductionRead,
+    RefinementObligation, ShadowIdentity, ShadowSizeRecord, SharedHelperClaim, UnexercisedCoverage,
 };
 pub use kani::identity::{DivisionScalarIdentity, EnumScalarIdentity, FloatScalarIdentity};
 pub use kani::output::diagnostics::{
@@ -352,6 +354,10 @@ pub use replay::composite::{
 pub use replay::composite_builder::{
     CompositeBuildError, CompositePacketMember, OriginalCompositeEqContext,
     OriginalCompositeEqReport, OriginalCompositeEqRequest,
+};
+pub use replay::composite_leaves::{
+    decode_composite_falsification, rebuild_composite_operands, reconstruct_composite_operands,
+    DecodedCompositeLeaves,
 };
 pub use replay::frame::{
     FrameClaimMember, FrameReplay, FrameReplayError, FrameReplayInputs, PreStateFault, ScopeMember,

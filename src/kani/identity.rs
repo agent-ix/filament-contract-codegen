@@ -1468,3 +1468,6 @@ pub(crate) mod refinement;
 
 // The identity of a bounded-shadow harness and its refinement obligation (FR-028-AC-14, AC-18).
 pub(crate) mod shadow;
+
+// The leaf bindings of a composite shadow identity (FR-025-AC-9).
+pub(crate) mod leaf_binding;
