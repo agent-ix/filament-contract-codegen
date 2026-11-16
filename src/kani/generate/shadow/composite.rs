@@ -828,15 +828,6 @@ pub fn generate_composite_shadow(
     generate_composite_with(item, &Hooks::default(), SHADOW_PAIR_NODE_BUDGET)
 }
 
-/// Generates every item of a composite-equality request; each result is what the item yields
-/// alone, so a refused item changes no sibling's harness or identity (FR-015-AC-73).
-#[must_use]
-pub fn generate_composite_shadows(
-    items: &[CompositeShadowItem<'_>],
-) -> Vec<Result<KaniShadowHarness, CompositeShadowRefusal>> {
-    items.iter().map(generate_composite_shadow).collect()
-}
-
 /// Generates as [`generate_composite_shadow`] does under an explicit pair-node budget.
 ///
 /// The family's budget is [`SHADOW_PAIR_NODE_BUDGET`], set by measurement; this entry exists for

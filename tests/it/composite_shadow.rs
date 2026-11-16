@@ -640,7 +640,7 @@ fn tc_025_each_unsupported_shape_settles_with_its_reason_and_no_harness() {
         "{r:?}"
     );
 
-    for family in ["text", "enum", "rational", "decimal", "float", "collection"] {
+    for family in ["text", "enum", "rational", "decimal", "float", "sequence"] {
         let leaf = with_record(
             &base,
             vec![RecordedMember {

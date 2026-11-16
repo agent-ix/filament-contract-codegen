@@ -3,14 +3,12 @@
 //! checked packages through FR-018's closure reader, not fed to the generator as type names.
 
 use filament_contract_codegen::{
-    generate_composite_shadow, generate_composite_shadows, ClaimDisposition,
-    CompositeEqualityClaim, CompositeEqualityItem, CompositeEqualityRefusal,
-    CompositeShadowRefusal,
+    generate_composite_shadow, ClaimDisposition, CompositeEqualityClaim, CompositeEqualityItem,
+    CompositeEqualityRefusal, CompositeShadowRefusal,
 };
 use ix_trace_rs::trace;
 
-use super::composite_equality_closure::corpus;
-use super::composite_shadow::{entry, item_of, DUO_EQUAL, FLAGS_EQUAL, OPTION_EQUAL};
+use super::composite_shadow::item_of;
 
 const FUNCTIONS: [&str; 6] = [
     "f_seq",
@@ -113,52 +111,4 @@ fn tc_025_a_sequence_a_set_a_bag_an_ordered_set_and_a_quantity_settle_each_with_
         ),
         "{oracle:?}"
     );
-}
-
-/// A request holding refused items among supported ones: every supported item yields what it
-/// yields alone, in any order, and every refused item yields its own refusal.
-#[trace("TC-025", "FR-015-AC-73")]
-#[test]
-fn tc_025_a_request_settles_each_item_as_it_does_alone() {
-    let corpus = corpus();
-    let families = entries();
-    let supported = [
-        entry(&corpus, FLAGS_EQUAL),
-        entry(&corpus, DUO_EQUAL),
-        entry(&corpus, OPTION_EQUAL),
-    ];
-    let refused = [&families[0], &families[3], &families[4]];
-    let order = [
-        refused[0],
-        &supported[0],
-        refused[1],
-        &supported[1],
-        refused[2],
-        &supported[2],
-    ];
-    let items: Vec<_> = order.iter().map(|e| item_of(e, "subject")).collect();
-    let together = generate_composite_shadows(&items);
-    let mut reversed_items = items.clone();
-    reversed_items.reverse();
-    let mut reversed = generate_composite_shadows(&reversed_items);
-    reversed.reverse();
-    assert_eq!(together.len(), items.len());
-    for ((item, in_request), in_reverse) in items.iter().zip(&together).zip(&reversed) {
-        let alone = generate_composite_shadow(item);
-        match (&alone, in_request, in_reverse) {
-            (Ok(a), Ok(b), Ok(c)) => {
-                assert_eq!(a.rust.contents, b.rust.contents);
-                assert_eq!(a.identity, b.identity);
-                assert_eq!(b.rust.contents, c.rust.contents);
-                assert_eq!(b.identity, c.identity);
-            }
-            (Err(a), Err(b), Err(c)) => {
-                assert_eq!(a, b);
-                assert_eq!(b, c);
-            }
-            other => panic!("the request changed an item's settlement: {other:?}"),
-        }
-    }
-    let settled: Vec<bool> = together.iter().map(Result::is_ok).collect();
-    assert_eq!(settled, [false, true, false, true, false, true]);
 }

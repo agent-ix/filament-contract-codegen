@@ -727,17 +727,17 @@ FR-028-AC-16's Boolean and slot states). Installed backend, in the Kani lane (`m
 
 Added by IR-264 PR4: `tests/it/composite_shadow_families.rs` (step 33: a `sequence` leaf, and the
 `set`, `bag`, `ordered set` and `quantity` leaves FR-018 refuses first, read from a genuine checked
-package; and a request mixing refused and supported items, settled as each does alone, in either
-order); the run record's `shadowSize` (step 32: the budget, the size and the pair-node count in the
+package); the run record's `shadowSize` (step 32: the budget, the size and the pair-node count in the
 evidence of each installed-backend run, asserted equal to the identity's); and the second case of
 step 34 (a record of two integers each bounded by the whole `i64` range, per operand: a native
 `sampled` refinement run whose case count overflows `u128`, and its shadow `Verified` with its cover
 satisfied).
 
-Not met (planner to assign): step 33's `reference` composite row (FR-018-AC-7 is planned and
-blocked on `agent-ix/filament-spec-language#120`, so no package reaches it) and its
-`ShadowFamilyNotBuilt` rows for `set`, `bag`, `ordered set` and `quantity`, which FR-018 pre-empts with
-its own refusal (`bounded_domain`, `quantity`); the shadow run's evidence names no tool versions
+Not met (planner to assign): step 33's same-request clause (the composite family is not an item kind
+of the `negotiate_kani_obligations` request), its `reference` composite row (FR-018-AC-7 is planned and
+blocked on `agent-ix/filament-spec-language#120`, so no package reaches it) and the
+`ShadowFamilyNotBuilt` outcome for `set`, `bag` and `ordered set`, which FR-018 pre-empts with
+its own refusal (`bounded_domain`); the shadow run's evidence names no tool versions
 (FR-028-AC-23); the parameter nodes of step 30's order check are the two argument references of the
 corpus equality application, read from the checked package; the generator is a public entry that
 takes the claim-map entry, and is not yet an item kind of the negotiated request.

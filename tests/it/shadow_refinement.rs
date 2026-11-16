@@ -79,7 +79,7 @@ fn leaf(name: &str, bound: Option<(i64, i64)>) -> ShadowLeaf {
     }
 }
 
-fn item() -> ShadowItem {
+pub(super) fn item() -> ShadowItem {
     item_over((-3, 3))
 }
 
