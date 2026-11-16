@@ -4,8 +4,9 @@
 
 use filament_contract_codegen::{
     generate_composite_shadow, ClaimDisposition, CompositeEqualityClaim, CompositeEqualityItem,
-    CompositeEqualityRefusal, CompositeShadowRefusal, UpstreamBlocker,
+    CompositeEqualityRefusal, CompositeShadowRefusal,
 };
+use filament_contract_model::ContractFeatureRecordV1;
 use ix_trace_rs::trace;
 
 use super::composite_shadow::item_of;
@@ -114,8 +115,8 @@ fn tc_025_a_sequence_a_set_a_bag_an_ordered_set_and_a_quantity_settle_each_with_
 }
 
 /// FR-015-AC-73 `reference` row: a record that carries a `Reference` field settles with FR-018's
-/// typed refusal, naming the `composite_type.reference` node and carrying the `UpstreamBlocker`
-/// wire value, unchanged, and the shadow generator builds no harness for it.
+/// typed refusal, the FR-330 `Unsupported` accounting record of the reference's `model` target
+/// (FR-018-AC-7), carried unchanged, and the shadow generator builds no harness for it.
 #[trace("TC-025", "FR-015-AC-73")]
 #[test]
 fn tc_025_a_reference_composite_settles_with_fr_018s_refusal_and_no_harness() {
@@ -126,16 +127,15 @@ fn tc_025_a_reference_composite_settles_with_fr_018s_refusal_and_no_harness() {
             entry.result
         );
     };
+    let CompositeEqualityRefusal::PackageAccounting { record, .. } = oracle else {
+        panic!("expected FR-330 accounting, got {oracle:?}");
+    };
     assert!(
         matches!(
-            oracle,
-            CompositeEqualityRefusal::BlockedOnUpstream {
-                node_tag: "composite_type.reference",
-                issue: UpstreamBlocker::FilamentSpecLanguage120,
-                ..
-            }
+            record.as_ref(),
+            ContractFeatureRecordV1::Unsupported { node_tag, .. } if node_tag.as_ref() == "model"
         ),
-        "{oracle:?}"
+        "{record:?}"
     );
     let settled = generate_composite_shadow(&item_of(&entry, "subject"));
     assert_eq!(

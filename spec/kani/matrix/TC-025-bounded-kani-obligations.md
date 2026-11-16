@@ -738,10 +738,10 @@ family is not an item kind of the `negotiate_kani_obligations` request, it is bu
 point, and the production request path that includes composite starts in IR-806 PR-3) and the
 `ShadowFamilyNotBuilt` outcome for `set`, `bag` and `ordered set`, which FR-018 pre-empts with
 its own refusal (`bounded_domain`). Step 33's `reference` composite row is met: the corpus record
-with a `Reference` field settles with FR-018's `BlockedOnUpstream` refusal naming
-`composite_type.reference`, carried unchanged, with no harness
-(`tc_025_a_reference_composite_settles_with_fr_018s_refusal_and_no_harness`; the wire value
-`agent-ix/filament-spec-language#120` is kept, and that issue is closed). The shadow run's evidence
+with a `Reference` field settles with FR-018's refusal (`PackageAccounting` carrying the
+`Unsupported` record of the `model` target), carried unchanged, with no harness
+(`tc_025_a_reference_composite_settles_with_fr_018s_refusal_and_no_harness`; the model-graph issue
+`agent-ix/filament-spec-language#120` is closed, and its wire value is kept as an identifier). The shadow run's evidence
 names the Kani and CBMC versions (FR-028-AC-23, IR-264 PR5); the parameter nodes of step 30's order check are the two argument references of the
 corpus equality application, read from the checked package; the generator is a public entry that
 takes the claim-map entry, and is not yet an item kind of the negotiated request.
