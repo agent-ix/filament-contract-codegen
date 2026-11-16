@@ -104,7 +104,7 @@ with a reproduced replay. Composite parity uses a distinct typed input and plann
     F-6 RefinementCeiling stages, F-7 comparison, ordinary shadow-inconclusive rows, vacuous record
     category and completed parity Proved/Tested outcomes. TC-048 step 8 checks that the map has no
     proof-subject or proof-strength input and `TerminalPairError` has no bounded-shadow variant
-    (FR-029-AC-21); the production routing of shadow outcomes (FR-029-AC-30) is planned. CG prechecks and
+    (FR-029-AC-21, covered by `tc_040_the_ordinary_map_has_no_shadow_input_or_variant`); the production routing of shadow outcomes (FR-029-AC-30) is planned. CG prechecks and
     wrong-claim reports yield no terminal value; binding-valid FSL `prepare` non-fault `Refused`
     yields Inconclusive(ReplayRefused) with FSL code. Inspection establishes that an actual bound
     `Fault` or `Admission(Fault)` report yields Failed, without fabricating one. Changing one

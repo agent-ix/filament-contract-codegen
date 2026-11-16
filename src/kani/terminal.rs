@@ -15,11 +15,11 @@ use filament_contract_ir::kani::{
 use filament_exact::CancelCause;
 use fsl_replay::{
     Certification, Code, DeclineCode, DisagreementCause, IncompleteCause, InconclusiveCause,
-    OperatorParityResult, ProofBasis, ProofRefusalCause, ReplayRefusal, Std001Code, TerminalValue,
-    UnavailabilityCause,
+    OperatorParityResult, ProofBasis, ProofRefusalCause, Refinement, ReplayRefusal, Std001Code,
+    TerminalValue, UnavailabilityCause,
 };
 
-use crate::kani::classify::{KaniInconclusiveReason, KaniRunOutcome};
+use crate::kani::classify::{KaniInconclusiveReason, KaniRunOutcome, ProofStrength};
 use crate::kani::output::report::KaniFailureCause;
 use crate::kani::run::execute::KaniExecutionEvidence;
 
@@ -50,6 +50,26 @@ pub enum ReplaySettlement<'a> {
     /// None is a FSL data refusal,
     /// so none is `Incomplete` or `Inconclusive(ReplayRefused)`.
     CgDefect,
+}
+
+impl ProofStrength {
+    /// The FSL refinement state a bounded-shadow strength is evidence of (FR-029-AC-17), or
+    /// `None` for `production_proved`, which keeps the ordinary production map and is never
+    /// composite shadow evidence. One match with no wildcard arm: a new strength does not compile
+    /// until it has a row (FR-029-AC-22). The state is the label only; the ceiling a stopped
+    /// refinement reached stays in that run's own evidence (FR-028-AC-24).
+    #[must_use]
+    pub const fn parity_refinement(self) -> Option<Refinement> {
+        match self {
+            Self::ProductionProved => None,
+            Self::ShadowProvedRefinementExhaustive => Some(Refinement::Exhausted),
+            Self::ShadowProvedRefinementSampled | Self::ShadowProvedRefinementNotRun => {
+                Some(Refinement::NotExhausted)
+            }
+            Self::ShadowProvedRefinementInconclusive => Some(Refinement::CeilingReached),
+            Self::RefinementFailed => Some(Refinement::Disagreed),
+        }
+    }
 }
 
 /// A refused terminal conversion: invalid pairing or rejected IR cancellation construction.

@@ -1,7 +1,10 @@
 //! FR-033/FR-030: bind public FSL composite reports before reading their terminal values.
 
 use filament_contract_codegen::{
-    composite_parity_terminal_value, verified_shadow_terminal_value, CompositeReportError,
+    composite_parity_terminal_value, proof_strength, run_terminal_value,
+    verified_shadow_terminal_value, CompositeReportError, KaniExecutionEvidence,
+    KaniInconclusiveReason, KaniRunOutcome, ProofStrength, ProofSubject, RefinementClass,
+    RefinementSummary, ReplaySettlement, TerminalPairError,
 };
 use filament_contract_model::CheckedNodeId;
 use filament_exact::PathSegment;
@@ -951,5 +954,229 @@ fn tc_048_binding_refusals_have_distinct_display() {
     assert_eq!(
         CompositeReportError::ClaimMismatch.to_string(),
         "composite parity report claim differs from sent claim"
+    );
+}
+
+/// Every strength, built by a match with no wildcard arm: a new `ProofStrength` stops this
+/// compiling until it has a row here (FR-029-AC-22).
+fn every_strength() -> [ProofStrength; 6] {
+    let all = [
+        ProofStrength::ProductionProved,
+        ProofStrength::ShadowProvedRefinementExhaustive,
+        ProofStrength::ShadowProvedRefinementSampled,
+        ProofStrength::ShadowProvedRefinementNotRun,
+        ProofStrength::ShadowProvedRefinementInconclusive,
+        ProofStrength::RefinementFailed,
+    ];
+    for strength in all {
+        match strength {
+            ProofStrength::ProductionProved
+            | ProofStrength::ShadowProvedRefinementExhaustive
+            | ProofStrength::ShadowProvedRefinementSampled
+            | ProofStrength::ShadowProvedRefinementNotRun
+            | ProofStrength::ShadowProvedRefinementInconclusive
+            | ProofStrength::RefinementFailed => {}
+        }
+    }
+    all
+}
+
+/// FR-029-AC-17: each strength projects onto the FSL refinement state the spec states, and
+/// production proof is never composite shadow evidence.
+#[trace("FR-029-AC-17", "TC-048")]
+#[test]
+fn tc_048_every_strength_projects_onto_its_refinement_state() {
+    let expected = [
+        (ProofStrength::ProductionProved, None),
+        (
+            ProofStrength::ShadowProvedRefinementExhaustive,
+            Some(Refinement::Exhausted),
+        ),
+        (
+            ProofStrength::ShadowProvedRefinementSampled,
+            Some(Refinement::NotExhausted),
+        ),
+        (
+            ProofStrength::ShadowProvedRefinementNotRun,
+            Some(Refinement::NotExhausted),
+        ),
+        (
+            ProofStrength::ShadowProvedRefinementInconclusive,
+            Some(Refinement::CeilingReached),
+        ),
+        (ProofStrength::RefinementFailed, Some(Refinement::Disagreed)),
+    ];
+    for (strength, refinement) in expected {
+        assert_eq!(strength.parity_refinement(), refinement, "{strength:?}");
+    }
+}
+
+/// FR-029-AC-17: the strength producer, fed a bounded-shadow outcome that did not verify and
+/// whose refinement did not disagree, yields no strength, so no verified strength is invented
+/// for a backend-inconclusive or cover-unsatisfied run.
+#[trace("FR-029-AC-17", "TC-048")]
+#[test]
+fn tc_048_a_non_verified_shadow_outcome_acquires_no_strength() {
+    let reasons = [
+        KaniInconclusiveReason::FailedWithoutCounterexample,
+        KaniInconclusiveReason::NoVerdict,
+        KaniInconclusiveReason::MissingCoverSummary,
+        KaniInconclusiveReason::VacuousProof,
+        KaniInconclusiveReason::UnwindBoundExhausted,
+        KaniInconclusiveReason::TimedOut,
+        KaniInconclusiveReason::WitnessDisagreed,
+    ];
+    let mut outcomes: Vec<KaniRunOutcome> = reasons
+        .into_iter()
+        .map(|reason| KaniRunOutcome::Inconclusive { reason })
+        .collect();
+    outcomes.push(KaniRunOutcome::CoverUnsatisfied {
+        satisfied: 0,
+        total: 1,
+    });
+    outcomes.push(KaniRunOutcome::Falsified {
+        counterexample: "synthetic playback".into(),
+    });
+    for outcome in &outcomes {
+        for refinement in [
+            None,
+            Some(RefinementSummary::Agreed(RefinementClass::Exhaustive)),
+            Some(RefinementSummary::Agreed(RefinementClass::Sampled)),
+            Some(RefinementSummary::ReachedCeiling),
+        ] {
+            assert_eq!(
+                proof_strength(ProofSubject::BoundedShadow, outcome, refinement),
+                None,
+                "{outcome:?} with {refinement:?}"
+            );
+        }
+        assert_eq!(
+            proof_strength(
+                ProofSubject::BoundedShadow,
+                outcome,
+                Some(RefinementSummary::Disagreed)
+            ),
+            Some(ProofStrength::RefinementFailed),
+            "a disagreement is the strength whatever the backend settled: {outcome:?}"
+        );
+    }
+}
+
+/// FR-029-AC-22: the strengths the map enumerates are exactly the six FR-028-AC-17 states, and
+/// each has a projection and a settled terminal value.
+#[trace("FR-029-AC-22", "TC-048")]
+#[test]
+fn tc_048_the_enumerated_strengths_equal_the_closed_set_of_the_spec() {
+    let spec = std::fs::read_to_string(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/spec/kani/functional/FR-028-bounded-proof-ceilings.md"
+    ))
+    .expect("FR-028 is in this repository");
+    let row = spec
+        .lines()
+        .find(|line| line.starts_with("| FR-028-AC-17 |"))
+        .expect("FR-028-AC-17 row");
+    let mut stated: Vec<String> = row
+        .split('`')
+        .skip(1)
+        .step_by(2)
+        .filter(|token| {
+            *token == "production_proved"
+                || *token == "refinement_failed"
+                || token.starts_with("shadow_proved_")
+        })
+        .map(str::to_owned)
+        .collect();
+    stated.sort();
+    stated.dedup();
+    let mut enumerated: Vec<String> = every_strength()
+        .into_iter()
+        .map(|strength| {
+            serde_json::to_value(strength)
+                .unwrap()
+                .as_str()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    enumerated.sort();
+    assert_eq!(enumerated, stated);
+    assert_eq!(stated.len(), 6);
+}
+
+/// FR-029-AC-17, AC-22 and AC-31: every projected strength, settled by FSL's delivered
+/// verified-shadow facade, gives the terminal value FSL's own report carries, and CG adds no
+/// cause of its own.
+#[trace("FR-029-AC-17", "FR-029-AC-22", "FR-029-AC-31", "TC-048")]
+#[test]
+fn tc_048_each_strength_settles_to_the_terminal_value_fsl_reports() {
+    let fixture = public_composite_fixture();
+    let expected = |strength: ProofStrength| match strength {
+        ProofStrength::ProductionProved => None,
+        ProofStrength::ShadowProvedRefinementExhaustive => Some(TerminalValue::Proved {
+            basis: ProofBasis::Checks { success_checks: 3 },
+            certification: Certification::Certified,
+        }),
+        ProofStrength::ShadowProvedRefinementSampled
+        | ProofStrength::ShadowProvedRefinementNotRun => Some(TerminalValue::Tested),
+        ProofStrength::ShadowProvedRefinementInconclusive => Some(TerminalValue::Incomplete(
+            fsl_replay::IncompleteCause::ResourceExhausted,
+        )),
+        ProofStrength::RefinementFailed => Some(TerminalValue::Failed),
+    };
+    for strength in every_strength() {
+        let Some(refinement) = strength.parity_refinement() else {
+            assert_eq!(expected(strength), None);
+            continue;
+        };
+        let verified = VerifiedShadow {
+            success_checks: 3,
+            refinement,
+        };
+        let sent = CompositeIdentity::new(
+            fixture.wire.obligation_identity.clone(),
+            &fixture.claim,
+            CompositeEvidence::Verified(verified),
+        );
+        let report = settle_verified_shadow(
+            fixture.wire.clone(),
+            fixture.claim.clone(),
+            verified,
+            ReplayLimits::default(),
+        );
+        let bound = verified_shadow_terminal_value(&sent, Some(&report)).unwrap();
+        assert_eq!(
+            Some(bound.terminal_value()),
+            expected(strength),
+            "{strength:?}"
+        );
+        assert_eq!(
+            bound.terminal_value(),
+            report.terminal_value(),
+            "{strength:?}"
+        );
+    }
+}
+
+/// FR-029-AC-21: the ordinary map takes the run's evidence and an optional replay settlement
+/// and nothing about a proof subject or strength, and its refusal has no bounded-shadow
+/// variant. Adding an input or a variant stops this compiling.
+#[trace("FR-029-AC-21", "TC-040", "TC-048")]
+#[test]
+fn tc_040_the_ordinary_map_has_no_shadow_input_or_variant() {
+    let _: fn(
+        &KaniExecutionEvidence,
+        Option<ReplaySettlement<'_>>,
+    ) -> Result<TerminalValue, TerminalPairError> = run_terminal_value;
+    let name = |error: &TerminalPairError| match error {
+        TerminalPairError::MissingSettlement => "missing_settlement",
+        TerminalPairError::UnexpectedSettlement => "unexpected_settlement",
+        TerminalPairError::MissingProvedCount => "missing_proved_count",
+        TerminalPairError::ProvedCountOutOfRange { .. } => "proved_count_out_of_range",
+        TerminalPairError::InvalidCancellation(_) => "invalid_cancellation",
+    };
+    assert_eq!(
+        name(&TerminalPairError::MissingSettlement),
+        "missing_settlement"
     );
 }
