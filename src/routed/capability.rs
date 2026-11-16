@@ -1730,14 +1730,13 @@ pub fn negotiate_contract_package(
 ///
 /// Trace: TC-1741
 // Implements: FR-711
-// FR-019 requires the typed projection by value in the public refusal.
-#[allow(clippy::result_large_err)]
+// The refusal is boxed: it carries FR-019's typed projection by value.
 pub fn negotiate_item(
     manifest: &[BackendDescriptor],
     item: &RequestItem,
-) -> Result<Disposition, EnvelopeRefusal> {
+) -> Result<Disposition, Box<EnvelopeRefusal>> {
     let mut lookups = CapabilityLookups::new(std::slice::from_ref(item));
-    negotiate_item_in(manifest, item, None, &mut lookups)
+    negotiate_item_in(manifest, item, None, &mut lookups).map_err(Box::new)
 }
 
 /// Settle one item, evaluating FR-290's rules in order; the first match settles.
