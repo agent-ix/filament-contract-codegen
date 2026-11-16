@@ -8,20 +8,20 @@
 //! entry only for a leaf that is drawn. The identity's leaf bindings are checked first; no
 //! playback is read through a schema that fails the check.
 
-use filament_exact::Integer;
-use fsl_replay::{WitnessField, WitnessSlot, WitnessValue};
+use fsl_replay::WitnessValue;
 
 use crate::{
-    core::ir::node_key::checked_node_key,
     kani::{
         abi::KaniPrimitiveType,
         identity::{
-            leaf_binding::{check_leaf_bindings, expected_leaves, leaves_of, ExpectedLeaf},
-            shadow::{CompositeIdentity, LeafKind, OperandSource, ShadowIdentity},
+            leaf_binding::{
+                check_leaf_bindings, expected_leaves, leaves_of, rebuild_operands,
+                LeafBindingRefusal,
+            },
+            shadow::{LeafKind, ShadowIdentity},
         },
         output::playback::{Playback, WitnessDecodeLimits},
     },
-    oracle::equality::closure::{RecordedForm, RecordedPresence, RecordedType},
     replay::witness::{check_bytes, check_values_and_harness, read_entry, DecodeFailure},
 };
 
@@ -58,10 +58,7 @@ fn admits(kind: LeafKind, value: Option<i64>) -> bool {
     )
 }
 
-fn binding_failure(
-    identity: &ShadowIdentity,
-    refusal: &crate::LeafBindingRefusal,
-) -> DecodeFailure {
+fn binding_failure(identity: &ShadowIdentity, refusal: &LeafBindingRefusal) -> DecodeFailure {
     DecodeFailure::new(
         refusal.code(),
         &identity.harness_symbol,
@@ -103,7 +100,7 @@ pub fn decode_composite_falsification(
     let composite = identity
         .composite
         .as_ref()
-        .ok_or_else(|| binding_failure(identity, &crate::LeafBindingRefusal::NotComposite))?;
+        .ok_or_else(|| binding_failure(identity, &LeafBindingRefusal::NotComposite))?;
     let expected =
         expected_leaves(composite).map_err(|refusal| binding_failure(identity, &refusal))?;
     let mut entries = playback.entries.iter();
@@ -164,126 +161,6 @@ pub fn decode_composite_falsification(
     Ok(DecodedCompositeLeaves { parameters })
 }
 
-struct Builder<'a> {
-    composite: &'a CompositeIdentity,
-    values: &'a [Option<i64>],
-    cursor: usize,
-    harness: &'a str,
-}
-
-impl Builder<'_> {
-    fn fail(&self, code: &str, context: &str) -> DecodeFailure {
-        DecodeFailure::new(code, self.harness, context)
-    }
-
-    fn next(&mut self) -> Option<i64> {
-        let value = self.values.get(self.cursor).copied().flatten();
-        self.cursor += 1;
-        value
-    }
-
-    /// The value of `ty`, consuming the leaves of `ty` in call order. A subtree whose condition
-    /// failed is consumed too and yields a placeholder the caller discards.
-    fn build(&mut self, ty: &RecordedType) -> Result<WitnessValue, DecodeFailure> {
-        let placeholder = WitnessValue::Boolean(false);
-        match ty {
-            RecordedType::Boolean => Ok(self
-                .next()
-                .map_or(placeholder, |value| WitnessValue::Boolean(value == 1))),
-            RecordedType::Int { .. } => Ok(self.next().map_or(placeholder, |value| {
-                WitnessValue::ExactInteger(Integer::from(value))
-            })),
-            RecordedType::Option { payload } => {
-                let present = self.next();
-                let inner = self.build(payload)?;
-                Ok(match present {
-                    Some(1) => WitnessValue::Option(Some(Box::new(inner))),
-                    Some(_) => WitnessValue::Option(None),
-                    None => placeholder,
-                })
-            }
-            RecordedType::Composite { key } => {
-                let declaration = self
-                    .composite
-                    .declarations
-                    .iter()
-                    .find(|declaration| &declaration.key == key)
-                    .ok_or_else(|| self.fail("cg_composite_declaration_unknown", key))?;
-                let node = checked_node_key(&declaration.node_id)
-                    .ok_or_else(|| self.fail("cg_composite_declaration_key", key))?;
-                let mut slots = Vec::new();
-                let mut live = true;
-                for member in &declaration.members {
-                    let slot = if member.presence == RecordedPresence::Optional {
-                        let state = self.next();
-                        let inner = self.build(&member.value_type)?;
-                        match state {
-                            Some(0) => WitnessSlot::Present(inner),
-                            Some(1) => WitnessSlot::Absent,
-                            Some(2) => WitnessSlot::Null,
-                            Some(_) => {
-                                return Err(self.fail("cg_witness_out_of_domain", &member.name))
-                            }
-                            None => {
-                                live = false;
-                                WitnessSlot::Absent
-                            }
-                        }
-                    } else {
-                        WitnessSlot::Present(self.build(&member.value_type)?)
-                    };
-                    slots.push((member.name.clone(), slot));
-                }
-                if !live {
-                    return Ok(placeholder);
-                }
-                Ok(match declaration.form {
-                    RecordedForm::Record => WitnessValue::Record {
-                        declaration: node,
-                        fields: slots
-                            .into_iter()
-                            .map(|(name, slot)| WitnessField { name, slot })
-                            .collect(),
-                    },
-                    RecordedForm::Tuple => WitnessValue::Tuple {
-                        declaration: node,
-                        components: slots
-                            .into_iter()
-                            .filter_map(|(_, slot)| match slot {
-                                WitnessSlot::Present(value) => Some(value),
-                                WitnessSlot::Absent | WitnessSlot::Null => None,
-                            })
-                            .collect(),
-                    },
-                    RecordedForm::Union => {
-                        return Err(self.fail("cg_composite_leaf_shape", key));
-                    }
-                })
-            }
-            RecordedType::Integer | RecordedType::Payload { .. } | RecordedType::Other { .. } => {
-                Err(self.fail("cg_composite_leaf_shape", "an undrawable type"))
-            }
-        }
-    }
-}
-
-fn pinned_values(
-    composite: &CompositeIdentity,
-    position: usize,
-    expected: &[ExpectedLeaf],
-) -> Vec<Option<i64>> {
-    expected
-        .iter()
-        .map(|want| {
-            composite
-                .pinned
-                .iter()
-                .find(|pinned| pinned.operand == position && pinned.path == want.path)
-                .map(|pinned| pinned.value)
-        })
-        .collect()
-}
-
 /// Rebuilds the two operands of the claim from decoded leaves: a parameter operand from the
 /// leaves drawn for its node (both positions naming one node get equal operands), a literal
 /// operand from its pinned leaves. Absent, null and present slots, and absent and present options,
@@ -297,47 +174,9 @@ pub fn rebuild_composite_operands(
     identity: &ShadowIdentity,
     decoded: &DecodedCompositeLeaves,
 ) -> Result<[WitnessValue; 2], DecodeFailure> {
-    check_leaf_bindings(identity).map_err(|refusal| binding_failure(identity, &refusal))?;
-    let composite = identity
-        .composite
-        .as_ref()
-        .ok_or_else(|| binding_failure(identity, &crate::LeafBindingRefusal::NotComposite))?;
-    let expected =
-        expected_leaves(composite).map_err(|refusal| binding_failure(identity, &refusal))?;
-    let mut rebuilt = Vec::new();
-    for (position, source) in composite.operands.iter().enumerate() {
-        let values: Vec<Option<i64>> = match source {
-            OperandSource::Parameter { node } => decoded
-                .values_of(node)
-                .ok_or_else(|| {
-                    DecodeFailure::new("cg_composite_leaf_missing", &identity.harness_symbol, node)
-                })?
-                .to_vec(),
-            OperandSource::Literal => pinned_values(composite, position, &expected),
-        };
-        if values.len() != expected.len() {
-            return Err(DecodeFailure::new(
-                "cg_composite_leaf_missing",
-                &identity.harness_symbol,
-                "the decoded leaves do not cover the shape",
-            ));
-        }
-        let mut builder = Builder {
-            composite,
-            values: &values,
-            cursor: 0,
-            harness: &identity.harness_symbol,
-        };
-        rebuilt.push(builder.build(&composite.operand_types.left)?);
-    }
-    let [left, right]: [WitnessValue; 2] = rebuilt.try_into().map_err(|_| {
-        DecodeFailure::new(
-            "cg_composite_leaf_missing",
-            &identity.harness_symbol,
-            "operands",
-        )
-    })?;
-    Ok([left, right])
+    rebuild_operands(identity, &decoded.parameters).map_err(|failure| {
+        DecodeFailure::new(failure.code, &identity.harness_symbol, &failure.context)
+    })
 }
 
 /// Decodes `playback` through the identity's leaf bindings and rebuilds the two operands it drew.
