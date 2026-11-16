@@ -624,6 +624,22 @@ fn claims_for(oracles: &FixtureOracles, node: u32) -> Vec<&CompositeEqualityClai
         .collect()
 }
 
+/// The claim-map entry of the corpus item that compares two records, each carrying a `Reference`
+/// field, under `=` (FR-018-AC-7): the composite shadow's reference row reads it.
+pub(super) fn reference_record_entry() -> CompositeEqualityClaim {
+    let package = admit(corpus_package());
+    let oracles = generate(
+        &package,
+        &[item(
+            E_REFERENCE,
+            EqualityOperatorKind::Equal,
+            typed(R_WITH_REF),
+            typed(R_WITH_REF),
+        )],
+    );
+    only_claim(&oracles, E_REFERENCE).clone()
+}
+
 fn only_claim(oracles: &FixtureOracles, node: u32) -> &CompositeEqualityClaim {
     let claims = claims_for(oracles, node);
     assert_eq!(

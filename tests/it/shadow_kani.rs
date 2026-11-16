@@ -6,8 +6,8 @@ use std::{fs, path::PathBuf};
 use filament_contract_codegen::{
     execute_kani_obligation, generate_shadow, AbstractionClaim, AbstractionEvidence, HelperMark,
     KaniExecutionEvidence, KaniExecutionRequest, KaniInstallation, KaniRunOutcome,
-    KaniShadowHarness, ProductionRead, ProofCeilings, ShadowItem, ShadowLeaf, ShadowShape,
-    SharedHelperClaim,
+    KaniShadowHarness, KaniToolVersions, ProductionRead, ProofCeilings, ShadowItem, ShadowLeaf,
+    ShadowShape, SharedHelperClaim,
 };
 use filament_exact::Cancel;
 use ix_trace_rs::trace;
@@ -206,4 +206,34 @@ fn tc_039_installed_kani_verifies_the_shadow_and_falsifies_its_mutant_in_two_pha
         prove(&shared_mutant, "kani-shared-helper").outcome,
         KaniRunOutcome::Verified
     );
+}
+
+/// FR-028-AC-23 under the installed backend: the evidence of a shadow run names the Kani and CBMC
+/// releases that the launcher itself prints, read here from a separate `--version` call.
+#[trace("TC-039", "FR-028-AC-23")]
+#[test]
+#[ignore = "kani lane: run serially through make kani-gate"]
+fn tc_039_installed_kani_evidence_records_the_launchers_own_versions() {
+    let installation = KaniInstallation::discover().expect("cargo-kani is installed");
+    let printed = std::process::Command::new(&installation.launcher)
+        .arg("--version")
+        .output()
+        .expect("the launcher prints its version");
+    let printed = String::from_utf8_lossy(&printed.stdout).into_owned();
+    let release = |prefix: &str| {
+        printed
+            .lines()
+            .find_map(|line| line.strip_prefix(prefix))
+            .and_then(|rest| rest.split_whitespace().next())
+            .map(str::to_owned)
+            .unwrap_or_else(|| panic!("{prefix:?} in {printed:?}"))
+    };
+    let expected = KaniToolVersions::Reported {
+        kani: release("Kani Rust Verifier "),
+        cbmc: release("CBMC "),
+    };
+    let evidence = prove(&generate_shadow(&item()).unwrap(), "kani-versions");
+    assert_eq!(evidence.outcome, KaniRunOutcome::Verified);
+    assert_eq!(evidence.tool_versions, expected);
+    println!("recorded: {:?}", evidence.tool_versions);
 }

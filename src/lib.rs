@@ -257,6 +257,7 @@ pub use kani::run::scalar::{
     SCALAR_NATIVE_CODE_SNAPSHOT_CHANGED, SCALAR_NATIVE_CODE_SNAPSHOT_IO,
 };
 pub use kani::run::tool::{KaniInstallation, KaniTool, KaniToolError};
+pub use kani::run::versions::{KaniToolVersions, KaniToolVersionsAbsence};
 pub use kani::terminal::tractable::{
     execute_kani_obligation_decided, execute_kani_obligations_decided, refuse_if_not_tractable,
     DecidedRunRefusal,

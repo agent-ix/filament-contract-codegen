@@ -252,6 +252,5 @@ the construction refusals and the composite observables
 whose `reference` row is partial) and the mutant set (`tc_025_installed_kani_falsifies_each_shadow_mutant_by_the_check_it_claims`
 in the Kani lane, with the native and closure-reader mutants above). Its verdicts are in TC-025.
 
-Still partial (planner to assign, except that the terminal value is IR-806): step 21 has the per-phase vectors and the solver name
-but not the Kani version, the solver version or the Rust compiler version in the shadow run's own
-evidence; and the strength is not yet a member of the terminal value (FR-028-AC-17).
+Still partial (planner to assign, except that the terminal value is IR-806): step 21 has the per-phase vectors, the solver name
+and, from IR-264 PR5, the Kani and CBMC versions in the run's evidence, but not the Rust compiler version; and the strength is not yet a member of the terminal value (FR-028-AC-17).

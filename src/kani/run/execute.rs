@@ -51,6 +51,7 @@ use crate::kani::{
         memory::MemoryObservation,
         report_file::{fresh_report_path, read_report, remove_stale_report},
         tool::{KaniInstallation, KaniTool, KaniToolError},
+        versions::KaniToolVersions,
     },
 };
 
@@ -345,6 +346,9 @@ pub struct KaniExecutionEvidence {
     pub unwind: u32,
     /// Solver.
     pub solver: KaniSolver,
+    /// The Kani and CBMC releases the launcher of this run reported, or why it reported none
+    /// (FR-028-AC-23). The solver is linked into the CBMC build, so its version is CBMC's.
+    pub tool_versions: KaniToolVersions,
     /// Process exit code, or `None` when the process was killed by a signal — including the
     /// kill this module itself sends on [`KaniInconclusiveReason::TimedOut`].
     pub exit_code: Option<i32>,
@@ -416,8 +420,10 @@ impl ReportedExecution {
         self,
         memory: MemoryObservation,
         applied: crate::kani::identity::ProofCeilings,
+        tool_versions: KaniToolVersions,
     ) -> KaniExecutionEvidence {
         KaniExecutionEvidence {
+            tool_versions,
             memory,
             ceilings: applied,
             symbolic_arguments: self.symbolic_arguments,
@@ -989,8 +995,10 @@ fn run_phase_single(
         NonZeroUsize::MIN,
     )?;
     let report = take_report(&launch.outcome, &report_path);
-    finish_single(request, arguments, launch.outcome, report?, totality_line)
-        .map(|reported| reported.with_launch(launch.memory, applied))
+    finish_single(request, arguments, launch.outcome, report?, totality_line).map(|reported| {
+        let versions = KaniToolVersions::of(request.installation, request.cancel);
+        reported.with_launch(launch.memory, applied, versions)
+    })
 }
 
 /// Classify one captured launch and its own report, without asserting memory enforcement.
@@ -1364,9 +1372,10 @@ fn run_group(
         totality_lines,
     )
     .map(|reported| {
+        let versions = KaniToolVersions::of(first.installation, first.cancel);
         reported
             .into_iter()
-            .map(|run| run.with_launch(launch.memory.clone(), applied))
+            .map(|run| run.with_launch(launch.memory.clone(), applied, versions.clone()))
             .collect()
     })
 }
@@ -2848,8 +2857,8 @@ exit 0
             report_fixture::groups(&requests)
         }
 
-        /// The argument vector of each process the stand-in ran, as it received them.
-        pub(super) fn calls(&self) -> Vec<Vec<String>> {
+        /// The argument vector of every process the stand-in ran, version probes included.
+        fn all_calls(&self) -> Vec<Vec<String>> {
             let recorded = fs::read_to_string(self.directory.join("calls")).unwrap_or_default();
             let mut calls: Vec<Vec<String>> = Vec::new();
             for line in recorded.lines() {
@@ -2860,6 +2869,26 @@ exit 0
                 }
             }
             calls
+        }
+
+        fn is_probe(call: &[String]) -> bool {
+            call == ["--version"]
+        }
+
+        /// The argument vector of each proof process the stand-in ran, as it received them; the
+        /// launcher's version probe is not one (FR-028-AC-23).
+        pub(super) fn calls(&self) -> Vec<Vec<String>> {
+            let mut calls = self.all_calls();
+            calls.retain(|call| !Self::is_probe(call));
+            calls
+        }
+
+        /// How many times the stand-in was asked for its version.
+        pub(super) fn probes(&self) -> usize {
+            self.all_calls()
+                .iter()
+                .filter(|call| Self::is_probe(call))
+                .count()
         }
     }
 

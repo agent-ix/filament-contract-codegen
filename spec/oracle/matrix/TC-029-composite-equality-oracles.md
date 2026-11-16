@@ -80,8 +80,8 @@ the enum-only owner facade does not excuse dropping it.
    test holds, never against values parsed out of the generated source.
 3. Inspect each refusal: its typed cause, that the item's symbols are absent
    from the generated source, that its siblings are unchanged, and that the
-   three upstream blockers (filament-spec-language#120, filament-contract-runtime#34,
-   filament-spec-language#121) are distinct values rather than one reason. Assert
+   three upstream blocker wire values (filament-spec-language#120, filament-contract-runtime#34,
+   filament-spec-language#121; the first names a closed issue) are distinct values rather than one reason. Assert
    the invalid-target reference composite in its own package is refused at
    Contract IR's strict reader as `InvalidPackage/InvalidDerivedShape` at its
    reference type node id; assert the valid-target reference equality with an

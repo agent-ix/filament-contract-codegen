@@ -50,6 +50,9 @@ pub(crate) fn synthetic_evidence(
         arguments: Vec::new(),
         unwind: 4,
         solver: KaniSolver::Cadical,
+        tool_versions: filament_contract_codegen::KaniToolVersions::Unreported {
+            reason: filament_contract_codegen::KaniToolVersionsAbsence::ProbeFailed,
+        },
         exit_code: None,
         outcome,
         success_checks,

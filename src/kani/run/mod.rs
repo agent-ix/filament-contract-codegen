@@ -13,6 +13,9 @@ pub(crate) mod scalar;
 // The backend and its location.
 pub(crate) mod tool;
 
+// The tool versions the launcher reports.
+pub(crate) mod versions;
+
 // The peak memory an environment provides for a finished run.
 pub(crate) mod memory;
 

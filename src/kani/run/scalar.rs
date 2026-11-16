@@ -2188,6 +2188,9 @@ mod tests {
             arguments: Vec::new(),
             unwind: 1,
             solver: KaniSolver::Cadical,
+            tool_versions: crate::kani::run::versions::KaniToolVersions::Unreported {
+                reason: crate::kani::run::versions::KaniToolVersionsAbsence::ProbeFailed,
+            },
             exit_code: None,
             outcome,
             success_checks: 0,
