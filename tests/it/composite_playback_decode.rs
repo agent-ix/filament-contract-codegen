@@ -7,9 +7,10 @@
 
 use filament_contract_codegen::{
     check_leaf_bindings, check_leaf_call_order, decode_composite_falsification,
-    generate_composite_shadow, parse_assertion_playback, rebuild_composite_operands,
-    reconstruct_composite_operands, CompositeShadowRefusal, KaniShadowHarness, LeafBindingRefusal,
-    LeafKind, OperandSource, ShadowIdentity, ShadowOperand, WitnessDecodeLimits,
+    generate_composite_shadow, generate_composite_shadow_with_proof_body, parse_assertion_playback,
+    rebuild_composite_operands, reconstruct_composite_operands, CompositeShadowRefusal,
+    ConflictMember, KaniShadowHarness, LeafBindingRefusal, LeafKind, OperandSource, ShadowIdentity,
+    ShadowOperand, WitnessDecodeLimits,
 };
 use fsl_replay::{WitnessField, WitnessSlot, WitnessValue};
 use ix_trace_rs::trace;
@@ -169,63 +170,98 @@ fn tc_048_a_missing_duplicate_unknown_or_conflicting_leaf_refuses_with_a_typed_r
 
     let mut duplicate_name = healthy.clone();
     duplicate_name.leaves[1].name = duplicate_name.leaves[0].name.clone();
-    assert!(matches!(
+    assert_eq!(
         check_leaf_bindings(&duplicate_name),
-        Err(LeafBindingRefusal::Duplicate { .. })
-    ));
+        Err(LeafBindingRefusal::Duplicate {
+            name: healthy.leaves[0].name.clone()
+        })
+    );
 
     let mut duplicate_path = healthy.clone();
     duplicate_path.leaves[1].path = duplicate_path.leaves[0].path.clone();
-    assert!(matches!(
+    assert_eq!(
         check_leaf_bindings(&duplicate_path),
-        Err(LeafBindingRefusal::Duplicate { .. })
-    ));
+        Err(LeafBindingRefusal::Duplicate {
+            name: healthy.leaves[1].name.clone()
+        })
+    );
 
     let mut unknown_path = healthy.clone();
     unknown_path.leaves[1].path = "zz".to_owned();
-    assert!(matches!(
+    assert_eq!(
         check_leaf_bindings(&unknown_path),
-        Err(LeafBindingRefusal::Unknown { .. })
-    ));
+        Err(LeafBindingRefusal::Unknown {
+            name: healthy.leaves[1].name.clone()
+        })
+    );
 
     let mut unknown_node = healthy.clone();
     unknown_node.leaves[0].node = "not-an-operand".to_owned();
-    assert!(matches!(
+    assert_eq!(
         check_leaf_bindings(&unknown_node),
-        Err(LeafBindingRefusal::Unknown { .. })
-    ));
+        Err(LeafBindingRefusal::Unknown {
+            name: healthy.leaves[0].name.clone()
+        })
+    );
 
     for (what, edit) in [
         (
-            "kind",
+            ConflictMember::Kind,
             (|identity: &mut ShadowIdentity| identity.leaves[1].kind = LeafKind::Boolean)
                 as fn(&mut ShadowIdentity),
         ),
-        ("declared", |identity| identity.leaves[1].declared = (0, 9)),
-        ("drawn", |identity| identity.leaves[1].drawn = (0, 1)),
+        (ConflictMember::Declared, |identity| {
+            identity.leaves[1].declared = (0, 9);
+        }),
+        (ConflictMember::Drawn, |identity| {
+            identity.leaves[1].drawn = (0, 1);
+        }),
     ] {
         let mut conflicting = healthy.clone();
         edit(&mut conflicting);
-        assert!(
-            matches!(
-                check_leaf_bindings(&conflicting),
-                Err(LeafBindingRefusal::Conflict { member, .. }) if member == what
-            ),
-            "{what}"
+        assert_eq!(
+            check_leaf_bindings(&conflicting),
+            Err(LeafBindingRefusal::Conflict {
+                name: healthy.leaves[1].name.clone(),
+                member: what
+            }),
+            "{what:?}"
         );
     }
 
     let mut swapped = healthy.clone();
     swapped.leaves.swap(0, 1);
-    assert!(matches!(
+    assert_eq!(
         check_leaf_bindings(&swapped),
-        Err(LeafBindingRefusal::OutOfOrder { .. })
-    ));
+        Err(LeafBindingRefusal::OutOfOrder {
+            name: healthy.leaves[1].name.clone()
+        })
+    );
 
-    // The other parameter's block moved between this one's leaves.
+    // The two parameters' leaves alternate, each keeping its own order: only the contiguity of a
+    // parameter's leaves can refuse it, and it names the first leaf that reopens a closed node.
+    let half = leaf_count / 2;
+    assert!(healthy.leaves[..half]
+        .iter()
+        .all(|leaf| leaf.node == healthy.leaves[0].node));
+    assert!(healthy.leaves[half..]
+        .iter()
+        .all(|leaf| leaf.node == healthy.leaves[half].node));
     let mut interleaved = healthy.clone();
-    interleaved.leaves.swap(1, leaf_count - 1);
-    assert!(check_leaf_bindings(&interleaved).is_err());
+    interleaved.leaves = (0..half)
+        .flat_map(|index| {
+            [
+                healthy.leaves[index].clone(),
+                healthy.leaves[half + index].clone(),
+            ]
+        })
+        .collect();
+    assert_eq!(
+        check_leaf_bindings(&interleaved),
+        Err(LeafBindingRefusal::OutOfOrder {
+            name: healthy.leaves[1].name.clone()
+        })
+    );
 
     // A shadow identity of no composite family has no composite leaves.
     let mut plain = healthy.clone();
@@ -259,8 +295,80 @@ fn tc_048_the_generated_source_draws_the_identity_leaves_in_order_and_a_reordere
         check_leaf_call_order(&harness.identity, &retyped),
         Err(LeafBindingRefusal::CallOrder { .. })
     ));
-    // A source with no proof function draws nothing.
-    assert!(check_leaf_call_order(&harness.identity, "fn other() {}").is_err());
+    // A source with no proof function, or that does not parse, is unreadable, not "no draws".
+    assert_eq!(
+        check_leaf_call_order(&harness.identity, "fn other() {}"),
+        Err(LeafBindingRefusal::SourceUnreadable)
+    );
+    assert_eq!(
+        check_leaf_call_order(&harness.identity, "fn ("),
+        Err(LeafBindingRefusal::SourceUnreadable)
+    );
+}
+
+#[trace("TC-048", "FR-025-AC-9")]
+#[test]
+fn tc_048_a_source_that_disagrees_with_the_identity_in_call_order_refuses_generation_with_no_harness(
+) {
+    let corpus = corpus();
+    let entry = entry(&corpus, FLAGS_EQUAL);
+    let item = item_of(&entry, "subject");
+    assert!(generate_composite_shadow_with_proof_body(&item, "").is_ok());
+    let refusal = generate_composite_shadow_with_proof_body(
+        &item,
+        "    let zz_extra: bool = kani::any();\n    let _ = zz_extra;\n",
+    )
+    .map(|_| ())
+    .unwrap_err();
+    let CompositeShadowRefusal::LeafBinding {
+        refusal: LeafBindingRefusal::CallOrder { recorded, drawn },
+    } = refusal
+    else {
+        panic!("a call order refusal: {refusal:?}");
+    };
+    assert_eq!(drawn.len(), recorded.len() + 1);
+    assert_eq!(drawn.last().map(String::as_str), Some("zz_extra:bool"));
+}
+
+#[trace("TC-048", "FR-025-AC-9")]
+#[test]
+fn tc_048_an_identity_with_two_literal_operands_draws_nothing_and_matches_only_a_source_that_draws_nothing(
+) {
+    // Generation needs a parameter operand, so the literal/literal identity is the generated
+    // literal/parameter one with its drawn leaves pinned instead.
+    let corpus = corpus();
+    let entry = entry(&corpus, DUO_EQUAL);
+    let mut item = item_of(&entry, "subject");
+    item.right = ShadowOperand::Literal { leaves: vec![1, 2] };
+    let mut identity = generate_composite_shadow(&item).unwrap().identity;
+    let composite = identity.composite.as_mut().unwrap();
+    composite.operands[0] = OperandSource::Literal;
+    for leaf in identity.leaves.drain(..) {
+        composite
+            .pinned
+            .push(filament_contract_codegen::PinnedLeaf {
+                name: leaf.name,
+                operand: 0,
+                path: leaf.path,
+                kind: leaf.kind,
+                value: 0,
+            });
+    }
+    check_leaf_bindings(&identity).expect("two literal operands bind");
+    let drawless = format!("fn {}() {{}}", identity.harness_symbol);
+    check_leaf_call_order(&identity, &drawless).expect("a proof that draws nothing matches");
+    let drawing = format!(
+        "fn {}() {{ let zz_extra: bool = kani::any(); }}",
+        identity.harness_symbol
+    );
+    assert!(matches!(
+        check_leaf_call_order(&identity, &drawing),
+        Err(LeafBindingRefusal::CallOrder { .. })
+    ));
+    assert_eq!(
+        check_leaf_call_order(&identity, "not rust"),
+        Err(LeafBindingRefusal::SourceUnreadable)
+    );
 }
 
 #[trace("TC-048", "FR-025-AC-9")]
@@ -330,18 +438,44 @@ fn tc_048_literal_operands_keep_their_pinned_identity_and_are_never_drawn() {
     out_of_bound.composite.as_mut().unwrap().pinned[1].value = 3;
     assert!(matches!(
         check_leaf_bindings(&out_of_bound),
-        Err(LeafBindingRefusal::Conflict { member, .. }) if member == "value"
+        Err(LeafBindingRefusal::Conflict {
+            member: ConflictMember::Value,
+            ..
+        })
     ));
-    let mut on_a_parameter = identity.clone();
-    on_a_parameter.composite.as_mut().unwrap().pinned[0].operand = 0;
-    assert!(check_leaf_bindings(&on_a_parameter).is_err());
+    // A complete literal operand plus one more pinned leaf on a parameter operand: only the
+    // check that a parameter is never pinned can refuse it, and an operand index beyond the two
+    // operands is refused the same way.
+    for operand in [0, 7] {
+        let mut on_a_parameter = identity.clone();
+        let mut extra = on_a_parameter.composite.as_ref().unwrap().pinned[0].clone();
+        extra.operand = operand;
+        extra.name = "zz_pinned".to_owned();
+        on_a_parameter
+            .composite
+            .as_mut()
+            .unwrap()
+            .pinned
+            .push(extra);
+        assert_eq!(
+            check_leaf_bindings(&on_a_parameter),
+            Err(LeafBindingRefusal::Unknown {
+                name: "zz_pinned".to_owned()
+            }),
+            "operand {operand}"
+        );
+    }
+    // The same pinned path recorded twice under another name for one literal operand.
     let mut duplicated = identity.clone();
-    let again = duplicated.composite.as_ref().unwrap().pinned[0].clone();
+    let mut again = duplicated.composite.as_ref().unwrap().pinned[0].clone();
+    again.name = "zz_again".to_owned();
     duplicated.composite.as_mut().unwrap().pinned.push(again);
-    assert!(matches!(
+    assert_eq!(
         check_leaf_bindings(&duplicated),
-        Err(LeafBindingRefusal::Duplicate { .. })
-    ));
+        Err(LeafBindingRefusal::Duplicate {
+            name: "zz_again".to_owned()
+        })
+    );
 }
 
 #[trace("TC-048", "FR-033-AC-5")]
@@ -592,7 +726,8 @@ fn tc_048_a_100000_link_value_clones_compares_formats_and_drops_on_a_512_kib_sta
     let handle = std::thread::Builder::new()
         .stack_size(512 * 1024)
         .spawn(|| {
-            let mut value = WitnessValue::Boolean(true);
+            let mut value =
+                WitnessValue::ExactInteger(filament_exact::Integer::from(7_654_321_i64));
             for _ in 0..100_000 {
                 value = WitnessValue::Option(Some(Box::new(value)));
             }
@@ -600,6 +735,10 @@ fn tc_048_a_100000_link_value_clones_compares_formats_and_drops_on_a_512_kib_sta
             assert!(copy == value);
             let rendered = format!("{value:?}");
             assert!(!rendered.is_empty());
+            assert!(
+                !rendered.contains("7654321"),
+                "the Debug rendering is redacted and holds no leaf content"
+            );
             drop(copy);
             drop(value);
         })

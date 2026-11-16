@@ -69,14 +69,17 @@ pub enum LeafBindingRefusal {
     Conflict {
         /// The leaf.
         name: String,
-        /// The member that differs: `kind`, `declared`, `drawn` or `value`.
-        member: String,
+        /// The member that differs.
+        member: ConflictMember,
     },
     /// The recorded leaves are not in the shape's symbolic call order.
     OutOfOrder {
         /// The first leaf out of place.
         name: String,
     },
+    /// The generated proof source does not parse or holds no proof function, so its draws cannot
+    /// be compared with the identity's.
+    SourceUnreadable,
     /// The generated source draws other leaves, in another order or of another primitive type,
     /// than the identity records.
     CallOrder {
@@ -85,6 +88,20 @@ pub enum LeafBindingRefusal {
         /// The source's draws, as `name:primitive`.
         drawn: Vec<String>,
     },
+}
+
+/// The member of a recorded leaf that differs from its shape's.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ConflictMember {
+    /// The leaf's kind.
+    Kind,
+    /// The declared bound.
+    Declared,
+    /// The drawn bound.
+    Drawn,
+    /// A pinned value outside its bound.
+    Value,
 }
 
 impl std::fmt::Display for LeafBindingRefusal {
@@ -108,6 +125,7 @@ impl LeafBindingRefusal {
             Self::Conflict { .. } => "cg_composite_leaf_conflict",
             Self::OutOfOrder { .. } => "cg_composite_leaf_out_of_order",
             Self::CallOrder { .. } => "cg_composite_leaf_call_order",
+            Self::SourceUnreadable => "cg_composite_leaf_source_unreadable",
         }
     }
 }
@@ -300,18 +318,18 @@ fn check_drawn(
             .ok_or_else(|| LeafBindingRefusal::Unknown {
                 name: leaf.name.clone(),
             })?;
-        let conflict = |member: &str| LeafBindingRefusal::Conflict {
+        let conflict = |member: ConflictMember| LeafBindingRefusal::Conflict {
             name: leaf.name.clone(),
-            member: member.to_owned(),
+            member,
         };
         if leaf.kind != want.kind {
-            return Err(conflict("kind"));
+            return Err(conflict(ConflictMember::Kind));
         }
         if leaf.declared != want.bound {
-            return Err(conflict("declared"));
+            return Err(conflict(ConflictMember::Declared));
         }
         if leaf.drawn != want.bound {
-            return Err(conflict("drawn"));
+            return Err(conflict(ConflictMember::Drawn));
         }
     }
     for (leaf, want) in recorded.iter().zip(expected) {
@@ -363,15 +381,15 @@ fn check_pinned(
             .ok_or_else(|| LeafBindingRefusal::Unknown {
                 name: pinned.name.clone(),
             })?;
-        let conflict = |member: &str| LeafBindingRefusal::Conflict {
+        let conflict = |member: ConflictMember| LeafBindingRefusal::Conflict {
             name: pinned.name.clone(),
-            member: member.to_owned(),
+            member,
         };
         if pinned.kind != want.kind {
-            return Err(conflict("kind"));
+            return Err(conflict(ConflictMember::Kind));
         }
         if pinned.value < want.bound.0 || pinned.value > want.bound.1 {
-            return Err(conflict("value"));
+            return Err(conflict(ConflictMember::Value));
         }
     }
     for (pinned, want) in recorded.iter().zip(expected) {

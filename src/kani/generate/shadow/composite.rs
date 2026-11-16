@@ -848,6 +848,23 @@ pub fn generate_composite_shadow_with_budget(
     generate_composite_with(item, &Hooks::default(), budget)
 }
 
+/// Generates as [`generate_composite_shadow`] does with `body_extra` added to the proof body before
+/// its assertions.
+///
+/// This entry exists so a test can make the generated source disagree with the identity it
+/// records, and show that generation then refuses without a harness. It is no way to author a
+/// proof.
+pub fn generate_composite_shadow_with_proof_body(
+    item: &CompositeShadowItem<'_>,
+    body_extra: &str,
+) -> Result<KaniShadowHarness, CompositeShadowRefusal> {
+    let hooks = Hooks {
+        body_extra: body_extra.to_owned(),
+        ..Hooks::default()
+    };
+    generate_composite_with(item, &hooks, SHADOW_PAIR_NODE_BUDGET)
+}
+
 pub(crate) fn generate_composite_with(
     item: &CompositeShadowItem<'_>,
     hooks: &Hooks,
@@ -1297,21 +1314,15 @@ fn render_walks_for(model: &Model<'_>, root: &Ty) -> String {
     render_walks(model, root)
 }
 
-/// The primitive type a leaf is drawn as.
-fn primitive_of(kind: LeafKind) -> &'static str {
-    match kind {
-        LeafKind::Boolean | LeafKind::Presence => "bool",
-        LeafKind::Integer | LeafKind::SlotState => "i64",
-    }
-}
-
 /// Checks that the generated proof `source` draws exactly the identity's leaves, in the
 /// identity's order, each as its primitive type: the order a counterexample's playback is read in
 /// (FR-025-AC-9).
 ///
 /// # Errors
 ///
-/// [`LeafBindingRefusal::CallOrder`] naming both sequences as `name:primitive`.
+/// [`LeafBindingRefusal::SourceUnreadable`] when the source does not parse or has no proof
+/// function, and [`LeafBindingRefusal::CallOrder`] naming both sequences as `name:primitive`. An
+/// identity with no drawn leaf (both operands literal) matches only a proof that draws nothing.
 pub fn check_leaf_call_order(
     identity: &ShadowIdentity,
     source: &str,
@@ -1319,10 +1330,10 @@ pub fn check_leaf_call_order(
     let recorded: Vec<String> = identity
         .leaves
         .iter()
-        .map(|leaf| format!("{}:{}", leaf.name, primitive_of(leaf.kind)))
+        .map(|leaf| format!("{}:{}", leaf.name, leaf.kind.primitive().source_name()))
         .collect();
     let drawn: Vec<String> = source_check::drawn_order(source, PROOF_FUNCTION)
-        .unwrap_or_default()
+        .ok_or(LeafBindingRefusal::SourceUnreadable)?
         .into_iter()
         .map(|(name, ty)| format!("{name}:{ty}"))
         .collect();

@@ -12,7 +12,6 @@ use fsl_replay::WitnessValue;
 
 use crate::{
     kani::{
-        abi::KaniPrimitiveType,
         identity::{
             leaf_binding::{
                 check_leaf_bindings, expected_leaves, leaves_of, rebuild_operands,
@@ -40,13 +39,6 @@ impl DecodedCompositeLeaves {
             .iter()
             .find(|(found, _)| found == node)
             .map(|(_, values)| values.as_slice())
-    }
-}
-
-fn primitive(kind: LeafKind) -> KaniPrimitiveType {
-    match kind {
-        LeafKind::Boolean | LeafKind::Presence => KaniPrimitiveType::Boolean,
-        LeafKind::Integer | LeafKind::SlotState => KaniPrimitiveType::I64,
     }
 }
 
@@ -123,7 +115,7 @@ pub fn decode_composite_falsification(
             let read = read_entry(
                 playback.harness,
                 &leaf.name,
-                primitive(leaf.kind),
+                leaf.kind.primitive(),
                 comment,
                 bytes,
             )?;

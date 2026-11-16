@@ -209,8 +209,8 @@ pub use kani::generate::float_scalar::{
 };
 pub use kani::generate::shadow::composite::{
     check_leaf_call_order, generate_composite_shadow, generate_composite_shadow_with_budget,
-    CompositeShadowItem, CompositeShadowRefusal, ShadowOperand, COMPOSITE_FAMILY,
-    UNEXERCISED_COVERAGE,
+    generate_composite_shadow_with_proof_body, CompositeShadowItem, CompositeShadowRefusal,
+    ShadowOperand, COMPOSITE_FAMILY, UNEXERCISED_COVERAGE,
 };
 pub use kani::generate::shadow::source_check::{
     check_shadow_source, check_straight_line, contains_loop, DrawnBound, ShadowSourceViolation,
@@ -219,7 +219,7 @@ pub use kani::generate::shadow::{
     generate_shadow, generate_shadows, independent_helper_check, AbstractionClaim,
     ShadowDisposition, ShadowItem, ShadowLeaf, ShadowRefusal, ShadowShape, SHADOW_PAIR_NODE_BUDGET,
 };
-pub use kani::identity::leaf_binding::{check_leaf_bindings, LeafBindingRefusal};
+pub use kani::identity::leaf_binding::{check_leaf_bindings, ConflictMember, LeafBindingRefusal};
 pub use kani::identity::refinement::{
     plan_refinement, CaseCount, DomainBound, ProofSubject, RefinementBudget, RefinementClass,
     RefinementDisagreement, RefinementOutcome, RefinementPlan, RefinementPlanError,

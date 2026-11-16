@@ -85,6 +85,19 @@ pub enum LeafKind {
     SlotState,
 }
 
+impl LeafKind {
+    /// The primitive type a leaf of this kind is drawn as; the one table the generator, the call
+    /// order check and the playback decoder share.
+    #[must_use]
+    pub const fn primitive(self) -> crate::kani::abi::KaniPrimitiveType {
+        use crate::kani::abi::KaniPrimitiveType;
+        match self {
+            Self::Boolean | Self::Presence => KaniPrimitiveType::Boolean,
+            Self::Integer | Self::SlotState => KaniPrimitiveType::I64,
+        }
+    }
+}
+
 /// One leaf of the identity: its declared and drawn domains.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
