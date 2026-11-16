@@ -64,3 +64,18 @@ Examined FR-029-AC-17, AC-19, AC-21, AC-22, AC-23, AC-24, AC-25, AC-26, AC-27, A
 Implementation Gate and Status, FR-028-AC-17 and the two FR-028 QSL-640 rewordings, the TC-040 and
 TC-048 step edits and the tests.md rows. FR-033's `PLANNED/GATED` tags (AC-2..5, 8, 10) name no
 QSL-640 gate and lie outside this PR's status claims; they are not counted as leftovers here.
+
+## New findings (disposition pass 1)
+
+| ID | Severity | Summary | Refs |
+| --- | --- | --- | --- |
+| FND-005 | low | The new FR-029 open question says "No function therefore maps a non-verified shadow outcome to a terminal value". That is too broad: a falsified shadow outcome has FSL's `replay_composite_parity` (it takes a `FalsifiedParity`; FR-029-AC-20/24 state its rows). The gap is only the inconclusive and cover-unsatisfied outcomes AC-25 names. Say "an inconclusive or cover-unsatisfied shadow outcome" and note that the falsified route exists. | spec/kani/functional/FR-029-run-outcome-terminal-record.md:427-428 |
+
+## Dispositions
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-001 | fixed | Round 1 at 7ffa085c: FR-029 Status cites `tests/it/composite_parity_converter.rs` and lists AC-25 once (inside AC-23 to AC-27). |
+| FND-002 | fixed | Round 1 at 7ffa085c: interface-001:161-166 lists AC-17, AC-21, AC-22 and AC-31 (verified entry) as implemented and AC-19, AC-23 to AC-27 and AC-30 as PLANNED under IR-806 with no upstream gate. No QSL-640 gate remains in spec/ or src/; the only QSL-640 mention left is FR-029's "QSL-640 delivered" note. |
+| FND-003 | fixed | Round 1 at 7ffa085c and 621d0668: the TC-048 intro separates implemented, partial and planned criteria; the scenario table has separate rows for AC-17/AC-22, AC-21, AC-31 (verified entry) and the planned AC-19, AC-23 to AC-27. |
+| FND-004 | fixed | Round 1 at 7ffa085c: FR-029 has a new "Open question (IR-806 PR-3 design decision)" section. It states the AC-25/AC-30 conflict, both options, IR-806 PR-3 as owner, and gives no answer. Its wording is too broad; see FND-005. |

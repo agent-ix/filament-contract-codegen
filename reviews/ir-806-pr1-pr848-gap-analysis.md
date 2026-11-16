@@ -45,3 +45,10 @@ fail. AC-31 is claimed fully covered on verified-entry evidence only.
 
 Examined FR-029-AC-17, AC-21, AC-22, AC-25, AC-30 and AC-31 and their tests. Gate run at 653b0170:
 whole `--lib` 617 passed / 36 ignored, whole `--test it` 1155 passed / 127 ignored, no failures.
+
+## Dispositions
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-001 | fixed | Round 1 at 621d0668 (7ffa085c, 621d0668): FR-029-AC-31 now reads "PARTIAL (verified entry; the falsified-entry rows await AC-19 to AC-27)"; tests.md has its own 🚧 PARTIAL row for AC-31; TC-048 and interface-001 say "AC-31 (verified entry)". |
+| FND-002 | fixed | Round 1 at 7ffa085c: `tc_048_a_non_verified_shadow_outcome_acquires_no_strength` adds `KaniRunOutcome::Falsified`, which runs against every `Agreed(..)`, `ReachedCeiling` and `None` summary. Mutation (letting `proof_strength` accept Falsified) fails it at composite_parity_converter.rs:1047. |
