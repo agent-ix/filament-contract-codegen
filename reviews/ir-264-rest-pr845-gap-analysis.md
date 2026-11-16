@@ -73,3 +73,15 @@ Gate green (all of it, reproduced). Two low gaps here; the medium items are code
 and FND-002 and spec-review FND-001. The PR closes the PR3 round's AC-72 evidence gap and AC-74
 second-case gap genuinely, and AC-73's family rows from checked packages; the AC-73 same-request
 clause is not genuinely closed.
+
+## Dispositions
+
+Round 1, at 51f27657 (fix 63e72803 and 51f27657). Gate at 51f27657, own worktree and target,
+cargo-slot lock, `--locked`: whole `--lib` 607 passed / 0 failed / 36 ignored; whole `--test it`
+1147 passed / 0 failed / 126 ignored; fmt clean; clippy `-D warnings` clean; `cargo deny check`
+ok; `make spec` exit 0; Cargo.lock and Cargo.toml unchanged.
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-001 | fixed | `tests/it/composite_shadow.rs:643` now iterates `["text", "enum", "rational", "decimal", "float", "sequence"]`, and FR-015-AC-73's status lists `sequence` among the seam families in place of `collection`. |
+| FND-002 | fixed | FR-018-AC-22 now reads "the sampled plan above the cap is shown for the record item only.", and TC-029 step 14 now reads "the sampled selector is exercised for the record item)." The `i64`-range citation is gone from both, so no test is cited for AC-22 that is not tagged to it. |

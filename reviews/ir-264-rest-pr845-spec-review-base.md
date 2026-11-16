@@ -46,3 +46,13 @@ Changes requested on FND-001 (medium); FND-002 and FND-003 are wording fixes. On
 question about FR-028-AC-23: the AC was not reworded, only its status note; the note is not an
 honest narrowing (it describes an unbuilt design in the present tense and adds an exemption), so
 it should not stand as written. The AC remains PARTIAL, as the PR says.
+
+## Dispositions
+
+Round 1, at 51f27657 (fix 63e72803 and 51f27657); `make spec` exit 0.
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-001 | fixed | FR-028-AC-23's status now reads "PLANNED, not built: `KaniExecutionEvidence` has no version field and nothing in this crate probes `cargo-kani --version` or the compiler; no run records any version. Planner to assign." The present-tense design sentence and the stand-in exemption are gone; the AC's normative text is unchanged (word-diff of the row touches the status only). |
+| FND-002 | fixed | The table's time-conditional row is gone. The family row reads "text, enum, rational, decimal, float, sequence, set, bag or ordered set ... `ShadowFamilyNotBuilt` naming the family and the node, when FR-018 generated for the item (an item it refused is settled by the last row of this table)", and the last row reads "a descriptor `check_equality` refuses, or an item FR-018 refused (every `quantity` leaf, and the collections whose bound it does not read) / the refusal FR-018 recorded, unchanged, and no harness". The AC-73 status, TC-025 and tests.md no longer list a `ShadowFamilyNotBuilt` row for `quantity`; they name the outcome for `set`, `bag` or `ordered set` only. |
+| FND-003 | fixed | The FR-028 row of `spec/kani/matrix/tests.md` now reads "Partial (IR-264 PR2, PR3, PR4)". |

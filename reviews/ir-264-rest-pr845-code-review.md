@@ -66,3 +66,21 @@ missing default-lane test for a claim the status makes.
 
 Gate results are recorded in the gap-analysis artifact (SR-17940486709564847048021) and the
 final report.
+
+## Dispositions
+
+Round 1, at 51f27657 (fix 63e72803 and 51f27657). Gate: see the gap-analysis artifact's
+Dispositions (all green). Local mutations, each applied to the worktree, the two evidence tests
+run, then reverted (`git status` clean afterwards):
+
+- `skip_serializing_if` removed from `KaniExecutionEvidence.shadow_size`: the StateFrame two-phase
+  test FAILS.
+- the StateFrame arm of `HarnessView` returns `Some(..)`: the StateFrame two-phase test FAILS.
+- the Shadow arm returns `None`: `shadow_evidence::tc_025_a_shadow_run_records_its_size_figures_and_the_stand_in_family_no_pair_nodes` FAILS.
+- (residual, not a finding) the Contract arm returns `Some(..)`: both tests still pass; absence
+  is asserted for one non-shadow family (StateFrame), each other arm being a literal `None`.
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-001 | fixed | `generate_composite_shadows`, its `lib.rs` re-export and `tc_025_a_request_settles_each_item_as_it_does_alone` are removed; FR-015-AC-73's status reads "NOT MET (planner to assign): the clause that a supported item in the same request settles as it does alone, because the request is the `negotiate_kani_obligations` request and the composite family is not an item kind of it", and TC-025 and tests.md list the same-request clause as not met. |
+| FND-002 | fixed | Default-lane assertions now exist: the StateFrame two-phase test asserts `evidence.shadow_size == None`, `proof.shadow_size == None`, and no `shadowSize` key in the wire evidence or its `proofPhase`; `tests/it/shadow_evidence.rs` runs the stand-in and the composite shadow through a launcher stand-in and asserts `sizeBudget`, `size`, and `pairNodes` (absent for the stand-in, equal to the identity's for the composite). The three mutations named in the finding each fail a test (above). |
