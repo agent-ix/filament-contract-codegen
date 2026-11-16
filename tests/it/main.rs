@@ -69,6 +69,7 @@ mod composite_original_eq;
 mod composite_parity_converter;
 mod composite_record_residuals;
 mod composite_shadow;
+mod composite_shadow_families;
 mod composite_shadow_kani;
 mod composite_shadow_native;
 mod cover_last;
@@ -144,5 +145,6 @@ mod constrained_method;
 mod native_driver_artifacts;
 
 mod scalar_source_forms;
+mod shadow_evidence;
 mod shadow_kani;
 mod shadow_refinement;

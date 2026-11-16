@@ -382,6 +382,10 @@ pub struct KaniExecutionEvidence {
     /// field is the proof phase's evidence for the same harness identity (FR-028-AC-23).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proof_phase: Option<Box<KaniExecutionEvidence>>,
+    /// Present exactly when the harness is a bounded-shadow harness: its family's size budget,
+    /// the item's size and the composite closure's pair-node count (FR-015-AC-72).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub shadow_size: Option<crate::kani::identity::shadow::ShadowSizeRecord>,
 }
 
 /// A backend report and its invocation metadata, without an attestation of resource enforcement.
@@ -402,6 +406,7 @@ struct ReportedExecution {
     batch: Option<KaniBatchInvocation>,
     diagnostics: Option<KaniNoVerdictDiagnostics>,
     failure_cause: Option<KaniFailureCause>,
+    shadow_size: Option<crate::kani::identity::shadow::ShadowSizeRecord>,
 }
 
 impl ReportedExecution {
@@ -430,6 +435,7 @@ impl ReportedExecution {
             diagnostics: self.diagnostics,
             failure_cause: self.failure_cause,
             proof_phase: None,
+            shadow_size: self.shadow_size,
         }
     }
 }
@@ -792,6 +798,7 @@ fn evidence_of(
         batch,
         diagnostics: record.diagnostics,
         failure_cause: record.failure_cause,
+        shadow_size: harness.shadow_size,
     }
 }
 

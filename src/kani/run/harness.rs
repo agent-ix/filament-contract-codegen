@@ -93,6 +93,8 @@ pub(super) struct HarnessView<'a> {
     pub(super) options: &'a [String],
     /// The witness option vector.
     pub(super) witness_options: &'a [String],
+    /// The size figures of a bounded-shadow harness; `None` for every other family.
+    pub(super) shadow_size: Option<crate::kani::identity::shadow::ShadowSizeRecord>,
 }
 
 impl<'a> KaniExecutableHarness<'a> {
@@ -293,6 +295,7 @@ impl<'a> KaniExecutableHarness<'a> {
                 solver: KaniSolver::Cadical,
                 options: &harness.identity.options,
                 witness_options: &harness.identity.witness_options,
+                shadow_size: None,
             },
             Self::Contract(harness) => {
                 let identity = &harness.identity;
@@ -305,6 +308,7 @@ impl<'a> KaniExecutableHarness<'a> {
                     solver: identity.solver,
                     options: &identity.options,
                     witness_options: &identity.witness_options,
+                    shadow_size: None,
                 }
             }
             Self::Scalar(harness) => {
@@ -318,6 +322,7 @@ impl<'a> KaniExecutableHarness<'a> {
                     solver: identity.solver,
                     options: &identity.options,
                     witness_options: &identity.witness_options,
+                    shadow_size: None,
                 }
             }
             Self::StateFrame(harness) => {
@@ -334,6 +339,7 @@ impl<'a> KaniExecutableHarness<'a> {
                     solver: identity.solver,
                     options: &identity.options,
                     witness_options: &identity.witness_options,
+                    shadow_size: None,
                 }
             }
             Self::Collection(harness) => {
@@ -347,6 +353,7 @@ impl<'a> KaniExecutableHarness<'a> {
                     solver: identity.solver,
                     options: &identity.options,
                     witness_options: &identity.witness_options,
+                    shadow_size: None,
                 }
             }
             Self::Graph(harness) => {
@@ -360,6 +367,7 @@ impl<'a> KaniExecutableHarness<'a> {
                     solver: identity.solver,
                     options: &identity.options,
                     witness_options: &identity.witness_options,
+                    shadow_size: None,
                 }
             }
             Self::Shadow(harness) => {
@@ -373,6 +381,7 @@ impl<'a> KaniExecutableHarness<'a> {
                     solver: identity.solver,
                     options: &identity.options,
                     witness_options: &identity.witness_options,
+                    shadow_size: Some(identity.size_record()),
                 }
             }
             Self::V2Clause(harness) => {
@@ -386,6 +395,7 @@ impl<'a> KaniExecutableHarness<'a> {
                     solver: identity.solver,
                     options: &identity.options,
                     witness_options: &identity.witness_options,
+                    shadow_size: None,
                 }
             }
         }

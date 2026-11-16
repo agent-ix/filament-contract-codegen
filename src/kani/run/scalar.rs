@@ -2196,6 +2196,7 @@ mod tests {
             diagnostics: None,
             failure_cause,
             proof_phase: None,
+            shadow_size: None,
         }
     }
 

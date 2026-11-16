@@ -226,7 +226,7 @@ pub use kani::identity::refinement::{
 pub use kani::identity::shadow::{
     AbstractionEvidence, AbstractionRecord, BackingState, CompositeIdentity, HelperMark,
     KaniShadowHarness, LeafKind, LeafRecord, PinnedLeaf, ProductionRead, RefinementObligation,
-    ShadowIdentity, SharedHelperClaim, UnexercisedCoverage,
+    ShadowIdentity, ShadowSizeRecord, SharedHelperClaim, UnexercisedCoverage,
 };
 pub use kani::identity::{DivisionScalarIdentity, EnumScalarIdentity, FloatScalarIdentity};
 pub use kani::output::diagnostics::{

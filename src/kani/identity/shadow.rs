@@ -195,6 +195,36 @@ pub struct ShadowIdentity {
     pub composite: Option<CompositeIdentity>,
 }
 
+/// The size figures of a shadow harness as the evidence of its run records them (FR-015-AC-72):
+/// the family's budget, the item's size and, for the composite family, the closure's pair-node
+/// count.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ShadowSizeRecord {
+    /// The family's size budget the harness was generated under.
+    pub size_budget: u32,
+    /// The item's size.
+    pub size: u32,
+    /// The composite closure's pair-node count; absent for a family without one.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pair_nodes: Option<u32>,
+}
+
+impl ShadowIdentity {
+    /// The figures a run of this harness records beside its outcome.
+    #[must_use]
+    pub fn size_record(&self) -> ShadowSizeRecord {
+        ShadowSizeRecord {
+            size_budget: self.size_budget,
+            size: self.size,
+            pair_nodes: self
+                .composite
+                .as_ref()
+                .map(|composite| composite.pair_nodes),
+        }
+    }
+}
+
 /// The refinement obligation: what the production subject owes the shadow (FR-028-AC-14).
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RefinementObligation {

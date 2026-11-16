@@ -31,9 +31,21 @@ pub(super) struct Corpus {
 }
 
 pub(super) fn corpus() -> Corpus {
-    let compiled = fixture::compile(fixture::BOUNDED_CASE);
+    corpus_of(fixture::BOUNDED_CASE, &ITEMS)
+}
+
+/// The corpus of two integers bounded by the whole `i64` range, compared under `=`.
+pub(super) fn wide_corpus() -> Corpus {
+    corpus_of(
+        fixture::WIDE_CASE,
+        &[("wide_equal", "fw", EqualityOperatorKind::Equal)],
+    )
+}
+
+fn corpus_of(case: &str, requested: &[(&str, &str, EqualityOperatorKind)]) -> Corpus {
+    let compiled = fixture::compile(case);
     let package = super::admitted_enum_equality::checked(&compiled, &[]);
-    let items: Vec<_> = ITEMS
+    let items: Vec<_> = requested
         .iter()
         .map(|(_, function, operator)| {
             let mut item = original_item_named(&package, function, false);

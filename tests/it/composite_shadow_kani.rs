@@ -12,7 +12,7 @@ use filament_contract_codegen::{
 use filament_exact::Cancel;
 use ix_trace_rs::trace;
 
-use super::composite_equality_closure::corpus;
+use super::composite_equality_closure::{corpus, wide_corpus};
 use super::composite_shadow::{
     boolean, entry, generate, int, item_of, with_record, FLAGS_EQUAL, FLAGS_NOT_EQUAL, OPTION_EQUAL,
 };
@@ -76,6 +76,18 @@ fn prove(harness: &KaniShadowHarness, name: &str) -> (KaniExecutionEvidence, f64
     })
     .expect("the run is not refused");
     let wall = started.elapsed().as_secs_f64();
+    // The run's own evidence carries the size figures the identity does (FR-015-AC-72).
+    assert_eq!(evidence.shadow_size, Some(harness.identity.size_record()));
+    let recorded = serde_json::to_value(&evidence).unwrap();
+    assert_eq!(
+        recorded["shadowSize"]["sizeBudget"],
+        harness.identity.size_budget
+    );
+    assert_eq!(recorded["shadowSize"]["size"], harness.identity.size);
+    assert_eq!(
+        recorded["shadowSize"]["pairNodes"],
+        harness.identity.composite.as_ref().unwrap().pair_nodes
+    );
     eprintln!(
         "EVIDENCE exit={:?} success_checks={} checks={} args={:?}",
         evidence.exit_code,
@@ -204,6 +216,27 @@ fn tc_025_installed_kani_verifies_each_supported_corpus_shadow_with_its_cover_sa
             "{label}: the cover is satisfied"
         );
     }
+}
+
+/// FR-015-AC-74: the second case, two integer leaves each spanning the whole `i64` range per
+/// operand, verifies with its cover satisfied; its refinement run is the sampled one of
+/// `composite_shadow_native`.
+#[trace("TC-025", "FR-015-AC-74")]
+#[test]
+#[ignore = "kani lane: run serially through make kani-gate"]
+fn tc_025_installed_kani_verifies_the_shadow_of_two_unconstrained_i64_leaves() {
+    if !selected("wide-i64") {
+        return;
+    }
+    let corpus = wide_corpus();
+    let harness = generate(&corpus, 0);
+    let (evidence, _) = prove(&harness, "wide-i64");
+    assert_eq!(evidence.outcome, KaniRunOutcome::Verified);
+    assert!(evidence
+        .checks
+        .iter()
+        .any(|check| check.class == KaniCheckClass::Cover
+            && check.status == KaniCheckStatus::Satisfied));
 }
 
 /// FR-015-AC-75 and FR-028-AC-22: each shadow mutant that rewrites the corpus record is falsified, and by the check it claims;

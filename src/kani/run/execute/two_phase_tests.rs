@@ -149,6 +149,7 @@ fn inconclusive(reason: KaniInconclusiveReason) -> KaniRunOutcome {
 /// falsified carrying that playback verbatim, from two launches with the literal vectors, equal
 /// ceilings, and both phases' evidence bound together.
 #[trace("TC-027", "FR-017-AC-63")]
+#[trace("TC-025", "FR-015-AC-72")]
 #[test]
 fn the_witness_phase_falsifies_with_its_playback_under_the_literal_vectors() {
     let witness = report_at("a::check", "Failure", &[FAIL_10, COVER]);
@@ -181,6 +182,11 @@ fn the_witness_phase_falsifies_with_its_playback_under_the_literal_vectors() {
     );
     let wire = serde_json::to_value(&evidence).unwrap();
     assert_eq!(wire["proofPhase"]["arguments"][1], "-Z");
+    // A family that is not a bounded shadow records no size figures, in either phase (FR-015-AC-72).
+    assert_eq!(evidence.shadow_size, None);
+    assert_eq!(proof.shadow_size, None);
+    assert!(wire.get("shadowSize").is_none(), "{wire}");
+    assert!(wire["proofPhase"].get("shadowSize").is_none(), "{wire}");
 }
 
 /// (b) A witness run that does not reproduce the proof run's failed (class, location) set is

@@ -21,7 +21,7 @@ use filament_exact::Cancel;
 use ix_trace_rs::trace;
 
 use super::composite_equality_agreement::fixture;
-use super::composite_equality_closure::{corpus, generated, Corpus};
+use super::composite_equality_closure::{corpus, generated, wide_corpus, Corpus};
 use super::composite_shadow::{
     generate, DUO_EQUAL, FLAGS_EQUAL, FLAGS_NOT_EQUAL, NESTED_OPTION_EQUAL, OPTION_EQUAL,
 };
@@ -135,6 +135,8 @@ pub(super) struct Example {
 /// One scratch package: the corpus oracle crate, possibly edited, and its programs.
 pub(super) struct Member {
     pub(super) label: String,
+    /// The fixture case the programs build their context from.
+    pub(super) case: &'static str,
     pub(super) artifacts: Vec<(String, String)>,
     pub(super) examples: Vec<Example>,
 }
@@ -201,7 +203,7 @@ pub(super) fn build(workspace: &Path, members: &[Member]) -> Vec<Vec<PathBuf>> {
             fs::write(destination, contents).unwrap();
         }
         assert!(wrote_manifest, "{}: no Cargo.toml", member.label);
-        fs::write(root.join("case-mode"), fixture::BOUNDED_CASE).unwrap();
+        fs::write(root.join("case-mode"), member.case).unwrap();
         let manifest = fs::read_to_string(root.join("Cargo.toml")).unwrap();
         let mut manifest = composite_manifest_for_shared_target(&manifest, &member.label);
         assert_eq!(manifest.matches("[workspace]\n").count(), 1);
@@ -368,6 +370,7 @@ fn mutant_absent_is_null(left: &exact::Value, right: &exact::Value) -> bool {
     vec![
         Member {
             label: "mutant_opposite_operator".to_owned(),
+            case: fixture::BOUNDED_CASE,
             artifacts: lib(&|s| {
                 in_oracle(
                     &s,
@@ -380,6 +383,7 @@ fn mutant_absent_is_null(left: &exact::Value, right: &exact::Value) -> bool {
         },
         Member {
             label: "mutant_absent_equals_null".to_owned(),
+            case: fixture::BOUNDED_CASE,
             artifacts: lib(&|s| {
                 let s = in_oracle(
                     &s,
@@ -393,6 +397,7 @@ fn mutant_absent_is_null(left: &exact::Value, right: &exact::Value) -> bool {
         },
         Member {
             label: "mutant_extra_pair_charge".to_owned(),
+            case: fixture::BOUNDED_CASE,
             artifacts: lib(&|s| {
                 in_oracle(
                     &s,
@@ -405,6 +410,7 @@ fn mutant_absent_is_null(left: &exact::Value, right: &exact::Value) -> bool {
         },
         Member {
             label: "mutant_optional_declared_required".to_owned(),
+            case: fixture::BOUNDED_CASE,
             artifacts: artifacts(corpus, &|_, contents| {
                 contents.replace("exact::Presence::Optional", "exact::Presence::Required")
             }),
@@ -412,6 +418,7 @@ fn mutant_absent_is_null(left: &exact::Value, right: &exact::Value) -> bool {
         },
         Member {
             label: "mutant_legal_pair_refused".to_owned(),
+            case: fixture::BOUNDED_CASE,
             artifacts: lib(&|s| {
                 in_oracle(
                     &s,
@@ -436,6 +443,7 @@ fn tc_025_each_corpus_refinement_agrees_exhaustively_and_a_smaller_cap_samples()
     let scratch = TemporaryDirectory::new("composite-shadow-native");
     let member = Member {
         label: "composite_shadow_base".to_owned(),
+        case: fixture::BOUNDED_CASE,
         artifacts: artifacts(&corpus, &|_, contents| contents),
         examples: CORPUS
             .iter()
@@ -578,4 +586,46 @@ fn tc_025_a_sampled_plan_draws_every_boolean_presence_and_slot_state() {
             );
         }
     }
+}
+
+/// FR-015-AC-74: the second case, two integer leaves each spanning the whole `i64` range, has a
+/// refinement domain no case cap admits (its case count overflows `u128`), so its run is
+/// `sampled`: the boundary cases and the request's sample size of seeded cases, all agreeing.
+#[trace("TC-025", "FR-015-AC-74")]
+#[trace("TC-039", "FR-028-AC-16")]
+#[test]
+fn tc_025_two_unconstrained_i64_leaves_are_refined_by_a_sampled_run_that_agrees() {
+    let corpus = wide_corpus();
+    let scratch = TemporaryDirectory::new("composite-shadow-wide");
+    let member = Member {
+        label: "composite_shadow_wide".to_owned(),
+        case: fixture::WIDE_CASE,
+        artifacts: artifacts(&corpus, &|_, contents| contents),
+        examples: vec![example("refine_wide_equal", &corpus, 0)],
+    };
+    let programs = build(&scratch.path, std::slice::from_ref(&member));
+    let harness = &member.examples[0].harness;
+    let widths: Vec<_> = harness
+        .identity
+        .leaves
+        .iter()
+        .map(|leaf| leaf.drawn)
+        .collect();
+    // Two leaves per operand.
+    assert_eq!(widths, [(i64::MIN, i64::MAX); 4]);
+    let evidence = run(harness, &programs[0][0], &scratch.path, budget(CAP));
+    assert_eq!(evidence.outcome, RefinementOutcome::Agreed);
+    assert_eq!(evidence.class, RefinementClass::Sampled);
+    assert_eq!(
+        evidence.case_count,
+        filament_contract_codegen::CaseCount::Overflowed
+    );
+    assert_eq!(evidence.sample_size, 64);
+    assert_eq!(evidence.seed, 11);
+    assert!(evidence.boundary_cases > 0);
+    assert_eq!(evidence.cases_run, evidence.boundary_cases + 64);
+    eprintln!(
+        "WIDE class={:?} cases_run={} boundary={}",
+        evidence.class, evidence.cases_run, evidence.boundary_cases
+    );
 }

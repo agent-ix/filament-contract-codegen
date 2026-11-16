@@ -725,16 +725,22 @@ step 35). Native refinement: `tests/it/composite_shadow_native.rs` (steps 34 and
 FR-028-AC-16's Boolean and slot states). Installed backend, in the Kani lane (`make kani-gate`, filter
 `composite_shadow_kani`): `tests/it/composite_shadow_kani.rs` (steps 34 and 35 and the budget probe).
 
-Not met, and unowned (planner to assign): step 33's `reference` composite row (FR-018-AC-7 is
-planned, so no package reaches it), its `quantity` row and its `sequence`, `set`, `bag` and `ordered set`
-rows (the closure reader records those as `other` and `collection`; the other family names are fed to
-the generator as recorded type names), and the same-request clause (separate calls, no negotiated
-request); step 29's evidence in the run record (`KaniExecutionEvidence` carries neither the budget nor
-the count; the identity does, asserted in its serialised form); the parameter nodes of step 30's order
-check are the two argument references of the corpus equality application, read from the checked package; step 34's second case is the corpus record under a case cap of
-100 rather than two unconstrained `i64`-range leaves, and the shadow run's evidence names no tool
-versions (FR-028-AC-23); the generator is a public entry that takes the claim-map entry, and is not
-yet an item kind of the negotiated request.
+Added by IR-264 PR4: `tests/it/composite_shadow_families.rs` (step 33: a `sequence` leaf, and the
+`set`, `bag`, `ordered set` and `quantity` leaves FR-018 refuses first, read from a genuine checked
+package); the run record's `shadowSize` (step 32: the budget, the size and the pair-node count in the
+evidence of each installed-backend run, asserted equal to the identity's); and the second case of
+step 34 (a record of two integers each bounded by the whole `i64` range, per operand: a native
+`sampled` refinement run whose case count overflows `u128`, and its shadow `Verified` with its cover
+satisfied).
+
+Not met (planner to assign): step 33's same-request clause (the composite family is not an item kind
+of the `negotiate_kani_obligations` request), its `reference` composite row (FR-018-AC-7 is planned and
+blocked on `agent-ix/filament-spec-language#120`, so no package reaches it) and the
+`ShadowFamilyNotBuilt` outcome for `set`, `bag` and `ordered set`, which FR-018 pre-empts with
+its own refusal (`bounded_domain`); the shadow run's evidence names no tool versions
+(FR-028-AC-23); the parameter nodes of step 30's order check are the two argument references of the
+corpus equality application, read from the checked package; the generator is a public entry that
+takes the claim-map entry, and is not yet an item kind of the negotiated request.
 
 `SHADOW_PAIR_NODE_BUDGET` is 128. The probe (`tc_025_budget_probe_verifies_a_mixed_closure_of_the_requested_size`)
 generates, under an explicit budget, a record whose members cycle Boolean, `Int[0, 2]` and optional
@@ -775,6 +781,30 @@ cross-lane lock was held. The wall is the proof's; the peak covers the test proc
 | mutant: count stops after the first unequal field | Falsified at the pair-count assertion | 0.5 s | 138,350,592 B |
 | mutant: `!=` rendered as `=` | Falsified at the verdict assertion | 0.5 s | 120,041,472 B |
 | mutant: a field left out | Falsified at the verdict assertion | 0.5 s | 129,110,016 B |
+
+IR-264 PR4 re-ran every row of the lane with the run-record check of FR-015-AC-72 (the evidence's
+`shadowSize` equals the identity's budget, size and pair-node count) and added the second case of
+FR-015-AC-74, each row in a scope of its own (a 24 GiB cap, swap 0, the cross-lane lock held). The
+wall is the scope's, from the test process's start to its end, and the peak is its `memory.peak`:
+
+| Row | Verdict | Wall | memory.peak |
+|---|---|---|---|
+| two `i64`-range integer leaves per operand | Verified, cover satisfied | 0.4 s | 126,316,544 B |
+| record under `=` | Verified, cover satisfied | 0.5 s | 116,314,112 B |
+| record under `!=` | Verified, cover satisfied | 0.4 s | 113,131,520 B |
+| tuple | Verified, cover satisfied | 0.4 s | 132,804,608 B |
+| option | Verified, cover satisfied | 0.4 s | 135,176,192 B |
+| nested option | Verified, cover satisfied | 0.4 s | 141,017,088 B |
+| member order permuted | Verified | 0.5 s | 133,316,608 B |
+| mutant: `absent` equal to `null` | Falsified at the verdict assertion | 0.7 s | 120,963,072 B |
+| mutant: option payload pair not counted | Falsified at the pair-count assertion | 0.6 s | 137,957,376 B |
+| mutant: count stops after the first unequal field | Falsified at the pair-count assertion | 0.7 s | 109,568,000 B |
+| mutant: `!=` rendered as `=` | Falsified at the verdict assertion | 0.7 s | 121,786,368 B |
+| mutant: a field left out | Falsified at the verdict assertion | 0.7 s | 105,103,360 B |
+| mutant: a field compared with the next field of the other operand (healthy record Verified in the same scope) | Falsified at the verdict assertion | 0.9 s | 130,658,304 B |
+
+The second case's native refinement run is `sampled`: its case count overflows `u128`, it ran the 18
+boundary cases and 64 seeded cases (82 in all), and all agreed.
 
 Natively, the refinement runs of the corpus agree exhaustively over 2,916 cases (the record under
 either operator), 36 (the tuple), 36 (the option) and 64 (the nested option); the record under a case

@@ -247,10 +247,11 @@ shadow: the source check over the composite source and its seven spliced faults
 the construction refusals and the composite observables
 (`tc_025_each_production_mutant_disagrees_with_the_shadow_for_the_reason_it_claims`,
 `tc_025_each_corpus_refinement_agrees_exhaustively_and_a_smaller_cap_samples`), the refusal table
-(`tc_025_each_unsupported_shape_settles_with_its_reason_and_no_harness`, whose `reference` row is
-partial) and the mutant set (`tc_025_installed_kani_falsifies_each_shadow_mutant_by_the_check_it_claims`
+(`tc_025_each_unsupported_shape_settles_with_its_reason_and_no_harness` and, from checked packages,
+`tc_025_a_sequence_a_set_a_bag_an_ordered_set_and_a_quantity_settle_each_with_its_reason_from_a_checked_package`,
+whose `reference` row is partial) and the mutant set (`tc_025_installed_kani_falsifies_each_shadow_mutant_by_the_check_it_claims`
 in the Kani lane, with the native and closure-reader mutants above). Its verdicts are in TC-025.
 
-Still partial, and unowned (planner to assign): step 21 has the per-phase vectors and the solver name
+Still partial (planner to assign, except that the terminal value is IR-806): step 21 has the per-phase vectors and the solver name
 but not the Kani version, the solver version or the Rust compiler version in the shadow run's own
 evidence; and the strength is not yet a member of the terminal value (FR-028-AC-17).
