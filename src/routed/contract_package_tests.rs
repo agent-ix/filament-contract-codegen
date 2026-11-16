@@ -183,7 +183,7 @@ mod tests {
             candidates: Candidates::Set(vec![Candidate {
                 identity: "kani".to_owned(),
             }]),
-            kani_form: KaniForm::V2FunctionApplication {
+            kani_form: Some(KaniForm::V2FunctionApplication {
                 package: std::sync::Arc::new(package),
                 function_node_id: ids.resolve(&code_id(SOURCE_FUNCTION)),
                 call_node_id: ids.resolve(&code_id(SOURCE_CALL)),
@@ -191,7 +191,8 @@ mod tests {
                     ids.resolve(&code_id(SOURCE_PARAM_A)),
                     ids.resolve(&code_id(SOURCE_PARAM_B)),
                 ],
-            },
+            }),
+            requirements: Default::default(),
         }
     }
 
@@ -211,12 +212,13 @@ mod tests {
             candidates: Candidates::Set(vec![Candidate {
                 identity: "kani".to_owned(),
             }]),
-            kani_form: KaniForm::V2FunctionApplication {
+            kani_form: Some(KaniForm::V2FunctionApplication {
                 package: checked.into(),
                 function_node_id: ids[0].clone(),
                 call_node_id: ids[2].clone(),
                 argument_node_ids: vec![ids[3].clone()],
-            },
+            }),
+            requirements: Default::default(),
         };
         let incomplete_item = oversized_function_item();
         let mut valid = refused_item.clone();
@@ -228,6 +230,7 @@ mod tests {
                 identity: "kani".to_owned(),
                 advertised: vec![(CapabilityKind::ValueValidity, Mode::Bounded)],
                 origin: ProviderOrigin::Linked,
+                profile: Default::default(),
                 domains: None,
                 bounds: None,
             },
@@ -235,6 +238,7 @@ mod tests {
                 identity: "process".to_owned(),
                 advertised: vec![(CapabilityKind::ValueValidity, Mode::Bounded)],
                 origin: ProviderOrigin::Process,
+                profile: Default::default(),
                 domains: Some(Default::default()),
                 bounds: None,
             },
@@ -441,12 +445,13 @@ mod tests {
             candidates: Candidates::Set(vec![Candidate {
                 identity: "kani".to_owned(),
             }]),
-            kani_form: KaniForm::V2FunctionApplication {
+            kani_form: Some(KaniForm::V2FunctionApplication {
                 package: checked.into(),
                 function_node_id: ids[0].clone(),
                 call_node_id: ids[2].clone(),
                 argument_node_ids: vec![ids[3].clone()],
-            },
+            }),
+            requirements: Default::default(),
         };
         let result = negotiate_backend_provider(&BackendProviderEnvelope {
             contract_version: BACKEND_PROVIDER_CONTRACT.to_owned(),
@@ -455,6 +460,7 @@ mod tests {
                 identity: "kani".to_owned(),
                 advertised: vec![(CapabilityKind::ValueValidity, Mode::Bounded)],
                 origin: ProviderOrigin::Linked,
+                profile: Default::default(),
                 domains: None,
                 bounds: None,
             }],
@@ -1055,6 +1061,7 @@ mod tests {
             identity: "kani".to_owned(),
             advertised: vec![(CapabilityKind::ValueValidity, Mode::Bounded)],
             origin: ProviderOrigin::Linked,
+            profile: Default::default(),
             domains: None,
             bounds: None,
         });
@@ -1070,7 +1077,7 @@ mod tests {
             candidates: Candidates::Set(vec![Candidate {
                 identity: "kani".to_owned(),
             }]),
-            kani_form: KaniForm::V2FunctionApplication {
+            kani_form: Some(KaniForm::V2FunctionApplication {
                 package: std::sync::Arc::new(checked),
                 function_node_id: function.clone(),
                 call_node_id: call,
@@ -1078,13 +1085,14 @@ mod tests {
                     ids.resolve(&code_id(SOURCE_PARAM_A)),
                     ids.resolve(&code_id(SOURCE_PARAM_B)),
                 ],
-            },
+            }),
+            requirements: Default::default(),
         };
         assert!(crate::routed::capability::take_package_classifier_indices().is_empty());
         assert!(crate::oracle::function::take_function_preflight_indices().is_empty());
         assert_eq!(crate::oracle::function::take_function_preflight_reads(), 0);
         let checked = match &envelope.items[1].kani_form {
-            KaniForm::V2FunctionApplication { package, .. } => package.as_ref(),
+            Some(KaniForm::V2FunctionApplication { package, .. }) => package.as_ref(),
             _ => unreachable!("bound call has a V2 source"),
         };
         let settled = negotiate_contract_package(checked, &admitted, &positions, &envelope)
@@ -1118,6 +1126,7 @@ mod tests {
             identity: "process".to_owned(),
             advertised: Vec::new(),
             origin: ProviderOrigin::Process,
+            profile: Default::default(),
             domains: None,
             bounds: None,
         };
@@ -1229,7 +1238,7 @@ mod tests {
             candidates: Candidates::Set(vec![Candidate {
                 identity: "kani".to_owned(),
             }]),
-            kani_form: KaniForm::V2FunctionApplication {
+            kani_form: Some(KaniForm::V2FunctionApplication {
                 package: std::sync::Arc::new(checked),
                 function_node_id: function.clone(),
                 call_node_id: call,
@@ -1237,12 +1246,13 @@ mod tests {
                     ids.resolve(&code_id(SOURCE_PARAM_A)),
                     ids.resolve(&code_id(SOURCE_PARAM_B)),
                 ],
-            },
+            }),
+            requirements: Default::default(),
         };
         let mut envelope = empty_backend_request(
             2,
             match &request.kani_form {
-                KaniForm::V2FunctionApplication { package, .. } => package,
+                Some(KaniForm::V2FunctionApplication { package, .. }) => package,
                 _ => unreachable!(),
             },
             &body,
@@ -1251,6 +1261,7 @@ mod tests {
             identity: "kani".to_owned(),
             advertised: vec![(CapabilityKind::ValueValidity, Mode::Bounded)],
             origin: ProviderOrigin::Linked,
+            profile: Default::default(),
             domains: None,
             bounds: None,
         });
@@ -1263,7 +1274,7 @@ mod tests {
             };
         }
         let checked = match &envelope.items[1].kani_form {
-            KaniForm::V2FunctionApplication { package, .. } => package.as_ref(),
+            Some(KaniForm::V2FunctionApplication { package, .. }) => package.as_ref(),
             _ => unreachable!("bound call has a V2 source"),
         };
         let result = negotiate_contract_package(checked, &admitted, &positions, &envelope)
@@ -1336,7 +1347,7 @@ mod tests {
             candidates: Candidates::Set(vec![Candidate {
                 identity: "kani".to_owned(),
             }]),
-            kani_form: KaniForm::V2FunctionApplication {
+            kani_form: Some(KaniForm::V2FunctionApplication {
                 package: std::sync::Arc::new(shared),
                 function_node_id: shared_ids.resolve(&code_id(SOURCE_FUNCTION)),
                 call_node_id: shared_ids.resolve(&code_id(SOURCE_CALL)),
@@ -1344,19 +1355,20 @@ mod tests {
                     shared_ids.resolve(&code_id(SOURCE_PARAM_A)),
                     shared_ids.resolve(&code_id(SOURCE_PARAM_B)),
                 ],
-            },
+            }),
+            requirements: Default::default(),
         };
         let second = first.clone();
         let mut wrong_callee = first.clone();
-        let KaniForm::V2FunctionApplication {
+        let Some(KaniForm::V2FunctionApplication {
             function_node_id, ..
-        } = &mut wrong_callee.kani_form
+        }) = &mut wrong_callee.kani_form
         else {
             unreachable!("cloned function form")
         };
         *function_node_id = shared_ids.resolve(&code_id(SOURCE_OTHER_FUNCTION));
         let third = RequestItem {
-            kani_form: KaniForm::V2FunctionApplication {
+            kani_form: Some(KaniForm::V2FunctionApplication {
                 package: std::sync::Arc::new(different),
                 function_node_id: different_ids.resolve(&code_id(SOURCE_FUNCTION)),
                 call_node_id: different_ids.resolve(&code_id(SOURCE_CALL)),
@@ -1364,7 +1376,8 @@ mod tests {
                     different_ids.resolve(&code_id(SOURCE_PARAM_A)),
                     different_ids.resolve(&code_id(SOURCE_PARAM_B)),
                 ],
-            },
+            }),
+            requirements: Default::default(),
             ..first.clone()
         };
         let envelope = BackendProviderEnvelope {
@@ -1374,6 +1387,7 @@ mod tests {
                 identity: "kani".to_owned(),
                 advertised: vec![(CapabilityKind::ValueValidity, Mode::Bounded)],
                 origin: ProviderOrigin::Linked,
+                profile: Default::default(),
                 domains: None,
                 bounds: None,
             }],
@@ -1448,10 +1462,11 @@ mod tests {
                 candidates: Candidates::Set(vec![Candidate {
                     identity: "kani".to_owned(),
                 }]),
-                kani_form: KaniForm::OutsideSet {
+                kani_form: Some(KaniForm::OutsideSet {
                     package: std::sync::Arc::clone(package),
                     node_id,
-                },
+                }),
+                requirements: Default::default(),
             };
         let envelope = BackendProviderEnvelope {
             contract_version: BACKEND_PROVIDER_CONTRACT.to_owned(),
@@ -1460,6 +1475,7 @@ mod tests {
                 identity: "kani".to_owned(),
                 advertised: vec![(CapabilityKind::ValueValidity, Mode::Bounded)],
                 origin: ProviderOrigin::Linked,
+                profile: Default::default(),
                 domains: None,
                 bounds: None,
             }],
@@ -1574,10 +1590,11 @@ mod tests {
                     extent: None,
                     named_backend: None,
                     candidates: Candidates::Set(Vec::new()),
-                    kani_form: crate::routed::capability::KaniForm::OutsideSet {
+                    kani_form: Some(crate::routed::capability::KaniForm::OutsideSet {
                         package: std::sync::Arc::new(package.clone()),
                         node_id: node_id.clone(),
-                    },
+                    }),
+                    requirements: Default::default(),
                 })
                 .collect(),
         }
@@ -1717,6 +1734,7 @@ mod tests {
             identity: "context-test-process".to_owned(),
             advertised: Vec::new(),
             origin: ProviderOrigin::Process,
+            profile: Default::default(),
             domains: None,
             bounds: None,
         };
@@ -1940,6 +1958,7 @@ mod tests {
                 identity: "kani".to_owned(),
                 advertised: Vec::new(),
                 origin: ProviderOrigin::Linked,
+                profile: Default::default(),
                 domains: None,
                 bounds: None,
             };
@@ -2300,6 +2319,7 @@ mod tests {
                         crate::routed::capability::Mode::Bounded,
                     )],
                     origin: ProviderOrigin::Linked,
+                    profile: Default::default(),
                     domains: None,
                     bounds: None,
                 }],
@@ -2317,13 +2337,14 @@ mod tests {
                     candidates: Candidates::Set(vec![Candidate {
                         identity: "kani".to_owned(),
                     }]),
-                    kani_form: crate::routed::capability::KaniForm::V2ScalarClaim {
+                    kani_form: Some(crate::routed::capability::KaniForm::V2ScalarClaim {
                         package: std::sync::Arc::new(source.clone()),
                         contract: admitted.clone(),
                         positions,
                         request_index,
                         node_id: add.clone(),
-                    },
+                    }),
+                    requirements: Default::default(),
                 }],
             })
             .expect("valid capability envelope")
@@ -2453,6 +2474,7 @@ mod tests {
             identity: "kani".to_owned(),
             advertised: Vec::new(),
             origin: ProviderOrigin::Linked,
+            profile: Default::default(),
             domains: None,
             bounds: None,
         };
@@ -3382,6 +3404,7 @@ mod tests {
             identity: "kani".to_owned(),
             advertised: Vec::new(),
             origin: ProviderOrigin::Linked,
+            profile: Default::default(),
             domains: None,
             bounds: None,
         };

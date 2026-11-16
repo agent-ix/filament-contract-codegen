@@ -57,7 +57,13 @@ fn kani(advertised: Vec<(CapabilityKind, Mode)>) -> BackendDescriptor {
         identity: BackendKind::Kani.identity().to_owned(),
         advertised,
         origin: ProviderOrigin::Linked,
-        domains: None,
+        profile: Default::default(),
+        domains: Some(BTreeSet::from([
+            DomainKind::Collection,
+            DomainKind::Population,
+            DomainKind::Integer,
+            DomainKind::Recursive,
+        ])),
         bounds: None,
     }
 }
@@ -261,7 +267,7 @@ fn admitted_function_read_keeps_supported_settlement() {
         RequestedKind::Known(CapabilityKind::ValueValidity),
         Candidates::Set(vec![candidate("kani")]),
     );
-    request.kani_form = KaniForm::V2FunctionApplication {
+    request.kani_form = Some(KaniForm::V2FunctionApplication {
         package: std::sync::Arc::new(package),
         function_node_id: ids.resolve(&code_id(SOURCE_FUNCTION)),
         call_node_id: ids.resolve(&code_id(SOURCE_CALL)),
@@ -269,7 +275,7 @@ fn admitted_function_read_keeps_supported_settlement() {
             ids.resolve(&code_id(SOURCE_PARAM_A)),
             ids.resolve(&code_id(SOURCE_PARAM_B)),
         ],
-    };
+    });
     assert_eq!(
         settle_one(
             vec![kani(vec![(CapabilityKind::ValueValidity, Mode::Bounded)])],
@@ -317,7 +323,7 @@ fn oversized_admitted_function_read_stops_the_envelope() {
         RequestedKind::Known(CapabilityKind::ValueValidity),
         Candidates::Set(vec![candidate("kani")]),
     );
-    request.kani_form = KaniForm::V2FunctionApplication {
+    request.kani_form = Some(KaniForm::V2FunctionApplication {
         package: std::sync::Arc::new(package),
         function_node_id: ids.resolve(&code_id(SOURCE_FUNCTION)),
         call_node_id: call_id,
@@ -325,7 +331,7 @@ fn oversized_admitted_function_read_stops_the_envelope() {
             ids.resolve(&code_id(SOURCE_PARAM_A)),
             ids.resolve(&code_id(SOURCE_PARAM_B)),
         ],
-    };
+    });
     let outcome = negotiate_backend_provider(&envelope(
         vec![kani(vec![(CapabilityKind::ValueValidity, Mode::Bounded)])],
         vec![request],
@@ -355,7 +361,7 @@ fn genuine_function_backend_refusals_stay_item_level() {
             RequestedKind::Known(CapabilityKind::ValueValidity),
             Candidates::Set(vec![candidate("kani")]),
         );
-        request.kani_form = KaniForm::V2FunctionApplication {
+        request.kani_form = Some(KaniForm::V2FunctionApplication {
             package: std::sync::Arc::new(package),
             function_node_id: ids.resolve(&code_id(SOURCE_FUNCTION)),
             call_node_id: ids.resolve(&code_id(SOURCE_CALL)),
@@ -363,7 +369,7 @@ fn genuine_function_backend_refusals_stay_item_level() {
                 ids.resolve(&code_id(SOURCE_PARAM_A)),
                 ids.resolve(&code_id(SOURCE_PARAM_B)),
             ],
-        };
+        });
         request
     };
     let structural = source_bound_call_package_with_name_segments(vec![
@@ -488,7 +494,8 @@ fn item(kind: RequestedKind, candidates: Candidates) -> RequestItem {
         extent: bounded(),
         named_backend: None,
         candidates,
-        kani_form: integer_scalar("filament.op.integer.add"),
+        kani_form: Some(integer_scalar("filament.op.integer.add")),
+        requirements: Default::default(),
     }
 }
 
@@ -639,6 +646,7 @@ fn process(id: &str, modes: &[Mode], domains: &[DomainKind]) -> BackendDescripto
             .map(|mode| (CapabilityKind::ValueValidity, *mode))
             .collect(),
         origin: ProviderOrigin::Process,
+        profile: Default::default(),
         domains: Some(domains.iter().copied().collect::<BTreeSet<_>>()),
         bounds: None,
     }
@@ -740,7 +748,7 @@ fn kani_supported_bounded_request_keeps_exact_proof_bound_input() {
         }],
         bounds: vec![source_bound.clone()],
     });
-    request.kani_form = integer_scalar("filament.op.integer.add");
+    request.kani_form = Some(integer_scalar("filament.op.integer.add"));
     let envelope = envelope(
         vec![kani(vec![(CapabilityKind::ValueValidity, Mode::Bounded)])],
         vec![request],
@@ -796,7 +804,7 @@ fn kani_bounded_settlements_correlate_each_request_bound_by_index() {
                 RequestedKind::Known(CapabilityKind::ValueValidity),
                 Candidates::Set(vec![candidate(BackendKind::Kani.identity())]),
             );
-            request.kani_form = integer_scalar("filament.op.integer.add");
+            request.kani_form = Some(integer_scalar("filament.op.integer.add"));
             request.extent.as_mut().unwrap().bounds = vec![bound.clone()];
             request
         })
@@ -1235,8 +1243,9 @@ fn tc_030_an_absent_extent_classification_settles_invalid_request() {
     );
 }
 
-/// The unknown-backend mark, and a registered backend with no negotiation arm,
-/// both settle `invalid-request` naming the backend.
+/// The unknown-backend mark settles `invalid-request` naming the backend, and a
+/// registered linked backend that is not Kani is settled by the generic arm
+/// rather than as unknown (FSpec FR-711).
 ///
 /// Provenance: codegen#86
 #[trace("TC-030")]
@@ -1258,28 +1267,29 @@ fn tc_030_an_unroutable_backend_settles_invalid_request() {
         }
     );
 
-    // Registered, advertises the kind, and still has no arm here: FR-290's
-    // first candidate row refuses it rather than treating registration as
-    // routability.
-    let registered_without_arm = BackendDescriptor {
+    // Registered and advertising the kind: the generic arm settles it, so it is
+    // never refused as an unknown backend.
+    let registered_linked = BackendDescriptor {
         identity: "cvc5".to_owned(),
         advertised: vec![(CapabilityKind::ValueValidity, Mode::Unbounded)],
         origin: ProviderOrigin::Linked,
+        profile: Default::default(),
         domains: None,
         bounds: None,
     };
-    let unarmed = settle_one(
-        vec![registered_without_arm],
+    let settled = settle_one(
+        vec![registered_linked],
         item(
             RequestedKind::Known(CapabilityKind::ValueValidity),
             Candidates::Set(vec![candidate("cvc5")]),
         ),
     );
     assert_eq!(
-        unarmed.disposition,
-        Disposition::InvalidRequest {
-            cause: Cause::UnknownBackend {
-                backend: "cvc5".to_owned()
+        settled.disposition,
+        Disposition::Unsupported {
+            cause: Cause::UnsupportedRequestedCapability {
+                kind: CapabilityKind::ValueValidity,
+                backend: Some("cvc5".to_owned())
             }
         }
     );
@@ -1383,6 +1393,7 @@ fn tc_030_two_candidates_with_no_named_backend_settle_ambiguous() {
         identity: "kani-nightly".to_owned(),
         advertised: vec![(CapabilityKind::ValueValidity, Mode::Unbounded)],
         origin: ProviderOrigin::Process,
+        profile: Default::default(),
         domains: None,
         bounds: None,
     };
@@ -1433,6 +1444,7 @@ fn tc_030_three_candidates_settle_ambiguous_in_candidate_order() {
             identity: "kani-nightly".to_owned(),
             advertised: vec![(CapabilityKind::ValueValidity, Mode::Unbounded)],
             origin: ProviderOrigin::Process,
+            profile: Default::default(),
             domains: None,
             bounds: None,
         },
@@ -1440,6 +1452,7 @@ fn tc_030_three_candidates_settle_ambiguous_in_candidate_order() {
             identity: "alpha-backend".to_owned(),
             advertised: vec![(CapabilityKind::ValueValidity, Mode::Bounded)],
             origin: ProviderOrigin::Process,
+            profile: Default::default(),
             domains: None,
             bounds: None,
         },
@@ -1531,6 +1544,7 @@ fn tc_030_repeated_descriptors_refuse_the_whole_envelope() {
     let differing = kani(vec![(CapabilityKind::ValueValidity, Mode::Bounded)]);
     let different_origin = BackendDescriptor {
         origin: ProviderOrigin::Process,
+        profile: Default::default(),
         ..first.clone()
     };
     let different_field = BackendDescriptor {
@@ -1823,7 +1837,7 @@ fn kani_form_preflight_gates_support_and_preserves_extent_rules() {
         RequestedKind::Known(CapabilityKind::ValueValidity),
         candidates,
     );
-    request.kani_form = integer_scalar("filament.op.integer.add");
+    request.kani_form = Some(integer_scalar("filament.op.integer.add"));
     assert_eq!(
         settle_one(
             vec![kani(vec![(CapabilityKind::ValueValidity, Mode::Bounded)])],
@@ -1849,7 +1863,7 @@ fn kani_form_preflight_gates_support_and_preserves_extent_rules() {
         "an admitted unbounded form follows the finite-bound path"
     );
 
-    request.kani_form = integer_scalar("filament.op.integer.div");
+    request.kani_form = Some(integer_scalar("filament.op.integer.div"));
     let refused = settle_one(
         vec![kani(vec![(CapabilityKind::ValueValidity, Mode::Unbounded)])],
         request,
@@ -1884,7 +1898,7 @@ fn a_selected_quantity_conversion_settles_as_operation_not_rendered() {
     let node_id = ids.resolve(&crate::kani_obligations::package::code_id(
         crate::kani_obligations::package::QUANTITY_CONVERSIONS[0],
     ));
-    request.kani_form = selected_scalar_form(package, node_id.clone());
+    request.kani_form = Some(selected_scalar_form(package, node_id.clone()));
     let settled = settle_one(
         vec![kani(vec![(CapabilityKind::ValueValidity, Mode::Bounded)])],
         request,
@@ -1925,8 +1939,7 @@ fn selected_scalar_context_refusal_keeps_validation_precedence() {
         RequestedKind::Known(CapabilityKind::ValueValidity),
         Candidates::Set(vec![candidate("kani")]),
     );
-    request.kani_form = form;
-    request.extent = unbounded(false);
+    request.kani_form = Some(form);
     assert!(matches!(
         settle_one(
             vec![kani(vec![(CapabilityKind::ValueValidity, Mode::Bounded)])],
@@ -1992,10 +2005,10 @@ fn kani_source_call_preflight_binds_callee_and_ordered_arguments() {
         RequestedKind::Known(CapabilityKind::ValueValidity),
         Candidates::Set(vec![candidate(BackendKind::Kani.identity())]),
     );
-    request.kani_form = form(
+    request.kani_form = Some(form(
         function.clone(),
         vec![argument_a.clone(), argument_b.clone()],
-    );
+    ));
     assert_eq!(
         settle_one(kani_manifest.clone(), request.clone()).disposition,
         Disposition::Supported {
@@ -2018,7 +2031,10 @@ fn kani_source_call_preflight_binds_callee_and_ordered_arguments() {
         "a supported bounded function application still requires the advertised bounded mode"
     );
 
-    request.kani_form = form(other_function, vec![argument_a.clone(), argument_b.clone()]);
+    request.kani_form = Some(form(
+        other_function,
+        vec![argument_a.clone(), argument_b.clone()],
+    ));
     let wrong_callee = settle_one(kani_manifest.clone(), request.clone());
     match wrong_callee.disposition {
         Disposition::InvalidRequest {
@@ -2045,7 +2061,7 @@ fn kani_source_call_preflight_binds_callee_and_ordered_arguments() {
         other => panic!("wrong callee should be a source-bound V2 refusal: {other:?}"),
     }
 
-    request.kani_form = form(function, vec![argument_b, argument_a]);
+    request.kani_form = Some(form(function, vec![argument_b, argument_a]));
     assert!(matches!(
         settle_one(kani_manifest, request).disposition,
         Disposition::InvalidRequest {
@@ -2210,7 +2226,8 @@ fn kani_selected_division_settles_and_renders() {
         extent: unbounded(false),
         named_backend: None,
         candidates: Candidates::Set(vec![candidate(BackendKind::Kani.identity())]),
-        kani_form: form.clone(),
+        kani_form: Some(form.clone()),
+        requirements: Default::default(),
     };
     request.candidates = Candidates::Set(Vec::new());
     assert!(matches!(
@@ -2383,7 +2400,8 @@ fn kani_state_frame_planned_selectors_keep_the_exact_fr015_refusal() {
                 extent: bounded(),
                 named_backend: None,
                 candidates: Candidates::Set(vec![candidate(BackendKind::Kani.identity())]),
-                kani_form: healthy,
+                kani_form: Some(healthy),
+                requirements: Default::default(),
             },
         );
         assert!(
@@ -2398,7 +2416,10 @@ fn kani_state_frame_planned_selectors_keep_the_exact_fr015_refusal() {
         RequestedKind::Known(CapabilityKind::OperationContract),
         candidates.clone(),
     );
-    mismatch.kani_form = v2_state_frame_form(mismatch_fixture, KaniObligationRole::Precondition);
+    mismatch.kani_form = Some(v2_state_frame_form(
+        mismatch_fixture,
+        KaniObligationRole::Precondition,
+    ));
     assert!(matches!(
         settle_one(
             vec![kani(vec![(
@@ -2417,10 +2438,10 @@ fn kani_state_frame_planned_selectors_keep_the_exact_fr015_refusal() {
         RequestedKind::Known(CapabilityKind::OperationContract),
         candidates.clone(),
     );
-    contract.kani_form = v2_state_frame_form(
+    contract.kani_form = Some(v2_state_frame_form(
         crate::kani_obligations_state_frame::ir295_selector_fixture(true, false),
         KaniObligationRole::Postcondition,
-    );
+    ));
     assert!(matches!(
         settle_one(
             vec![kani(vec![(CapabilityKind::OperationContract, Mode::Bounded)])],
@@ -2440,10 +2461,10 @@ fn kani_state_frame_planned_selectors_keep_the_exact_fr015_refusal() {
         RequestedKind::Known(CapabilityKind::OperationContract),
         candidates,
     );
-    frame.kani_form = v2_state_frame_form(
+    frame.kani_form = Some(v2_state_frame_form(
         crate::kani_obligations_state_frame::ir295_selector_fixture(false, true),
         KaniObligationRole::Frame,
-    );
+    ));
     assert!(matches!(
         settle_one(
             vec![kani(vec![(CapabilityKind::OperationContract, Mode::Bounded)])],
@@ -2499,7 +2520,8 @@ fn kani_state_frame_refusal_identity_keeps_operation_and_contract_frame_role() {
                 extent: bounded(),
                 named_backend: None,
                 candidates: candidates.clone(),
-                kani_form: v2_state_frame_form(fixture, obligation_role),
+                kani_form: Some(v2_state_frame_form(fixture, obligation_role)),
+                requirements: Default::default(),
             },
         );
         let Disposition::Unsupported {
@@ -2598,7 +2620,7 @@ fn kani_routed_preflight_requires_selected_result_occurrences() {
             RequestedKind::Known(CapabilityKind::ValueValidity),
             Candidates::Set(vec![candidate(BackendKind::Kani.identity())]),
         );
-        request.kani_form = selected_scalar_form(package.clone(), claim.node_id.clone());
+        request.kani_form = Some(selected_scalar_form(package.clone(), claim.node_id.clone()));
         let settlement = settle_one(
             vec![kani(vec![(CapabilityKind::ValueValidity, Mode::Bounded)])],
             request,
@@ -2653,7 +2675,8 @@ fn kani_scalar_family_selectors_require_selected_result() {
                 extent: bounded(),
                 named_backend: None,
                 candidates: Candidates::Set(vec![candidate(BackendKind::Kani.identity())]),
-                kani_form: form,
+                kani_form: Some(form),
+                requirements: Default::default(),
             },
         );
         match settled.disposition {
@@ -2681,7 +2704,8 @@ fn kani_boolean_operator_selector_requires_selected_result() {
             extent: bounded(),
             named_backend: None,
             candidates: Candidates::Set(vec![candidate(BackendKind::Kani.identity())]),
-            kani_form: selected_scalar_form(package, node_id),
+            kani_form: Some(selected_scalar_form(package, node_id)),
+            requirements: Default::default(),
         },
     );
     assert!(matches!(
@@ -2717,7 +2741,8 @@ fn kani_scalar_path_requires_selected_result_for_nonderivable_nodes() {
             extent: bounded(),
             named_backend: None,
             candidates: Candidates::Set(vec![candidate(BackendKind::Kani.identity())]),
-            kani_form: selected_scalar_form(package.clone(), value.node_id.clone()),
+            kani_form: Some(selected_scalar_form(package.clone(), value.node_id.clone())),
+            requirements: Default::default(),
         },
     );
     assert!(matches!(
@@ -2750,7 +2775,8 @@ fn kani_scalar_path_requires_selected_result_for_nonderivable_nodes() {
             extent: bounded(),
             named_backend: None,
             candidates: Candidates::Set(vec![candidate(BackendKind::Kani.identity())]),
-            kani_form: selected_scalar_form(state.package, state.clause),
+            kani_form: Some(selected_scalar_form(state.package, state.clause)),
+            requirements: Default::default(),
         },
     );
     let Disposition::InvalidRequest {
@@ -2770,17 +2796,16 @@ fn kani_scalar_path_requires_selected_result_for_nonderivable_nodes() {
     );
 }
 
-/// Form refusal follows candidate validation and precedes mode settlement.
+/// Form refusal follows candidate validation and the generic arm (FSpec FR-711).
 #[trace("FR-019-AC-27", "FR-019-AC-28", "FR-019-AC-29")]
 #[test]
-fn kani_form_refusal_keeps_candidate_and_mode_precedence() {
+fn kani_form_refusal_follows_candidate_validation_and_the_generic_arm() {
     let outside = outside_form();
     let mut one = item(
         RequestedKind::Known(CapabilityKind::ValueValidity),
         Candidates::Set(vec![candidate(BackendKind::Kani.identity())]),
     );
-    one.kani_form = outside.clone();
-    one.extent = unbounded(false);
+    one.kani_form = Some(outside.clone());
     assert!(matches!(
         settle_one(
             vec![kani(vec![(CapabilityKind::ValueValidity, Mode::Bounded)])],
@@ -2792,6 +2817,21 @@ fn kani_form_refusal_keeps_candidate_and_mode_precedence() {
         }
     ));
 
+    // The generic arm settles first: an unbounded extent on a bounded-only
+    // Kani candidate is not hidden by the unsupported form.
+    let mut unbounded_item = one.clone();
+    unbounded_item.extent = unbounded(false);
+    assert!(matches!(
+        settle_one(
+            vec![kani(vec![(CapabilityKind::ValueValidity, Mode::Bounded)])],
+            unbounded_item,
+        )
+        .disposition,
+        Disposition::Unsupported {
+            cause: Cause::UnboundedExtent { .. }
+        }
+    ));
+
     let in_set = integer_scalar("filament.op.integer.add");
     let KaniForm::V2ScalarClaim {
         package, node_id, ..
@@ -2799,7 +2839,7 @@ fn kani_form_refusal_keeps_candidate_and_mode_precedence() {
     else {
         unreachable!("integer scalar helper returns a V2 scalar form")
     };
-    one.kani_form = KaniForm::OutsideSet { package, node_id };
+    one.kani_form = Some(KaniForm::OutsideSet { package, node_id });
     assert!(matches!(
         settle_one(
             vec![kani(vec![(CapabilityKind::ValueValidity, Mode::Bounded)])],
@@ -2810,7 +2850,7 @@ fn kani_form_refusal_keeps_candidate_and_mode_precedence() {
             cause: Cause::KaniFormInvalid { .. }
         }
     ));
-    one.kani_form = outside.clone();
+    one.kani_form = Some(outside.clone());
 
     one.candidates = Candidates::Set(Vec::new());
     assert!(matches!(
@@ -2828,6 +2868,7 @@ fn kani_form_refusal_keeps_candidate_and_mode_precedence() {
         identity: "kani-nightly".to_owned(),
         advertised: vec![(CapabilityKind::ValueValidity, Mode::Bounded)],
         origin: ProviderOrigin::Process,
+        profile: Default::default(),
         domains: None,
         bounds: None,
     };
@@ -2852,7 +2893,7 @@ fn kani_form_refusal_keeps_candidate_and_mode_precedence() {
     one.candidates = Candidates::Set(vec![candidate(BackendKind::Kani.identity())]);
     assert!(matches!(
         settle_one(
-            vec![kani(vec![(CapabilityKind::ValueValidity, Mode::Unbounded)])],
+            vec![kani(vec![(CapabilityKind::ValueValidity, Mode::Bounded)])],
             one,
         )
         .disposition,
@@ -2879,7 +2920,7 @@ fn kani_form_identity_does_not_depend_on_display_or_debug_text() {
                 RequestedKind::Known(CapabilityKind::ValueValidity),
                 Candidates::Set(vec![candidate(BackendKind::Kani.identity())]),
             );
-            request.kani_form = form.clone();
+            request.kani_form = Some(form.clone());
             settle_one(
                 vec![kani(vec![(CapabilityKind::ValueValidity, Mode::Bounded)])],
                 request,

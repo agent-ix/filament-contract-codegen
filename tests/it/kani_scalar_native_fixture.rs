@@ -156,6 +156,7 @@ fn scalar_with_policy(
                 identity: "kani".to_owned(),
                 advertised: Vec::new(),
                 origin: ProviderOrigin::Linked,
+                profile: Default::default(),
                 domains: None,
                 bounds: Default::default(),
             },
