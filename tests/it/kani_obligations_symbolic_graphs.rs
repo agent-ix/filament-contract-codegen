@@ -785,7 +785,7 @@ fn graph_run_evidence_preserves_every_ordered_identity_option() {
     let launcher = scratch.path.join("cargo-kani");
     fs::write(
         &launcher,
-        "#!/bin/sh\nprintf '%s\\n' \"$@\" > arguments.txt\nexit 1\n",
+        "#!/bin/sh\n[ \"$1\" = --version ] && exit 1\nprintf '%s\\n' \"$@\" > arguments.txt\nexit 1\n",
     )
     .unwrap();
     fs::set_permissions(&launcher, fs::Permissions::from_mode(0o755)).unwrap();

@@ -2,6 +2,7 @@
 //! answer a launch whose vector holds `concrete-playback` (the witness phase) differently from
 //! every other launch (the proof phase).
 
+use crate::kani::run::versions::KaniToolVersionsAbsence;
 use ix_trace_rs::trace;
 
 use super::{
@@ -845,4 +846,218 @@ fn a_two_phase_verdict_names_the_vector_of_each_phase() {
     assert!(has_playback(&evidence.arguments));
     assert_eq!(proof.unwind, evidence.unwind);
     assert_eq!(proof.solver, evidence.solver);
+}
+
+/// What a launcher stand-in does when asked for its version (no `--harness`), then `verify`.
+fn versioned(name: &str, version: &str, verify: &str) -> StandIn {
+    let stand_in = StandIn::scaffold(name);
+    stand_in.install(&format!(
+        "if [ -z \"$ids\" ]; then\n{version}\nfi\n{verify}"
+    ));
+    stand_in
+}
+
+const VERSION_OUTPUT: &str =
+    "printf 'Kani Rust Verifier 9.8.7 (cargo plugin)\\nCBMC 6.5.4\\n'\nexit 0";
+
+fn reported() -> KaniToolVersions {
+    KaniToolVersions::Reported {
+        kani: "9.8.7".to_owned(),
+        cbmc: "6.5.4".to_owned(),
+    }
+}
+
+fn verifying_body() -> &'static str {
+    "results=; sep=\nfor id in $ids; do\n  results=\"$results$sep{\\\"harness_id\\\":\\\"$id\\\",\\\"status\\\":\\\"Success\\\",\\\"checks\\\":[{\\\"id\\\":1,\\\"status\\\":\\\"Success\\\",\\\"category\\\":\\\"assertion\\\",\\\"location\\\":{\\\"file\\\":\\\"src/lib.rs\\\",\\\"line\\\":\\\"1\\\"}},{\\\"id\\\":2,\\\"status\\\":\\\"Satisfied\\\",\\\"category\\\":\\\"cover\\\",\\\"location\\\":{\\\"file\\\":\\\"src/lib.rs\\\",\\\"line\\\":\\\"2\\\"}}]}\"\n  sep=,\ndone\nprintf '{\"metadata\":{\"version\":\"1.0\"},\"verification_results\":{\"results\":[%s]}}' \"$results\" > \"$last\"\nexit 0\n"
+}
+
+fn verified_run(stand_in: &StandIn) -> KaniExecutionEvidence {
+    let harness = member("a", "check", 4);
+    let evidence = run(stand_in, &harness);
+    assert_eq!(evidence.outcome, KaniRunOutcome::Verified);
+    evidence
+}
+
+/// FR-028-AC-23: the evidence records the Kani and CBMC releases the launcher reported.
+#[trace("TC-039", "FR-028-AC-23")]
+#[test]
+fn tc_039_the_evidence_records_the_versions_the_launcher_reports() {
+    let stand_in = versioned("tool-versions-reported", VERSION_OUTPUT, verifying_body());
+    assert_eq!(verified_run(&stand_in).tool_versions, reported());
+}
+
+/// FR-028-AC-23: a falsified two-phase run records the versions on both phases' evidence.
+#[trace("TC-039", "FR-028-AC-23")]
+#[test]
+fn tc_039_both_phases_of_a_falsified_run_record_the_versions() {
+    let witness = report_at("a::check", "Failure", &[FAIL_10]);
+    let proof = report_at("a::check", "Failure", &[FAIL_10]);
+    let stand_in = StandIn::scaffold("tool-versions-two-phase");
+    let proof = answer(&stand_in, "proof", Some(&proof), "", 1);
+    let witness = answer(&stand_in, "witness", Some(&witness), "", 1);
+    stand_in.install(&format!(
+        "if [ -z \"$ids\" ]; then\n{VERSION_OUTPUT}\nfi\nif [ \"$witness\" = yes ]; then\n{witness}\nelse\n{proof}\nfi\n"
+    ));
+    let evidence = run(&stand_in, &member("a", "check", 4));
+    let proof_phase = evidence.proof_phase.as_deref().expect("a proof phase");
+    assert_eq!(evidence.tool_versions, reported());
+    assert_eq!(proof_phase.tool_versions, reported());
+}
+
+/// FR-028-AC-23: a batch member's evidence records the versions.
+#[trace("TC-039", "FR-028-AC-23")]
+#[test]
+fn tc_039_a_batch_members_evidence_records_the_versions() {
+    let stand_in = versioned("tool-versions-batch", VERSION_OUTPUT, verifying_body());
+    let harnesses = [member("a", "one", 4), member("a", "two", 4)];
+    let timeout = harnesses[0].identity.ceilings.wall_clock;
+    let groups = stand_in.batch(&harnesses, timeout).unwrap();
+    let evidence: Vec<_> = groups
+        .into_iter()
+        .flat_map(|group| group.evidence.unwrap())
+        .collect();
+    assert_eq!(evidence.len(), 2);
+    assert!(evidence.iter().all(|e| e.tool_versions == reported()));
+}
+
+/// FR-028-AC-23: output naming no release, or a launcher that fails its version request, is
+/// recorded as a typed absence and does not refuse the run; no PATH tool is substituted.
+#[trace("TC-039", "FR-028-AC-23")]
+#[test]
+fn tc_039_an_unreadable_or_failed_version_probe_is_a_typed_absence() {
+    let unparseable = versioned(
+        "tool-versions-unparseable",
+        "printf 'cargo-kani, no releases here\\n'\nexit 0",
+        verifying_body(),
+    );
+    assert_eq!(
+        verified_run(&unparseable).tool_versions,
+        KaniToolVersions::Unreported {
+            reason: KaniToolVersionsAbsence::Unparseable
+        }
+    );
+    let failing = versioned(
+        "tool-versions-failed",
+        &VERSION_OUTPUT.replace("exit 0", "exit 3"),
+        verifying_body(),
+    );
+    assert_eq!(
+        verified_run(&failing).tool_versions,
+        KaniToolVersions::Unreported {
+            reason: KaniToolVersionsAbsence::ProbeFailed
+        }
+    );
+}
+
+/// FR-028-AC-23: the launcher is asked once per installation, however many runs follow.
+#[trace("TC-039", "FR-028-AC-23")]
+#[test]
+fn tc_039_the_launcher_is_probed_once_per_installation() {
+    let stand_in = versioned("tool-versions-once", VERSION_OUTPUT, verifying_body());
+    verified_run(&stand_in);
+    verified_run(&stand_in);
+    assert_eq!(stand_in.probes(), 1);
+    assert_eq!(stand_in.calls().len(), 2);
+}
+
+/// FR-028-AC-23: a failed probe is not remembered, so a later run on the same installation
+/// records the releases once the launcher reports them.
+#[trace("TC-039", "FR-028-AC-23")]
+#[test]
+fn tc_039_a_failed_probe_is_not_remembered() {
+    let stand_in = StandIn::scaffold("tool-versions-retry");
+    let marker = stand_in.directory.join("probed-once");
+    let version = format!(
+        "if [ ! -e '{m}' ]; then : > '{m}'; exit 3; fi\n{VERSION_OUTPUT}",
+        m = marker.display()
+    );
+    stand_in.install(&format!(
+        "if [ -z \"$ids\" ]; then\n{version}\nfi\n{}",
+        verifying_body()
+    ));
+    assert_eq!(
+        verified_run(&stand_in).tool_versions,
+        KaniToolVersions::Unreported {
+            reason: KaniToolVersionsAbsence::ProbeFailed
+        }
+    );
+    assert_eq!(verified_run(&stand_in).tool_versions, reported());
+}
+
+/// FR-028-AC-23: a clone given another launcher reports that launcher's versions, not the
+/// original's.
+#[trace("TC-039", "FR-028-AC-23")]
+#[test]
+fn tc_039_a_clone_with_another_launcher_reports_that_launchers_versions() {
+    let first = versioned("tool-versions-first", VERSION_OUTPUT, verifying_body());
+    assert_eq!(verified_run(&first).tool_versions, reported());
+    let second = versioned(
+        "tool-versions-second",
+        &VERSION_OUTPUT.replace("9.8.7", "1.1.1"),
+        verifying_body(),
+    );
+    let mut moved = first;
+    moved.installation.launcher = second.installation.launcher.clone();
+    let evidence = verified_run(&moved);
+    assert_eq!(
+        evidence.tool_versions,
+        KaniToolVersions::Reported {
+            kani: "1.1.1".to_owned(),
+            cbmc: "6.5.4".to_owned()
+        }
+    );
+}
+
+/// FR-028-AC-23: the probe never writes into the caller's working directory.
+#[trace("TC-039", "FR-028-AC-23")]
+#[test]
+fn tc_039_the_probe_runs_in_the_launchers_directory() {
+    let stand_in = versioned(
+        "tool-versions-cwd",
+        &format!("pwd > probe-cwd\n{VERSION_OUTPUT}"),
+        verifying_body(),
+    );
+    verified_run(&stand_in);
+    let recorded = fs::read_to_string(stand_in.directory.join("probe-cwd")).unwrap();
+    assert_eq!(
+        Path::new(recorded.trim()).canonicalize().unwrap(),
+        stand_in.directory.canonicalize().unwrap()
+    );
+}
+
+/// FR-028-AC-23: a cancelled run does not ask the launcher for its version, even one that would
+/// hang on it; a later run on the same installation still records the releases.
+#[trace("TC-039", "FR-028-AC-23")]
+#[test]
+fn tc_039_a_cancelled_run_does_not_probe_and_a_later_run_still_records_the_versions() {
+    let stand_in = versioned(
+        "tool-versions-cancelled",
+        &format!("sleep 45\n{VERSION_OUTPUT}"),
+        verifying_body(),
+    );
+    let cancelled = Cancel::new();
+    cancelled.cancel(filament_exact::CancelCause::Requested);
+    let started = Instant::now();
+    assert_eq!(
+        KaniToolVersions::of(&stand_in.installation, &cancelled),
+        KaniToolVersions::Unreported {
+            reason: KaniToolVersionsAbsence::NotProbed
+        }
+    );
+    assert!(started.elapsed() < Duration::from_secs(10));
+    assert_eq!(stand_in.probes(), 0);
+
+    let healthy = versioned(
+        "tool-versions-after-cancel",
+        VERSION_OUTPUT,
+        verifying_body(),
+    );
+    let cancelled_installation = healthy.installation.clone();
+    assert_eq!(
+        KaniToolVersions::of(&cancelled_installation, &cancelled),
+        KaniToolVersions::Unreported {
+            reason: KaniToolVersionsAbsence::NotProbed
+        }
+    );
+    assert_eq!(verified_run(&healthy).tool_versions, reported());
 }

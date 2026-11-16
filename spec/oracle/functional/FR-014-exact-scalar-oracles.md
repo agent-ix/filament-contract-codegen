@@ -532,7 +532,7 @@ otherwise.
   reason.
 - If a node belongs to the function family, then the generator shall refuse
   it as blocked on filament-contract-runtime#34; model and relation families as
-  blocked on filament-spec-language#120; composite, collection, state, temporal
+  refused with the typed refusal whose wire value is filament-spec-language#120 (a stable identifier; that issue is closed and is not an open blocker); composite, collection, state, temporal
   and protocol families as unsupported.
 - When an admitted `temporal`/`formula`, `temporal`/`fairness` or
   `expression`/`case` node is requested directly, the scalar generator shall

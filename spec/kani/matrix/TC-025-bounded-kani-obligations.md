@@ -733,14 +733,18 @@ step 34 (a record of two integers each bounded by the whole `i64` range, per ope
 `sampled` refinement run whose case count overflows `u128`, and its shadow `Verified` with its cover
 satisfied).
 
-Not met (planner to assign): step 33's same-request clause (the composite family is not an item kind
-of the `negotiate_kani_obligations` request), its `reference` composite row (FR-018-AC-7 is planned and
-blocked on `agent-ix/filament-spec-language#120`, so no package reaches it) and the
+Not met: step 33's same-request clause (owner IR-806 PR-3, FR-029-AC-30: by design the composite
+family is not an item kind of the `negotiate_kani_obligations` request, it is built by its own entry
+point, and the production request path that includes composite starts in IR-806 PR-3) and the
 `ShadowFamilyNotBuilt` outcome for `set`, `bag` and `ordered set`, which FR-018 pre-empts with
-its own refusal (`bounded_domain`); the shadow run's evidence names no tool versions
-(FR-028-AC-23); the parameter nodes of step 30's order check are the two argument references of the
+its own refusal (`bounded_domain`). Step 33's `reference` composite row is met: the corpus record
+with a `Reference` field settles with FR-018's refusal (`PackageAccounting` carrying the
+`Unsupported` record of the `model` target), carried unchanged, with no harness
+(`tc_025_a_reference_composite_settles_with_fr_018s_refusal_and_no_harness`; the model-graph issue
+`agent-ix/filament-spec-language#120` is closed, and its wire value is kept as an identifier). The shadow run's evidence
+names the Kani and CBMC versions (FR-028-AC-23, IR-264 PR5); the parameter nodes of step 30's order check are the two argument references of the
 corpus equality application, read from the checked package; the generator is a public entry that
-takes the claim-map entry, and is not yet an item kind of the negotiated request.
+takes the claim-map entry; by design it is not an item kind of the negotiated request.
 
 `SHADOW_PAIR_NODE_BUDGET` is 128. The probe (`tc_025_budget_probe_verifies_a_mixed_closure_of_the_requested_size`)
 generates, under an explicit budget, a record whose members cycle Boolean, `Int[0, 2]` and optional
@@ -1219,4 +1223,4 @@ with the required author `make kani-gate`; independent review and final acceptan
   from a claim map this generator did not produce (NFR-005-AC-2). A claim this generator lowered but
   whose operation it did not confirm against the node's own catalogued
   identity, mode or law definition is refused as `CallerDeclaredOperation`.
-- Model and graph bounds: refused as blocked on `agent-ix/filament-spec-language#120`.
+- Model and graph bounds: refused with the typed refusal whose wire value is `agent-ix/filament-spec-language#120` (the issue is closed; the value is kept as an identifier).

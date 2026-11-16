@@ -5,10 +5,14 @@ use std::{
     ffi::OsString,
     fmt, fs, io,
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{Arc, Mutex},
 };
 
-use super::{memory::PeakMemorySource, owners::LaunchOwners};
+use super::{
+    memory::PeakMemorySource,
+    owners::LaunchOwners,
+    versions::{KaniToolVersions, LauncherIdentity},
+};
 
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
@@ -68,6 +72,7 @@ pub struct KaniInstallation {
     pub launcher: PathBuf,
     owners: Arc<LaunchOwners>,
     scalar_native_launcher: PathBuf,
+    versions: Arc<Mutex<Option<(LauncherIdentity, KaniToolVersions)>>>,
 }
 
 impl PartialEq for KaniInstallation {
@@ -92,6 +97,7 @@ impl KaniInstallation {
             launcher,
             owners,
             scalar_native_launcher: PathBuf::from("cargo"),
+            versions: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -112,6 +118,11 @@ impl KaniInstallation {
     pub(crate) fn with_scalar_native_launcher(mut self, launcher: PathBuf) -> Self {
         self.scalar_native_launcher = launcher;
         self
+    }
+
+    /// The remembered result of probing this launcher's versions.
+    pub(super) fn version_cache(&self) -> &Mutex<Option<(LauncherIdentity, KaniToolVersions)>> {
+        &self.versions
     }
 
     /// The construction-time dependencies shared by every run of this installation.

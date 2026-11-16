@@ -6,6 +6,7 @@ use filament_contract_codegen::{
     generate_composite_shadow, ClaimDisposition, CompositeEqualityClaim, CompositeEqualityItem,
     CompositeEqualityRefusal, CompositeShadowRefusal,
 };
+use filament_contract_model::ContractFeatureRecordV1;
 use ix_trace_rs::trace;
 
 use super::composite_shadow::item_of;
@@ -110,5 +111,38 @@ fn tc_025_a_sequence_a_set_a_bag_an_ordered_set_and_a_quantity_settle_each_with_
             }
         ),
         "{oracle:?}"
+    );
+}
+
+/// FR-015-AC-73 `reference` row: a record that carries a `Reference` field settles with FR-018's
+/// typed refusal, the FR-330 `Unsupported` accounting record of the reference's `model` target
+/// (FR-018-AC-7), carried unchanged, and the shadow generator builds no harness for it.
+#[trace("TC-025", "FR-015-AC-73")]
+#[test]
+fn tc_025_a_reference_composite_settles_with_fr_018s_refusal_and_no_harness() {
+    let entry = super::composite_equality_generation::reference_record_entry();
+    let ClaimDisposition::Refused { refusal: oracle } = &entry.result else {
+        panic!(
+            "FR-018 refuses the reference-bearing record: {:?}",
+            entry.result
+        );
+    };
+    let CompositeEqualityRefusal::PackageAccounting { record, .. } = oracle else {
+        panic!("expected FR-330 accounting, got {oracle:?}");
+    };
+    assert!(
+        matches!(
+            record.as_ref(),
+            ContractFeatureRecordV1::Unsupported { node_tag, .. } if node_tag.as_ref() == "model"
+        ),
+        "{record:?}"
+    );
+    let settled = generate_composite_shadow(&item_of(&entry, "subject"));
+    assert_eq!(
+        settled.as_ref().err(),
+        Some(&CompositeShadowRefusal::Oracle {
+            refusal: oracle.clone()
+        }),
+        "the shadow generator carries the refusal unchanged and returns no harness"
     );
 }
