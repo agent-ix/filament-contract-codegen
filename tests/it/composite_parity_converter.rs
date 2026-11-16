@@ -1034,6 +1034,9 @@ fn tc_048_a_non_verified_shadow_outcome_acquires_no_strength() {
         satisfied: 0,
         total: 1,
     });
+    outcomes.push(KaniRunOutcome::Falsified {
+        counterexample: "synthetic playback".into(),
+    });
     for outcome in &outcomes {
         for refinement in [
             None,

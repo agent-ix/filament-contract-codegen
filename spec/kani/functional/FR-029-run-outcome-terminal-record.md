@@ -405,7 +405,7 @@ retain the partial/planned statuses below; falsified native/generated-family wor
 | FR-029-AC-28 | IR-666 public converter delivered. For any full-identity-bound FSL `CompositeParityResult::Refused` report, CG preserves `report.terminal_value()`: non-fault refusal is Inconclusive(ReplayRefused) with FSL's code, while `Fault` and `Admission(Fault)` are Failed. FSL `prepare` refusal precedes F-1; operand-admission and exact-comparison refusals follow F-1, so Disagreed wins over those later faults. CG verifies a reachable non-fault report by invoking FSL's public facade with a valid wire request and a replay input-byte limit below that request's size, then passing the actual report through its public converter. It inspects the public FSL terminal mapping and CG pass-through for invariant fault cases; it neither fabricates a report nor claims a public input that induces an invariant fault. | Test |
 | FR-029-AC-29 | A direct `KaniRunOutcome::Cancelled { source }` maps both IR source variants to FSL `IncompleteCause::Cancelled` with the matching exact cause, using the same exhaustive conversion as FR-030; supplying a replay settlement returns `UnexpectedSettlement`. The production cancellation path publishes only FR-030's result. | Test |
 | FR-029-AC-30 | PLANNED (IR-806, production invocation). Partly met: `run_terminal_value` cannot carry a shadow subject (AC-21), so no shadow outcome can reach it through a typed input. The production path that builds its own request and invokes FSL's parity facade is not built. A `bounded_shadow` outcome (verified, falsified, inconclusive or cover-unsatisfied) reaches only the composite parity route on the production path and never `run_terminal_value`, because `KaniRunOutcome` cannot tell a shadow from a production proof and a verified shadow outcome there would read as `Proved`, which FR-028-AC-17 forbids. | Test |
-| FR-029-AC-31 | The parity route fabricates no predicate replay and no terminal cause for a bounded-shadow outcome: its terminal value is the one FSL's report carries under AC-17 and AC-19 to AC-27. The converters expose FSL's result and the test requires the settled terminal value to equal `report.terminal_value()` for every projected strength, for the verified entry. | Test (TC-048) |
+| FR-029-AC-31 | PARTIAL (verified entry; the falsified-entry rows await AC-19 to AC-27). The parity route fabricates no predicate replay and no terminal cause for a bounded-shadow outcome: its terminal value is the one FSL's report carries under AC-17 and AC-19 to AC-27. The converters expose FSL's result and the test requires the settled terminal value to equal `report.terminal_value()` for every projected strength, for the verified entry only: the falsified parity entry, whose terminal rows AC-20 and AC-24 state, is not yet reached from a CG-built request (IR-806). | Test (TC-048) |
 | FR-029-AC-32 | IR-848, implemented in `src/kani/terminal.rs`. A `FailedWithoutCounterexample` run with cause `out_of_memory` maps to `Incomplete(ResourceExhausted)`, and the same reason with cause `properties_failed`, `exit_code` (any code), `unknown` or no cause maps to `Failed`. Over a single-run stand-in that exits 1 and exports a `Failure` report for `proofs::check` with no checks and one `error_details` entry with exit status `out_of_memory`, the evidence passed to `run_terminal_value` gives `Incomplete(ResourceExhausted)`; the same report with exit status `exit_code_64`, `cbmc_exploded`, `properties_failed`, a null status or no `error_details` gives `Failed`. | Test (TC-040) |
 | FR-029-AC-33 | IR-848, implemented in `src/kani/terminal.rs`. A `FailedWithoutCounterexample` run with cause `timeout` maps to `Incomplete(TimedOut)`: the single-run stand-in of FR-029-AC-32 with exit status `timeout` gives `Incomplete(TimedOut)`. The batch member `c::check` of FR-017-AC-39 (a `Failure` with no checks and exit status `timeout`, classified `TimedOut`) keeps `Incomplete(TimedOut)` through the timed-out row, and the member `d::check` (a `Failure` listing a failed check with no playback, exit status `timeout`, classified `FailedWithoutCounterexample` with cause `timeout`) gives `Incomplete(TimedOut)` through the cause. | Test (TC-040, TC-043) |
 | FR-029-AC-34 | IR-848, implemented in `src/kani/terminal.rs`; amended by ADR-007. A `FailedWithoutCounterexample` run with cause `out_of_memory` gives `Incomplete(ResourceExhausted)`; an environment memory kill that leaves no report is `NoVerdict` and gives `Failed` (FR-028-AC-25), so the same physical exhaustion reads `Failed` when the environment also took the driver down. The cause is read for the failure-without-counterexample reason only: every other outcome and reason maps identically whatever cause is passed, including a cause passed with `NoVerdict`, `MissingCoverSummary` or `WitnessDisagreed`. | Test (TC-040) |
@@ -418,6 +418,17 @@ retain the partial/planned statuses below; falsified native/generated-family wor
 | ID | Mutation that breaks it |
 |----|-------------------------|
 | FR-029-AC-17 | Add a proof strength to FR-028-AC-17 without a row here, or map it through a wildcard arm to `Proved` or `Failed`, so a verified shadow harness whose refinement hit a ceiling has no defined output or reads as proved. |
+
+## Open question (IR-806 PR-3 design decision)
+
+AC-25 and AC-30 conflict as stated. AC-25 maps a `bounded_shadow` inconclusive or cover-unsatisfied
+outcome (no retained disagreement) through the ordinary rows, for example vacuous proof to
+Proved0. AC-30 sends every `bounded_shadow` outcome only to the composite parity route and never to
+`run_terminal_value`, and FSL's `settle_verified_shadow` accepts only a verified shadow. No
+function therefore maps a non-verified shadow outcome to a terminal value. Which does: a
+shadow-aware entry in CG that reuses the ordinary rows, or a different FSL route? The owning ticket
+is IR-806 PR-3, which owns the production parity invocation; this requirement states no answer.
+AC-25 stays PLANNED until it is decided.
 
 ## Implementation Gate
 
@@ -457,8 +468,8 @@ bcca433, FSL #635) and asserts `Failed` through the whole error. The fault readi
 `StateClauseReplayError::Refused` and `CallSite` are listed under FR-029-AC-10, so FR-029-AC-16
 holds only clauses a test asserts. IR-806 owns the proof-subject/strength inputs and the parity
 route; `TerminalPairError` has no bounded-shadow variant. FR-029-AC-17, AC-21, AC-22 and
-AC-31 are built and tested (IR-806 PR-1: `ProofStrength::parity_refinement`, `tests/it/proof_strength_projection.rs`).
-AC-19, AC-23 to AC-27 and AC-30 (the IR-806 production path) and AC-25 remain planned. FR-029-AC-18 is covered by the exact
+AC-31 are built and tested (IR-806 PR-1: `ProofStrength::parity_refinement`, `tests/it/composite_parity_converter.rs`); AC-31 is covered for the verified entry only, because the
+rest of the parity route (AC-19 to AC-27) is planned. AC-19, AC-23 to AC-27 and AC-30 (the IR-806 production path) remain planned. FR-029-AC-18 is covered by the exact
 negative post-state replay tests (IR-460); AC-20 has direct report controls, and AC-28's public
 report-binding and refusal pass-through is built and tested under IR-666.
 
