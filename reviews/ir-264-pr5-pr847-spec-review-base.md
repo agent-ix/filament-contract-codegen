@@ -43,3 +43,18 @@ the wire value is kept. No tool version numbers in spec text.
 
 The spec edits are honest and consistent with the code on the three questions (AC-23 PARTIAL, the
 AC-73 same-request ownership, the reference row). Two low wording defects remain.
+
+## New findings (disposition pass 1)
+
+| ID | Severity | Summary | Refs |
+| --- | --- | --- | --- |
+| FND-003 | low | The sentence added to FR-018-AC-7, "a `reference` composite reaches it only after the lowering profile has refused its `model` target, so a `reference` form there falls to the generic `Unsupported` refusal", contradicts itself: an item whose `model` target the profile refused is settled as `PackageAccounting` and never reaches the closure reader. Say the reader is not reached for a `reference` composite and that a `reference` form would fall to the generic `Unsupported` arm; no test exercises that arm with a `reference` form. | spec/oracle/functional/FR-018-composite-equality-oracles.md:713 |
+
+## Dispositions
+
+Round 1, at a48c7b25 (fix commits 4a0181c1 and a48c7b25). Gate at a48c7b25, own worktree and target, cargo-slot lock, `--locked`: fmt, clippy `--all-targets -D warnings`, `cargo deny` and `make spec` pass; whole `--lib` 616 passed / 0 failed / 36 ignored; whole `--test it` 1150 passed / 0 failed / 127 ignored; `git status --porcelain` empty after both runs (no file written into the tree). Ignored real-backend test `tc_039_installed_kani_evidence_records_the_launchers_own_versions`, one job, 24G scope: passed, Kani 0.68.0 / CBMC 6.11.0, scope wall 0.28 s, `memory.peak` 108,904,448 B.
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-001 | fixed | TC-025 line 1226, FR-014 line 535 and FR-021-AC-11 now say "the typed refusal whose wire value is ...#120 (a stable identifier; that issue is closed)"; no "blocked on #120" or "#120 blocker" wording is left in spec/ or src/. |
+| FND-002 | fixed | The TC-025 note ends "the generator is a public entry that takes the claim-map entry; by design it is not an item kind of the negotiated request"; FR-015-AC-73's status now reads "NOT MET: the `ShadowFamilyNotBuilt` outcome for a `set`, `bag` or `ordered set` leaf ...". |

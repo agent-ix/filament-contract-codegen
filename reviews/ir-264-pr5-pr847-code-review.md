@@ -66,3 +66,20 @@ fail under each mutant tried; the real backend records the same releases `cargo-
 prints. FND-001 has to go before merge: the PR commits a junk file and makes every test run write
 into the source tree. FND-002 and FND-003 are real cache defects (reproduced and read
 respectively) in the AC this PR claims.
+
+## New findings (disposition pass 1)
+
+| ID | Severity | Summary | Refs |
+| --- | --- | --- | --- |
+| FND-005 | low | The probe now runs under `&Cancel::new()`, so it no longer sees the run's cancellation. A run whose token is cancelled still probes after it settles (the reproduction below records `Cancelled` with `Reported` versions and spends one probe), and a launcher that hangs on `--version` holds a cancelled run for up to the 60 s `PROBE_BUDGET` before it returns. The fresh handle fixes the cache poisoning, but a run's cancellation should not wait on an unrelated probe. Skip the probe (record `ProbeFailed`, uncached) when the run's token is already cancelled, or probe under the run's token and leave the failure uncached. | src/kani/run/versions.rs:97-121 |
+
+## Dispositions
+
+Round 1, at a48c7b25 (fix commits 4a0181c1 and a48c7b25). Gate at a48c7b25, own worktree and target, cargo-slot lock, `--locked`: fmt, clippy `--all-targets -D warnings`, `cargo deny` and `make spec` pass; whole `--lib` 616 passed / 0 failed / 36 ignored; whole `--test it` 1150 passed / 0 failed / 127 ignored; `git status --porcelain` empty after both runs (no file written into the tree). Ignored real-backend test `tc_039_installed_kani_evidence_records_the_launchers_own_versions`, one job, 24G scope: passed, Kani 0.68.0 / CBMC 6.11.0, scope wall 0.28 s, `memory.peak` 108,904,448 B.
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-001 | fixed | `--version` git-rm'd; the probe sets `current_dir` to the launcher's own directory (temp dir if none); the symbolic-graph and symbolic-domain stand-ins exit on `--version` without writing; `tc_039_the_probe_runs_in_the_launchers_directory` fails when `current_dir` is removed (mutant run). Tree clean after whole `--lib` and `--test it`. |
+| FND-002 | fixed | Only a `Reported` result is cached, and the probe uses its own `Cancel`. `tc_039_a_failed_probe_is_not_remembered` fails when failures are cached (mutant run). A cancelled run followed by a normal run (temporary review test) records `Reported` on the second run, so the structural argument holds. The new cancellation side effect is FND-005. |
+| FND-003 | fixed | The cache is keyed by `LauncherIdentity` (canonical path, length, mtime), checked on every use; `tc_039_a_clone_with_another_launcher_reports_that_launchers_versions` fails when the key check is removed (mutant run). |
+| FND-004 | fixed | The parser test uses synthetic releases `1.2.3-test` / `4.5.6-test` and carries `#[trace("TC-039", "FR-028-AC-23")]`; the doc comment no longer names a release. |

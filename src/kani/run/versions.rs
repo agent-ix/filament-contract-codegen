@@ -48,6 +48,8 @@ pub enum KaniToolVersions {
 pub enum KaniToolVersionsAbsence {
     /// The probe could not be started, was stopped, exited unsuccessfully or overran its budget.
     ProbeFailed,
+    /// The run was cancelled before the launcher was asked, so nothing was probed.
+    NotProbed,
     /// The probe exited successfully but its output named no Kani release or no CBMC release.
     Unparseable,
 }
@@ -78,7 +80,7 @@ impl KaniToolVersions {
     /// launcher file it came from (path, size and modification time), so a clone given another
     /// launcher, or a launcher replaced on disk, is probed again; a failed probe is never
     /// remembered.
-    pub(crate) fn of(installation: &KaniInstallation) -> Self {
+    pub(crate) fn of(installation: &KaniInstallation, cancel: &Cancel) -> Self {
         let identity = LauncherIdentity::of(&installation.launcher);
         let mut cache = installation
             .version_cache()
@@ -89,17 +91,23 @@ impl KaniToolVersions {
                 return versions.clone();
             }
         }
-        let probed = Self::probe(installation);
+        if cancel.cause().is_some() {
+            return Self::Unreported {
+                reason: KaniToolVersionsAbsence::NotProbed,
+            };
+        }
+        let probed = Self::probe(installation, cancel);
         if let (Some(identity), Self::Reported { .. }) = (identity, &probed) {
             *cache = Some((identity, probed.clone()));
         }
         probed
     }
 
-    /// The probe runs under its own cancellation handle, so one run's cancellation never decides
-    /// what another run records, and in the launcher's own directory, so a launcher that writes
+    /// The probe runs under the run's cancellation handle, so a cancelled run neither starts nor
+    /// waits on it, and only a successful probe is remembered, so a cancellation never decides what
+    /// another run records. It runs in the launcher's own directory, so a launcher that writes
     /// to a relative path never writes into the caller's working directory.
-    fn probe(installation: &KaniInstallation) -> Self {
+    fn probe(installation: &KaniInstallation, cancel: &Cancel) -> Self {
         let mut command = Command::new(&installation.launcher);
         command.arg("--version");
         command.current_dir(
@@ -117,7 +125,7 @@ impl KaniToolVersions {
             PROBE_BUDGET,
             NonZeroUsize::MIN,
             None,
-            &Cancel::new(),
+            cancel,
             installation.owners(),
         ) {
             Ok(launch) => match launch.outcome {

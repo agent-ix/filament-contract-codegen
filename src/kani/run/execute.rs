@@ -996,7 +996,7 @@ fn run_phase_single(
     )?;
     let report = take_report(&launch.outcome, &report_path);
     finish_single(request, arguments, launch.outcome, report?, totality_line).map(|reported| {
-        let versions = KaniToolVersions::of(request.installation);
+        let versions = KaniToolVersions::of(request.installation, request.cancel);
         reported.with_launch(launch.memory, applied, versions)
     })
 }
@@ -1372,7 +1372,7 @@ fn run_group(
         totality_lines,
     )
     .map(|reported| {
-        let versions = KaniToolVersions::of(first.installation);
+        let versions = KaniToolVersions::of(first.installation, first.cancel);
         reported
             .into_iter()
             .map(|run| run.with_launch(launch.memory.clone(), applied, versions.clone()))

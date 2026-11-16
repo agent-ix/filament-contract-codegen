@@ -1024,3 +1024,40 @@ fn tc_039_the_probe_runs_in_the_launchers_directory() {
         stand_in.directory.canonicalize().unwrap()
     );
 }
+
+/// FR-028-AC-23: a cancelled run does not ask the launcher for its version, even one that would
+/// hang on it; a later run on the same installation still records the releases.
+#[trace("TC-039", "FR-028-AC-23")]
+#[test]
+fn tc_039_a_cancelled_run_does_not_probe_and_a_later_run_still_records_the_versions() {
+    let stand_in = versioned(
+        "tool-versions-cancelled",
+        &format!("sleep 45\n{VERSION_OUTPUT}"),
+        verifying_body(),
+    );
+    let cancelled = Cancel::new();
+    cancelled.cancel(filament_exact::CancelCause::Requested);
+    let started = Instant::now();
+    assert_eq!(
+        KaniToolVersions::of(&stand_in.installation, &cancelled),
+        KaniToolVersions::Unreported {
+            reason: KaniToolVersionsAbsence::NotProbed
+        }
+    );
+    assert!(started.elapsed() < Duration::from_secs(10));
+    assert_eq!(stand_in.probes(), 0);
+
+    let healthy = versioned(
+        "tool-versions-after-cancel",
+        VERSION_OUTPUT,
+        verifying_body(),
+    );
+    let cancelled_installation = healthy.installation.clone();
+    assert_eq!(
+        KaniToolVersions::of(&cancelled_installation, &cancelled),
+        KaniToolVersions::Unreported {
+            reason: KaniToolVersionsAbsence::NotProbed
+        }
+    );
+    assert_eq!(verified_run(&healthy).tool_versions, reported());
+}
