@@ -1120,7 +1120,10 @@ fn tc_070_the_shipped_table_holds_the_kernel_native_float_and_rational_rows() {
     assert_eq!(verdicts(&float), (32, 12));
     assert_eq!(verdicts(&rational), (8, 6));
     for row in float.iter().chain(&rational) {
-        let provenance = row.provenance.as_deref().expect("a native row names its record");
+        let provenance = row
+            .provenance
+            .as_deref()
+            .expect("a native row names its record");
         assert!(
             provenance.contains("85034c5c")
                 && (provenance.contains("TC-953") || provenance.contains("TC-956"))
