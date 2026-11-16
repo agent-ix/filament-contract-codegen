@@ -1,0 +1,45 @@
+---
+id: SR-17940486709564847048028
+title: "IR-264 PR #847 spec-review (base)"
+type: SpecReview
+analysis: base
+scope: "agent-ix/filament-contract-codegen PR #847 at 1ae756d3, git diff origin/main...HEAD (base 8c80f954); IR-264 PR5; spec/kani/functional/FR-015-bounded-kani-obligations.md, spec/kani/functional/FR-028-bounded-proof-ceilings.md, spec/kani/matrix/TC-025-bounded-kani-obligations.md, spec/kani/matrix/TC-039-bounded-proof-ceilings.md, spec/kani/matrix/tests.md, spec/oracle/functional/FR-021-function-application-oracles.md, spec/oracle/matrix/TC-029-composite-equality-oracles.md; context spec/oracle/functional/FR-014-exact-scalar-oracles.md, spec/oracle/functional/FR-018-composite-equality-oracles.md"
+review_set: subset
+relationships:
+  - target: ix://agent-ix/filament-contract-codegen/FR-015
+    type: reviews
+  - target: ix://agent-ix/filament-contract-codegen/FR-028
+    type: reviews
+  - target: ix://agent-ix/filament-contract-codegen/TC-025
+    type: reviews
+  - target: ix://agent-ix/filament-contract-codegen/FR-021
+    type: reviews
+---
+
+## Summary
+
+Ticket: IR-264 (PR5). Base spec-review of the status and requirement edits; no sub-analyses beyond
+the base pass (no new FR, no new relationship edges). `make spec` exits 0 with no warning on a
+touched line.
+
+Checked clean: FR-028-AC-23's normative sentence is unchanged and its status names what is covered
+(Kani and CBMC releases, proof, witness, batch, typed absence) and what is not (the Rust compiler
+version, with no PATH substitute); TC-039 and both `tests.md` rows agree. FR-015-AC-73's reference
+clause is reworded to "a `reference` composite reached through a record field settles with FR-018's
+typed refusal (FR-018-AC-7), carried unchanged, with no harness", matching the table row and the
+test; the same-request clause text is unchanged and its NOT MET status names IR-806 PR-3 and
+FR-029-AC-30 consistently in FR-015, TC-025 and `tests.md`. #120 is no longer called an open blocker
+in FR-015, TC-025's AC-73 note, `tests.md`, FR-021-AC-10, TC-029 step 3 or FR-028's deferred list;
+the wire value is kept. No tool version numbers in spec text.
+
+## Findings
+
+| ID | Severity | Summary | Refs |
+| --- | --- | --- | --- |
+| FND-001 | low | Several places still say "blocked on" #120, against the PR's own wording ("a closed issue; its wire value is kept as an identifier"): TC-025 line 1226 "Model and graph bounds: refused as blocked on `agent-ix/filament-spec-language#120`" (in a file this PR edits), FR-014 line 535 "model and relation families as blocked on filament-spec-language#120", and FR-021-AC-11 "map to the filament-spec-language#120 blocker". Reword them the same way. | spec/kani/matrix/TC-025-bounded-kani-obligations.md:1226, spec/oracle/functional/FR-014-exact-scalar-oracles.md:535, spec/oracle/functional/FR-021-function-application-oracles.md:540 |
+| FND-002 | low | TC-025's AC-73 note now says "by design the composite family is not an item kind of the `negotiate_kani_obligations` request", but the same paragraph ends "the generator is a public entry that takes the claim-map entry, and is not yet an item kind of the negotiated request". "Not yet" contradicts "by design". FR-015-AC-73's status also has a garbled clause, "NOT MET: and the `ShadowFamilyNotBuilt` outcome for a `set`, `bag` or `ordered set` leaf". | spec/kani/matrix/TC-025-bounded-kani-obligations.md:736-747, spec/kani/functional/FR-015-bounded-kani-obligations.md:925 |
+
+## Verdict
+
+The spec edits are honest and consistent with the code on the three questions (AC-23 PARTIAL, the
+AC-73 same-request ownership, the reference row). Two low wording defects remain.

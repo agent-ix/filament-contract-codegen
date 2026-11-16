@@ -5,7 +5,12 @@
 //! `cbmc` is first on `PATH`, and a launcher that does not report them is recorded as such rather
 //! than guessed.
 
-use std::{num::NonZeroUsize, process::Command, time::Duration};
+use std::{
+    num::NonZeroUsize,
+    path::{Path, PathBuf},
+    process::Command,
+    time::{Duration, SystemTime},
+};
 
 use filament_exact::Cancel;
 use serde::Serialize;
@@ -24,7 +29,7 @@ const PROBE_BUDGET: Duration = Duration::from_secs(60);
 pub enum KaniToolVersions {
     /// The launcher reported both releases.
     Reported {
-        /// The Kani release, for example the `0.68.0` of `Kani Rust Verifier 0.68.0`.
+        /// The Kani release the launcher names on its `Kani Rust Verifier` line.
         kani: String,
         /// The CBMC release. The solver the run names is linked into this CBMC build, so this is
         /// also the solver's version.
@@ -69,17 +74,41 @@ impl KaniToolVersions {
         }
     }
 
-    /// Probes the installation's launcher, once per installation and its clones.
-    pub(crate) fn of(installation: &KaniInstallation, cancel: &Cancel) -> Self {
-        installation
+    /// The releases the installation's launcher reports. A successful probe is remembered for the
+    /// launcher file it came from (path, size and modification time), so a clone given another
+    /// launcher, or a launcher replaced on disk, is probed again; a failed probe is never
+    /// remembered.
+    pub(crate) fn of(installation: &KaniInstallation) -> Self {
+        let identity = LauncherIdentity::of(&installation.launcher);
+        let mut cache = installation
             .version_cache()
-            .get_or_init(|| Self::probe(installation, cancel))
-            .clone()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if let (Some(identity), Some((cached, versions))) = (&identity, cache.as_ref()) {
+            if cached == identity {
+                return versions.clone();
+            }
+        }
+        let probed = Self::probe(installation);
+        if let (Some(identity), Self::Reported { .. }) = (identity, &probed) {
+            *cache = Some((identity, probed.clone()));
+        }
+        probed
     }
 
-    fn probe(installation: &KaniInstallation, cancel: &Cancel) -> Self {
+    /// The probe runs under its own cancellation handle, so one run's cancellation never decides
+    /// what another run records, and in the launcher's own directory, so a launcher that writes
+    /// to a relative path never writes into the caller's working directory.
+    fn probe(installation: &KaniInstallation) -> Self {
         let mut command = Command::new(&installation.launcher);
         command.arg("--version");
+        command.current_dir(
+            installation
+                .launcher
+                .parent()
+                .filter(|directory| !directory.as_os_str().is_empty())
+                .map_or_else(std::env::temp_dir, Path::to_path_buf),
+        );
         let failed = || Self::Unreported {
             reason: KaniToolVersionsAbsence::ProbeFailed,
         };
@@ -88,7 +117,7 @@ impl KaniToolVersions {
             PROBE_BUDGET,
             NonZeroUsize::MIN,
             None,
-            cancel,
+            &Cancel::new(),
             installation.owners(),
         ) {
             Ok(launch) => match launch.outcome {
@@ -104,23 +133,45 @@ impl KaniToolVersions {
     }
 }
 
+/// The launcher file a remembered probe belongs to.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) struct LauncherIdentity {
+    path: PathBuf,
+    length: u64,
+    modified: Option<SystemTime>,
+}
+
+impl LauncherIdentity {
+    fn of(launcher: &Path) -> Option<Self> {
+        let metadata = std::fs::metadata(launcher).ok()?;
+        Some(Self {
+            path: std::fs::canonicalize(launcher).ok()?,
+            length: metadata.len(),
+            modified: metadata.modified().ok(),
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    #[ix_trace_rs::trace("TC-039", "FR-028-AC-23")]
     #[test]
     fn the_real_launcher_output_parses_and_noise_does_not() {
         assert_eq!(
-            KaniToolVersions::parse("Kani Rust Verifier 0.68.0 (cargo plugin)\nCBMC 6.11.0\n"),
+            KaniToolVersions::parse(
+                "Kani Rust Verifier 1.2.3-test (cargo plugin)\nCBMC 4.5.6-test\n"
+            ),
             KaniToolVersions::Reported {
-                kani: "0.68.0".into(),
-                cbmc: "6.11.0".into()
+                kani: "1.2.3-test".into(),
+                cbmc: "4.5.6-test".into()
             }
         );
         for text in [
             "",
-            "Kani Rust Verifier 0.68.0 (cargo plugin)\n",
-            "CBMC 6.11.0\n",
+            "Kani Rust Verifier 1.2.3-test (cargo plugin)\n",
+            "CBMC 4.5.6-test\n",
             "Kani Rust Verifier (cargo plugin)\nCBMC unknown\n",
         ] {
             assert_eq!(

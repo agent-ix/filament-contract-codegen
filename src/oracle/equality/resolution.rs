@@ -369,14 +369,6 @@ pub(super) fn resolve_type<Body: GraphBody>(
                                 direct_root: false,
                             });
                         }
-                        "reference" => {
-                            return Err(CompositeEqualityRefusal::BlockedOnUpstream {
-                                unsupported_node_id: id,
-                                node_tag: "composite_type.reference",
-                                issue: super::UpstreamBlocker::FilamentSpecLanguage120,
-                            }
-                            .into());
-                        }
                         _ => {
                             return Err(CompositeEqualityRefusal::Unsupported {
                                 unsupported_node_id: id,

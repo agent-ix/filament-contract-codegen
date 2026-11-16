@@ -744,7 +744,7 @@ with a `Reference` field settles with FR-018's refusal (`PackageAccounting` carr
 `agent-ix/filament-spec-language#120` is closed, and its wire value is kept as an identifier). The shadow run's evidence
 names the Kani and CBMC versions (FR-028-AC-23, IR-264 PR5); the parameter nodes of step 30's order check are the two argument references of the
 corpus equality application, read from the checked package; the generator is a public entry that
-takes the claim-map entry, and is not yet an item kind of the negotiated request.
+takes the claim-map entry; by design it is not an item kind of the negotiated request.
 
 `SHADOW_PAIR_NODE_BUDGET` is 128. The probe (`tc_025_budget_probe_verifies_a_mixed_closure_of_the_requested_size`)
 generates, under an explicit budget, a record whose members cycle Boolean, `Int[0, 2]` and optional
@@ -1223,4 +1223,4 @@ with the required author `make kani-gate`; independent review and final acceptan
   from a claim map this generator did not produce (NFR-005-AC-2). A claim this generator lowered but
   whose operation it did not confirm against the node's own catalogued
   identity, mode or law definition is refused as `CallerDeclaredOperation`.
-- Model and graph bounds: refused as blocked on `agent-ix/filament-spec-language#120`.
+- Model and graph bounds: refused with the typed refusal whose wire value is `agent-ix/filament-spec-language#120` (the issue is closed; the value is kept as an identifier).

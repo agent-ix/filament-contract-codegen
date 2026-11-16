@@ -959,3 +959,68 @@ fn tc_039_the_launcher_is_probed_once_per_installation() {
     assert_eq!(stand_in.probes(), 1);
     assert_eq!(stand_in.calls().len(), 2);
 }
+
+/// FR-028-AC-23: a failed probe is not remembered, so a later run on the same installation
+/// records the releases once the launcher reports them.
+#[trace("TC-039", "FR-028-AC-23")]
+#[test]
+fn tc_039_a_failed_probe_is_not_remembered() {
+    let stand_in = StandIn::scaffold("tool-versions-retry");
+    let marker = stand_in.directory.join("probed-once");
+    let version = format!(
+        "if [ ! -e '{m}' ]; then : > '{m}'; exit 3; fi\n{VERSION_OUTPUT}",
+        m = marker.display()
+    );
+    stand_in.install(&format!(
+        "if [ -z \"$ids\" ]; then\n{version}\nfi\n{}",
+        verifying_body()
+    ));
+    assert_eq!(
+        verified_run(&stand_in).tool_versions,
+        KaniToolVersions::Unreported {
+            reason: KaniToolVersionsAbsence::ProbeFailed
+        }
+    );
+    assert_eq!(verified_run(&stand_in).tool_versions, reported());
+}
+
+/// FR-028-AC-23: a clone given another launcher reports that launcher's versions, not the
+/// original's.
+#[trace("TC-039", "FR-028-AC-23")]
+#[test]
+fn tc_039_a_clone_with_another_launcher_reports_that_launchers_versions() {
+    let first = versioned("tool-versions-first", VERSION_OUTPUT, verifying_body());
+    assert_eq!(verified_run(&first).tool_versions, reported());
+    let second = versioned(
+        "tool-versions-second",
+        &VERSION_OUTPUT.replace("9.8.7", "1.1.1"),
+        verifying_body(),
+    );
+    let mut moved = first;
+    moved.installation.launcher = second.installation.launcher.clone();
+    let evidence = verified_run(&moved);
+    assert_eq!(
+        evidence.tool_versions,
+        KaniToolVersions::Reported {
+            kani: "1.1.1".to_owned(),
+            cbmc: "6.5.4".to_owned()
+        }
+    );
+}
+
+/// FR-028-AC-23: the probe never writes into the caller's working directory.
+#[trace("TC-039", "FR-028-AC-23")]
+#[test]
+fn tc_039_the_probe_runs_in_the_launchers_directory() {
+    let stand_in = versioned(
+        "tool-versions-cwd",
+        &format!("pwd > probe-cwd\n{VERSION_OUTPUT}"),
+        verifying_body(),
+    );
+    verified_run(&stand_in);
+    let recorded = fs::read_to_string(stand_in.directory.join("probe-cwd")).unwrap();
+    assert_eq!(
+        Path::new(recorded.trim()).canonicalize().unwrap(),
+        stand_in.directory.canonicalize().unwrap()
+    );
+}
