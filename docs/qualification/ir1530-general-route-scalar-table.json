@@ -225,5 +225,819 @@
     "provenance": "filament-exact TC-957 evidence record (IR-1541, filament-exact #171): the kernel's own harnesses, not CG-generated ones; copied. The symbolic-divisor figure is the least tractable profile and member. generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it.",
     "generator_version": "0.1.0",
     "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float32.negate"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 32,
+    "verdict": "tractable",
+    "wall_seconds": 4.9,
+    "peak_bytes": 630960128,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): Negate Binary32 n/a, harness native_float_kani_proofs::float32_negate; VERIFIED, covers reached (Kani verification time 1.6 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float32.add"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 32,
+    "verdict": "tractable",
+    "wall_seconds": 54.1,
+    "peak_bytes": 978960384,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): Add Binary32 NearestEven, harness native_float_kani_proofs::float32_add_nearest_even; VERIFIED, covers reached (Kani verification time 51.0 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float32.add"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 32,
+    "verdict": "tractable",
+    "wall_seconds": 36.8,
+    "peak_bytes": 1077317632,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): Add Binary32 Exact, harness native_float_kani_proofs::float32_add_exact; VERIFIED, covers reached (Kani verification time 32.2 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float32.add"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 32,
+    "verdict": "tractable",
+    "wall_seconds": 15.8,
+    "peak_bytes": 1079701504,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): Add Binary32 directed and nearest-away, harness native_float_kani_proofs::float32_add_directed; VERIFIED, covers reached (Kani verification time 12.8 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float32.sub"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 32,
+    "verdict": "tractable",
+    "wall_seconds": 51.2,
+    "peak_bytes": 971542528,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): Subtract Binary32 NearestEven, harness native_float_kani_proofs::float32_subtract_nearest_even; VERIFIED, covers reached (Kani verification time 48.1 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float32.sub"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 32,
+    "verdict": "tractable",
+    "wall_seconds": 36.5,
+    "peak_bytes": 1071677440,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): Subtract Binary32 Exact, harness native_float_kani_proofs::float32_subtract_exact; VERIFIED, covers reached (Kani verification time 33.5 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float32.sub"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 32,
+    "verdict": "tractable",
+    "wall_seconds": 16.3,
+    "peak_bytes": 1088585728,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): Subtract Binary32 directed and nearest-away, harness native_float_kani_proofs::float32_subtract_directed; VERIFIED, covers reached (Kani verification time 13.2 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float32.mul"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 32,
+    "verdict": "tractable",
+    "wall_seconds": 19.8,
+    "peak_bytes": 906743808,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): Multiply Binary32 NearestEven, harness native_float_kani_proofs::float32_multiply_nearest_even; VERIFIED, covers reached (Kani verification time 16.7 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float32.mul"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 32,
+    "verdict": "tractable",
+    "wall_seconds": 72.7,
+    "peak_bytes": 925429760,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): Multiply Binary32 Exact, harness native_float_kani_proofs::float32_multiply_exact; VERIFIED, covers reached (Kani verification time 69.7 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float32.mul"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 32,
+    "verdict": "tractable",
+    "wall_seconds": 14.6,
+    "peak_bytes": 943497216,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): Multiply Binary32 directed and nearest-away, harness native_float_kani_proofs::float32_multiply_directed; VERIFIED, covers reached (Kani verification time 11.5 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float32.div"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 32,
+    "verdict": "not_tractable",
+    "wall_seconds": 600.0,
+    "peak_bytes": 671797248,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): Divide Binary32 NearestEven, harness native_float_kani_proofs::float32_divide_nearest_even; timeout, no verdict, solver hang (probe limit, not extended; killed, no verdict); claims no proof; waits on the deductive lane, owner IR-1551; the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float32.div"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 32,
+    "verdict": "not_tractable",
+    "wall_seconds": 1800.0,
+    "peak_bytes": 657661952,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): Divide Binary32 Exact, harness native_float_kani_proofs::float32_divide_exact; timeout, no verdict, solver hang (limit, after a 600 s probe that timed out; killed, no verdict); claims no proof; waits on the deductive lane, owner IR-1551; the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float32.div"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 32,
+    "verdict": "tractable",
+    "wall_seconds": 188.5,
+    "peak_bytes": 1062281216,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): Divide Binary32 directed and nearest-away, harness native_float_kani_proofs::float32_divide_directed; VERIFIED, covers reached (Kani verification time 185.3 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float32.sqrt"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 32,
+    "verdict": "not_tractable",
+    "wall_seconds": 600.0,
+    "peak_bytes": 773021696,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): SquareRoot Binary32 NearestEven, harness native_float_kani_proofs::float32_square_root_nearest_even; timeout, no verdict, solver hang (probe limit, not extended; killed, no verdict); claims no proof; waits on the deductive lane, owner IR-1551; the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float32.sqrt"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 32,
+    "verdict": "tractable",
+    "wall_seconds": 33.2,
+    "peak_bytes": 1402953728,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): SquareRoot Binary32 Exact, harness native_float_kani_proofs::float32_square_root_exact; VERIFIED, covers reached (Kani verification time 30.1 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float32.sqrt"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 32,
+    "verdict": "tractable",
+    "wall_seconds": 18.4,
+    "peak_bytes": 1149845504,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): SquareRoot Binary32 directed and nearest-away, harness native_float_kani_proofs::float32_square_root_directed; VERIFIED, covers reached (Kani verification time 15.2 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float32.fma"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 32,
+    "verdict": "not_tractable",
+    "wall_seconds": 600.0,
+    "peak_bytes": 656998400,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): FusedMultiplyAdd Binary32 NearestEven, harness native_float_kani_proofs::float32_fused_multiply_add_nearest_even; timeout, no verdict, solver hang (probe limit, not extended; killed, no verdict); claims no proof; waits on the deductive lane, owner IR-1551; the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float32.fma"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 32,
+    "verdict": "tractable",
+    "wall_seconds": 667.5,
+    "peak_bytes": 1238626304,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): FusedMultiplyAdd Binary32 Exact, harness native_float_kani_proofs::float32_fused_multiply_add_exact; VERIFIED, covers reached (Kani verification time 664.4 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float32.fma"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 32,
+    "verdict": "tractable",
+    "wall_seconds": 20.1,
+    "peak_bytes": 1310621696,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): FusedMultiplyAdd Binary32 directed and nearest-away, harness native_float_kani_proofs::float32_fused_multiply_add_directed; VERIFIED, covers reached (Kani verification time 17.0 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.numeric_equal"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 32,
+    "verdict": "tractable",
+    "wall_seconds": 4.7,
+    "peak_bytes": 603648000,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): NumericEqual Binary32 n/a, harness native_float_kani_proofs::float32_numeric_equal; VERIFIED, covers reached (Kani verification time 1.7 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.total_order"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 32,
+    "verdict": "tractable",
+    "wall_seconds": 4.8,
+    "peak_bytes": 603582464,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): TotalOrder Binary32 n/a, harness native_float_kani_proofs::float32_total_order; VERIFIED, covers reached (Kani verification time 1.6 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.bit_identical"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 32,
+    "verdict": "tractable",
+    "wall_seconds": 4.4,
+    "peak_bytes": 604430336,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): BitIdentical Binary32 n/a, harness native_float_kani_proofs::float32_bit_identical; VERIFIED, covers reached (Kani verification time 1.5 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float64.negate"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 64,
+    "verdict": "tractable",
+    "wall_seconds": 4.9,
+    "peak_bytes": 632463360,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): Negate Binary64 n/a, harness native_float_kani_proofs::float64_negate; VERIFIED, covers reached (Kani verification time 1.6 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float64.add"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 64,
+    "verdict": "tractable",
+    "wall_seconds": 384.1,
+    "peak_bytes": 946696192,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): Add Binary64 NearestEven, harness native_float_kani_proofs::float64_add_nearest_even; VERIFIED, covers reached (Kani verification time 381.0 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float64.add"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 64,
+    "verdict": "tractable",
+    "wall_seconds": 197.7,
+    "peak_bytes": 1062014976,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): Add Binary64 Exact, harness native_float_kani_proofs::float64_add_exact; VERIFIED, covers reached (Kani verification time 194.7 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float64.add"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 64,
+    "verdict": "tractable",
+    "wall_seconds": 17.4,
+    "peak_bytes": 1029165056,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): Add Binary64 directed and nearest-away, harness native_float_kani_proofs::float64_add_directed; VERIFIED, covers reached (Kani verification time 14.3 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float64.sub"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 64,
+    "verdict": "tractable",
+    "wall_seconds": 384.8,
+    "peak_bytes": 929964032,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): Subtract Binary64 NearestEven, harness native_float_kani_proofs::float64_subtract_nearest_even; VERIFIED, covers reached (Kani verification time 381.7 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float64.sub"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 64,
+    "verdict": "tractable",
+    "wall_seconds": 213.7,
+    "peak_bytes": 1023115264,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): Subtract Binary64 Exact, harness native_float_kani_proofs::float64_subtract_exact; VERIFIED, covers reached (Kani verification time 210.7 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float64.sub"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 64,
+    "verdict": "tractable",
+    "wall_seconds": 17.3,
+    "peak_bytes": 1100574720,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): Subtract Binary64 directed and nearest-away, harness native_float_kani_proofs::float64_subtract_directed; VERIFIED, covers reached (Kani verification time 14.0 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float64.mul"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 64,
+    "verdict": "not_tractable",
+    "wall_seconds": 600.0,
+    "peak_bytes": 605556736,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): Multiply Binary64 NearestEven, harness native_float_kani_proofs::float64_multiply_nearest_even; timeout, no verdict, solver hang (probe limit, not extended; killed, no verdict); claims no proof; waits on the deductive lane, owner IR-1551; the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float64.mul"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 64,
+    "verdict": "tractable",
+    "wall_seconds": 56.0,
+    "peak_bytes": 924803072,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): Multiply Binary64 Exact, harness native_float_kani_proofs::float64_multiply_exact; VERIFIED, covers reached (Kani verification time 52.9 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float64.mul"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 64,
+    "verdict": "tractable",
+    "wall_seconds": 14.8,
+    "peak_bytes": 990892032,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): Multiply Binary64 directed and nearest-away, harness native_float_kani_proofs::float64_multiply_directed; VERIFIED, covers reached (Kani verification time 11.7 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float64.div"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 64,
+    "verdict": "not_tractable",
+    "wall_seconds": 600.0,
+    "peak_bytes": 714432512,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): Divide Binary64 NearestEven, harness native_float_kani_proofs::float64_divide_nearest_even; timeout, no verdict, solver hang (probe limit, not extended; killed, no verdict); claims no proof; waits on the deductive lane, owner IR-1551; the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float64.div"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 64,
+    "verdict": "not_tractable",
+    "wall_seconds": 1800.0,
+    "peak_bytes": 757579776,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): Divide Binary64 Exact, harness native_float_kani_proofs::float64_divide_exact; timeout, no verdict, solver hang (limit, after a 600 s probe that timed out; killed, no verdict); claims no proof; waits on the deductive lane, owner IR-1551; the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float64.div"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 64,
+    "verdict": "not_tractable",
+    "wall_seconds": 1800.0,
+    "peak_bytes": 709488640,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): Divide Binary64 directed and nearest-away, harness native_float_kani_proofs::float64_divide_directed; timeout, no verdict, solver hang (limit, after a 600 s probe that timed out; killed, no verdict); claims no proof; waits on the deductive lane, owner IR-1551; the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float64.sqrt"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 64,
+    "verdict": "not_tractable",
+    "wall_seconds": 600.0,
+    "peak_bytes": 953933824,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): SquareRoot Binary64 NearestEven, harness native_float_kani_proofs::float64_square_root_nearest_even; timeout, no verdict, solver hang (probe limit, not extended; killed, no verdict); claims no proof; waits on the deductive lane, owner IR-1551; the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float64.sqrt"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 64,
+    "verdict": "not_tractable",
+    "wall_seconds": 1800.0,
+    "peak_bytes": 925200384,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): SquareRoot Binary64 Exact, harness native_float_kani_proofs::float64_square_root_exact; timeout, no verdict, solver hang (limit, after a 600 s probe that timed out; killed, no verdict); claims no proof; waits on the deductive lane, owner IR-1551; the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float64.sqrt"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 64,
+    "verdict": "tractable",
+    "wall_seconds": 25.5,
+    "peak_bytes": 1216454656,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): SquareRoot Binary64 directed and nearest-away, harness native_float_kani_proofs::float64_square_root_directed; VERIFIED, covers reached (Kani verification time 22.4 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float64.fma"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 64,
+    "verdict": "not_tractable",
+    "wall_seconds": 600.0,
+    "peak_bytes": 669093888,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): FusedMultiplyAdd Binary64 NearestEven, harness native_float_kani_proofs::float64_fused_multiply_add_nearest_even; timeout, no verdict, solver hang (probe limit, not extended; killed, no verdict); claims no proof; waits on the deductive lane, owner IR-1551; the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float64.fma"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 64,
+    "verdict": "not_tractable",
+    "wall_seconds": 1800.0,
+    "peak_bytes": 650145792,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): FusedMultiplyAdd Binary64 Exact, harness native_float_kani_proofs::float64_fused_multiply_add_exact; timeout, no verdict, solver hang (limit, after a 600 s probe that timed out; killed, no verdict); claims no proof; waits on the deductive lane, owner IR-1551; the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.float64.fma"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 64,
+    "verdict": "tractable",
+    "wall_seconds": 25.0,
+    "peak_bytes": 1320718336,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): FusedMultiplyAdd Binary64 directed and nearest-away, harness native_float_kani_proofs::float64_fused_multiply_add_directed; VERIFIED, covers reached (Kani verification time 21.5 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.numeric_equal"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 64,
+    "verdict": "tractable",
+    "wall_seconds": 4.9,
+    "peak_bytes": 603418624,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): NumericEqual Binary64 n/a, harness native_float_kani_proofs::float64_numeric_equal; VERIFIED, covers reached (Kani verification time 1.9 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.total_order"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 64,
+    "verdict": "tractable",
+    "wall_seconds": 4.6,
+    "peak_bytes": 602357760,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): TotalOrder Binary64 n/a, harness native_float_kani_proofs::float64_total_order; VERIFIED, covers reached (Kani verification time 1.6 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.ieee.bit_identical"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 64,
+    "verdict": "tractable",
+    "wall_seconds": 4.4,
+    "peak_bytes": 601038848,
+    "provenance": "filament-exact TC-953 evidence record (FR-405, filament-exact #172, merged as 85034c5c): BitIdentical Binary64 n/a, harness native_float_kani_proofs::float64_bit_identical; VERIFIED, covers reached (Kani verification time 1.5 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.native.rational.from_i64_parts"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 64,
+    "verdict": "not_tractable",
+    "wall_seconds": 900.0,
+    "peak_bytes": 2147209216,
+    "provenance": "filament-exact TC-956 evidence record (FR-408, filament-exact #172, merged as 85034c5c): harness native_rational_from_i64_parts_matches_reference; full i64 domain; TIMED OUT at 900 s (limit; killed, no verdict); claims no proof; number theory or wide multiplier, waits on the deductive lane, owner IR-1544; the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at. The operation id names the subject (the carrier's admission from i64 parts), which is not a catalog operation.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.rational.eq"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 8,
+    "verdict": "tractable",
+    "wall_seconds": 41.2,
+    "peak_bytes": 1460588544,
+    "provenance": "filament-exact TC-956 evidence record (FR-408, filament-exact #172, merged as 85034c5c): harness native_rational_equal_cg_domain_matches_reference; CG domain (magnitudes below 256); VERIFIED, covers reached (2 of 2) (Kani verification time 35.7 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.rational.lt",
+      "filament.op.rational.le"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 8,
+    "verdict": "tractable",
+    "wall_seconds": 67.4,
+    "peak_bytes": 1909317632,
+    "provenance": "filament-exact TC-956 evidence record (FR-408, filament-exact #172, merged as 85034c5c): harness native_rational_order_cg_domain_matches_reference; CG domain (magnitudes below 256); VERIFIED, covers reached (2 of 2) (Kani verification time 59.2 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.rational.mul"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 8,
+    "verdict": "tractable",
+    "wall_seconds": 132.2,
+    "peak_bytes": 3492552704,
+    "provenance": "filament-exact TC-956 evidence record (FR-408, filament-exact #172, merged as 85034c5c): harness native_rational_multiply_cg_domain_matches_reference; CG domain (magnitudes below 256); VERIFIED, covers reached (3 of 3) (Kani verification time 128.9 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.rational.add"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 8,
+    "verdict": "tractable",
+    "wall_seconds": 280.7,
+    "peak_bytes": 3560067072,
+    "provenance": "filament-exact TC-956 evidence record (FR-408, filament-exact #172, merged as 85034c5c): harness native_rational_add_cg_domain_matches_reference; CG domain (magnitudes below 256); VERIFIED, covers reached (3 of 3) (Kani verification time 277.7 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.rational.sub"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 8,
+    "verdict": "tractable",
+    "wall_seconds": 300.4,
+    "peak_bytes": 3591430144,
+    "provenance": "filament-exact TC-956 evidence record (FR-408, filament-exact #172, merged as 85034c5c): harness native_rational_subtract_cg_domain_matches_reference; CG domain (magnitudes below 256); VERIFIED, covers reached (3 of 3) (Kani verification time 297.4 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.rational.sub"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 8,
+    "verdict": "tractable",
+    "wall_seconds": 330.2,
+    "peak_bytes": 4093837312,
+    "provenance": "filament-exact TC-956 evidence record (FR-408, filament-exact #172, merged as 85034c5c): harness native_rational_subtract_cg_domain_from_i64_parts_matches_reference; CG domain (magnitudes below 256); VERIFIED, covers reached (3 of 3) (Kani verification time 327.3 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.rational.add"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 8,
+    "verdict": "tractable",
+    "wall_seconds": 348.8,
+    "peak_bytes": 6649708544,
+    "provenance": "filament-exact TC-956 evidence record (FR-408, filament-exact #172, merged as 85034c5c): harness native_rational_add_is_commutative_over_cg_domain; CG domain (magnitudes below 256); VERIFIED, covers reached (1 of 1) (Kani verification time 342.6 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.rational.add"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 8,
+    "verdict": "tractable",
+    "wall_seconds": 348.4,
+    "peak_bytes": 6830206976,
+    "provenance": "filament-exact TC-956 evidence record (FR-408, filament-exact #172, merged as 85034c5c): harness native_rational_add_is_commutative_from_i64_parts_over_cg_domain; CG domain (magnitudes below 256); VERIFIED, covers reached (1 of 1) (Kani verification time 345.8 s); the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.rational.eq"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 64,
+    "verdict": "not_tractable",
+    "wall_seconds": 900.0,
+    "peak_bytes": 1389637632,
+    "provenance": "filament-exact TC-956 evidence record (FR-408, filament-exact #172, merged as 85034c5c): harness native_rational_equal_full_i64_matches_reference; full i64 domain; TIMED OUT at 900 s (limit; killed, no verdict); claims no proof; number theory or wide multiplier, waits on the deductive lane, owner IR-1544; the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.rational.lt",
+      "filament.op.rational.le"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 64,
+    "verdict": "not_tractable",
+    "wall_seconds": 900.0,
+    "peak_bytes": 1860517888,
+    "provenance": "filament-exact TC-956 evidence record (FR-408, filament-exact #172, merged as 85034c5c): harness native_rational_order_full_i64_matches_reference; full i64 domain; TIMED OUT at 900 s (limit; killed, no verdict); claims no proof; number theory or wide multiplier, waits on the deductive lane, owner IR-1544; the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.rational.add"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 64,
+    "verdict": "not_tractable",
+    "wall_seconds": 900.0,
+    "peak_bytes": 15523975168,
+    "provenance": "filament-exact TC-956 evidence record (FR-408, filament-exact #172, merged as 85034c5c): harness native_rational_add_full_i64_matches_reference; full i64 domain; TIMED OUT at 900 s (limit; killed, no verdict); claims no proof; number theory or wide multiplier, waits on the deductive lane, owner IR-1544; the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.rational.sub"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 64,
+    "verdict": "not_tractable",
+    "wall_seconds": 900.0,
+    "peak_bytes": 15575470080,
+    "provenance": "filament-exact TC-956 evidence record (FR-408, filament-exact #172, merged as 85034c5c): harness native_rational_subtract_full_i64_matches_reference; full i64 domain; TIMED OUT at 900 s (limit; killed, no verdict); claims no proof; number theory or wide multiplier, waits on the deductive lane, owner IR-1544; the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
+  },
+  {
+    "operation_ids": [
+      "filament.op.rational.mul"
+    ],
+    "route": "native",
+    "collection_bound": null,
+    "max_operand_bits": 64,
+    "verdict": "not_tractable",
+    "wall_seconds": 900.0,
+    "peak_bytes": 15391862784,
+    "provenance": "filament-exact TC-956 evidence record (FR-408, filament-exact #172, merged as 85034c5c): harness native_rational_multiply_full_i64_matches_reference; full i64 domain; TIMED OUT at 900 s (limit; killed, no verdict); claims no proof; number theory or wide multiplier, waits on the deductive lane, owner IR-1544; the kernel's own harness, copied; generator_version and kernel_version are CG's current ones so the row is current, not the CG build that measured it. wall_seconds is the wall time of the whole cargo kani invocation, or the limit the run was killed at.",
+    "generator_version": "0.1.0",
+    "kernel_version": 1
   }
 ]

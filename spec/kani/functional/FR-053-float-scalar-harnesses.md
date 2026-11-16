@@ -479,6 +479,26 @@ Delivered for the comparisons, tagged and passing (`tests/it/float_scalar_harnes
   and a mutant that makes it call the native comparison, the decode or the carrier fails the
   inspection.
 
+Measured native record (IR-260, IR-1446): filament-exact #172 (85034c5c) records, per operation, width
+and rounding class, 32 VERIFIED harnesses and 12 solver-hang timeout rows (owner IR-1551), and CG's
+shipped table holds them as native-route rows (FR-056; they are a record, not a mechanism: the
+decider does not select a float clause). They do not change the dispositions below. The revisit condition below is now met for Add and
+Subtract at both widths and Multiply at Binary32, whose every spelling group is VERIFIED in the record;
+revisiting the refusal ruling for them is open work for IR-260. AC-13's arithmetic half has a CG host
+differential for exactly those five combinations (Add and Subtract at both widths, Multiply at
+Binary32): `the_native_arithmetic_equals_the_owner_and_the_differential_kills_native_mutants` runs
+`evaluate_native_float` against the shipped `evaluate_ieee` over the class-boundary set and the control
+points, under all six rounding spellings, on the typed outcome, bits, flags, rounding provenance and the
+meter at an unlimited and two short work-unit budgets, and shows four native-side mutants (a wrong tie
+rule that differs from nearest-even only on a tie, a dropped `inexact` flag alone, a cleared NaN payload,
+Subtract computed as Add) each disagreeing with the owner, and the test checks that the first
+disagreement of each is on an input that exercises the mutated behaviour (a real tie, an inexact result,
+a payload NaN, a Subtract that differs from Add). The locked kernel already has these natives, so no lock move is needed. AC-13's arithmetic
+half stays PARTIAL: Divide, SquareRoot, FusedMultiplyAdd and Multiply at Binary64 have no differential
+here, the denied charge point and the other counters are not asserted per limit kind, the `nearest-even`
+comparison with Rust's `f32` and `f64` operators is not run, and the full AC-9 and AC-10 host mutant sets
+are not built. Owner of the rest: IR-260.
+
 Dispositioned by the refusal ruling, with no arithmetic harness to test: the arithmetic halves of
 AC-4, AC-5, AC-7, AC-9, AC-10, AC-13 and AC-14, the arithmetic requires-bound half of AC-3, and the
 `exact` and directed spelling rows of every arithmetic operation. They are revisited only if

@@ -1080,7 +1080,610 @@ fn tc_070_the_embedded_general_route_table_is_the_docs_file() {
         TractabilityTable::load(&Path::new(env!("CARGO_MANIFEST_DIR")).join(GENERAL_SCALAR_TABLE))
             .expect("the docs file loads");
     assert_eq!(general_scalar_table(), from_file);
-    assert_eq!(from_file.rows().len(), 16);
+    assert_eq!(from_file.rows().len(), 74);
+}
+
+/// One expected native float or rational row of the kernel's records (filament-exact TC-953 and
+/// TC-956 at 85034c5c): operation ids, `max_operand_bits`, whether `tractable`, wall seconds (or the
+/// limit) in milliseconds, `memory.peak` bytes, the harness id, and the owner of a `not_tractable`
+/// row (empty for a `tractable` one).
+type NativeRow = (
+    &'static [&'static str],
+    u32,
+    bool,
+    u64,
+    u64,
+    &'static str,
+    &'static str,
+);
+
+const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
+    (
+        &["filament.op.ieee.float32.negate"],
+        32,
+        true,
+        4900,
+        630960128,
+        "native_float_kani_proofs::float32_negate",
+        "",
+    ),
+    (
+        &["filament.op.ieee.float32.add"],
+        32,
+        true,
+        54100,
+        978960384,
+        "native_float_kani_proofs::float32_add_nearest_even",
+        "",
+    ),
+    (
+        &["filament.op.ieee.float32.add"],
+        32,
+        true,
+        36800,
+        1077317632,
+        "native_float_kani_proofs::float32_add_exact",
+        "",
+    ),
+    (
+        &["filament.op.ieee.float32.add"],
+        32,
+        true,
+        15800,
+        1079701504,
+        "native_float_kani_proofs::float32_add_directed",
+        "",
+    ),
+    (
+        &["filament.op.ieee.float32.sub"],
+        32,
+        true,
+        51200,
+        971542528,
+        "native_float_kani_proofs::float32_subtract_nearest_even",
+        "",
+    ),
+    (
+        &["filament.op.ieee.float32.sub"],
+        32,
+        true,
+        36500,
+        1071677440,
+        "native_float_kani_proofs::float32_subtract_exact",
+        "",
+    ),
+    (
+        &["filament.op.ieee.float32.sub"],
+        32,
+        true,
+        16300,
+        1088585728,
+        "native_float_kani_proofs::float32_subtract_directed",
+        "",
+    ),
+    (
+        &["filament.op.ieee.float32.mul"],
+        32,
+        true,
+        19800,
+        906743808,
+        "native_float_kani_proofs::float32_multiply_nearest_even",
+        "",
+    ),
+    (
+        &["filament.op.ieee.float32.mul"],
+        32,
+        true,
+        72700,
+        925429760,
+        "native_float_kani_proofs::float32_multiply_exact",
+        "",
+    ),
+    (
+        &["filament.op.ieee.float32.mul"],
+        32,
+        true,
+        14600,
+        943497216,
+        "native_float_kani_proofs::float32_multiply_directed",
+        "",
+    ),
+    (
+        &["filament.op.ieee.float32.div"],
+        32,
+        false,
+        600000,
+        671797248,
+        "native_float_kani_proofs::float32_divide_nearest_even",
+        "IR-1551",
+    ),
+    (
+        &["filament.op.ieee.float32.div"],
+        32,
+        false,
+        1800000,
+        657661952,
+        "native_float_kani_proofs::float32_divide_exact",
+        "IR-1551",
+    ),
+    (
+        &["filament.op.ieee.float32.div"],
+        32,
+        true,
+        188500,
+        1062281216,
+        "native_float_kani_proofs::float32_divide_directed",
+        "",
+    ),
+    (
+        &["filament.op.ieee.float32.sqrt"],
+        32,
+        false,
+        600000,
+        773021696,
+        "native_float_kani_proofs::float32_square_root_nearest_even",
+        "IR-1551",
+    ),
+    (
+        &["filament.op.ieee.float32.sqrt"],
+        32,
+        true,
+        33200,
+        1402953728,
+        "native_float_kani_proofs::float32_square_root_exact",
+        "",
+    ),
+    (
+        &["filament.op.ieee.float32.sqrt"],
+        32,
+        true,
+        18400,
+        1149845504,
+        "native_float_kani_proofs::float32_square_root_directed",
+        "",
+    ),
+    (
+        &["filament.op.ieee.float32.fma"],
+        32,
+        false,
+        600000,
+        656998400,
+        "native_float_kani_proofs::float32_fused_multiply_add_nearest_even",
+        "IR-1551",
+    ),
+    (
+        &["filament.op.ieee.float32.fma"],
+        32,
+        true,
+        667500,
+        1238626304,
+        "native_float_kani_proofs::float32_fused_multiply_add_exact",
+        "",
+    ),
+    (
+        &["filament.op.ieee.float32.fma"],
+        32,
+        true,
+        20100,
+        1310621696,
+        "native_float_kani_proofs::float32_fused_multiply_add_directed",
+        "",
+    ),
+    (
+        &["filament.op.ieee.numeric_equal"],
+        32,
+        true,
+        4700,
+        603648000,
+        "native_float_kani_proofs::float32_numeric_equal",
+        "",
+    ),
+    (
+        &["filament.op.ieee.total_order"],
+        32,
+        true,
+        4800,
+        603582464,
+        "native_float_kani_proofs::float32_total_order",
+        "",
+    ),
+    (
+        &["filament.op.ieee.bit_identical"],
+        32,
+        true,
+        4400,
+        604430336,
+        "native_float_kani_proofs::float32_bit_identical",
+        "",
+    ),
+    (
+        &["filament.op.ieee.float64.negate"],
+        64,
+        true,
+        4900,
+        632463360,
+        "native_float_kani_proofs::float64_negate",
+        "",
+    ),
+    (
+        &["filament.op.ieee.float64.add"],
+        64,
+        true,
+        384100,
+        946696192,
+        "native_float_kani_proofs::float64_add_nearest_even",
+        "",
+    ),
+    (
+        &["filament.op.ieee.float64.add"],
+        64,
+        true,
+        197700,
+        1062014976,
+        "native_float_kani_proofs::float64_add_exact",
+        "",
+    ),
+    (
+        &["filament.op.ieee.float64.add"],
+        64,
+        true,
+        17400,
+        1029165056,
+        "native_float_kani_proofs::float64_add_directed",
+        "",
+    ),
+    (
+        &["filament.op.ieee.float64.sub"],
+        64,
+        true,
+        384800,
+        929964032,
+        "native_float_kani_proofs::float64_subtract_nearest_even",
+        "",
+    ),
+    (
+        &["filament.op.ieee.float64.sub"],
+        64,
+        true,
+        213700,
+        1023115264,
+        "native_float_kani_proofs::float64_subtract_exact",
+        "",
+    ),
+    (
+        &["filament.op.ieee.float64.sub"],
+        64,
+        true,
+        17300,
+        1100574720,
+        "native_float_kani_proofs::float64_subtract_directed",
+        "",
+    ),
+    (
+        &["filament.op.ieee.float64.mul"],
+        64,
+        false,
+        600000,
+        605556736,
+        "native_float_kani_proofs::float64_multiply_nearest_even",
+        "IR-1551",
+    ),
+    (
+        &["filament.op.ieee.float64.mul"],
+        64,
+        true,
+        56000,
+        924803072,
+        "native_float_kani_proofs::float64_multiply_exact",
+        "",
+    ),
+    (
+        &["filament.op.ieee.float64.mul"],
+        64,
+        true,
+        14800,
+        990892032,
+        "native_float_kani_proofs::float64_multiply_directed",
+        "",
+    ),
+    (
+        &["filament.op.ieee.float64.div"],
+        64,
+        false,
+        600000,
+        714432512,
+        "native_float_kani_proofs::float64_divide_nearest_even",
+        "IR-1551",
+    ),
+    (
+        &["filament.op.ieee.float64.div"],
+        64,
+        false,
+        1800000,
+        757579776,
+        "native_float_kani_proofs::float64_divide_exact",
+        "IR-1551",
+    ),
+    (
+        &["filament.op.ieee.float64.div"],
+        64,
+        false,
+        1800000,
+        709488640,
+        "native_float_kani_proofs::float64_divide_directed",
+        "IR-1551",
+    ),
+    (
+        &["filament.op.ieee.float64.sqrt"],
+        64,
+        false,
+        600000,
+        953933824,
+        "native_float_kani_proofs::float64_square_root_nearest_even",
+        "IR-1551",
+    ),
+    (
+        &["filament.op.ieee.float64.sqrt"],
+        64,
+        false,
+        1800000,
+        925200384,
+        "native_float_kani_proofs::float64_square_root_exact",
+        "IR-1551",
+    ),
+    (
+        &["filament.op.ieee.float64.sqrt"],
+        64,
+        true,
+        25500,
+        1216454656,
+        "native_float_kani_proofs::float64_square_root_directed",
+        "",
+    ),
+    (
+        &["filament.op.ieee.float64.fma"],
+        64,
+        false,
+        600000,
+        669093888,
+        "native_float_kani_proofs::float64_fused_multiply_add_nearest_even",
+        "IR-1551",
+    ),
+    (
+        &["filament.op.ieee.float64.fma"],
+        64,
+        false,
+        1800000,
+        650145792,
+        "native_float_kani_proofs::float64_fused_multiply_add_exact",
+        "IR-1551",
+    ),
+    (
+        &["filament.op.ieee.float64.fma"],
+        64,
+        true,
+        25000,
+        1320718336,
+        "native_float_kani_proofs::float64_fused_multiply_add_directed",
+        "",
+    ),
+    (
+        &["filament.op.ieee.numeric_equal"],
+        64,
+        true,
+        4900,
+        603418624,
+        "native_float_kani_proofs::float64_numeric_equal",
+        "",
+    ),
+    (
+        &["filament.op.ieee.total_order"],
+        64,
+        true,
+        4600,
+        602357760,
+        "native_float_kani_proofs::float64_total_order",
+        "",
+    ),
+    (
+        &["filament.op.ieee.bit_identical"],
+        64,
+        true,
+        4400,
+        601038848,
+        "native_float_kani_proofs::float64_bit_identical",
+        "",
+    ),
+    (
+        &["filament.native.rational.from_i64_parts"],
+        64,
+        false,
+        900000,
+        2147209216,
+        "native_rational_from_i64_parts_matches_reference",
+        "IR-1544",
+    ),
+    (
+        &["filament.op.rational.eq"],
+        8,
+        true,
+        41200,
+        1460588544,
+        "native_rational_equal_cg_domain_matches_reference",
+        "",
+    ),
+    (
+        &["filament.op.rational.lt", "filament.op.rational.le"],
+        8,
+        true,
+        67400,
+        1909317632,
+        "native_rational_order_cg_domain_matches_reference",
+        "",
+    ),
+    (
+        &["filament.op.rational.mul"],
+        8,
+        true,
+        132200,
+        3492552704,
+        "native_rational_multiply_cg_domain_matches_reference",
+        "",
+    ),
+    (
+        &["filament.op.rational.add"],
+        8,
+        true,
+        280700,
+        3560067072,
+        "native_rational_add_cg_domain_matches_reference",
+        "",
+    ),
+    (
+        &["filament.op.rational.sub"],
+        8,
+        true,
+        300400,
+        3591430144,
+        "native_rational_subtract_cg_domain_matches_reference",
+        "",
+    ),
+    (
+        &["filament.op.rational.sub"],
+        8,
+        true,
+        330200,
+        4093837312,
+        "native_rational_subtract_cg_domain_from_i64_parts_matches_reference",
+        "",
+    ),
+    (
+        &["filament.op.rational.add"],
+        8,
+        true,
+        348800,
+        6649708544,
+        "native_rational_add_is_commutative_over_cg_domain",
+        "",
+    ),
+    (
+        &["filament.op.rational.add"],
+        8,
+        true,
+        348400,
+        6830206976,
+        "native_rational_add_is_commutative_from_i64_parts_over_cg_domain",
+        "",
+    ),
+    (
+        &["filament.op.rational.eq"],
+        64,
+        false,
+        900000,
+        1389637632,
+        "native_rational_equal_full_i64_matches_reference",
+        "IR-1544",
+    ),
+    (
+        &["filament.op.rational.lt", "filament.op.rational.le"],
+        64,
+        false,
+        900000,
+        1860517888,
+        "native_rational_order_full_i64_matches_reference",
+        "IR-1544",
+    ),
+    (
+        &["filament.op.rational.add"],
+        64,
+        false,
+        900000,
+        15523975168,
+        "native_rational_add_full_i64_matches_reference",
+        "IR-1544",
+    ),
+    (
+        &["filament.op.rational.sub"],
+        64,
+        false,
+        900000,
+        15575470080,
+        "native_rational_subtract_full_i64_matches_reference",
+        "IR-1544",
+    ),
+    (
+        &["filament.op.rational.mul"],
+        64,
+        false,
+        900000,
+        15391862784,
+        "native_rational_multiply_full_i64_matches_reference",
+        "IR-1544",
+    ),
+];
+
+/// FR-056-AC-15 (IR-260, IR-258, IR-854): the 58 native-route float and rational rows copied from
+/// the kernel's TC-953 and TC-956 records are, in order after the 16 earlier rows, exactly the
+/// expected list: operation ids, width, verdict, wall or limit, peak, harness id and owner. A row
+/// with a wrong width, operation id, peak or wall, or without its harness id and owner in its
+/// `provenance`, fails. The counts of the records (44 float rows, 32 of them VERIFIED; 14 rational
+/// rows, 8 VERIFIED) are asserted as well.
+#[trace("TC-070", "FR-056-AC-15")]
+#[test]
+fn tc_070_the_shipped_table_holds_the_kernel_native_float_and_rational_rows() {
+    use filament_contract_codegen::{IntegerRoute, RowVerdict};
+    let table = general_scalar_table();
+    let rows = table.rows();
+    assert_eq!(rows.len(), 16 + NATIVE_FLOAT_AND_RATIONAL_ROWS.len());
+    for (index, expected) in NATIVE_FLOAT_AND_RATIONAL_ROWS.iter().enumerate() {
+        let (ids, bits, tractable, wall_millis, peak, harness, owner) = *expected;
+        let row = &rows[16 + index];
+        let context = format!("row {}: {row:?}", 16 + index);
+        assert_eq!(row.route, IntegerRoute::Native, "{context}");
+        assert_eq!(row.operation_ids, ids, "{context}");
+        assert_eq!(row.max_operand_bits, bits, "{context}");
+        assert_eq!(row.collection_bound, None, "{context}");
+        assert_eq!(
+            row.verdict,
+            if tractable {
+                RowVerdict::Tractable
+            } else {
+                RowVerdict::NotTractable
+            },
+            "{context}"
+        );
+        assert_eq!(row.wall_seconds.millis(), wall_millis, "{context}");
+        assert_eq!(row.peak_bytes, Some(peak), "{context}");
+        let provenance = row
+            .provenance
+            .as_deref()
+            .expect("a native row names its record");
+        assert!(
+            provenance.contains("85034c5c") && provenance.contains(&format!("harness {harness};")),
+            "{context}"
+        );
+        assert!(
+            provenance.contains("TC-953") || provenance.contains("TC-956"),
+            "{context}"
+        );
+        if !tractable {
+            assert!(
+                provenance.contains(&format!("owner {owner}"))
+                    && provenance.contains("claims no proof"),
+                "{context}"
+            );
+        }
+    }
+    let float = &NATIVE_FLOAT_AND_RATIONAL_ROWS[..44];
+    let rational = &NATIVE_FLOAT_AND_RATIONAL_ROWS[44..];
+    assert!(float
+        .iter()
+        .all(|row| row.0[0].starts_with("filament.op.ieee.")));
+    assert!(rational
+        .iter()
+        .all(|row| !row.0[0].starts_with("filament.op.ieee.")));
+    let tractable = |rows: &[NativeRow]| rows.iter().filter(|row| row.2).count();
+    assert_eq!((tractable(float), tractable(rational)), (32, 8));
 }
 
 /// A request whose launcher and crate do not exist: any attempt to run it would be a different

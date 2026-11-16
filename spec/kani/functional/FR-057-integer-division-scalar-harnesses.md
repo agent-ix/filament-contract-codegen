@@ -346,7 +346,7 @@ ships.
 ## Status
 
 PARTIAL (IR-854; the native-route verdict and the criteria that need a
-tractable shape are owned by IR-1541).
+tractable shape are owner: IR-854 (next PR); IR-1541 is done).
 
 Delivered and tested (TC-071): the `div`, `rem` and `mod` scalar harness under
 each law (FR-057-AC-1), its assertion structure and mapping controls over the
@@ -374,7 +374,7 @@ Partly delivered (PARTIAL):
   operation, shape, route and width. Unmeasured: constant divisors at 16, 32 and
   63 bits, the 8-bit constant divisor for `div` Euclidean and `rem` floor and
   Euclidean, negative constant divisors for six of the seven operation/law
-  pairs, and every native-route shape (owner IR-1541). The record lists them.
+  pairs, and every native-route shape (owner: IR-854, next PR). The record lists them.
 - AC-11: tested as sibling independence for integer add, subtract, multiply and
   negate generated with and without a division claim, plus FR-015-AC-115's
   existing reference-copy equivalence. The before/after comparison for the
@@ -385,9 +385,9 @@ Partly delivered (PARTIAL):
   unwind, representation, solver option) is tested. The run-time clauses (full
   ordered backend arguments from a run, raw checks and cover, playback, exit,
   typed terminal outcome and replay from the retained artifact) need a run that
-  produces a verdict or playback; owner IR-1541 with AC-7 and AC-8.
+  produces a verdict or playback; owner: IR-854 (next PR), with AC-7 and AC-8.
 
-Not delivered (PARTIAL, owner IR-1541):
+Not delivered (PARTIAL, owner: IR-854, next PR):
 
 - AC-7's native-route `Verified` verdicts of CG's own generated harnesses and its
   native minimum (one shape per operation, at least the constant-divisor shape at
@@ -412,6 +412,26 @@ Not delivered (PARTIAL, owner IR-1541):
   16 bits (truncating quotient and remainder) and constant divisors at 64 bits, because
   the table keys on operation id and width alone. That over-refusal is a known
   limitation until a profile or divisor-shape feature exists.
+  AC-7 disposition (IR-854, planner's rule: an executed native verdict, or a recorded measured
+  not-tractable row; input `evidence/proofs-2/NOTES.md`, 2026-11-14). Every native shape of the
+  kernel's record has one or the other and nothing else is claimed. Executed native verdicts: the
+  constant-divisor and symbolic-divisor shapes the record lists as VERIFIED, among them the
+  symbolic 8-bit width for `div`, `rem` and `mod` under every profile and member (the table's
+  `tractable` rows). Measured not-tractable: the 20 timeout rows, which proofs-2 analysed
+  and found all to be one solver query that never returns (a divider against an independent
+  multiply, about a million variables, under 2.3 GiB), independent of width and of a constant
+  divisor; the recorded rows are right and no rerun changes them. They are Verus-class (the
+  full-width statement `a - q*b` in the law's window); the 16-bit rows stay as measured. The
+  lemma split proofs-2 probed (five harnesses over all `i128` relating the law adjustment to a
+  truncating pair, each verified in under 15 s) is a scratch probe of an unlanded refactor; it is
+  not a CG or kernel row and nothing is claimed from it. What keeps AC-7 PARTIAL is its own text:
+  it asks for CG's generated harnesses to classify `Verified` on the native route, and CG
+  generates none (`NativeDivisionPlanUnavailable`, AC-6), so the verdicts above are the
+  kernel's, not CG's. IR-1541 is Done and its native division plan is in the locked kernel; what
+  keeps AC-7 PARTIAL is CG's own `select_native_integer`, which still returns
+  `NativeDivisionPlanUnavailable` and so builds no native division harness. The planner folded that
+  wiring into IR-854 as its next PR (route `select_native_integer` through the IR-1541 plan; CG's own
+  harnesses Verified on the native route, or a recorded measured not-tractable row): owner: IR-854 (next PR). The timeout shapes wait on the deductive lane.
 - AC-8's installed-Kani mutant falsification and its playback replay. No
   general-route shape is tractable, and the one mutant tried on the general route
   (completing at a zero divisor, over a 5-bit explicit-result fixture) also

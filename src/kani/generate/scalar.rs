@@ -585,7 +585,7 @@ impl LoweredScalarClaim {
             ScalarOperation::Multiply => IntegerOperator::Multiply,
             ScalarOperation::Negate => IntegerOperator::Negate,
             ScalarOperation::Implies => return Ok(()),
-            // No kernel-checked native division plan exists yet (FR-057-AC-6).
+            // CG does not wire the kernel's native division plan into a harness yet (FR-057-AC-6).
             ScalarOperation::Divide(_)
             | ScalarOperation::Remainder(_)
             | ScalarOperation::Modulo => {
