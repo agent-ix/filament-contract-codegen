@@ -7,6 +7,9 @@
 // Capability settlement.
 // Implements: FR-019
 pub(crate) mod capability;
+// The generic negotiation arm every admitted registration has.
+// Implements: FR-711
+pub(crate) mod generic;
 // Production package access lives in the shared core; these controls exercise routed use.
 #[cfg(test)]
 mod contract_package_tests;

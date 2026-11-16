@@ -137,6 +137,7 @@ fn native_fixture() -> Fixture {
             identity: "kani".to_owned(),
             advertised: Vec::new(),
             origin: ProviderOrigin::Linked,
+            profile: Default::default(),
             domains: None,
             bounds: None,
         },

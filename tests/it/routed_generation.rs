@@ -412,6 +412,7 @@ pub(crate) fn route(request_index: usize, node_id: &CheckedNodeId) -> RoutedGene
             identity: "kani".to_owned(),
             advertised: Vec::new(),
             origin: ProviderOrigin::Linked,
+            profile: Default::default(),
             domains: None,
             bounds: None,
         },
@@ -428,6 +429,7 @@ fn process_route(
         identity: identity.to_owned(),
         advertised: Vec::new(),
         origin: ProviderOrigin::Process,
+        profile: Default::default(),
         domains: None,
         bounds: None,
     };
@@ -450,6 +452,7 @@ fn routed_process_construction_preserves_optional_manifest_bounds() {
         identity: "solver".to_owned(),
         advertised: Vec::new(),
         origin: ProviderOrigin::Process,
+        profile: Default::default(),
         domains: None,
         bounds: None,
     };
@@ -538,6 +541,7 @@ fn routed_item_constructor_refuses_mismatched_and_unknown_linked_descriptors() {
         identity: "solver".to_owned(),
         advertised: Vec::new(),
         origin: ProviderOrigin::Process,
+        profile: Default::default(),
         domains: None,
         bounds: None,
     };
@@ -564,6 +568,7 @@ fn routed_item_constructor_refuses_mismatched_and_unknown_linked_descriptors() {
         },
         &BackendDescriptor {
             origin: ProviderOrigin::Linked,
+            profile: Default::default(),
             ..descriptor
         },
     );

@@ -157,9 +157,13 @@ that precondition; CG's typed refusal defends it rather than establishing it.
   adjacency. The generator shall check contract version and capability
   vocabulary before detecting repeats, so a bad vocabulary retains
   `EnvelopeRefusal::InvalidCapability` and no kind is read.
-- The generator shall dispatch settlement through one `negotiate_*` arm per
-  variant of a closed backend kind, with no catch-all arm. A backend kind with
-  no arm shall fail to compile.
+- The generator shall settle an item on every admitted registration through the
+  generic arm of FSpec FR-711, then, for a backend whose IR forms need their own
+  check, through that backend's specific arm, dispatched through one `negotiate_*`
+  arm per variant of a closed enum with no catch-all arm. A specific arm with no
+  dispatch shall fail to compile. The public item entry `negotiate_item(manifest,
+  item)` settles one item; the item carries a backend-specific form only when
+  its single candidate's arm reads one.
 - While settling an admitted FR-330 package, CG SHALL check the envelope item
   count against bound driver items (`DriverItem` positions), excluding
   accounting-only positions and context roots. CG SHALL settle only those bound
@@ -175,8 +179,7 @@ that precondition; CG's typed refusal defends it rather than establishing it.
 - The generator shall evaluate each item's rules in FR-290's stated order, and
   the first rule that matches shall settle the item: an absent or unknown kind;
   an absent extent classification; then the candidate table, top row first.
-- If an item names an unregistered backend, or names a registered backend that
-  has no negotiation arm, then the generator shall settle it `invalid-request`
+- If an item names an unregistered backend, then the generator shall settle it `invalid-request`
   with `invalid_capability`/`unknown-backend`, naming the backend.
 - If an item's candidates include one absent from the registered descriptors, one that does
   not advertise the item's kind, or a set disagreeing with the named backend,
@@ -517,7 +520,7 @@ requires its exhaustive arms to compile. FR-019-AC-14 is a property of the retur
 
 | ID | Criteria | Verification |
 |----|----------|--------------|
-| FR-019-AC-1 | Settlement dispatches one arm per variant of the closed backend kind, and every variant reaches an arm that settles rather than falling through. | Test (TC-030) |
+| FR-019-AC-1 | Settlement runs the generic arm on every admitted registration, linked, process or Kani, and dispatches each backend-specific arm after it through one `negotiate_*` arm per variant of a closed enum; a registered backend never settles `unknown-backend`. | Test (TC-030) |
 | FR-019-AC-2 | Every requested item receives exactly one of `supported`, `requires-bound`, `unsupported` and `invalid-request`, settled from its `candidates` and extent classification, and `candidates` is read from the request rather than computed here. | Test (TC-030) |
 | FR-019-AC-3 | On the Kani arm, an unbounded extent against a `bounded`-only advertisement settles `requires-bound` when a finite bound is available, rather than `unsupported`; with no finite bound available it settles `unsupported`, warned, with `unsupported_projection`/`unbounded-extent`; and it never settles `supported`. | Test (TC-030) |
 | FR-019-AC-4 | An item with more than one candidate and no named backend settles `invalid-request` with `invalid_capability`/`ambiguous-backend`, naming every candidate in candidate order, identically under every registration order. | Test (TC-030) |
@@ -554,7 +557,7 @@ requires its exhaustive arms to compile. FR-019-AC-14 is a property of the retur
 | FR-019-AC-27 | With one Kani candidate, a typed form outside the normative set in FR-019-AC-25 settles `unsupported`, warned, with `unsupported_projection`/`unsupported-requested-capability` naming its typed tag/form and Kani; no artifact is emitted and no generator is invoked. A malformed in-set form settles with the applicable typed FR-015 validation refusal. | Test (TC-030) |
 | FR-019-AC-33 | OPEN for surviving Planned forms; V1-only subpaths retire under the 2026-10-27 owner ruling on IR-348. Original criterion retained for traceability: For a valid bounded typed form inside FR-019-AC-25 that matches one specific Planned subpath in TC-030's status register and does not match an Implemented subpath, negotiation returns `unsupported` with that subpath's single exact typed refusal cause, emits no artifact, and never settles `supported` before its renderer is implemented; this refusal remains distinct from the out-of-V1 refusal in AC-27. | Test (TC-030) |
 | FR-019-AC-28 | A form refusal under FR-019-AC-27 is distinct from an empty candidate set, which retains the missing-capability cause, and from multiple candidates without a named backend, which retains `invalid_capability`/`ambiguous-backend` naming each candidate in candidate order. | Test (TC-030) |
-| FR-019-AC-29 | After request and candidate/manifest validation select one Kani candidate, Kani checks the typed IR form before its extent and advertised-mode rules; if both the form and mode/extent are unsupported, the form refusal of FR-019-AC-27 settles the item. | Test (TC-030) |
+| FR-019-AC-29 | After request and candidate/manifest validation select one Kani candidate, the generic arm of FSpec FR-711 settles first (domain kinds, advertised modes, then the item's other requirements) and Kani checks the typed IR form only after it passes; if both the mode/extent and the form are unsupported, the generic disposition settles the item. | Test (TC-030) |
 | FR-019-AC-30 | For the same typed IR tag/form, changing only its display or debug text leaves Kani's disposition, cause and named form identity unchanged. | Test (TC-030) |
 | FR-019-AC-31 | For a Kani-supported unbounded form against a `bounded`-only advertisement, `finite_bound_available=true` settles `requires-bound`, with no substituted bound and no artifact. | Test (TC-030) |
 | FR-019-AC-32 | When a caller supplies a finite bound in a new bounded request for a Kani-supported form, negotiation settles `supported` and preserves the exact supplied proof-bound value, domain kind and domain identity. | Test (TC-030) |
