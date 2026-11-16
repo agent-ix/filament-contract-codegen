@@ -122,8 +122,8 @@ and never replace positive FSL evaluation with a verdict double.
    domain or limits; separately replace the retained proved artifact; each CG precheck or failed report binding returns no
    report terminal value. Keep FSL refusal codes, executor faults and CG defect causes typed. Assert that `run_terminal_value` has no
    proof-subject or proof-strength input and `TerminalPairError` has no bounded-shadow variant
-   (FR-029-AC-21); the permanent exclusion of shadow outcomes from `run_terminal_value` and their routing
-   only to the parity route (FR-029-AC-30 and AC-31) is planned and has no test yet. The IR-666 direct report converter already preserves
+   (FR-029-AC-21, tested); the closed six-strength projection (FR-029-AC-17, AC-22) and the terminal value FSL's report carries for each (FR-029-AC-31) are tested in `tests/it/composite_parity_converter.rs`; the routing
+   of a production shadow outcome only to the parity route (FR-029-AC-30) awaits the production invocation. The IR-666 direct report converter already preserves
    the disagreement-first Failed/CgDefect rule. IR-806 owns original-artifact setup, prechecks and
    production invocation. Executable
    tests trace the exact criteria they assert; scenario prose is not coverage.
