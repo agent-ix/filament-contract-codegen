@@ -97,4 +97,4 @@ not-tractable row. Input: the proofs-2 analysis of the kernel's record (filament
 These verdicts belong to the kernel's harnesses. FR-057-AC-7 asks for CG's generated harnesses to
 classify `Verified` on the native route. The kernel's plan (IR-1541, done) is in the locked kernel,
 but CG's `select_native_integer` still returns `NativeDivisionPlanUnavailable`, so CG builds no native
-division harness and AC-7 stays PARTIAL. That wiring has no live ticket: owner: planner to assign.
+division harness and AC-7 stays PARTIAL. The planner folded that wiring into IR-854 as its next PR (route `select_native_integer` through the IR-1541 plan; CG's own harnesses Verified on the native route, or a recorded measured not-tractable row): owner: IR-854 (next PR).

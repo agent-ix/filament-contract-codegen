@@ -46,3 +46,20 @@ The measured record is copied faithfully and the AC-7 and AC-13 PARTIAL verdicts
 substance. All four findings are status-prose accuracy: two misattributed blockers or owners
 (FND-001, FND-004) and two self-contradicting matrix rows (FND-002, FND-003). None changes a
 number or a claim of verification. Fixable in this PR as text edits.
+
+## New findings (disposition pass 1)
+
+| ID | Severity | Summary | Refs |
+|---|---|---|---|
+| FND-005 | low | The new FR-057, matrix and IR-854 doc text names the owner of the `select_native_integer` / `NativeDivisionPlanUnavailable` remainder as "owner: planner to assign". The planner has since ruled that it is folded into IR-854 as the next PR, so the text is out of date. Replace it with "IR-854 (next PR)", or accept it unchanged and fix it in that PR. | spec/kani/functional/FR-057-integer-division-scalar-harnesses.md:349, spec/kani/functional/FR-057-integer-division-scalar-harnesses.md:390, spec/kani/functional/FR-057-integer-division-scalar-harnesses.md:433, docs/qualification/ir854-general-route-division-measurements.md:100, spec/kani/matrix/tests.md:13 |
+
+## Dispositions
+
+Round 1, checked at 1c768610 (`git diff 9e98185c..1c768610 -- spec docs src`). `make spec` exit 0.
+
+| FND | outcome | reason |
+|---|---|---|
+| FND-001 | fixed | The lock-move claim is gone. FR-053 now says the locked kernel already has the natives, and the new CG differential covers Add/Sub at both widths and Mul B32. What remains is listed: Divide, SquareRoot, FMA, Mul B64, per-limit denied point and counters, nearest-even against Rust `f32`/`f64`, and the AC-9/AC-10 mutant sets, owner IR-260. That list is honest. The tie-mutant claim inside this text is FND-003 of the code-review artifact. |
+| FND-002 | fixed | The FR-053 matrix row is now headed `🚧 PARTIAL (IR-260)` and states what is delivered and what stays PARTIAL. |
+| FND-003 | fixed | The FR-056 matrix row is now `🚧 PARTIAL (IR-1526, IR-1530, IR-260)`, covers AC-1..AC-15, says the decider, table and corpus exist, and its AC list matches FR-056 Status. |
+| FND-004 | fixed | FR-057 Status, AC-7 disposition, matrix row and IR-854 doc now say IR-1541 is Done and its plan is in the locked kernel, and name CG's `select_native_integer` returning `NativeDivisionPlanUnavailable` as what keeps AC-7 PARTIAL. The stale comment at `src/kani/generate/scalar.rs:588` was also fixed. The owner text is FND-005. |

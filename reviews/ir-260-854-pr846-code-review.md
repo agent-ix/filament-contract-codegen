@@ -60,3 +60,30 @@ denies. The decider handles the new rows safely today (concerns 1 and 2 above). 
 `float_scalar_harness` filter keeps that test on its original five general-route rows (without
 it the count would be 49), so it is not weakened. FND-001 is the one real gap: the new test
 cannot catch a mis-copied width, op id, wall or peak. FND-002 is a contract nit.
+
+## New findings (disposition pass 1)
+
+Re-review of 9e98185c..1c768610 (9ca8d099, 1c768610). New code: the CG host differential
+`the_native_arithmetic_equals_the_owner_and_the_differential_kills_native_mutants`. Independence
+checked: the native side is filament-exact `evaluate_native_float` (`native_float.rs`, its own
+`u128`/`i32` arithmetic; it imports only types from `ieee`), the owner side is `evaluate_ieee`
+(`ieee.rs`), so the differential is not tautological. A no-op mutant (identity) returns `None`.
+Each of the four committed mutants makes the test's `is_some()` pass, but two are killed for a
+reason other than the one claimed (scratch probe printing `first_arithmetic_disagreement`).
+
+| ID | Severity | Summary | Refs |
+|---|---|---|---|
+| FND-003 | medium | The `tie-is-away` mutant rewrites the rounding provenance to `NearestEven` for every mode, not only for nearest-even, so it is killed at the first grid point by provenance (`Add Binary32 Exact 0x0 0x0: native (0, {}, NearestEven), owner (0, {}, Exact)`), not by a tie. The test therefore does not show that the differential catches a wrong tie rule, though FR-053 says it does. A correct mutant (map NearestEven to NearestAway, keep each mode's own provenance) IS killed by real ties in the grid (scratch probe: Add B32 `0x400000 + 0xc00001` gives 0x1000001 against 0x1000000; also Add B64, Sub B32, Mul B32). Fix the closure: relabel only when the requested mode was `NearestEven`, or pass `rounding` through. | tests/it/float_scalar_harness.rs:1455-1463, spec/kani/functional/FR-053-float-scalar-harnesses.md:492-493 |
+| FND-004 | low | The `inexact-dropped` mutant clears every flag (`IeeeFlags::default()`), so it is killed by `invalid` on `Multiply Binary32 Exact 0 * inf`, not by a missing `inexact`. A real inexact-only mutant (drop only `Inexact`) is also killed (scratch: `Multiply Binary32 TowardZero 0x1 * 0x1`, flags 8 against 24), so the claim holds in substance, but the committed mutant does not test it. Drop only `IeeeFlag::Inexact` (for example `flags.iter().filter(|f| *f != IeeeFlag::Inexact).collect()`), or rename it "flags-dropped". | tests/it/float_scalar_harness.rs:1464-1467 |
+
+## Dispositions
+
+Round 1, checked at 1c768610. Gate: `cargo fmt --check` clean; `cargo clippy --locked
+--all-targets -- -D warnings` clean; `cargo deny check` ok; `make spec` exit 0; `cargo test
+--locked --no-fail-fast --lib --test it`: lib 606 passed / 0 failed / 36 ignored, it 1146 passed /
+0 failed / 125 ignored. `Cargo.lock`/`Cargo.toml` unchanged against origin/main.
+
+| FND | outcome | reason |
+|---|---|---|
+| FND-001 | fixed | `tc_070_the_shipped_table_holds_the_kernel_native_float_and_rational_rows` now compares all 58 rows to a literal `NATIVE_FLOAT_AND_RATIONAL_ROWS` list (ids, bits, verdict, wall ms, peak, harness, owner). Run separately on a mutated copy of the table, each mutant fails: row 17 width 64 (`left: 64, right: 32`), row 26 op id `float64.div` (left/right ids differ), row 39 peak 1 (`Some(1)` against `Some(946696192)`), row 40 wall 1.0 (`1000` against `197700`). |
+| FND-002 | fixed | The `operation_ids` field doc and FR-056's Measured table text now allow a record row to name a non-catalog subject and say no clause carries that id, so it never selects. |

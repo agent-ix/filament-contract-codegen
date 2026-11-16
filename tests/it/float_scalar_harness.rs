@@ -1381,6 +1381,15 @@ fn owner_arithmetic(
     }
 }
 
+/// An input on which a native evaluator and the shipped owner disagree.
+struct Disagreement {
+    operation: Arithmetic,
+    width: filament_exact::IeeeWidth,
+    rounding: filament_exact::RoundingMode,
+    operands: (u64, u64),
+    text: String,
+}
+
 /// The first input on which `native` and the shipped owner disagree on the outcome or on the
 /// meter, over the class-boundary set and the control points, every rounding mode, and an
 /// unlimited budget and the two shortest work-unit budgets.
@@ -1388,7 +1397,7 @@ fn first_arithmetic_disagreement(
     operation: Arithmetic,
     wide: bool,
     native: &NativeArithmetic,
-) -> Option<String> {
+) -> Option<Disagreement> {
     use filament_exact::{IeeeWidth, LimitKind, Meter, RoundingMode};
     let width = if wide {
         IeeeWidth::Binary64
@@ -1409,9 +1418,15 @@ fn first_arithmetic_disagreement(
                     let n = native(operation, width, (a, b), rounding, &mut native_meter);
                     let o = owner_arithmetic(operation, width, (a, b), rounding, &mut owner_meter);
                     if n != o || native_meter != owner_meter {
-                        return Some(format!(
-                            "{operation:?} {width:?} {rounding:?} {a:#x} {b:#x} work={budget}: native {n:?}, owner {o:?}"
-                        ));
+                        return Some(Disagreement {
+                            operation,
+                            width,
+                            rounding,
+                            operands: (a, b),
+                            text: format!(
+                                "{operation:?} {width:?} {rounding:?} {a:#x} {b:#x} work={budget}: native {n:?}, owner {o:?}"
+                            ),
+                        });
                     }
                 }
             }
@@ -1430,7 +1445,7 @@ fn first_arithmetic_disagreement(
 #[trace("TC-067", "FR-053-AC-13")]
 #[test]
 fn the_native_arithmetic_equals_the_owner_and_the_differential_kills_native_mutants() {
-    use filament_exact::{IeeeFlags, RoundingMode};
+    use filament_exact::{IeeeFlag, IeeeFlags, RoundingMode};
     let combinations = [
         (Arithmetic::Add, true),
         (Arithmetic::Add, false),
@@ -1439,9 +1454,8 @@ fn the_native_arithmetic_equals_the_owner_and_the_differential_kills_native_muta
         (Arithmetic::Multiply, false),
     ];
     for (operation, wide) in combinations {
-        assert_eq!(
-            first_arithmetic_disagreement(operation, wide, &native_arithmetic),
-            None,
+        assert!(
+            first_arithmetic_disagreement(operation, wide, &native_arithmetic).is_none(),
             "{operation:?} wide={wide}"
         );
     }
@@ -1452,18 +1466,30 @@ fn the_native_arithmetic_equals_the_owner_and_the_differential_kills_native_muta
         RoundingMode,
         &mut filament_exact::Meter,
     ) -> ArithmeticView;
-    let tie_is_away: Native = |op, width, bits, rounding, meter| {
-        let rounding = if rounding == RoundingMode::NearestEven {
+    let tie_is_away: Native = |op, width, bits, requested, meter| {
+        let rounding = if requested == RoundingMode::NearestEven {
             RoundingMode::NearestAway
         } else {
-            rounding
+            requested
         };
-        native_arithmetic(op, width, bits, rounding, meter)
-            .map(|(value, flags, _)| (value, flags, RoundingMode::NearestEven))
+        native_arithmetic(op, width, bits, rounding, meter).map(|(value, flags, provenance)| {
+            // Only a requested nearest-even is relabelled, so the mutant differs from the
+            // owner on the value of a tie and not on every input.
+            if requested == RoundingMode::NearestEven {
+                (value, flags, RoundingMode::NearestEven)
+            } else {
+                (value, flags, provenance)
+            }
+        })
     };
     let inexact_dropped: Native = |op, width, bits, rounding, meter| {
-        native_arithmetic(op, width, bits, rounding, meter)
-            .map(|(value, _, rounding)| (value, IeeeFlags::default(), rounding))
+        native_arithmetic(op, width, bits, rounding, meter).map(|(value, flags, rounding)| {
+            let others = flags
+                .iter()
+                .filter(|flag| *flag != IeeeFlag::Inexact)
+                .collect::<IeeeFlags>();
+            (value, others, rounding)
+        })
     };
     let payload_cleared: Native = |op, width, bits, rounding, meter| {
         native_arithmetic(op, width, bits, rounding, meter).map(|(value, flags, rounding)| {
@@ -1490,8 +1516,22 @@ fn the_native_arithmetic_equals_the_owner_and_the_differential_kills_native_muta
         };
         native_arithmetic(op, width, bits, rounding, meter)
     };
+    // Each mutant is killed for the reason it names: the first input it disagrees on is one that
+    // exercises the mutated behaviour, checked against the owner.
+    let owner_at = |d: &Disagreement, operation: Arithmetic, rounding: RoundingMode| {
+        owner_arithmetic(
+            operation,
+            d.width,
+            d.operands,
+            rounding,
+            &mut filament_exact::Meter::new(limits_of(u64::MAX)),
+        )
+    };
     for (name, mutant, operation, wide) in [
         ("tie-is-away", tie_is_away, Arithmetic::Add, false),
+        ("tie-is-away", tie_is_away, Arithmetic::Add, true),
+        ("tie-is-away", tie_is_away, Arithmetic::Subtract, false),
+        ("tie-is-away", tie_is_away, Arithmetic::Multiply, false),
         (
             "inexact-dropped",
             inexact_dropped,
@@ -1511,10 +1551,42 @@ fn the_native_arithmetic_equals_the_owner_and_the_differential_kills_native_muta
             false,
         ),
     ] {
-        assert!(
-            first_arithmetic_disagreement(operation, wide, &mutant).is_some(),
-            "the differential did not kill the {name} mutant"
-        );
+        let d = first_arithmetic_disagreement(operation, wide, &mutant)
+            .unwrap_or_else(|| panic!("the differential did not kill the {name} mutant"));
+        let owner = owner_at(&d, d.operation, d.rounding);
+        match name {
+            "tie-is-away" => {
+                // A real tie: the owner's nearest-even and nearest-away results differ in value.
+                assert_eq!(d.rounding, RoundingMode::NearestEven, "{}", d.text);
+                let away = owner_at(&d, d.operation, RoundingMode::NearestAway);
+                let (even_bits, away_bits) = (owner.as_ref().unwrap().0, away.unwrap().0);
+                assert_ne!(even_bits, away_bits, "{}", d.text);
+            }
+            "inexact-dropped" => {
+                let flags = owner.expect("a completed owner result").1;
+                assert!(flags.contains(IeeeFlag::Inexact), "{}", d.text);
+            }
+            "nan-payload-cleared" => {
+                let bits = owner.expect("a completed owner result").0;
+                let fraction_bits = if wide { 52 } else { 23 };
+                let fraction = bits & ((1_u64 << fraction_bits) - 1);
+                assert!(
+                    fraction & ((1_u64 << (fraction_bits - 1)) - 1) != 0,
+                    "{}",
+                    d.text
+                );
+            }
+            "subtract-as-add" => {
+                assert!(matches!(d.operation, Arithmetic::Subtract), "{}", d.text);
+                assert_ne!(
+                    owner,
+                    owner_at(&d, Arithmetic::Add, d.rounding),
+                    "{}",
+                    d.text
+                );
+            }
+            other => panic!("unknown mutant {other}"),
+        }
     }
 }
 

@@ -47,3 +47,9 @@ repeated here.
 
 Clean. Every added row is traceable to the kernel's record and every criterion touched is tagged
 and honestly statused in substance (see the spec-review artifact for prose fixes).
+
+## Dispositions
+
+Round 1, checked at 1c768610: no findings to dispose (clean review). `quoin`-relevant tags
+unchanged except the new `#[trace("TC-067", "FR-053-AC-13")]` on the arithmetic differential,
+which FR-053 and the matrix now cite.

@@ -346,7 +346,7 @@ ships.
 ## Status
 
 PARTIAL (IR-854; the native-route verdict and the criteria that need a
-tractable shape are owner: planner to assign, since IR-1541 is done).
+tractable shape are owner: IR-854 (next PR); IR-1541 is done).
 
 Delivered and tested (TC-071): the `div`, `rem` and `mod` scalar harness under
 each law (FR-057-AC-1), its assertion structure and mapping controls over the
@@ -374,7 +374,7 @@ Partly delivered (PARTIAL):
   operation, shape, route and width. Unmeasured: constant divisors at 16, 32 and
   63 bits, the 8-bit constant divisor for `div` Euclidean and `rem` floor and
   Euclidean, negative constant divisors for six of the seven operation/law
-  pairs, and every native-route shape (owner: planner to assign). The record lists them.
+  pairs, and every native-route shape (owner: IR-854, next PR). The record lists them.
 - AC-11: tested as sibling independence for integer add, subtract, multiply and
   negate generated with and without a division claim, plus FR-015-AC-115's
   existing reference-copy equivalence. The before/after comparison for the
@@ -385,9 +385,9 @@ Partly delivered (PARTIAL):
   unwind, representation, solver option) is tested. The run-time clauses (full
   ordered backend arguments from a run, raw checks and cover, playback, exit,
   typed terminal outcome and replay from the retained artifact) need a run that
-  produces a verdict or playback; owner: planner to assign, with AC-7 and AC-8.
+  produces a verdict or playback; owner: IR-854 (next PR), with AC-7 and AC-8.
 
-Not delivered (PARTIAL, owner: planner to assign):
+Not delivered (PARTIAL, owner: IR-854, next PR):
 
 - AC-7's native-route `Verified` verdicts of CG's own generated harnesses and its
   native minimum (one shape per operation, at least the constant-divisor shape at
@@ -429,8 +429,9 @@ Not delivered (PARTIAL, owner: planner to assign):
   generates none (`NativeDivisionPlanUnavailable`, AC-6), so the verdicts above are the
   kernel's, not CG's. IR-1541 is Done and its native division plan is in the locked kernel; what
   keeps AC-7 PARTIAL is CG's own `select_native_integer`, which still returns
-  `NativeDivisionPlanUnavailable` and so builds no native division harness. That wiring has no live
-  ticket: owner: planner to assign. The timeout shapes wait on the deductive lane.
+  `NativeDivisionPlanUnavailable` and so builds no native division harness. The planner folded that
+  wiring into IR-854 as its next PR (route `select_native_integer` through the IR-1541 plan; CG's own
+  harnesses Verified on the native route, or a recorded measured not-tractable row): owner: IR-854 (next PR). The timeout shapes wait on the deductive lane.
 - AC-8's installed-Kani mutant falsification and its playback replay. No
   general-route shape is tractable, and the one mutant tried on the general route
   (completing at a zero divisor, over a 5-bit explicit-result fixture) also

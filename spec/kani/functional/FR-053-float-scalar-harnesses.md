@@ -490,8 +490,10 @@ Binary32): `the_native_arithmetic_equals_the_owner_and_the_differential_kills_na
 `evaluate_native_float` against the shipped `evaluate_ieee` over the class-boundary set and the control
 points, under all six rounding spellings, on the typed outcome, bits, flags, rounding provenance and the
 meter at an unlimited and two short work-unit budgets, and shows four native-side mutants (a wrong tie
-rule, a dropped `inexact` flag, a cleared NaN payload, Subtract computed as Add) each disagreeing with
-the owner. The locked kernel already has these natives, so no lock move is needed. AC-13's arithmetic
+rule that differs from nearest-even only on a tie, a dropped `inexact` flag alone, a cleared NaN payload,
+Subtract computed as Add) each disagreeing with the owner, and the test checks that the first
+disagreement of each is on an input that exercises the mutated behaviour (a real tie, an inexact result,
+a payload NaN, a Subtract that differs from Add). The locked kernel already has these natives, so no lock move is needed. AC-13's arithmetic
 half stays PARTIAL: Divide, SquareRoot, FusedMultiplyAdd and Multiply at Binary64 have no differential
 here, the denied charge point and the other counters are not asserted per limit kind, the `nearest-even`
 comparison with Rust's `f32` and `f64` operators is not run, and the full AC-9 and AC-10 host mutant sets
