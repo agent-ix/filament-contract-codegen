@@ -66,6 +66,11 @@ and never replace positive FSL evaluation with a verdict double.
    binding schema refuses the claim; malformed playback values follow same-valid-claim
    disagreement precedence in step 10. Keep absent, null and present slots distinct, including
    nested option controls and parameter/literal inputs; literal-only inputs remain pinned.
+   Executed once against the installed backend: a falsified mutant that leaves one field out of the
+   compared conjunction produced a real playback of six draws, decoded through the identity and
+   rebuilt as two operands that agree on the fields still compared and differ on the omitted one
+   (wall 1 s, cgroup memory peak 313 MiB, verdict Falsified, ignored test
+   `tc_048_installed_kani_playback_of_a_falsified_mutant_decodes_and_rebuilds_both_operands`).
 3. Through the authoritative canonical reader/encoder, round-trip every FR-033 listed scalar and
    composite family. Include ExactInteger leaves beyond i64 inside composites while top-level
    Integer stays i64, exact IEEE NaN/signed-zero bits, rational zero and sign normalization,
