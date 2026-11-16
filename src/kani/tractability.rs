@@ -160,7 +160,9 @@ impl Serialize for WallSeconds {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct TractabilityRow {
-    /// The catalog operation ids the probe exercised.
+    /// The operation ids the probe exercised: catalog ids, or, for a record row whose subject is not a
+    /// catalog operation (a carrier's admission), the id that names the subject. A clause matches
+    /// only a row that carries one of its own catalog operation ids.
     pub operation_ids: Vec<String>,
     /// The route the probe measured. The key is required; there is no default route.
     pub route: IntegerRoute,

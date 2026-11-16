@@ -1310,6 +1310,212 @@ fn owner_compare(comparison: filament_exact::IeeeComparison, wide: bool, a: u64,
     }
 }
 
+/// A completed or non-completed arithmetic outcome in a form both evaluators share: the result
+/// bits, flags and rounding provenance, or the debug form of every other outcome (a refusal with
+/// its would-be flags, an incomplete charge, an undefined result).
+type ArithmeticView =
+    Result<(u64, filament_exact::IeeeFlags, filament_exact::RoundingMode), String>;
+
+#[derive(Clone, Copy, Debug)]
+enum Arithmetic {
+    Add,
+    Subtract,
+    Multiply,
+}
+
+fn native_arithmetic(
+    operation: Arithmetic,
+    width: filament_exact::IeeeWidth,
+    (a, b): (u64, u64),
+    rounding: filament_exact::RoundingMode,
+    meter: &mut filament_exact::Meter,
+) -> ArithmeticView {
+    use filament_exact::{evaluate_native_float, NativeFloat, NativeFloatOperation as Op, Outcome};
+    let carrier = |bits| NativeFloat::new(width, bits).expect("a pattern of the width");
+    let (left, right) = (carrier(a), carrier(b));
+    let operation = match operation {
+        Arithmetic::Add => Op::Add(left, right),
+        Arithmetic::Subtract => Op::Subtract(left, right),
+        Arithmetic::Multiply => Op::Multiply(left, right),
+    };
+    match evaluate_native_float(operation, rounding, meter).expect("same-width operands") {
+        Outcome::Completed(result) => Ok((result.value.bits(), result.flags, result.rounding)),
+        other => Err(format!("{other:?}")),
+    }
+}
+
+fn owner_arithmetic(
+    operation: Arithmetic,
+    width: filament_exact::IeeeWidth,
+    (a, b): (u64, u64),
+    rounding: filament_exact::RoundingMode,
+    meter: &mut filament_exact::Meter,
+) -> ArithmeticView {
+    use filament_exact::{evaluate_ieee, IeeeOperation as Op, NativeFloat, Outcome};
+    let value = |bits| {
+        NativeFloat::new(width, bits)
+            .expect("a pattern of the width")
+            .to_ieee_value()
+    };
+    let (left, right) = (value(a), value(b));
+    let operation = match operation {
+        Arithmetic::Add => Op::Add(left, right),
+        Arithmetic::Subtract => Op::Subtract(left, right),
+        Arithmetic::Multiply => Op::Multiply(left, right),
+    };
+    match evaluate_ieee(operation, rounding, meter).expect("same-width operands") {
+        Outcome::Completed(result) => Ok((
+            result.value().bits(),
+            result.flags(),
+            result.provenance().rounding(),
+        )),
+        other => Err(format!("{other:?}")),
+    }
+}
+
+/// The first input on which `native` and the shipped owner disagree on the outcome or on the
+/// meter, over the class-boundary set and the control points, every rounding mode, and an
+/// unlimited budget and the two shortest work-unit budgets.
+fn first_arithmetic_disagreement(
+    operation: Arithmetic,
+    wide: bool,
+    native: &dyn Fn(
+        Arithmetic,
+        filament_exact::IeeeWidth,
+        (u64, u64),
+        filament_exact::RoundingMode,
+        &mut filament_exact::Meter,
+    ) -> ArithmeticView,
+) -> Option<String> {
+    use filament_exact::{IeeeWidth, LimitKind, Meter, RoundingMode};
+    let width = if wide {
+        IeeeWidth::Binary64
+    } else {
+        IeeeWidth::Binary32
+    };
+    let mut grid = boundary_patterns(wide);
+    grid.extend(if wide { CONTROLS_64 } else { CONTROLS_32 });
+    grid.sort_unstable();
+    grid.dedup();
+    for rounding in RoundingMode::ALL {
+        for &a in &grid {
+            for &b in &grid {
+                for budget in [u64::MAX, 1, 0] {
+                    let limits = limits_with(LimitKind::WorkUnits, budget);
+                    let (mut native_meter, mut owner_meter) =
+                        (Meter::new(limits), Meter::new(limits));
+                    let n = native(operation, width, (a, b), rounding, &mut native_meter);
+                    let o = owner_arithmetic(operation, width, (a, b), rounding, &mut owner_meter);
+                    if n != o || native_meter != owner_meter {
+                        return Some(format!(
+                            "{operation:?} {width:?} {rounding:?} {a:#x} {b:#x} work={budget}: native {n:?}, owner {o:?}"
+                        ));
+                    }
+                }
+            }
+        }
+    }
+    None
+}
+
+/// FR-053-AC-13, arithmetic half, for the operation and width combinations whose every spelling
+/// group is VERIFIED in the kernel record (Add and Subtract at both widths, Multiply at Binary32):
+/// the native operation and the shipped owner agree on the typed outcome, the result bits, flags
+/// and rounding provenance, and the meter, under all six rounding spellings at an unlimited and
+/// two short work-unit budgets. Four mutants of the native side (a wrong tie rule approximated by
+/// nearest-away for nearest-even, a dropped `inexact` flag, a cleared NaN payload, and Subtract
+/// computed as Add) each disagree with the owner on some input, so the differential kills them.
+#[trace("TC-067", "FR-053-AC-13")]
+#[test]
+fn the_native_arithmetic_equals_the_owner_and_the_differential_kills_native_mutants() {
+    use filament_exact::{IeeeFlags, RoundingMode};
+    let combinations = [
+        (Arithmetic::Add, true),
+        (Arithmetic::Add, false),
+        (Arithmetic::Subtract, true),
+        (Arithmetic::Subtract, false),
+        (Arithmetic::Multiply, false),
+    ];
+    for (operation, wide) in combinations {
+        assert_eq!(
+            first_arithmetic_disagreement(operation, wide, &native_arithmetic),
+            None,
+            "{operation:?} wide={wide}"
+        );
+    }
+    type Native = fn(
+        Arithmetic,
+        filament_exact::IeeeWidth,
+        (u64, u64),
+        RoundingMode,
+        &mut filament_exact::Meter,
+    ) -> ArithmeticView;
+    let tie_is_away: Native = |op, width, bits, rounding, meter| {
+        let rounding = if rounding == RoundingMode::NearestEven {
+            RoundingMode::NearestAway
+        } else {
+            rounding
+        };
+        native_arithmetic(op, width, bits, rounding, meter)
+            .map(|(value, flags, _)| (value, flags, RoundingMode::NearestEven))
+    };
+    let inexact_dropped: Native = |op, width, bits, rounding, meter| {
+        native_arithmetic(op, width, bits, rounding, meter)
+            .map(|(value, _, rounding)| (value, IeeeFlags::default(), rounding))
+    };
+    let payload_cleared: Native = |op, width, bits, rounding, meter| {
+        native_arithmetic(op, width, bits, rounding, meter).map(|(value, flags, rounding)| {
+            let (exponent_bits, fraction_bits): (u32, u32) =
+                if matches!(width, filament_exact::IeeeWidth::Binary64) {
+                    (11, 52)
+                } else {
+                    (8, 23)
+                };
+            let fraction = (1_u64 << fraction_bits) - 1;
+            let exponent = ((1_u64 << exponent_bits) - 1) << fraction_bits;
+            if value & exponent == exponent && value & fraction != 0 {
+                (value & !(fraction >> 1), flags, rounding)
+            } else {
+                (value, flags, rounding)
+            }
+        })
+    };
+    let subtract_as_add: Native = |op, width, bits, rounding, meter| {
+        let op = if matches!(op, Arithmetic::Subtract) {
+            Arithmetic::Add
+        } else {
+            op
+        };
+        native_arithmetic(op, width, bits, rounding, meter)
+    };
+    for (name, mutant, operation, wide) in [
+        ("tie-is-away", tie_is_away, Arithmetic::Add, false),
+        (
+            "inexact-dropped",
+            inexact_dropped,
+            Arithmetic::Multiply,
+            false,
+        ),
+        (
+            "nan-payload-cleared",
+            payload_cleared,
+            Arithmetic::Subtract,
+            true,
+        ),
+        (
+            "subtract-as-add",
+            subtract_as_add,
+            Arithmetic::Subtract,
+            false,
+        ),
+    ] {
+        assert!(
+            first_arithmetic_disagreement(operation, wide, &mutant).is_some(),
+            "the differential did not kill the {name} mutant"
+        );
+    }
+}
+
 const Z_P: u64 = 0;
 const Z_N: u64 = 0x8000_0000_0000_0000;
 const ONE: u64 = 0x3FF0_0000_0000_0000;

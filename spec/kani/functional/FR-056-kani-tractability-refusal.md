@@ -129,7 +129,9 @@ package or the filesystem.
 
 ### Measured table
 
-The table SHALL be data with one row per measured probe: `operation_ids` (catalog ids),
+The table SHALL be data with one row per measured probe: `operation_ids` (catalog ids; a record row
+whose subject is not a catalog operation may name the subject instead, and no clause carries that id, so
+it never selects),
 `route` (`general` or `native`), `max_operand_bits`, `collection_bound`, `verdict` (`tractable` or `not_tractable`), `wall_seconds`,
 `peak_bytes` (`null` when the runner reported no peak), optionally a `provenance` text (a row copied from another repository's record names that record; it never selects a row), optionally the Kani, CBMC and solver versions the probe ran under (a row recorded without tool versions, as QSL-406 and EA-49 direct, loads, and a tool version never selects a row), and the generator and kernel version the probe
 ran against. CG SHALL load it from a file and SHALL contain no per-operation tractability code. A
