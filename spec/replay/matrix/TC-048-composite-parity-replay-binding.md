@@ -19,7 +19,7 @@ relationships:
 Public-converter controls and remaining production scenarios for
 [FR-033](../functional/FR-033-composite-parity-replay-binding.md),
 [FR-025](../../kani/functional/FR-025-generated-subject-abi.md) AC-9 and
-[FR-029](../../kani/functional/FR-029-run-outcome-terminal-record.md) AC-17, AC-21, AC-22 and AC-31 (implemented: strength projection, closed map, verified-entry terminal) and AC-19 to AC-28 (AC-20 and AC-28 partly or fully covered; the rest PLANNED under IR-806, no upstream gate). The completed production-route checks remain PLANNED. IR-635's constructor slices exercise the public verified Eq/Ne
+[FR-029](../../kani/functional/FR-029-run-outcome-terminal-record.md) AC-17, AC-21 and AC-22 (implemented: strength projection, closed map), AC-31 (PARTIAL: verified entry only) and AC-19 to AC-28 (AC-20 and AC-28 partly or fully covered; the rest PLANNED under IR-806, no upstream gate). The completed production-route checks remain PLANNED. IR-635's constructor slices exercise the public verified Eq/Ne
 builder with supplied verified evidence: Eq parameter/parameter, parameter/literal, literal/literal
 and repeated/self graph children, retained source and exact recompiled context, positional O-09,
 changed source, semantic package and retained/recompiled context refusals, absent-node/occurrence
@@ -121,7 +121,7 @@ and never replace positive FSL evaluation with a verdict double.
    domain or limits; separately replace the retained proved artifact; each CG precheck or failed report binding returns no
    report terminal value. Keep FSL refusal codes, executor faults and CG defect causes typed. Assert that `run_terminal_value` has no
    proof-subject or proof-strength input and `TerminalPairError` has no bounded-shadow variant
-   (FR-029-AC-21, tested); the closed six-strength projection (FR-029-AC-17, AC-22) and the terminal value FSL's report carries for each (FR-029-AC-31) are tested in `tests/it/composite_parity_converter.rs`; the routing
+   (FR-029-AC-21, tested); the closed six-strength projection (FR-029-AC-17, AC-22) and the terminal value FSL's report carries for each (FR-029-AC-31, verified entry only) are tested in `tests/it/composite_parity_converter.rs`; the routing
    of a production shadow outcome only to the parity route (FR-029-AC-30) awaits the production invocation. The IR-666 direct report converter already preserves
    the disagreement-first Failed/CgDefect rule. IR-806 owns original-artifact setup, prechecks and
    production invocation. Executable
