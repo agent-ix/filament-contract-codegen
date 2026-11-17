@@ -29,3 +29,10 @@ Coverage for FR-014 and FR-056 is intact. FR-048-AC-6 lost its only authentic ow
 | --- | --- | --- | --- |
 | FND-001 | medium | After the PR, no test makes the owner evaluator produce `Undefined` for a constraint at a reached state (FR-048-AC-6). `boolean_and_partial...` dropped it, and the lib conversion test hand-builds the value. The classifier is still guarded, but the authentic path from a partial clause to `Undefined` to `EvaluationViolation` is unexercised. A zero `aux` cannot restore it, because a typed snapshot refuses it. No ticket records the loss: QSL-2361's ACs name only tc_025. | tests/it/constrained_method.rs:400-432; src/kani/terminal/constrained/tests.rs:179-183 |
 | FND-002 | low | `same_named...` and `boolean_and_partial...` use `<=` instead of `=` to avoid QSL-2361 defect A (equality over `mod` fails emission; reproduced at head). QSL-2361's AC requires "no CG test edits" only for tc_025, so nothing owns restoring `=` here once A is fixed. | tests/it/constrained_method.rs:403,653-663; QSL-2361 |
+
+## Dispositions
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-001 | deferred | QSL-2361 now records, in comment bf74557d, the restoration of an owner-produced `Undefined` test for FR-048-AC-6, or an explicit decision that the hand-built value is the accepted evidence. The comment names the IR code lead as owner. At cb7b27a3, the code points to QSL-2361 at `src/kani/terminal/constrained/tests.rs:183` and `tests/it/constrained_method.rs:420-423`. |
+| FND-002 | deferred | Comment bf74557d on QSL-2361 records reverting the `<=` stand-in to an equality over `mod` in both fixtures. The comment names the IR code lead as owner. At cb7b27a3, pointers are at `tests/it/constrained_method.rs:420-423` and `:656`. |

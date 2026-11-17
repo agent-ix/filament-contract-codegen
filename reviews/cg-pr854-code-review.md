@@ -36,3 +36,11 @@ The fixes are sound, and the reader-fixture substitution genuinely exercises the
 | FND-001 | low | `nonzero_aux_document` doc says a zero `aux` "still reaches the owner evaluator as a runtime outcome"; measured: the typed snapshot refuses it (`Refused(Coded{Admit, invalid_runtime_input, invalid-value})`), and `emit_method` with initial aux=0 gives `Err(InitialState)`. This contradicts the test comment in `boolean_and_partial...`. | tests/it/constrained_method/support.rs:48-50 |
 | FND-002 | low | The new comment "only a real modulo separates it from a constant-true oracle" describes FSL's owner evaluator, not the CG method. The CG output is checked only by `contains("undefined constraint evaluation")`, which `render/constrained.rs:212` emits for every condition, and by `contains("rt::modulo")`. The `rt::modulo(right, left, ..)` mutant survives this test (it is killed in `integer_division_bounds`). | tests/it/constrained_method.rs:419-431 |
 | FND-003 | low | `#![allow(dead_code)]` is file-wide and also applies in the `it` binary, where every helper is used. Measured: removing it and putting `#[allow(dead_code)]` on the lib's `mod support;` passes `clippy --all-targets -D warnings`, and keeps dead-code detection for the integration binary. | tests/it/constrained_method/support.rs:5 |
+
+## Dispositions
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-001 | fixed | Round 1 at cb7b27a3: the doc on `support.rs:45-48` now says that a zero `aux` is outside the type, and that the owner refuses it as an invalid runtime input and `emit_method` as `InitialState`. This matches the probe measurement. |
+| FND-002 | fixed | Round 1 at cb7b27a3: the comment now attributes the check to FSL's owner evaluator. The CG assertion is `contains("rt::modulo(left, right, &domain, meter)")`, and the string is the verbatim `render.rs:386` literal (pushed unformatted at `render.rs:174`). Measured: the `rt::modulo(right, left, ..)` mutant now fails the test at `constrained_method.rs:433`. |
+| FND-003 | fixed | Round 1 at cb7b27a3: the file-wide allow is removed from `support.rs`, and `#[allow(dead_code)]` is now on the lib's `mod support;` (`src/kani/terminal/constrained/tests.rs:11-12`). `clippy --locked --all-targets -D warnings` is clean. |
