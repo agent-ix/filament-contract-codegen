@@ -639,6 +639,9 @@ impl PackageBuilder {
             "occurrences": [{"role": role, "ordinal": 0}],
             "body": body,
         });
+        if tag == "function" {
+            node["check_mode"] = json!("linked");
+        }
         if let Some(declaration) = (role != "generated")
             .then(|| declaration_for(tag, form, digest))
             .flatten()
