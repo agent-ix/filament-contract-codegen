@@ -236,17 +236,17 @@ On the general route, the embedded oracle is FR-014's `rt::divide` or
 `rt::modulo` source.
 
 On the native route, AD-006 requires a kernel-checked native plan before
-evaluation. filament-exact main's `NativeIntegerPlan` / `NativeIntegerOperation`
-has no division or modulo variant, although the plan-free evaluators
-`evaluate_native_integer_division` and `evaluate_native_integer_modulo` exist.
-IR-1541 owns that kernel plan and its Kani measurements, delivered as a
-filament-exact PR; this requirement makes no AD-006 amendment. Until the plan is
-available, native selection of a `div`, `rem` or `mod` claim SHALL be refused
-with no harness, as
-`UnsupportedObligation::NativeDivisionPlanUnavailable { node_id,
-operation_identity }`. That reason is distinct from `NativeIntegerCapacity`, which reports an interval the
-kernel refused. When the plan exists, the native oracle SHALL call the native
-evaluators through it, with the same expected side and outcome mapping.
+evaluation. The kernel's `NativeIntegerOperation` has a `Divide { profile,
+member, dividend, divisor }` and a `Modulo { dividend, divisor }` variant
+(IR-1541). Native selection of a `div`, `rem` or `mod` claim SHALL build that plan
+from the claim's full operand intervals and its result range, and the native
+oracle SHALL admit the operands through it and evaluate the admitted operation
+with `evaluate_native_integer_arithmetic`. A `div` takes the quotient member
+and a `rem` the remainder member under the claim's own profile; a `mod` takes
+`Modulo`. The expected side and the outcome mapping are those of the general
+route, with the native value read as an `i128`. The recorded selection carries
+the claim's profile identity for `div` and `rem`. A plan the kernel refuses
+settles as `NativeIntegerCapacity`.
 
 ### Measured widths and refusal
 
@@ -308,13 +308,13 @@ ships.
 
 | ID | Criteria | Verification |
 | --- | --- | --- |
-| FR-057-AC-1 | FSL-emitted, IR-admitted claims are generated through `generate_routed` and `generate_routed_native`: `div` and `rem` claims under each of the truncating, floor and Euclidean laws, and a `mod` claim. Each claim's operand ranges include a negative dividend and both divisor signs. None of these claims settles `OperationNotRendered` or `Underived` (the `rem` claim needs FR-014-AC-81). Each settles `Supported` with one harness, or with exactly one typed refusal that this requirement names: `NativeDivisionPlanUnavailable`, `BoundNotI64`, `ResultUnreachable` or a guard refusal. `V2ClauseNotTractable` is not a generation disposition here: the shipped scalar table applies at run time through the decided run wrappers (FR-056-AC-15, FR-057-AC-9). Each `div` and `rem` harness renders its profile from the claim's own descriptor. The embedded oracle and the expected side derive from the same node and keep its source association. The catalog's scalar Kani projection holds `Divide`, `Remainder` and `Modulo`. | Test |
+| FR-057-AC-1 | FSL-emitted, IR-admitted claims are generated through `generate_routed` and `generate_routed_native`: `div` and `rem` claims under each of the truncating, floor and Euclidean laws, and a `mod` claim. Each claim's operand ranges include a negative dividend and both divisor signs. None of these claims settles `OperationNotRendered` or `Underived` (the `rem` claim needs FR-014-AC-81). Each settles `Supported` with one harness, or with exactly one typed refusal that this requirement names: `NativeIntegerCapacity`, `BoundNotI64`, `ResultUnreachable` or a guard refusal. `V2ClauseNotTractable` is not a generation disposition here: the shipped scalar table applies at run time through the decided run wrappers (FR-056-AC-15, FR-057-AC-9). Each `div` and `rem` harness renders its profile from the claim's own descriptor. The embedded oracle and the expected side derive from the same node and keep its source association. The catalog's scalar Kani projection holds `Divide`, `Remainder` and `Modulo`. | Test |
 | FR-057-AC-2 | The harness draws each operand as one `i64` over its lowered range, with no assumption on the divisor, the dividend or the outcome. The assertion maps `b == 0` to `Undefined(DivisionByZero)` and an in-range member to `Completed` with that member. It maps an out-of-range member to `Refused(DivisionOutOfDomain { member: Quotient })` for `div`, `Refused(DivisionOutOfDomain { member: Remainder })` for `rem` and `Refused(ModuloOutOfDomain)` for `mod`. Every other outcome fails. A host control first evaluates the rendered healthy assertion over the real oracle's outcome at `b == 0`, at an in-range member and at an out-of-range member, and requires the assertion to accept each. It then feeds the healthy assertion and each mutated assertion constructed outcomes directly: a refusal with another cause, the other `DivisionOutOfDomain` member, an `Incomplete`, and a `Completed` at `b == 0`. The healthy assertion rejects every constructed outcome. Each mutated assertion (accepting any `Refused`, accepting the other member, accepting `Incomplete`, accepting `Completed` at `b == 0`) accepts the outcome it wrongly admits, which kills it. The outcomes are constructed because the real oracle cannot produce them: the scalar meter is unlimited, so `Incomplete` never occurs. | Test |
 | FR-057-AC-3 | The `div` expected side is the relational form of the Behavior section. A completed `q` is checked by `a - q * b` lying in the profile's window, admission comes from `r(L)` and `r(U)` against the window by divisor sign, and every quotient-divisor product keeps the order quotient, then divisor. The `rem` and `mod` expected sides shift the `i64` `rem_euclid` (with its `b == -1` arm) into the window over `i128`. Inspection of each emitted expected side finds no `filament_exact`, `rt::` or `nx::` path and no oracle symbol. It finds none of `/`, `%`, `checked_div`, `checked_rem`, `wrapping_div`, `wrapping_rem`, `div_euclid` or `rem_euclid`, except an `i64` `rem_euclid` in a `rem` or `mod` expected side. No expected side holds an `i128` division-family operation. | Inspection |
 | FR-057-AC-4 | A host differential compiles the rendered expected side (the same text the harness embeds) as host Rust. It compares that side with filament-exact `divide` (both members) and `modulo` over `Integer` for every profile. The grid of dividends and divisors includes `0`, `±1`, `±2`, `±7`, `i64::MIN`, `i64::MIN + 1`, `i64::MAX` and `-1`, with result ranges both inside and excluding the member. Outcome kind, value and refusal member agree at every point. The grid includes these named vectors (truncating, floor, Euclidean): `-7 div 2` is `-3`, `-4`, `-4`; `-7 div -2` is `3`, `3`, `4`; `-7 rem 2` is `-1`, `1`, `1`; `-7 rem -2` is `-1`, `-1`, `1`. Both `-7 mod 2` and `-7 mod -2` are `1`. A window table with two profile rows swapped fails the differential. | Test |
 | FR-057-AC-5 | At a zero divisor, over a divisor range containing zero (for example `y: Int[-3, 3]`), the oracle, filament-exact over `Integer` and the harness's assertion all give `Undefined(DivisionByZero)`, with no panic and no `Refused`. This holds for `div` and `rem` under each profile and for `mod`. For `MIN / -1` with an explicit result range inside `i64`, `i64::MIN div -1` gives `Refused(DivisionOutOfDomain { member: Quotient })` from the oracle and from filament-exact, and the harness requires that refusal. With the inferred `[-A, A]` range and a dividend range reaching `i64::MIN`, lowering refuses `BoundNotI64` naming the canonical endpoints `-9223372036854775808` and `9223372036854775808`, with no harness. `i64::MIN rem -1` (every profile) and `i64::MIN mod -1` complete `0`. | Test |
-| FR-057-AC-6 | On the native route, while filament-exact exposes no kernel-checked native division or modulo plan (owned by IR-1541), a `div`, `rem` or `mod` claim settles as `UnsupportedObligation::NativeDivisionPlanUnavailable` carrying the node id and the operation identity. It has no harness and no `NativeIntegerCapacity` reason. A supported sibling in the same request is generated byte-identically to how it is generated alone. | Test |
-| FR-057-AC-7 | Under installed Kani, on each route and shape measured tractable, the healthy `div` and `rem` harnesses of each profile and the healthy `mod` harness classify `Verified`, with every check and the one completion cover satisfied. Each run records wall seconds and peak bytes. No other shape is claimed `Verified`. Once IR-1541 (the kernel's native division plan) lands, at least one shape per operation is measured `Verified` on the native route: `div` and `rem` under each profile, and `mod`. At minimum, this is the constant-divisor shape at the smallest listed width (8 bits). Timeouts alone do not satisfy this criterion. Until then, the native-route verdict is blocked by IR-1541. | Test (installed Kani) |
+| FR-057-AC-6 | On the native route, a `div`, `rem` or `mod` claim settles `Supported` with one harness built through the kernel's native division or modulo plan: the harness identity is `Native` and records the plan selection (the node, the operation, the profile identity for `div` and `rem`, the operand intervals, the kernel capacity and the result range), and the embedded oracle names `NativeIntegerOperation::Divide` (with the claim's profile and member) or `NativeIntegerOperation::Modulo` and no general-route `divide`, `modulo` or `Integer`. A plan the kernel refuses settles `NativeIntegerCapacity`. A supported sibling in the same request is generated byte-identically to how it is generated alone. | Test |
+| FR-057-AC-7 | Under installed Kani, on each route and shape measured tractable, the healthy `div` and `rem` harnesses of each profile and the healthy `mod` harness classify `Verified`, with every check and the one completion cover satisfied. Each run records wall seconds and peak bytes. No other shape is claimed `Verified`. On the native route, at least one shape per operation is measured `Verified`: `div` and `rem` under each profile, and `mod`. At minimum, this is the constant-divisor shape at the smallest listed width (8 bits). Timeouts alone do not satisfy this criterion. | Test (installed Kani) |
 | FR-057-AC-8 | Under installed Kani, each seeded mutant classifies `Falsified` with solver playback of in-domain operands, over a fixture whose operand ranges include a negative dividend, both divisor signs and zero, with an explicit result range that excludes some members. The mutants fall into two groups. Wrong profile: the embedded oracle's `DivisionProfile` swapped for each of the other two laws (six swaps for `div` and six for `rem`); the expected side's window table rendered for the wrong profile; `rem` rendered as `modulo` (for the Euclidean law this is caught only by the refusal cause); `rem` rendered with `DivisionMember::Quotient`; `mod` rendered as `divide(Truncating, Remainder, ..)` and as `divide(Floor, Remainder, ..)`. Missing zero guard: the oracle returning a completed value at a zero divisor, and the expected side's zero arm removed. The decoded playback is replayed through the routed scalar replay ([FR-032](../../replay/functional/FR-032-routed-scalar-replay-binding.md)) and through filament-exact over `Integer`. For each oracle mutant (the profile swaps, `rem` as `modulo` or with the quotient member, `mod` as a remainder member, completing at zero), the kernel outcome differs from the mutant oracle's. For the two expected-side mutants (the wrong window table and the removed zero arm), the oracle is healthy. For those two, the check is that the kernel outcome at the decoded operands satisfies the healthy outcome mapping and violates the mutated one. | Test (installed Kani) |
 | FR-057-AC-9 | The Behavior section's measurement record exists for every listed operation, shape, route and width, with each required field filled. Tool versions are optional and not checked. Every `TimedOut` or `memory_exhausted` shape is a `not_tractable` row in CG's single shipped scalar table (FR-056-AC-15) at its smallest failing width, with its `route` field set. Native-route rows measured in filament-exact (FR-409, TC-957 evidence) are copied into that table by the IR-854 coder's CG PR after IR-1541 lands. filament-exact does not ship a second table. A harness at or above that width is refused at run time as `V2ClauseNotTractable` with no Kani launch, and a harness below it runs. No shipped row refuses a shape measured `Verified` at that width and route. If the rows show a split between a constant and a symbolic divisor, the `divisor_constant` extension is present: a row carrying it refuses only harnesses whose feature matches, and a row without it matches both. If the rows show no split, no extension is added. The spec and the Status claim no verdict for an unmeasured shape. | Test and Inspection |
 | FR-057-AC-10 | Each emitted `div`, `rem` and `mod` harness has exactly one completion cover after all assertions. An unsatisfied cover, a failed unwind, a timeout, memory exhaustion or a missing verdict cannot yield `Verified`, and classifications keep their FR-017 and FR-029 distinctions. | Test |
@@ -345,36 +345,55 @@ ships.
 
 ## Status
 
-PARTIAL (IR-854; the native-route verdict and the criteria that need a
-tractable shape are owner: IR-854 (next PR); IR-1541 is done).
+PARTIAL (IR-854; AC-7 and AC-6 are delivered, the criteria that need a tractable
+general-route shape or a run replay stay owner: IR-854).
 
 Delivered and tested (TC-071): the `div`, `rem` and `mod` scalar harness under
 each law (FR-057-AC-1), its assertion structure and mapping controls over the
 real oracle and constructed outcomes (AC-2), the independent expected side and
 its inspection (AC-3), the host differential against filament-exact `divide` and
 `modulo` with the named vectors and the swapped-window failure (AC-4), the zero
-divisor, `MIN / -1`, `BoundNotI64` and `MIN rem/mod -1` dispositions (AC-5), the
-native refusal `NativeDivisionPlanUnavailable` with an unchanged sibling (AC-6),
-and the cover and non-`Verified` controls (AC-10). FR-014-AC-81 (the `rem` oracle derivation) is
-implemented.
+divisor, `MIN / -1`, `BoundNotI64` and `MIN rem/mod -1` dispositions on both
+routes (AC-5), the native harness built through the kernel plan with an unchanged
+sibling (AC-6), the executed native verdicts (AC-7) and the cover and non-`Verified`
+controls (AC-10). FR-014-AC-81 (the `rem` oracle derivation) is implemented.
 
-Measured on the general route (AC-7, AC-9; record
-`docs/qualification/ir854-general-route-division-measurements.md`): every
-measured shape ends `TimedOut` at the 600 s wall-clock ceiling with a peak near
-8 GiB, so no general-route shape of `div`, `rem` or `mod` is claimed `Verified`.
-Each operation is a `not_tractable` row of the shipped scalar table at 4 bits
-(`route` general). The constant-divisor shape at 8 bits also did not finish, so
-the rows show no constant/symbolic split and no `divisor_constant` extension is
-added. Shapes the record lists as unmeasured carry no claim.
+Executed on the native route (AC-7, record
+`docs/qualification/ir854-general-route-division-measurements.md`): CG's own
+generated native harness for the 8-bit constant divisor (dividend `[-128, 127]`,
+divisor `8`) classifies `Verified` for `div` and `rem` under each of the three
+laws and for `mod`, seven runs, each between 17 and 23 seconds. The seeded
+mutants of AC-8 (the embedded law swapped for each other law, the oracle
+completing at a zero divisor and the expected side without its zero arm) classify
+`Falsified` with solver playback on a native `div` fixture over a negative
+dividend, both divisor signs and zero.
+
+Measured on the general route (AC-7, AC-9): every measured shape ends `TimedOut`
+at the 600 s wall-clock ceiling with a peak near 8 GiB, so no general-route shape
+of `div`, `rem` or `mod` is claimed `Verified`. Each operation is a
+`not_tractable` row of the shipped scalar table at 4 bits (`route` general). The
+constant-divisor shape at 8 bits also did not finish on the general route. On the
+native route the same shape verifies, so the two routes differ by route and the
+rows show no constant/symbolic split on either route that the table would need:
+no `divisor_constant` extension is added. Shapes the record lists as unmeasured
+carry no claim.
 
 Partly delivered (PARTIAL):
 
-- AC-9: the three `not_tractable` rows exist and the decided run wrappers refuse
-  at their width, but the measurement record does not cover every listed
-  operation, shape, route and width. Unmeasured: constant divisors at 16, 32 and
-  63 bits, the 8-bit constant divisor for `div` Euclidean and `rem` floor and
-  Euclidean, negative constant divisors for six of the seven operation/law
-  pairs, and every native-route shape (owner: IR-854, next PR). The record lists them.
+- AC-7: the native minimum (the 8-bit constant divisor, every operation and law)
+  is `Verified`. Other native shapes carry the kernel's copied rows (one
+  `tractable` row at 8 bits and one `not_tractable` row at 16 bits per operation,
+  with `provenance`), which state the least tractable profile and the symbolic
+  divisor; the kernel measured constant divisors verified at 64 bits, which the
+  rows neither record nor refuse until the table grows a divisor-shape feature.
+  The 16-bit rows over-refuse those combinations. No shape beyond those measured
+  is claimed `Verified`. The general-route shapes are `not_tractable` (above).
+- AC-9: the `not_tractable` rows exist and the decided run wrappers refuse at
+  their width, but the measurement record does not cover every listed operation,
+  shape, route and width. Unmeasured: constant divisors at 16, 32 and 63 bits
+  and negative constant divisors on the general route, and the native shapes
+  other than the 8-bit constant divisor and the 4-bit symbolic mutant fixture.
+  The record lists them.
 - AC-11: tested as sibling independence for integer add, subtract, multiply and
   negate generated with and without a division claim, plus FR-015-AC-115's
   existing reference-copy equivalence. The before/after comparison for the
@@ -382,63 +401,20 @@ Partly delivered (PARTIAL):
   comparison is not run in this PR; their outputs rest on the existing tests of
   those operators.
 - AC-12: the generation-time identity (node, operation, profile, result range,
-  unwind, representation, solver option) is tested. The run-time clauses (full
-  ordered backend arguments from a run, raw checks and cover, playback, exit,
-  typed terminal outcome and replay from the retained artifact) need a run that
-  produces a verdict or playback; owner: IR-854 (next PR), with AC-7 and AC-8.
+  unwind, representation, solver option) is tested. The run-time clauses (raw
+  checks and cover, exit, typed terminal outcome) are recorded by the native runs
+  above; replay of the playback from the retained artifact is not run; owner:
+  IR-854.
 
-Not delivered (PARTIAL, owner: IR-854, next PR):
+Not delivered (PARTIAL, owner: IR-854):
 
-- AC-7's native-route `Verified` verdicts of CG's own generated harnesses and its
-  native minimum (one shape per operation, at least the constant-divisor shape at
-  8 bits). The native route still refuses per AC-6
-  (`NativeDivisionPlanUnavailable`), although the kernel's `Divide` and `Modulo`
-  plan now exists, so CG generates no native division harness to run.
-  Delivered toward it: the kernel's measured record (filament-exact TC-957, 80
-  harnesses: 42 VERIFIED, 20 timeout at 600 s, 18 covered by a smaller width) is
-  copied into the shipped table as native-route rows, one `tractable` row at 8
-  bits (every profile and member verified at the symbolic 8-bit width) and one
-  `not_tractable` row at 16 bits (the smallest symbolic width that timed out
-  under any profile) for each of `div`, `rem` and `mod`. The rows carry no
-  profile, member or divisor-shape key, so they state the least tractable
-  profile and the symbolic divisor; the kernel measured constant divisors
-  `7`, `-7` and `-1` verified at 64 bits (and some at 128), which these rows
-  neither record nor refuse until the table grows a divisor-shape feature. The
-  kernel's verdicts are its own harnesses', not CG's, so AC-7 stays PARTIAL.
-  The rows record that provenance (`provenance`, the kernel's TC-957 record) and carry
-  CG's current `generator_version` and `kernel_version` so they are current; those
-  two fields do not claim a CG build measured them. The 16-bit `not_tractable` rows
-  are the least-tractable limit and over-refuse combinations the kernel verified at
-  16 bits (truncating quotient and remainder) and constant divisors at 64 bits, because
-  the table keys on operation id and width alone. That over-refusal is a known
-  limitation until a profile or divisor-shape feature exists.
-  AC-7 disposition (IR-854, planner's rule: an executed native verdict, or a recorded measured
-  not-tractable row; input `evidence/proofs-2/NOTES.md`, 2026-11-14). Every native shape of the
-  kernel's record has one or the other and nothing else is claimed. Executed native verdicts: the
-  constant-divisor and symbolic-divisor shapes the record lists as VERIFIED, among them the
-  symbolic 8-bit width for `div`, `rem` and `mod` under every profile and member (the table's
-  `tractable` rows). Measured not-tractable: the 20 timeout rows, which proofs-2 analysed
-  and found all to be one solver query that never returns (a divider against an independent
-  multiply, about a million variables, under 2.3 GiB), independent of width and of a constant
-  divisor; the recorded rows are right and no rerun changes them. They are Verus-class (the
-  full-width statement `a - q*b` in the law's window); the 16-bit rows stay as measured. The
-  lemma split proofs-2 probed (five harnesses over all `i128` relating the law adjustment to a
-  truncating pair, each verified in under 15 s) is a scratch probe of an unlanded refactor; it is
-  not a CG or kernel row and nothing is claimed from it. What keeps AC-7 PARTIAL is its own text:
-  it asks for CG's generated harnesses to classify `Verified` on the native route, and CG
-  generates none (`NativeDivisionPlanUnavailable`, AC-6), so the verdicts above are the
-  kernel's, not CG's. IR-1541 is Done and its native division plan is in the locked kernel; what
-  keeps AC-7 PARTIAL is CG's own `select_native_integer`, which still returns
-  `NativeDivisionPlanUnavailable` and so builds no native division harness. The planner folded that
-  wiring into IR-854 as its next PR (route `select_native_integer` through the IR-1541 plan; CG's own
-  harnesses Verified on the native route, or a recorded measured not-tractable row): owner: IR-854 (next PR). The timeout shapes wait on the deductive lane.
-- AC-8's installed-Kani mutant falsification and its playback replay. No
-  general-route shape is tractable, and the one mutant tried on the general route
-  (completing at a zero divisor, over a 5-bit explicit-result fixture) also
-  ended `TimedOut` at 600 s rather than `Falsified`. The mutant set is rendered
-  by `kani_mutants` in `tests/it/integer_division_harness.rs`, ready for the
-  native route. The host controls of AC-2 and AC-4 kill the mapping and window
-  mutants over the real oracle.
+- AC-8's playback replay through the routed scalar replay and filament-exact.
+  The native mutant falsification is delivered for `div` under the floor law; the
+  other operations and laws render their mutants (`native_kani_mutants` in
+  `tests/it/integer_division_harness.rs`) but their Kani runs are not claimed.
+  The general-route mutant (completing at a zero divisor, over a 5-bit
+  explicit-result fixture) ended `TimedOut` at 600 s. The host controls of AC-2
+  and AC-4 kill the mapping and window mutants over the real oracle on both routes.
 
 IR-854 is an IR-269 MVP row. IR-598 retired the corpus's ground `div` and `rem`
 check, and this requirement is its V2 replacement.
