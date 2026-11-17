@@ -1520,7 +1520,8 @@ fn unsupported_family(node_id: &CheckedNodeId, tag: CheckedNodeTag) -> Composite
         | CheckedNodeTag::Claim
         | CheckedNodeTag::Correspondence
         | CheckedNodeTag::Extension
-        | CheckedNodeTag::Hybrid => CompositeEqualityRefusal::Unsupported {
+        | CheckedNodeTag::Hybrid
+        | CheckedNodeTag::Probabilistic => CompositeEqualityRefusal::Unsupported {
             unsupported_node_id: node_id.clone(),
             node_tag: tag.as_wire(),
         },

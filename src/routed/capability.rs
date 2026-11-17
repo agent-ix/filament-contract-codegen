@@ -1,11 +1,12 @@
 //! Capability settlement: the one point where a requested claim is settled.
 //!
 //! AD-016 places capability negotiation here so that language admission stays
-//! language-only and the IR stays target-neutral. The boundary holds only when
-//! adding a backend kind is a compile error everywhere it must be handled, so
-//! the settlement point dispatches one arm per variant of [`BackendKind`] with
-//! no catch-all: a kind with no arm does not build, rather than reaching a run
-//! with no settlement and nothing saying so.
+//! language-only and the IR stays target-neutral. Every admitted registration,
+//! whatever it describes, is settled by the generic arm in [`super::generic`]
+//! (FSpec FR-711). A backend whose IR forms need their own check adds a
+//! backend-specific arm after it; those arms are variants of a closed enum
+//! dispatched with no catch-all, so a new one does not build until it is
+//! handled.
 //!
 //! `candidates` is read, never computed. The `filament-spec-language` registry
 //! computes it under FR-290's candidate-set rule; this module is the consumer
@@ -21,11 +22,16 @@ use filament_contract_model::{
     CheckedPackageRefusalLocation, CheckedProtocolRefusalDetail, CheckedTerminalDuplicate,
     ContractPackageV1,
 };
-use fsl_replay::{DomainKey, DomainKind, ProofBound};
 use serde::Serialize;
 
 use crate::core::contract_package::{
     AdmittedItemAccounting, ContractRequestPosition, PackageItem, PackageItems, PackageRequestError,
+};
+use crate::routed::generic::negotiate_generic;
+use crate::routed::vocabulary::{
+    BackendDescriptor, Candidate, CapabilityKind, Cause, Disposition, ExtentClassification,
+    ItemRequirements, KaniFormFamily, KaniFormIdentity, KaniFormName, KaniObligationRole,
+    KaniStateFrameRole, ProviderOrigin,
 };
 
 #[cfg(test)]
@@ -108,13 +114,13 @@ struct CapabilityLookups<'a> {
 }
 
 impl<'a> CapabilityLookups<'a> {
-    fn new(envelope: &BackendProviderEnvelope) -> Self {
+    fn new(items: &[RequestItem]) -> Self {
         let mut scalar_targets = BTreeMap::<
             *const filament_contract_model::CheckedPackageV2,
             BTreeSet<CheckedNodeId>,
         >::new();
-        for item in &envelope.items {
-            match &item.kani_form {
+        for form in items.iter().filter_map(|item| item.kani_form.as_ref()) {
+            match form {
                 KaniForm::V2ScalarClaim {
                     package, node_id, ..
                 }
@@ -177,119 +183,11 @@ impl<'a> CapabilityLookups<'a> {
     }
 }
 
-fn serialize_domain_kind<S: serde::Serializer>(
-    kind: &DomainKind,
-    serializer: S,
-) -> Result<S::Ok, S::Error> {
-    serializer.serialize_str(kind.to_wire())
-}
-
 /// The FR-331 envelope's contract version, the only one this module reads.
 pub const BACKEND_PROVIDER_CONTRACT: &str = "filament.backend-provider/v1";
 
 /// The FR-290 vocabulary identity, the only one this module reads.
 pub const CAPABILITY_VOCABULARY: &str = "filament.capability-kind/v1";
-
-/// The ten FR-290 capability kinds.
-///
-/// The vocabulary is closed. A label outside it is refused with its exact
-/// received bytes and never mapped onto a member.
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub enum CapabilityKind {
-    /// Whether a Boolean clause holds for every assignment of its domain.
-    ValueValidity,
-    /// Whether an operation's contract clauses hold for every admitted pre-state.
-    OperationContract,
-    /// Whether one finite execution conforms step by step.
-    FiniteReplay,
-    /// Whether a temporal requirement holds over its profile's traces.
-    TemporalSatisfaction,
-    /// Finite global protocol conformance under the selected closure premises.
-    GlobalConformance,
-    /// Whether the selected fragment can be monitored under the declared observations.
-    Monitorability,
-    /// Whether one participant projection is defined under its premises.
-    LocalProjection,
-    /// Whether one protocol refines another under a selected relation.
-    Refinement,
-    /// Whether the protocol admits a causal implementation strategy.
-    Realizability,
-    /// Whether selected components compose under independently discharged assumptions.
-    Composition,
-}
-
-impl CapabilityKind {
-    /// Every member, in the order FR-290 declares them.
-    ///
-    /// Declaration order carries no strength and no dispatch precedence; this
-    /// is a census, not a ranking.
-    pub const ALL: [Self; 10] = [
-        Self::ValueValidity,
-        Self::OperationContract,
-        Self::FiniteReplay,
-        Self::TemporalSatisfaction,
-        Self::GlobalConformance,
-        Self::Monitorability,
-        Self::LocalProjection,
-        Self::Refinement,
-        Self::Realizability,
-        Self::Composition,
-    ];
-
-    /// The exact label this kind serializes as.
-    #[must_use]
-    pub const fn label(self) -> &'static str {
-        match self {
-            Self::ValueValidity => "value-validity",
-            Self::OperationContract => "operation-contract",
-            Self::FiniteReplay => "finite-replay",
-            Self::TemporalSatisfaction => "temporal-satisfaction",
-            Self::GlobalConformance => "global-conformance",
-            Self::Monitorability => "monitorability",
-            Self::LocalProjection => "local-projection",
-            Self::Refinement => "refinement",
-            Self::Realizability => "realizability",
-            Self::Composition => "composition",
-        }
-    }
-
-    /// The member whose label is byte-equal to `label`.
-    #[must_use]
-    pub fn from_label(label: &str) -> Option<Self> {
-        Self::ALL.into_iter().find(|kind| kind.label() == label)
-    }
-
-    /// This member's position in [`Self::ALL`].
-    ///
-    /// The match is exhaustive, so a new member cannot be added without giving
-    /// it an index; TC-030 then reads every index back out of `ALL` and fails if
-    /// the array was not extended to match. Without it `ALL` is a hand-kept list
-    /// whose length happens to be right, and a member missing from it is a label
-    /// `from_label` refuses while the vocabulary contains it.
-    #[must_use]
-    pub const fn index(self) -> usize {
-        match self {
-            Self::ValueValidity => 0,
-            Self::OperationContract => 1,
-            Self::FiniteReplay => 2,
-            Self::TemporalSatisfaction => 3,
-            Self::GlobalConformance => 4,
-            Self::Monitorability => 5,
-            Self::LocalProjection => 6,
-            Self::Refinement => 7,
-            Self::Realizability => 8,
-            Self::Composition => 9,
-        }
-    }
-}
-
-impl serde::Serialize for CapabilityKind {
-    /// Serialises through [`Self::label`], so the emitted label and the label a
-    /// request is read against cannot drift apart.
-    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.serialize_str(self.label())
-    }
-}
 
 /// The kind a request item carries, including the two ways it can fail to name one.
 ///
@@ -304,94 +202,6 @@ pub enum RequestedKind {
     Absent,
     /// The item names a label that is not byte-equal to any member.
     Unknown(String),
-}
-
-/// An advertised mode. A backend advertises a set of (kind, mode) pairs.
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum Mode {
-    /// The backend discharges the kind over a finite bound.
-    Bounded,
-    /// The backend discharges the kind without one.
-    Unbounded,
-}
-
-/// A claim's extent, classified by the boundedness architecture.
-///
-/// `filament-spec-language#222` owns the representation, the classification and
-/// the finite-bound predicate; this module reads all three and computes none.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ExtentClassification {
-    /// The classification itself.
-    pub extent: Mode,
-    /// Whether a finite bound is available for an unbounded extent.
-    ///
-    /// It separates `requires-bound` from `unsupported` and is read from #222,
-    /// never inferred from the extent.
-    pub finite_bound_available: bool,
-    /// Kinds of the item's unbounded domains, supplied by FSL.
-    pub domains: Vec<ExtentDomain>,
-    /// Substituted proof bounds, including each explicit kind and numeric bound.
-    pub bounds: Vec<ProofBound>,
-}
-
-/// One unbounded domain and its explicit FSL kind.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ExtentDomain {
-    /// Domain identity from the request.
-    pub domain: DomainKey,
-    /// Its declared domain kind.
-    pub kind: DomainKind,
-}
-
-/// The registry-owned provider origin projected into CG's in-process descriptor.
-///
-/// FSL layer R owns this closed vocabulary (FR-288, ADR-029 PV-1). The driver
-/// maps its registry value exhaustively; CG does not infer it from identity.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum ProviderOrigin {
-    /// A provider linked into the host at compile time.
-    Linked,
-    /// A process provider admitted through the registry.
-    Process,
-}
-
-/// A registered backend: its identity, advertised capabilities, and origin.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct BackendDescriptor {
-    /// Backend identity, unique within a registry.
-    pub identity: String,
-    /// Advertised (kind, mode) pairs.
-    pub advertised: Vec<(CapabilityKind, Mode)>,
-    /// Origin supplied by the FSL registry, never derived from identity.
-    pub origin: ProviderOrigin,
-    /// Domain kinds admitted for finite proof bounds by the manifest.
-    pub domains: Option<BTreeSet<DomainKind>>,
-    /// Optional manifest run-limit defaults; absence differs from a present empty map.
-    /// Negotiation retains but never compares these values.
-    pub bounds: Option<BTreeMap<String, u64>>,
-}
-
-impl BackendDescriptor {
-    /// The modes this backend advertises for `kind`, ascending.
-    fn modes_for(&self, kind: CapabilityKind) -> BTreeSet<Mode> {
-        self.advertised
-            .iter()
-            .filter(|(advertised, _)| *advertised == kind)
-            .map(|(_, mode)| *mode)
-            .collect()
-    }
-
-    fn advertises(&self, kind: CapabilityKind) -> bool {
-        !self.modes_for(kind).is_empty()
-    }
-}
-
-/// A candidate: the identity of a registered backend.
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize)]
-pub struct Candidate {
-    /// Backend identity.
-    pub identity: String,
 }
 
 /// An item's `candidates` value.
@@ -466,118 +276,6 @@ pub enum KaniForm {
         /// The checked node outside Kani's normative form set.
         node_id: filament_contract_model::CheckedNodeId,
     },
-}
-
-/// Stable identity fields used when a Kani form is refused.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
-pub struct KaniFormIdentity {
-    /// The finite family vocabulary from FR-019 AC-25.
-    pub family: KaniFormFamily,
-    /// The typed form within that family.
-    pub form: KaniFormName,
-    /// The exact operation identity, where the form has one.
-    pub operation_identity: Option<String>,
-    /// The obligation role, where the form has one.
-    pub role: Option<KaniObligationRole>,
-    /// The selected contract or frame harness role for a V2 state clause.
-    pub state_frame_role: Option<KaniStateFrameRole>,
-}
-
-/// The selected harness role for a V2 state clause.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum KaniStateFrameRole {
-    /// The operation-contract harness.
-    Contract,
-    /// The frame-effect harness.
-    Frame,
-}
-
-/// The complete V1 family vocabulary named by FR-019 AC-25.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum KaniFormFamily {
-    /// Boolean scalar claims.
-    Boolean,
-    /// Integer scalar claims.
-    Integer,
-    /// Rational scalar claims.
-    Rational,
-    /// Decimal scalar claims.
-    Decimal,
-    /// IEEE floating-point scalar claims.
-    IeeeFloat,
-    /// Text scalar claims.
-    Text,
-    /// Enumeration scalar claims.
-    Enum,
-    /// Quantity scalar claims.
-    Quantity,
-    /// Record or tuple composite equality.
-    CompositeEquality,
-    /// Function application.
-    FunctionApplication,
-    /// Precondition, postcondition, invariant or frame clauses.
-    Clause,
-    /// State before/after and frame obligations.
-    StateFrame,
-    /// Bounded collection forms.
-    BoundedCollection,
-    /// Bounded graph forms.
-    BoundedGraph,
-    /// A typed IR form outside the normative V1/V2 set.
-    OutsideSet,
-}
-
-/// Form names used in stable Kani form identities.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum KaniFormName {
-    /// V2 exact scalar claim.
-    V2ScalarClaim,
-    /// V2 state-clause contract/frame role.
-    V2StateFrame,
-    /// V1 composite equality.
-    V1CompositeEquality,
-    /// V1 function application.
-    V1FunctionApplication,
-    /// V2 function application.
-    V2FunctionApplication,
-    /// Bounded collection operation.
-    BoundedCollection,
-    /// Bounded graph operation.
-    BoundedGraph,
-    /// An IR form outside the normative set.
-    OutsideSet,
-}
-
-/// Obligation role carried by a typed Kani form.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum KaniObligationRole {
-    /// A precondition obligation.
-    Precondition,
-    /// A postcondition obligation.
-    Postcondition,
-    /// An invariant obligation.
-    Invariant,
-    /// A frame-effect obligation.
-    Frame,
-}
-
-impl KaniFormName {
-    const fn label(self) -> &'static str {
-        match self {
-            Self::V2ScalarClaim => "v2_scalar_claim",
-            Self::V2StateFrame => "v2_state_frame",
-            Self::V1CompositeEquality => "v1_composite_equality",
-            Self::V1FunctionApplication => "v1_function_application",
-            Self::V2FunctionApplication => "v2_function_application",
-            Self::BoundedCollection => "bounded_collection",
-            Self::BoundedGraph => "bounded_graph",
-            Self::OutsideSet => "outside_set",
-        }
-    }
 }
 
 fn obligation_role(role: &str) -> Option<KaniObligationRole> {
@@ -1065,8 +763,10 @@ pub struct RequestItem {
     pub named_backend: Option<String>,
     /// The candidates the registry computed for this item.
     pub candidates: Candidates,
-    /// The required typed IR form supplied to Kani settlement.
-    pub kani_form: KaniForm,
+    /// The typed IR form a Kani candidate's arm reads, absent when the item carries none.
+    pub kani_form: Option<KaniForm>,
+    /// The requirements the generic arm compares with the candidate's manifest entry.
+    pub requirements: ItemRequirements,
 }
 
 /// The FR-331 backend provider envelope, as far as settlement reads it.
@@ -1200,157 +900,6 @@ pub fn project_contract_package_incomplete(
     }
 }
 
-/// Why an item settled as something other than `supported`.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
-// FR-290 spells every item-level cause in kebab-case (`absent-kind`,
-// `unknown-backend`, `inconsistent-candidates`) while the codes that type them
-// are snake (`invalid_capability`, `unsupported_projection`). A consumer
-// matching the spec's spelling never matched `absent_kind`.
-#[serde(rename_all = "kebab-case", tag = "cause")]
-pub enum Cause {
-    /// The item's kind is absent or `null`.
-    AbsentKind,
-    /// The item's kind is a label outside the vocabulary, reported verbatim.
-    UnknownKind {
-        /// The exact received label.
-        received: String,
-    },
-    /// The item carries no extent classification.
-    AbsentExtent,
-    /// The request named an unregistered backend, or one with no negotiation arm.
-    UnknownBackend {
-        /// The backend identity the request named.
-        backend: String,
-    },
-    /// A candidate is absent from the manifest, does not advertise the kind, or
-    /// disagrees with the named backend.
-    InconsistentCandidates {
-        /// Every offending candidate, in candidate order.
-        candidates: Vec<Candidate>,
-    },
-    /// More than one candidate, and the request names no backend.
-    AmbiguousBackend {
-        /// Every candidate, in candidate order.
-        candidates: Vec<Candidate>,
-    },
-    /// No registered backend advertises the item's kind.
-    UnsupportedRequestedCapability {
-        /// The kind no candidate advertises.
-        kind: CapabilityKind,
-        /// The backend the request named, when it named one.
-        backend: Option<String>,
-    },
-    /// A process descriptor cannot discharge one explicit domain kind.
-    #[serde(rename = "unsupported-requested-capability")]
-    UnsupportedDomain {
-        /// The capability kind requested.
-        kind: CapabilityKind,
-        /// The uncovered domain kind.
-        #[serde(serialize_with = "serialize_domain_kind")]
-        domain: DomainKind,
-        /// The candidate that cannot discharge it.
-        backend: String,
-    },
-    /// A Kani form is outside the renderer's current typed capability set.
-    #[serde(rename = "unsupported-requested-capability")]
-    UnsupportedKaniForm {
-        /// The form's stable typed identity.
-        form: KaniFormIdentity,
-        /// The sole Kani candidate.
-        backend: String,
-    },
-    /// An in-set Kani form was refused by its FR-015 typed validation/lowering path.
-    #[serde(rename = "unsupported-requested-capability")]
-    KaniFormRefused {
-        /// The in-set form's stable typed identity.
-        form: KaniFormIdentity,
-        /// The exact typed FR-015 refusal.
-        refusal: crate::kani::generate::outcome::UnsupportedObligation,
-        /// The sole Kani candidate.
-        backend: String,
-    },
-    /// The typed IR form is malformed or does not belong to its admitted package.
-    #[serde(rename = "invalid-capability")]
-    KaniFormInvalid {
-        /// The form's stable typed identity.
-        form: KaniFormIdentity,
-        /// The FR-015 invalid-item reason.
-        refusal: crate::kani::generate::outcome::InvalidObligationItem,
-        /// The sole Kani candidate.
-        backend: String,
-    },
-    /// A checked state-frame form was refused by its source-backed FR-015 classifier.
-    #[serde(rename = "unsupported-requested-capability")]
-    KaniStateFrameRefused {
-        /// The form's stable typed identity.
-        form: KaniFormIdentity,
-        /// The exact typed state-frame refusal.
-        refusal: crate::kani::generate::outcome::StateFrameRefusal,
-        /// The sole Kani candidate.
-        backend: String,
-    },
-    /// An unbounded extent against a bounded-only advertisement, with no finite
-    /// bound available.
-    UnboundedExtent {
-        /// The kind whose extent could not be bounded.
-        kind: CapabilityKind,
-        /// The single candidate that advertises `bounded` only.
-        backend: String,
-    },
-}
-
-impl Cause {
-    /// The FR-272 code this cause is typed under.
-    #[must_use]
-    pub const fn code(&self) -> &'static str {
-        match self {
-            Self::AbsentKind
-            | Self::UnknownKind { .. }
-            | Self::AbsentExtent
-            | Self::UnknownBackend { .. }
-            | Self::InconsistentCandidates { .. }
-            | Self::AmbiguousBackend { .. } => "invalid_capability",
-            Self::UnsupportedRequestedCapability { .. }
-            | Self::UnsupportedDomain { .. }
-            | Self::UnsupportedKaniForm { .. }
-            | Self::KaniFormRefused { .. }
-            | Self::KaniStateFrameRefused { .. }
-            | Self::UnboundedExtent { .. } => "unsupported_projection",
-            Self::KaniFormInvalid { .. } => "invalid_capability",
-        }
-    }
-}
-
-/// How one item settled.
-///
-/// The four dispositions are FR-331's. `RequiresBound` is a negotiation
-/// disposition and never a verification result; nothing in this module converts
-/// one into the other.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
-#[serde(rename_all = "kebab-case", tag = "disposition")]
-pub enum Disposition {
-    /// The single candidate's arm discharges the claim as requested.
-    Supported {
-        /// The backend that settled it.
-        backend: String,
-    },
-    /// The claim needs a finite bound before the single candidate can discharge it.
-    RequiresBound {
-        /// The backend that settled it.
-        backend: String,
-    },
-    /// No candidate discharges the claim; the warning names what was requested.
-    Unsupported {
-        /// Why, typed under `unsupported_projection`.
-        cause: Cause,
-    },
-    /// The request itself is wrong, and the cause names what is wrong with it.
-    InvalidRequest {
-        /// Why, typed under `invalid_capability`.
-        cause: Cause,
-    },
-}
-
 /// One item's settlement, in request order.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct ItemSettlement {
@@ -1399,6 +948,15 @@ impl ItemSettlement {
                     domain.to_wire(),
                     kind.label()
                 )),
+                Cause::UnsupportedRequirement {
+                    kind,
+                    requirement,
+                    backend,
+                } => Some(format!(
+                    "{backend} does not advertise {} for {}",
+                    requirement.describe(),
+                    kind.label()
+                )),
                 Cause::UnsupportedKaniForm { form, backend } => Some(format!(
                     "{backend} does not support Kani form {}",
                     form.form.label()
@@ -1429,6 +987,8 @@ impl ItemSettlement {
                 Cause::AbsentKind
                 | Cause::UnknownKind { .. }
                 | Cause::AbsentExtent
+                | Cause::AbsentEvidenceKind
+                | Cause::UnknownEvidenceKind { .. }
                 | Cause::UnknownBackend { .. }
                 | Cause::InconsistentCandidates { .. }
                 | Cause::AmbiguousBackend { .. } => None,
@@ -1484,10 +1044,8 @@ impl BackendKind {
 
     /// The built-in kind a linked identity names, if any.
     ///
-    /// A registered backend with no arm answers `None` and settles
-    /// `invalid-request`/`unknown-backend`, which is FR-290's first candidate
-    /// row: a backend nothing here can settle for is not silently treated as
-    /// one that can.
+    /// Generation dispatches on this; negotiation does not, because every
+    /// admitted registration is settled by the generic arm.
     #[must_use]
     pub fn from_identity(identity: &str) -> Option<Self> {
         Self::ALL
@@ -1524,7 +1082,7 @@ fn negotiate_backend_provider_with_package(
     admitted: Option<(&ContractPackageV1, &[ContractRequestPosition], &[usize])>,
 ) -> Result<Vec<ItemSettlement>, EnvelopeRefusal> {
     validate_backend_provider_envelope(envelope)?;
-    let mut lookups = CapabilityLookups::new(envelope);
+    let mut lookups = CapabilityLookups::new(&envelope.items);
     let request_indices = match admitted {
         Some((_, _, indices)) => indices.to_vec(),
         None => (0..envelope.items.len()).collect(),
@@ -1540,7 +1098,7 @@ fn negotiate_backend_provider_with_package(
                     RequestedKind::Known(kind) => Some(kind),
                     RequestedKind::Absent | RequestedKind::Unknown(_) => None,
                 },
-                disposition: negotiate_item(
+                disposition: negotiate_item_in(
                     &envelope.manifest,
                     item,
                     admitted.map(|(package, positions, _)| (package, positions, request_index)),
@@ -1673,10 +1231,30 @@ pub fn negotiate_contract_package(
         .collect()
 }
 
+/// Settle one request item over the request's manifest (FSpec FR-711).
+///
+/// The disposition is a function of the manifest and the item alone: the same
+/// item over the same manifest settles the same whether its candidate is a
+/// linked engine, a process provider or a Kani backend, except for what a
+/// backend-specific arm adds. The item needs no backend-specific form unless
+/// its single candidate's arm reads one. The manifest must hold unique
+/// identities, as `negotiate_backend_provider` requires of an envelope.
+///
+/// Trace: TC-1741
+// Implements: FR-711
+// The refusal is boxed: it carries FR-019's typed projection by value.
+pub fn negotiate_item(
+    manifest: &[BackendDescriptor],
+    item: &RequestItem,
+) -> Result<Disposition, Box<EnvelopeRefusal>> {
+    let mut lookups = CapabilityLookups::new(std::slice::from_ref(item));
+    negotiate_item_in(manifest, item, None, &mut lookups).map_err(Box::new)
+}
+
 /// Settle one item, evaluating FR-290's rules in order; the first match settles.
 // FR-019 requires the typed projection by value in the public refusal.
 #[allow(clippy::result_large_err)]
-fn negotiate_item<'a>(
+fn negotiate_item_in<'a>(
     manifest: &[BackendDescriptor],
     item: &'a RequestItem,
     admitted: Option<(&ContractPackageV1, &[ContractRequestPosition], usize)>,
@@ -1732,15 +1310,9 @@ fn negotiate_item<'a>(
                 backend: item.named_backend.clone(),
             },
         }),
-        [single] => negotiate_single_candidate(
-            manifest,
-            single,
-            kind,
-            extent,
-            &item.kani_form,
-            admitted,
-            lookups,
-        ),
+        [single] => {
+            negotiate_single_candidate(manifest, single, kind, extent, item, admitted, lookups)
+        }
         many if item.named_backend.is_none() => Ok(Disposition::InvalidRequest {
             cause: Cause::AmbiguousBackend {
                 candidates: many.to_vec(),
@@ -1758,25 +1330,17 @@ fn negotiate_item<'a>(
     }
 }
 
-/// The named backend, when it names no negotiation arm.
+/// The named backend, when the manifest does not hold it.
 ///
-/// FR-290's first candidate row pairs "a registered backend with no negotiation
-/// arm" with the unknown-backend mark, and that mark carries the identity the
-/// request *named*. Both halves of the row are therefore read as being about the
-/// named backend, not about any member of the set: the alternative reading makes
-/// the row swallow the ambiguous-backend row below it, because an unarmed
-/// backend anywhere in a multi-candidate set would settle before the ambiguity
-/// the caller actually has to resolve. A candidate that reaches routing with no
-/// arm is still refused with this cause, at the single-candidate arm.
+/// FR-290's first candidate row pairs the unknown-backend mark with the
+/// identity the request *named*, so the row is read as being about the named
+/// backend, not about any member of the set: the alternative reading makes the
+/// row swallow the ambiguous-backend row below it. Every admitted registration
+/// has a negotiation arm (FSpec FR-711), so only an unregistered name reaches
+/// this cause.
 fn unroutable_named_backend(manifest: &[BackendDescriptor], named: Option<&str>) -> Option<String> {
     named
-        .filter(|named| {
-            manifest
-                .iter()
-                .find(|backend| backend.identity == *named)
-                .and_then(BackendKind::from_descriptor)
-                .is_none()
-        })
+        .filter(|named| !manifest.iter().any(|backend| backend.identity == *named))
         .map(str::to_owned)
 }
 
@@ -1811,7 +1375,27 @@ fn descriptor<'a>(
         .find(|backend| backend.identity == candidate.identity)
 }
 
-/// Route the single candidate to its arm.
+/// The backend-specific arms that run after the generic arm passes.
+///
+/// One variant per arm, matched without a catch-all, so a new backend-specific
+/// arm does not build until it is dispatched.
+enum SpecificArm {
+    /// The Kani arm reads a typed IR form.
+    Kani,
+    /// The backend has no check beyond the generic arm.
+    None,
+}
+
+impl SpecificArm {
+    fn of(backend: &BackendDescriptor) -> Self {
+        match BackendKind::from_descriptor(backend) {
+            Some(BackendKind::Kani) => Self::Kani,
+            Some(BackendKind::Process(_)) | None => Self::None,
+        }
+    }
+}
+
+/// Settle the single candidate: the generic arm, then its backend-specific arm.
 ///
 /// Every function that constructs a [`Disposition`] is named `negotiate_*`.
 // FR-019 requires the typed projection by value in the public refusal.
@@ -1821,7 +1405,7 @@ fn negotiate_single_candidate<'a>(
     candidate: &Candidate,
     kind: CapabilityKind,
     extent: &ExtentClassification,
-    kani_form: &'a KaniForm,
+    item: &'a RequestItem,
     admitted: Option<(&ContractPackageV1, &[ContractRequestPosition], usize)>,
     lookups: &mut CapabilityLookups<'a>,
 ) -> Result<Disposition, EnvelopeRefusal> {
@@ -1832,52 +1416,42 @@ fn negotiate_single_candidate<'a>(
             },
         });
     };
-    let Some(routed) = BackendKind::from_descriptor(backend) else {
-        return Ok(Disposition::InvalidRequest {
-            cause: Cause::UnknownBackend {
-                backend: backend.identity.clone(),
-            },
-        });
-    };
-    negotiate_arm(routed, backend, kind, extent, kani_form, admitted, lookups)
-}
-
-/// Dispatch one arm per backend kind.
-///
-/// Trace: TC-030
-// Implements: FR-019
-// FR-019 requires the typed projection by value in the public refusal.
-#[allow(clippy::result_large_err)]
-fn negotiate_arm<'a>(
-    routed: BackendKind,
-    backend: &BackendDescriptor,
-    kind: CapabilityKind,
-    extent: &ExtentClassification,
-    kani_form: &'a KaniForm,
-    admitted: Option<(&ContractPackageV1, &[ContractRequestPosition], usize)>,
-    lookups: &mut CapabilityLookups<'a>,
-) -> Result<Disposition, EnvelopeRefusal> {
-    match routed {
-        BackendKind::Kani => negotiate_kani(backend, kind, extent, kani_form, admitted, lookups),
-        BackendKind::Process(_) => Ok(negotiate_process(backend, kind, extent)),
+    let generic = negotiate_generic(backend, kind, extent, &item.requirements);
+    if !matches!(generic, Disposition::Supported { .. }) {
+        return Ok(generic);
+    }
+    match SpecificArm::of(backend) {
+        SpecificArm::Kani => {
+            negotiate_kani(backend, generic, item.kani_form.as_ref(), admitted, lookups)
+        }
+        SpecificArm::None => Ok(generic),
     }
 }
 
-/// The Kani arm.
+/// The Kani arm, run after the generic arm passed (`generic`).
 ///
-/// Kani discharges what its manifest advertises. It compares the claim's
-/// extent against the advertised modes and never narrows the extent to reach a
-/// disposition.
+/// It reads the typed IR form. An item whose Kani candidate needs the form
+/// and lacks it is `invalid-request` naming the candidate. The arm adds a
+/// refusal of the form or a requirement for a bound; otherwise the generic
+/// disposition stands.
 // FR-019 requires the typed projection by value in the public refusal.
 #[allow(clippy::result_large_err)]
 fn negotiate_kani<'a>(
     backend: &BackendDescriptor,
-    kind: CapabilityKind,
-    extent: &ExtentClassification,
-    kani_form: &'a KaniForm,
+    generic: Disposition,
+    kani_form: Option<&'a KaniForm>,
     admitted: Option<(&ContractPackageV1, &[ContractRequestPosition], usize)>,
     lookups: &mut CapabilityLookups<'a>,
 ) -> Result<Disposition, EnvelopeRefusal> {
+    let Some(kani_form) = kani_form else {
+        return Ok(Disposition::InvalidRequest {
+            cause: Cause::InconsistentCandidates {
+                candidates: vec![Candidate {
+                    identity: backend.identity.clone(),
+                }],
+            },
+        });
+    };
     let readiness = match kani_form.preflight(backend, admitted, lookups) {
         Ok(readiness) => readiness,
         Err(cause) => match *cause {
@@ -1888,96 +1462,10 @@ fn negotiate_kani<'a>(
         },
     };
     match readiness {
-        KaniFormPreflightOutcome::EnvelopeRefusal(refusal) => return Err(refusal),
-        KaniFormPreflightOutcome::RequiresBound => {
-            return Ok(Disposition::RequiresBound {
-                backend: backend.identity.clone(),
-            })
-        }
-        KaniFormPreflightOutcome::Ready => {}
-    }
-    let modes = backend.modes_for(kind);
-    Ok(match extent.extent {
-        Mode::Bounded if modes.contains(&Mode::Bounded) => Disposition::Supported {
+        KaniFormPreflightOutcome::EnvelopeRefusal(refusal) => Err(refusal),
+        KaniFormPreflightOutcome::RequiresBound => Ok(Disposition::RequiresBound {
             backend: backend.identity.clone(),
-        },
-        Mode::Bounded => Disposition::Unsupported {
-            cause: Cause::UnsupportedRequestedCapability {
-                kind,
-                backend: Some(backend.identity.clone()),
-            },
-        },
-        Mode::Unbounded if modes.contains(&Mode::Unbounded) => Disposition::Supported {
-            backend: backend.identity.clone(),
-        },
-        Mode::Unbounded if extent.finite_bound_available => Disposition::RequiresBound {
-            backend: backend.identity.clone(),
-        },
-        Mode::Unbounded => Disposition::Unsupported {
-            cause: Cause::UnboundedExtent {
-                kind,
-                backend: backend.identity.clone(),
-            },
-        },
-    })
-}
-
-/// Settle a process provider solely from its manifest and the item's extent.
-fn negotiate_process(
-    backend: &BackendDescriptor,
-    kind: CapabilityKind,
-    extent: &ExtentClassification,
-) -> Disposition {
-    let modes = backend.modes_for(kind);
-    let advertised_domains = backend.domains.as_ref();
-    let unsupported_domain = match extent.extent {
-        Mode::Bounded => extent
-            .bounds
-            .iter()
-            .filter_map(ProofBound::kind)
-            .find(|domain| {
-                !advertised_domains.is_some_and(|advertised| advertised.contains(domain))
-            }),
-        Mode::Unbounded if modes.contains(&Mode::Unbounded) => None,
-        Mode::Unbounded => extent
-            .domains
-            .iter()
-            .map(|domain| domain.kind)
-            .find(|domain| {
-                domain.finite_kind().is_some()
-                    && !advertised_domains.is_some_and(|advertised| advertised.contains(domain))
-            }),
-    };
-    if let Some(domain) = unsupported_domain {
-        return Disposition::Unsupported {
-            cause: Cause::UnsupportedDomain {
-                kind,
-                domain,
-                backend: backend.identity.clone(),
-            },
-        };
-    }
-    match extent.extent {
-        Mode::Bounded if modes.contains(&Mode::Bounded) => Disposition::Supported {
-            backend: backend.identity.clone(),
-        },
-        Mode::Bounded => Disposition::Unsupported {
-            cause: Cause::UnsupportedRequestedCapability {
-                kind,
-                backend: Some(backend.identity.clone()),
-            },
-        },
-        Mode::Unbounded if modes.contains(&Mode::Unbounded) => Disposition::Supported {
-            backend: backend.identity.clone(),
-        },
-        Mode::Unbounded if extent.finite_bound_available => Disposition::RequiresBound {
-            backend: backend.identity.clone(),
-        },
-        Mode::Unbounded => Disposition::Unsupported {
-            cause: Cause::UnboundedExtent {
-                kind,
-                backend: backend.identity.clone(),
-            },
-        },
+        }),
+        KaniFormPreflightOutcome::Ready => Ok(generic),
     }
 }

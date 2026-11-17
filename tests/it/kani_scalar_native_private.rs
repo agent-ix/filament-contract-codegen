@@ -23,11 +23,11 @@ use crate::{
     },
     oracle::scalar as scalar_fixture_types,
     routed::{
-        capability::{BackendDescriptor, Candidate, ProviderOrigin},
         generate::{
             generate_routed, GenerationContexts, KaniGenerationContext, KindOutput,
             RoutedGenerationItem,
         },
+        vocabulary::{BackendDescriptor, Candidate, ProviderOrigin},
     },
 };
 use ix_trace_rs::trace;

@@ -87,6 +87,7 @@ mod ieee_sqrt_fma;
 mod inline_integer_equality;
 mod integer_division_bounds;
 mod integer_division_harness;
+mod item_entry;
 mod kani_batching;
 mod kani_function_harness;
 mod kani_gate;

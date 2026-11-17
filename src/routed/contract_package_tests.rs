@@ -18,14 +18,17 @@ mod tests {
         RequirementOccurrence, RequirementRecordInput, RequirementRecords, RoutedRequirement,
     };
     use crate::routed::capability::{
-        negotiate_backend_provider, negotiate_contract_package, BackendDescriptor,
-        BackendProviderEnvelope, Candidate, Candidates, CapabilityKind, ContractItemSettlement,
-        Disposition, EnvelopeRefusal, ExtentClassification, KaniForm, Mode, ProviderOrigin,
-        RequestItem, RequestedKind, BACKEND_PROVIDER_CONTRACT, CAPABILITY_VOCABULARY,
+        negotiate_backend_provider, negotiate_contract_package, BackendProviderEnvelope,
+        Candidates, ContractItemSettlement, EnvelopeRefusal, KaniForm, RequestItem, RequestedKind,
+        BACKEND_PROVIDER_CONTRACT, CAPABILITY_VOCABULARY,
     };
     use crate::routed::generate::{
         generate_routed as generate_routed_impl, GenerationContexts, KaniGenerationContext,
         KindOutput, RoutedGeneration, RoutedGenerationError, RoutedGenerationItem,
+    };
+    use crate::routed::vocabulary::{
+        BackendDescriptor, Candidate, CapabilityKind, Disposition, ExtentClassification, Mode,
+        ProviderOrigin,
     };
     use filament_contract_model::{
         CheckedNodeId, CheckedNodeTag, CheckedOccurrenceRole, CheckedPackageEvidence,
@@ -183,7 +186,7 @@ mod tests {
             candidates: Candidates::Set(vec![Candidate {
                 identity: "kani".to_owned(),
             }]),
-            kani_form: KaniForm::V2FunctionApplication {
+            kani_form: Some(KaniForm::V2FunctionApplication {
                 package: std::sync::Arc::new(package),
                 function_node_id: ids.resolve(&code_id(SOURCE_FUNCTION)),
                 call_node_id: ids.resolve(&code_id(SOURCE_CALL)),
@@ -191,7 +194,8 @@ mod tests {
                     ids.resolve(&code_id(SOURCE_PARAM_A)),
                     ids.resolve(&code_id(SOURCE_PARAM_B)),
                 ],
-            },
+            }),
+            requirements: Default::default(),
         }
     }
 
@@ -211,12 +215,13 @@ mod tests {
             candidates: Candidates::Set(vec![Candidate {
                 identity: "kani".to_owned(),
             }]),
-            kani_form: KaniForm::V2FunctionApplication {
+            kani_form: Some(KaniForm::V2FunctionApplication {
                 package: checked.into(),
                 function_node_id: ids[0].clone(),
                 call_node_id: ids[2].clone(),
                 argument_node_ids: vec![ids[3].clone()],
-            },
+            }),
+            requirements: Default::default(),
         };
         let incomplete_item = oversized_function_item();
         let mut valid = refused_item.clone();
@@ -228,6 +233,7 @@ mod tests {
                 identity: "kani".to_owned(),
                 advertised: vec![(CapabilityKind::ValueValidity, Mode::Bounded)],
                 origin: ProviderOrigin::Linked,
+                profile: Default::default(),
                 domains: None,
                 bounds: None,
             },
@@ -235,6 +241,7 @@ mod tests {
                 identity: "process".to_owned(),
                 advertised: vec![(CapabilityKind::ValueValidity, Mode::Bounded)],
                 origin: ProviderOrigin::Process,
+                profile: Default::default(),
                 domains: Some(Default::default()),
                 bounds: None,
             },
@@ -249,7 +256,7 @@ mod tests {
             .expect("process item settles");
         assert!(matches!(
             valid_result[0].disposition,
-            crate::routed::capability::Disposition::Supported { .. }
+            crate::routed::vocabulary::Disposition::Supported { .. }
         ));
         let refused = negotiate_backend_provider(&envelope(vec![refused_item.clone()]))
             .expect_err("imported package read must refuse");
@@ -441,12 +448,13 @@ mod tests {
             candidates: Candidates::Set(vec![Candidate {
                 identity: "kani".to_owned(),
             }]),
-            kani_form: KaniForm::V2FunctionApplication {
+            kani_form: Some(KaniForm::V2FunctionApplication {
                 package: checked.into(),
                 function_node_id: ids[0].clone(),
                 call_node_id: ids[2].clone(),
                 argument_node_ids: vec![ids[3].clone()],
-            },
+            }),
+            requirements: Default::default(),
         };
         let result = negotiate_backend_provider(&BackendProviderEnvelope {
             contract_version: BACKEND_PROVIDER_CONTRACT.to_owned(),
@@ -455,6 +463,7 @@ mod tests {
                 identity: "kani".to_owned(),
                 advertised: vec![(CapabilityKind::ValueValidity, Mode::Bounded)],
                 origin: ProviderOrigin::Linked,
+                profile: Default::default(),
                 domains: None,
                 bounds: None,
             }],
@@ -1055,6 +1064,7 @@ mod tests {
             identity: "kani".to_owned(),
             advertised: vec![(CapabilityKind::ValueValidity, Mode::Bounded)],
             origin: ProviderOrigin::Linked,
+            profile: Default::default(),
             domains: None,
             bounds: None,
         });
@@ -1070,7 +1080,7 @@ mod tests {
             candidates: Candidates::Set(vec![Candidate {
                 identity: "kani".to_owned(),
             }]),
-            kani_form: KaniForm::V2FunctionApplication {
+            kani_form: Some(KaniForm::V2FunctionApplication {
                 package: std::sync::Arc::new(checked),
                 function_node_id: function.clone(),
                 call_node_id: call,
@@ -1078,13 +1088,14 @@ mod tests {
                     ids.resolve(&code_id(SOURCE_PARAM_A)),
                     ids.resolve(&code_id(SOURCE_PARAM_B)),
                 ],
-            },
+            }),
+            requirements: Default::default(),
         };
         assert!(crate::routed::capability::take_package_classifier_indices().is_empty());
         assert!(crate::oracle::function::take_function_preflight_indices().is_empty());
         assert_eq!(crate::oracle::function::take_function_preflight_reads(), 0);
         let checked = match &envelope.items[1].kani_form {
-            KaniForm::V2FunctionApplication { package, .. } => package.as_ref(),
+            Some(KaniForm::V2FunctionApplication { package, .. }) => package.as_ref(),
             _ => unreachable!("bound call has a V2 source"),
         };
         let settled = negotiate_contract_package(checked, &admitted, &positions, &envelope)
@@ -1096,7 +1107,7 @@ mod tests {
         assert_eq!(backend.request_index, 2);
         assert!(matches!(
             backend.disposition,
-            crate::routed::capability::Disposition::Supported { .. }
+            crate::routed::vocabulary::Disposition::Supported { .. }
         ));
         assert!(settled.iter().all(|item| item.node_id != function));
         assert_eq!(
@@ -1118,6 +1129,7 @@ mod tests {
             identity: "process".to_owned(),
             advertised: Vec::new(),
             origin: ProviderOrigin::Process,
+            profile: Default::default(),
             domains: None,
             bounds: None,
         };
@@ -1229,7 +1241,7 @@ mod tests {
             candidates: Candidates::Set(vec![Candidate {
                 identity: "kani".to_owned(),
             }]),
-            kani_form: KaniForm::V2FunctionApplication {
+            kani_form: Some(KaniForm::V2FunctionApplication {
                 package: std::sync::Arc::new(checked),
                 function_node_id: function.clone(),
                 call_node_id: call,
@@ -1237,12 +1249,13 @@ mod tests {
                     ids.resolve(&code_id(SOURCE_PARAM_A)),
                     ids.resolve(&code_id(SOURCE_PARAM_B)),
                 ],
-            },
+            }),
+            requirements: Default::default(),
         };
         let mut envelope = empty_backend_request(
             2,
             match &request.kani_form {
-                KaniForm::V2FunctionApplication { package, .. } => package,
+                Some(KaniForm::V2FunctionApplication { package, .. }) => package,
                 _ => unreachable!(),
             },
             &body,
@@ -1251,6 +1264,7 @@ mod tests {
             identity: "kani".to_owned(),
             advertised: vec![(CapabilityKind::ValueValidity, Mode::Bounded)],
             origin: ProviderOrigin::Linked,
+            profile: Default::default(),
             domains: None,
             bounds: None,
         });
@@ -1263,13 +1277,13 @@ mod tests {
             };
         }
         let checked = match &envelope.items[1].kani_form {
-            KaniForm::V2FunctionApplication { package, .. } => package.as_ref(),
+            Some(KaniForm::V2FunctionApplication { package, .. }) => package.as_ref(),
             _ => unreachable!("bound call has a V2 source"),
         };
         let result = negotiate_contract_package(checked, &admitted, &positions, &envelope)
             .expect("admitted package settles");
         assert!(
-            matches!(result[1].backend.as_ref().map(|item| &item.disposition), Some(crate::routed::capability::Disposition::Supported { backend }) if backend == "kani")
+            matches!(result[1].backend.as_ref().map(|item| &item.disposition), Some(crate::routed::vocabulary::Disposition::Supported { backend }) if backend == "kani")
         );
         assert_eq!(
             crate::oracle::function::take_function_preflight_reads(),
@@ -1336,7 +1350,7 @@ mod tests {
             candidates: Candidates::Set(vec![Candidate {
                 identity: "kani".to_owned(),
             }]),
-            kani_form: KaniForm::V2FunctionApplication {
+            kani_form: Some(KaniForm::V2FunctionApplication {
                 package: std::sync::Arc::new(shared),
                 function_node_id: shared_ids.resolve(&code_id(SOURCE_FUNCTION)),
                 call_node_id: shared_ids.resolve(&code_id(SOURCE_CALL)),
@@ -1344,19 +1358,20 @@ mod tests {
                     shared_ids.resolve(&code_id(SOURCE_PARAM_A)),
                     shared_ids.resolve(&code_id(SOURCE_PARAM_B)),
                 ],
-            },
+            }),
+            requirements: Default::default(),
         };
         let second = first.clone();
         let mut wrong_callee = first.clone();
-        let KaniForm::V2FunctionApplication {
+        let Some(KaniForm::V2FunctionApplication {
             function_node_id, ..
-        } = &mut wrong_callee.kani_form
+        }) = &mut wrong_callee.kani_form
         else {
             unreachable!("cloned function form")
         };
         *function_node_id = shared_ids.resolve(&code_id(SOURCE_OTHER_FUNCTION));
         let third = RequestItem {
-            kani_form: KaniForm::V2FunctionApplication {
+            kani_form: Some(KaniForm::V2FunctionApplication {
                 package: std::sync::Arc::new(different),
                 function_node_id: different_ids.resolve(&code_id(SOURCE_FUNCTION)),
                 call_node_id: different_ids.resolve(&code_id(SOURCE_CALL)),
@@ -1364,7 +1379,8 @@ mod tests {
                     different_ids.resolve(&code_id(SOURCE_PARAM_A)),
                     different_ids.resolve(&code_id(SOURCE_PARAM_B)),
                 ],
-            },
+            }),
+            requirements: Default::default(),
             ..first.clone()
         };
         let envelope = BackendProviderEnvelope {
@@ -1374,6 +1390,7 @@ mod tests {
                 identity: "kani".to_owned(),
                 advertised: vec![(CapabilityKind::ValueValidity, Mode::Bounded)],
                 origin: ProviderOrigin::Linked,
+                profile: Default::default(),
                 domains: None,
                 bounds: None,
             }],
@@ -1416,7 +1433,7 @@ mod tests {
     #[trace("TC-030")]
     #[test]
     fn routed_forms_batch_graph_lookup_and_scalar_family_derivation() {
-        use crate::routed::capability::{Cause, KaniFormFamily};
+        use crate::routed::vocabulary::{Cause, KaniFormFamily};
         use exact_function_fixture::{
             ac11_classifier_package, code_id, source_bound_call_package, SOURCE_CALL,
             SOURCE_FUNCTION,
@@ -1448,10 +1465,11 @@ mod tests {
                 candidates: Candidates::Set(vec![Candidate {
                     identity: "kani".to_owned(),
                 }]),
-                kani_form: KaniForm::OutsideSet {
+                kani_form: Some(KaniForm::OutsideSet {
                     package: std::sync::Arc::clone(package),
                     node_id,
-                },
+                }),
+                requirements: Default::default(),
             };
         let envelope = BackendProviderEnvelope {
             contract_version: BACKEND_PROVIDER_CONTRACT.to_owned(),
@@ -1460,6 +1478,7 @@ mod tests {
                 identity: "kani".to_owned(),
                 advertised: vec![(CapabilityKind::ValueValidity, Mode::Bounded)],
                 origin: ProviderOrigin::Linked,
+                profile: Default::default(),
                 domains: None,
                 bounds: None,
             }],
@@ -1574,10 +1593,11 @@ mod tests {
                     extent: None,
                     named_backend: None,
                     candidates: Candidates::Set(Vec::new()),
-                    kani_form: crate::routed::capability::KaniForm::OutsideSet {
+                    kani_form: Some(crate::routed::capability::KaniForm::OutsideSet {
                         package: std::sync::Arc::new(package.clone()),
                         node_id: node_id.clone(),
-                    },
+                    }),
+                    requirements: Default::default(),
                 })
                 .collect(),
         }
@@ -1683,8 +1703,8 @@ mod tests {
                 matches!(
                     backend,
                     Some(crate::routed::capability::ItemSettlement {
-                        disposition: crate::routed::capability::Disposition::InvalidRequest {
-                            cause: crate::routed::capability::Cause::AbsentKind,
+                        disposition: crate::routed::vocabulary::Disposition::InvalidRequest {
+                            cause: crate::routed::vocabulary::Cause::AbsentKind,
                         },
                         ..
                     })
@@ -1717,6 +1737,7 @@ mod tests {
             identity: "context-test-process".to_owned(),
             advertised: Vec::new(),
             origin: ProviderOrigin::Process,
+            profile: Default::default(),
             domains: None,
             bounds: None,
         };
@@ -1940,6 +1961,7 @@ mod tests {
                 identity: "kani".to_owned(),
                 advertised: Vec::new(),
                 origin: ProviderOrigin::Linked,
+                profile: Default::default(),
                 domains: None,
                 bounds: None,
             };
@@ -2296,19 +2318,20 @@ mod tests {
                 manifest: vec![BackendDescriptor {
                     identity: "kani".to_owned(),
                     advertised: vec![(
-                        crate::routed::capability::CapabilityKind::ValueValidity,
-                        crate::routed::capability::Mode::Bounded,
+                        crate::routed::vocabulary::CapabilityKind::ValueValidity,
+                        crate::routed::vocabulary::Mode::Bounded,
                     )],
                     origin: ProviderOrigin::Linked,
+                    profile: Default::default(),
                     domains: None,
                     bounds: None,
                 }],
                 items: vec![RequestItem {
                     kind: RequestedKind::Known(
-                        crate::routed::capability::CapabilityKind::ValueValidity,
+                        crate::routed::vocabulary::CapabilityKind::ValueValidity,
                     ),
-                    extent: Some(crate::routed::capability::ExtentClassification {
-                        extent: crate::routed::capability::Mode::Bounded,
+                    extent: Some(crate::routed::vocabulary::ExtentClassification {
+                        extent: crate::routed::vocabulary::Mode::Bounded,
                         finite_bound_available: true,
                         domains: Vec::new(),
                         bounds: Vec::new(),
@@ -2317,13 +2340,14 @@ mod tests {
                     candidates: Candidates::Set(vec![Candidate {
                         identity: "kani".to_owned(),
                     }]),
-                    kani_form: crate::routed::capability::KaniForm::V2ScalarClaim {
+                    kani_form: Some(crate::routed::capability::KaniForm::V2ScalarClaim {
                         package: std::sync::Arc::new(source.clone()),
                         contract: admitted.clone(),
                         positions,
                         request_index,
                         node_id: add.clone(),
-                    },
+                    }),
+                    requirements: Default::default(),
                 }],
             })
             .expect("valid capability envelope")
@@ -2334,7 +2358,7 @@ mod tests {
             assert!(
                 matches!(
                     settle(&checked, positions.to_vec(), request_index),
-                    crate::routed::capability::Disposition::Supported { .. }
+                    crate::routed::vocabulary::Disposition::Supported { .. }
                 ),
                 "selected occurrence {request_index} must settle"
             );
@@ -2348,8 +2372,8 @@ mod tests {
         }
         assert!(matches!(
             settle(&checked, missing, 1),
-            crate::routed::capability::Disposition::InvalidRequest {
-                cause: crate::routed::capability::Cause::KaniFormInvalid {
+            crate::routed::vocabulary::Disposition::InvalidRequest {
+                cause: crate::routed::vocabulary::Cause::KaniFormInvalid {
                     refusal:
                         crate::kani::generate::outcome::InvalidObligationItem::ScalarResultMissing,
                     ..
@@ -2368,8 +2392,8 @@ mod tests {
         }
         assert!(matches!(
             settle(&checked, cross_context.clone(), 1),
-            crate::routed::capability::Disposition::InvalidRequest {
-                cause: crate::routed::capability::Cause::KaniFormInvalid {
+            crate::routed::vocabulary::Disposition::InvalidRequest {
+                cause: crate::routed::vocabulary::Cause::KaniFormInvalid {
                     refusal:
                         crate::kani::generate::outcome::InvalidObligationItem::ScalarContextMismatch,
                     ..
@@ -2378,13 +2402,13 @@ mod tests {
         ));
         assert!(matches!(
             settle(&checked, cross_context.clone(), 0),
-            crate::routed::capability::Disposition::Supported { .. }
+            crate::routed::vocabulary::Disposition::Supported { .. }
         ));
         let foreign_checked = admitted_named_source("foreign-items", SOURCE);
         assert!(matches!(
             settle(&foreign_checked, positions.to_vec(), 0),
-            crate::routed::capability::Disposition::InvalidRequest {
-                cause: crate::routed::capability::Cause::KaniFormInvalid {
+            crate::routed::vocabulary::Disposition::InvalidRequest {
+                cause: crate::routed::vocabulary::Cause::KaniFormInvalid {
                     refusal:
                         crate::kani::generate::outcome::InvalidObligationItem::ScalarSourceMismatch,
                     ..
@@ -2401,8 +2425,8 @@ mod tests {
         }
         assert!(matches!(
             settle(&checked, absent_application, 0),
-            crate::routed::capability::Disposition::InvalidRequest {
-                cause: crate::routed::capability::Cause::KaniFormInvalid {
+            crate::routed::vocabulary::Disposition::InvalidRequest {
+                cause: crate::routed::vocabulary::Cause::KaniFormInvalid {
                     refusal:
                         crate::kani::generate::outcome::InvalidObligationItem::ScalarContextMismatch,
                     ..
@@ -2430,8 +2454,8 @@ mod tests {
         }
         assert!(matches!(
             settle(&checked, foreign_conversion, 0),
-            crate::routed::capability::Disposition::InvalidRequest {
-                cause: crate::routed::capability::Cause::KaniFormInvalid {
+            crate::routed::vocabulary::Disposition::InvalidRequest {
+                cause: crate::routed::vocabulary::Cause::KaniFormInvalid {
                     refusal:
                         crate::kani::generate::outcome::InvalidObligationItem::ScalarContextMismatch,
                     ..
@@ -2442,8 +2466,8 @@ mod tests {
         missing_root.remove(1);
         assert!(matches!(
             settle(&checked, missing_root, 0),
-            crate::routed::capability::Disposition::InvalidRequest {
-                cause: crate::routed::capability::Cause::KaniFormInvalid {
+            crate::routed::vocabulary::Disposition::InvalidRequest {
+                cause: crate::routed::vocabulary::Cause::KaniFormInvalid {
                     refusal: crate::kani::generate::outcome::InvalidObligationItem::ScalarPositionMismatch,
                     ..
                 }
@@ -2453,6 +2477,7 @@ mod tests {
             identity: "kani".to_owned(),
             advertised: Vec::new(),
             origin: ProviderOrigin::Linked,
+            profile: Default::default(),
             domains: None,
             bounds: None,
         };
@@ -3382,6 +3407,7 @@ mod tests {
             identity: "kani".to_owned(),
             advertised: Vec::new(),
             origin: ProviderOrigin::Linked,
+            profile: Default::default(),
             domains: None,
             bounds: None,
         };
