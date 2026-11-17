@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Authentic FSL emission, public IR admission, then the constrained family.
+//!
+//! The library's constrained tests include this file by path and use only part of it.
+#![allow(dead_code)]
 
 use filament_contract_codegen::*;
 use filament_contract_model::{
