@@ -8,6 +8,8 @@ use crate::kani::{
     run::{execute::KaniExecutionEvidence, memory::MemoryObservation},
 };
 use ix_trace_rs::trace;
+// The shared support is only partly used by these lib tests.
+#[allow(dead_code)]
 #[path = "../../../../tests/it/constrained_method/support.rs"]
 mod support;
 fn evidence(method: &ConstrainedMethodIdentity) -> ConstrainedBackendEvidence {
@@ -178,6 +180,7 @@ fn conversion_preserves_original_causes_and_rejects_malformed_or_cross_method_ev
     ));
     // FSL no longer compiles a divisor it cannot prove nonzero, so no authentic clause reaches
     // `Undefined` by dividing by zero; the owner's own tabled value stands in for it.
+    // QSL-2361 restores a real owner `Undefined` test for FR-048-AC-6.
     let undefined = fsl_replay::ClauseEvaluation::Undefined {
         reason: "division-by-zero",
     };

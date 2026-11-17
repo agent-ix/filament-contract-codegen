@@ -417,9 +417,10 @@ fn boolean_and_partial_conditions_use_the_owner_oracle_and_unbounded_domains_ref
                 .contents
                 .contains("undefined constraint evaluation"));
         }
-        // `n = 1`, `aux = 2`: `1 mod 2 = 0` is false, so only a real modulo separates it from a
-        // constant-true oracle. FSL refuses a source divisor it cannot prove nonzero, so a zero
-        // `aux` is no longer a runtime state of this clause.
+        // FSL's owner evaluator at `n = 1`, `aux = 2`: `1 mod 2 <= 0` is false, so a constant-true
+        // owner would fail here. A zero `aux` is outside the `Positive` type, so the owner's
+        // `Undefined` is not reachable from FSL source any more; QSL-2361 restores that test and
+        // reverts the `<=` stand-in for `= 0` (FSL emission refuses `=` over `mod`).
         let outcome = owner_evaluation(&f, "Limit0", 1, false, 2, request.evaluator_limits);
         let expected = condition == "true";
         assert!(
@@ -427,7 +428,12 @@ fn boolean_and_partial_conditions_use_the_owner_oracle_and_unbounded_domains_ref
             "{condition}: {outcome:?}"
         );
         if condition == "self.n mod self.aux <= 0" {
-            assert!(method.rust().contents.contains("rt::modulo"));
+            // CG's own rendering: the modulo takes the left operand, then the right, then the
+            // domain, so an operand swap fails here.
+            assert!(method
+                .rust()
+                .contents
+                .contains("rt::modulo(left, right, &domain, meter)"));
         }
     }
     for slot in ["unread-field", "uncalled-parameter", "uncalled-result"] {
@@ -647,6 +653,7 @@ fn a_standalone_collection_constraint_remains_unsupported_without_a_harness() {
 #[trace("TC-062", "FR-048-AC-2", "FR-048-AC-8")]
 #[test]
 fn same_named_general_clause_bodies_and_preconditions_cannot_reuse_a_method() {
+    // `<=` stands in for `= c` because FSL emission refuses `=` over `mod`; QSL-2361 reverts it.
     for changed in ["safety", "constraint", "precondition"] {
         let make = |constant: u8| {
             let safety = if changed == "safety" {

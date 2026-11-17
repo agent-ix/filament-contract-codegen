@@ -1,8 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Authentic FSL emission, public IR admission, then the constrained family.
-//!
-//! The library's constrained tests include this file by path and use only part of it.
-#![allow(dead_code)]
 
 use filament_contract_codegen::*;
 use filament_contract_model::{
@@ -46,8 +43,9 @@ pub(super) fn document() -> Value {
 pub(super) const POSITIVE: &str = "ix://cg/constrained/Positive";
 
 /// The document with `aux` typed `Int[1, 3]`, so FSL proves `aux` nonzero and accepts it as a
-/// divisor. The snapshot value of `aux` stays caller-chosen, so a zero divisor still reaches the
-/// owner evaluator as a runtime outcome rather than a source the producer refuses.
+/// divisor. A zero `aux` is outside that type, so it is not a state of this document: the owner
+/// evaluator refuses it as an invalid runtime input and `emit_method` refuses it as an invalid
+/// initial state (`InitialState`). Use [`initial_positive_aux`] for a valid initial state.
 pub(super) fn nonzero_aux_document() -> Value {
     let mut doc = document();
     let mut positive = doc["types"][0].clone();
