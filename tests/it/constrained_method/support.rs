@@ -40,6 +40,24 @@ pub(super) fn document() -> Value {
     ],"populations":[{"identity":format!("ix://{MODEL}/nodes"),"displayName":"nodes","kind":{"module":MODEL,"name":"population"},"members":[OBJECT],"extent":"closed","origin":origin()}]})
 }
 
+pub(super) const POSITIVE: &str = "ix://cg/constrained/Positive";
+
+/// The document with `aux` typed `Int[1, 3]`, so FSL proves `aux` nonzero and accepts it as a
+/// divisor. The snapshot value of `aux` stays caller-chosen, so a zero divisor still reaches the
+/// owner evaluator as a runtime outcome rather than a source the producer refuses.
+pub(super) fn nonzero_aux_document() -> Value {
+    let mut doc = document();
+    let mut positive = doc["types"][0].clone();
+    positive["identity"] = json!(POSITIVE);
+    positive["displayName"] = json!("Positive");
+    positive["constraints"][0]["identity"] = json!(format!("{POSITIVE}/min"));
+    positive["constraints"][0]["operands"]["value"] = json!("1");
+    positive["constraints"][1]["identity"] = json!(format!("{POSITIVE}/max"));
+    doc["types"][1]["fields"][2]["typeRef"] = json!(POSITIVE);
+    doc["types"].as_array_mut().unwrap().push(positive);
+    doc
+}
+
 pub(super) struct Fixture {
     pub(super) source: String,
     pub(super) document: Vec<u8>,
@@ -115,6 +133,12 @@ pub(super) fn initial(n: i64) -> BTreeMap<String, SnapshotValue> {
         ("flag".into(), SnapshotValue::boolean(false)),
         ("aux".into(), SnapshotValue::integer("0")),
     ])
+}
+/// An initial state whose `aux` lies inside the `Positive` type of [`nonzero_aux_document`].
+pub(super) fn initial_positive_aux(n: i64) -> BTreeMap<String, SnapshotValue> {
+    let mut state = initial(n);
+    state.insert("aux".into(), SnapshotValue::integer("1"));
+    state
 }
 pub(super) fn bindings(f: &Fixture) -> Vec<ConstrainedOperationBinding<'_>> {
     vec![

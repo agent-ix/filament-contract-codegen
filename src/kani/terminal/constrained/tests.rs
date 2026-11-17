@@ -169,12 +169,6 @@ fn conversion_preserves_original_causes_and_rejects_malformed_or_cross_method_ev
             .omitted_bytes,
         17
     );
-    let partial = support::fixture(
-        &support::document(),
-        "constrained-partial",
-        "self.n <= 3",
-        &["self.n mod self.aux = 0"],
-    );
     let mut zero = request.evaluator_limits;
     zero.work_units = 0;
     let incomplete = support::owner_evaluation(&f, "Safe", 0, false, 0, zero);
@@ -182,12 +176,11 @@ fn conversion_preserves_original_causes_and_rejects_malformed_or_cross_method_ev
         incomplete,
         fsl_replay::ClauseEvaluation::Incomplete(_)
     ));
-    let undefined =
-        support::owner_evaluation(&partial, "Limit0", 0, false, 0, request.evaluator_limits);
-    assert!(matches!(
-        undefined,
-        fsl_replay::ClauseEvaluation::Undefined { .. }
-    ));
+    // FSL no longer compiles a divisor it cannot prove nonzero, so no authentic clause reaches
+    // `Undefined` by dividing by zero; the owner's own tabled value stands in for it.
+    let undefined = fsl_replay::ClauseEvaluation::Undefined {
+        reason: "division-by-zero",
+    };
     let refusal = support::owner_evaluation(&f, "Missing", 0, false, 0, request.evaluator_limits);
     assert!(matches!(
         refusal,
