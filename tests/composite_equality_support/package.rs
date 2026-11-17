@@ -675,6 +675,9 @@ impl PackageBuilder {
             "occurrences": [{"role": role, "ordinal": 0}],
             "body": body,
         });
+        if tag == "function" {
+            node["check_mode"] = json!("linked");
+        }
         if let Some(group) = recursion_group {
             node["recursion_group"] = json!(group);
         }

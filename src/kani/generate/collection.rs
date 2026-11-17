@@ -1523,6 +1523,7 @@ pub(crate) mod tests {
                 declaration: None,
                 owner: None,
                 owner_model: None,
+                check_mode: None,
                 body: CheckedTerm::Literal {
                     type_id: node("3"),
                     value_kind: LiteralKind::Boolean,
@@ -1897,6 +1898,7 @@ pub(crate) mod tests {
             declaration: None,
             owner: None,
             owner_model: None,
+            check_mode: None,
             body,
         };
         let conversion = term(ApplicationOperator::Convert, "filament.op.quantity.convert");

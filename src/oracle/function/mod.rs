@@ -1828,6 +1828,7 @@ mod ir988_source_function_tests {
             node_id: id(value),
             owner: None,
             owner_model: None,
+            check_mode: None,
             schema_version: "filament.checked-semantic-graph/v2".into(),
             node_tag: if name.is_some() {
                 "function"
@@ -3924,6 +3925,7 @@ mod tests {
             CheckedSemanticNodeV2 {
                 node_id: id.clone(),
                 owner_model: None,
+                check_mode: None,
                 schema_version: "filament.checked-semantic-graph/v2".into(),
                 node_tag: "expression".into(),
                 semantic_form: "binary".into(),
@@ -4052,6 +4054,7 @@ mod tests {
             CheckedSemanticNodeV2 {
                 node_id: id.clone(),
                 owner_model: None,
+                check_mode: None,
                 schema_version: "filament.checked-semantic-graph/v2".into(),
                 node_tag: tag.into(),
                 semantic_form: form.into(),
