@@ -496,10 +496,6 @@ fn mapping_mutants(
     mutants
 }
 
-fn run_host(shape: &Shape, operands: ((i64, i64), (i64, i64)), member: Option<&str>, label: &str) {
-    run_host_on(shape, false, operands, member, label);
-}
-
 fn run_host_on(
     shape: &Shape,
     native: bool,
