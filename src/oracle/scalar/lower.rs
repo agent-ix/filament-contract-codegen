@@ -317,7 +317,8 @@ pub(super) fn unsupported_family(
         | CheckedNodeTag::Claim
         | CheckedNodeTag::Correspondence
         | CheckedNodeTag::Extension
-        | CheckedNodeTag::Hybrid => ExactScalarRefusal::Unsupported {
+        | CheckedNodeTag::Hybrid
+        | CheckedNodeTag::Probabilistic => ExactScalarRefusal::Unsupported {
             unsupported_node_id: node_id.clone(),
             node_tag: tag.as_wire(),
         },
