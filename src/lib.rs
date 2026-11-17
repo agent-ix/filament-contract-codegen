@@ -209,8 +209,8 @@ pub use kani::generate::float_scalar::{
 };
 pub use kani::generate::shadow::composite::{
     check_leaf_call_order, generate_composite_shadow, generate_composite_shadow_with_budget,
-    generate_composite_shadow_with_proof_body, CompositeShadowItem, CompositeShadowRefusal,
-    ShadowOperand, COMPOSITE_FAMILY, UNEXERCISED_COVERAGE,
+    CompositeShadowItem, CompositeShadowRefusal, ShadowOperand, COMPOSITE_FAMILY,
+    UNEXERCISED_COVERAGE,
 };
 pub use kani::generate::shadow::source_check::{
     check_shadow_source, check_straight_line, contains_loop, DrawnBound, ShadowSourceViolation,

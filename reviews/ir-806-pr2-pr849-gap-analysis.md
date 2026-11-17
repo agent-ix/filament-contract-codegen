@@ -58,3 +58,10 @@ than the tests show.
 Examined FR-025-AC-9 and FR-033-AC-2 to AC-5, TC-048 steps 2 to 4, TC-036 step 9, and the
 FR-025 and FR-033 rows of spec/kani/matrix/tests.md and spec/replay/matrix/tests.md. Tool
 versions are absent from the TC-048 run record.
+
+## Dispositions
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-001 | fixed | Round 1 at 7890dec0 (6afe2163): FR-033-AC-4 now reads "formats a redacted Debug rendering (asserted to hold none of the value's leaf content)" and lists "decoding a 100,000-deep value through FSL's canonical reader" as not covered. The test builds the chain over an `ExactInteger(7654321)` leaf and asserts that the rendering does not contain it. |
+| FND-002 | fixed | Round 1 at 7890dec0 (6afe2163): FR-033-AC-3 now reads "a swap of leaves of different primitive types" and adds "A swap of two leaves of one primitive type is not a refusal: it decodes, and the rebuilt operand differs (FR-033-AC-5)." |

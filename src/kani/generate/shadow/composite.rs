@@ -848,23 +848,6 @@ pub fn generate_composite_shadow_with_budget(
     generate_composite_with(item, &Hooks::default(), budget)
 }
 
-/// Generates as [`generate_composite_shadow`] does with `body_extra` added to the proof body before
-/// its assertions.
-///
-/// This entry exists so a test can make the generated source disagree with the identity it
-/// records, and show that generation then refuses without a harness. It is no way to author a
-/// proof.
-pub fn generate_composite_shadow_with_proof_body(
-    item: &CompositeShadowItem<'_>,
-    body_extra: &str,
-) -> Result<KaniShadowHarness, CompositeShadowRefusal> {
-    let hooks = Hooks {
-        body_extra: body_extra.to_owned(),
-        ..Hooks::default()
-    };
-    generate_composite_with(item, &hooks, SHADOW_PAIR_NODE_BUDGET)
-}
-
 pub(crate) fn generate_composite_with(
     item: &CompositeShadowItem<'_>,
     hooks: &Hooks,
@@ -1286,10 +1269,7 @@ pub(crate) fn generate_composite_with(
             closes_family_row,
         }),
     };
-    check_leaf_bindings(&identity)
-        .map_err(|refusal| CompositeShadowRefusal::LeafBinding { refusal })?;
-    check_leaf_call_order(&identity, &rust.contents)
-        .map_err(|refusal| CompositeShadowRefusal::LeafBinding { refusal })?;
+    check_generated_leaves(&identity, &rust.contents)?;
     let obligation = RefinementObligation {
         subject: item.subject.clone(),
         shadow: format!("{COMPOSITE_SHADOW_MODULE}::shadow"),
@@ -1312,6 +1292,18 @@ fn root_walk_call(root: &Ty) -> String {
 
 fn render_walks_for(model: &Model<'_>, root: &Ty) -> String {
     render_walks(model, root)
+}
+
+/// The checks generation runs before it yields a harness: the identity's leaf bindings, then the
+/// generated source's draws against the identity's leaves (FR-025-AC-9).
+pub(super) fn check_generated_leaves(
+    identity: &ShadowIdentity,
+    source: &str,
+) -> Result<(), CompositeShadowRefusal> {
+    check_leaf_bindings(identity)
+        .map_err(|refusal| CompositeShadowRefusal::LeafBinding { refusal })?;
+    check_leaf_call_order(identity, source)
+        .map_err(|refusal| CompositeShadowRefusal::LeafBinding { refusal })
 }
 
 /// Checks that the generated proof `source` draws exactly the identity's leaves, in the

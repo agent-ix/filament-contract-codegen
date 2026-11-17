@@ -66,3 +66,19 @@ Gate at 29227cbd in the review worktree: `cargo fmt --check` clean; `cargo clipp
 grammar warnings only); whole `--lib` 617 passed / 36 ignored; whole `--test it` 1166 passed /
 128 ignored, no failures; `git status` clean after the mutation runs were reverted. Cargo.toml
 and Cargo.lock are unchanged in the diff. Every new test carries `#[trace(...)]`.
+
+## New findings (disposition pass 1)
+
+| ID | Severity | Summary | Refs |
+| --- | --- | --- | --- |
+| FND-006 | low | The FND-002 fix adds `generate_composite_shadow_with_proof_body`, a test-only hook that injects arbitrary lines into the proof body, and exports it from `src/lib.rs` as public API. The repo's other shadow hooks (`Hooks`) are `pub(crate)` and are exercised from crate-internal tests (src/kani/generate/shadow/tests.rs). Keep the hook `pub(crate)` and move the generation-time call-order test into a crate-internal test, so no public caller can alter a generated proof body. | src/kani/generate/shadow/composite.rs:851-866, src/lib.rs:211-213 |
+
+## Dispositions
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-001 | fixed | Round 1 at 7890dec0 (6afe2163): the interleaved case alternates the two nodes' leaves with each node's order kept and asserts `OutOfOrder` naming leaf 1. Deleting the contiguity check now fails `tc_048_a_missing_duplicate_unknown_or_conflicting_leaf_refuses_with_a_typed_reason`. |
+| FND-002 | fixed | Round 1 at 7890dec0 (6afe2163): `tc_048_a_source_that_disagrees_with_the_identity_in_call_order_refuses_generation_with_no_harness` drives generation with an extra draw and gets `LeafBinding { CallOrder }`. Removing the generation-time call fails it. |
+| FND-003 | fixed | Round 1 at 7890dec0 (6afe2163): an extra pinned leaf on operand 0 and on operand 7 asserts `Unknown { zz_pinned }`; a duplicate pinned path under a fresh name asserts `Duplicate { zz_again }`. Deleting either check fails `tc_048_literal_operands_keep_their_pinned_identity_and_are_never_drawn`. |
+| FND-004 | fixed | Round 1 at 7890dec0 (6afe2163): `drawn_order(..).ok_or(LeafBindingRefusal::SourceUnreadable)?` replaces `unwrap_or_default`, with the code `cg_composite_leaf_source_unreadable`. Restoring the empty-list fallback fails two tests, including the new literal/literal case. |
+| FND-005 | fixed | Round 1 at 7890dec0 (6afe2163): `Conflict { member: ConflictMember }`, an enum of Kind, Declared, Drawn and Value. `LeafKind::primitive()` in src/kani/identity/shadow.rs is now the one table the generator, the call-order check and the decoder share. |

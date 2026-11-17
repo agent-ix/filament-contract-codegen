@@ -450,3 +450,91 @@ fn tc_039_unsupported_shapes_are_refused_without_a_harness_or_a_production_fallb
     assert_eq!(results[3].as_ref().unwrap().identity, alone.identity);
     assert!(results[4].is_ok());
 }
+
+fn boolean_operand_identity() -> ShadowIdentity {
+    use crate::{
+        kani::identity::shadow::{CompositeIdentity, LeafKind, LeafRecord, OperandSource},
+        oracle::equality::closure::{RecordedOperandTypes, RecordedType},
+    };
+    let leaf = |name: &str, node: &str| LeafRecord {
+        name: name.to_owned(),
+        node: node.to_owned(),
+        path: String::new(),
+        kind: LeafKind::Boolean,
+        declared: (0, 1),
+        drawn: (0, 1),
+    };
+    ShadowIdentity {
+        family: composite::COMPOSITE_FAMILY.to_owned(),
+        proof_subject: ProofSubject::BoundedShadow,
+        node: "n".to_owned(),
+        ceilings: ceilings(60),
+        module_symbol: PROOF_MODULE.to_owned(),
+        harness_symbol: PROOF_FUNCTION.to_owned(),
+        leaves: vec![leaf("a", "n"), leaf("b", "m")],
+        size_budget: 1,
+        size: 1,
+        abstractions: Vec::new(),
+        unexercised: Vec::new(),
+        shared_helpers: Vec::new(),
+        solver: KaniSolver::Cadical,
+        unwind: 1,
+        options: Vec::new(),
+        witness_options: Vec::new(),
+        composite: Some(CompositeIdentity {
+            operator: "equality.equal".to_owned(),
+            declarations: Vec::new(),
+            operand_types: RecordedOperandTypes {
+                left: RecordedType::Boolean,
+                right: RecordedType::Boolean,
+            },
+            pair_nodes: 1,
+            operands: [
+                OperandSource::Parameter {
+                    node: "n".to_owned(),
+                },
+                OperandSource::Parameter {
+                    node: "m".to_owned(),
+                },
+            ],
+            pinned: Vec::new(),
+            coverage: Vec::new(),
+            closes_family_row: false,
+        }),
+    }
+}
+
+#[trace("TC-048", "FR-025-AC-9")]
+#[test]
+fn tc_048_generation_refuses_a_source_whose_draws_disagree_with_the_identity_in_call_order() {
+    use crate::kani::identity::leaf_binding::LeafBindingRefusal;
+    use composite::{check_generated_leaves, CompositeShadowRefusal};
+    let identity = boolean_operand_identity();
+    let proof = |body: &str| format!("pub fn {PROOF_FUNCTION}() {{\n{body}}}\n");
+    let agreeing = proof("    let a: bool = kani::any();\n    let b: bool = kani::any();\n");
+    assert_eq!(check_generated_leaves(&identity, &agreeing), Ok(()));
+    let reordered = proof("    let b: bool = kani::any();\n    let a: bool = kani::any();\n");
+    let extra = proof(
+        "    let a: bool = kani::any();\n    let b: bool = kani::any();\n    let c: bool = kani::any();\n",
+    );
+    for source in [reordered, extra] {
+        assert!(
+            matches!(
+                check_generated_leaves(&identity, &source),
+                Err(CompositeShadowRefusal::LeafBinding {
+                    refusal: LeafBindingRefusal::CallOrder { .. }
+                })
+            ),
+            "{source}"
+        );
+    }
+    // The leaf bindings are checked first: a binding fault is reported before the source is read.
+    let mut broken = identity;
+    broken.leaves.pop();
+    assert!(matches!(
+        check_generated_leaves(&broken, &agreeing),
+        Err(CompositeShadowRefusal::LeafBinding {
+            refusal: LeafBindingRefusal::Missing { .. }
+        })
+    ));
+}

@@ -7,10 +7,10 @@
 
 use filament_contract_codegen::{
     check_leaf_bindings, check_leaf_call_order, decode_composite_falsification,
-    generate_composite_shadow, generate_composite_shadow_with_proof_body, parse_assertion_playback,
-    rebuild_composite_operands, reconstruct_composite_operands, CompositeShadowRefusal,
-    ConflictMember, KaniShadowHarness, LeafBindingRefusal, LeafKind, OperandSource, ShadowIdentity,
-    ShadowOperand, WitnessDecodeLimits,
+    generate_composite_shadow, parse_assertion_playback, rebuild_composite_operands,
+    reconstruct_composite_operands, CompositeShadowRefusal, ConflictMember, KaniShadowHarness,
+    LeafBindingRefusal, LeafKind, OperandSource, ShadowIdentity, ShadowOperand,
+    WitnessDecodeLimits,
 };
 use fsl_replay::{WitnessField, WitnessSlot, WitnessValue};
 use ix_trace_rs::trace;
@@ -304,30 +304,6 @@ fn tc_048_the_generated_source_draws_the_identity_leaves_in_order_and_a_reordere
         check_leaf_call_order(&harness.identity, "fn ("),
         Err(LeafBindingRefusal::SourceUnreadable)
     );
-}
-
-#[trace("TC-048", "FR-025-AC-9")]
-#[test]
-fn tc_048_a_source_that_disagrees_with_the_identity_in_call_order_refuses_generation_with_no_harness(
-) {
-    let corpus = corpus();
-    let entry = entry(&corpus, FLAGS_EQUAL);
-    let item = item_of(&entry, "subject");
-    assert!(generate_composite_shadow_with_proof_body(&item, "").is_ok());
-    let refusal = generate_composite_shadow_with_proof_body(
-        &item,
-        "    let zz_extra: bool = kani::any();\n    let _ = zz_extra;\n",
-    )
-    .map(|_| ())
-    .unwrap_err();
-    let CompositeShadowRefusal::LeafBinding {
-        refusal: LeafBindingRefusal::CallOrder { recorded, drawn },
-    } = refusal
-    else {
-        panic!("a call order refusal: {refusal:?}");
-    };
-    assert_eq!(drawn.len(), recorded.len() + 1);
-    assert_eq!(drawn.last().map(String::as_str), Some("zz_extra:bool"));
 }
 
 #[trace("TC-048", "FR-025-AC-9")]

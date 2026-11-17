@@ -41,3 +41,9 @@ moves.
 Examined FR-025-AC-9, FR-033-AC-2 to AC-5, the FR-033 description paragraph at lines 59-64,
 TC-036 step 9, TC-048 steps 2 and 4, and the changed rows of both tests.md files. AC-8, AC-10 and
 AC-19 were read for status consistency only.
+
+## Dispositions
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-001 | fixed | Round 1 at 7890dec0 (6afe2163): FR-033-AC-8 and FR-033-AC-10 now read "PLANNED (IR-806 PR-3).", which matches spec/replay/matrix/tests.md. |
