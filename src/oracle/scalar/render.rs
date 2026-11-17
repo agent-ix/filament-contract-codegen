@@ -771,11 +771,7 @@ pub(crate) fn publish_native_scalar_artifacts(
             continue;
         };
         if let Some(selection) = selections.get(&index) {
-            let operator =
-                crate::oracle::operator_catalog::Operator::from_identity(&claim.operation.identity)
-                    .and_then(|catalog| catalog.entry().scalar_operator)
-                    .ok_or(OracleGenerationError::InvalidPlanState)?;
-            generated.oracle_source = super::native::render(&generated.symbol, operator, selection)
+            generated.oracle_source = super::native::render_selected(&generated.symbol, selection)
                 .ok_or(OracleGenerationError::InvalidPlanState)?;
         }
         functions.push((generated.symbol.clone(), generated.oracle_source.clone()));

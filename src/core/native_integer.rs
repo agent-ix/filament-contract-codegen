@@ -49,6 +49,10 @@ pub struct NativeIntegerOperationDecision {
     pub capacity: Option<NativeIntegerIntervalDecision>,
     /// Original semantic result domain, separately from arithmetic capacity.
     pub semantic_domain: Option<NativeIntegerIntervalDecision>,
+    /// The division law of a `div` or `rem`, as its definition identity; absent for every other
+    /// operation, so those selections keep their identity bytes.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub division_profile: Option<String>,
 }
 
 /// One selected native ABI's versioned policy and actual interval decisions.

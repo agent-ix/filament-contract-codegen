@@ -142,6 +142,7 @@ pub(super) fn helpers(
                             operands,
                             capacity: None,
                             semantic_domain: None,
+                            division_profile: None,
                         });
                         source.push_str(&format!("\n/// `{identity}`.\npub fn scalar_{index}(left: &nx::NativeInteger, right: &nx::NativeInteger, meter: &mut rt::Meter) -> Result<rt::Outcome<bool>, OracleStop> {{\n    Ok(nx::evaluate_native_integer_ordering(nx::OrderingOperator::{operator}, *left, *right, meter))\n}}\n"));
                         None
@@ -212,6 +213,7 @@ pub(super) fn helpers(
                             operands,
                             capacity: Some(admitted.capacity().into()),
                             semantic_domain: domain.map(Into::into),
+                            division_profile: None,
                         });
                         let domain_source = domain.map_or_else(
                             || "None".to_owned(),

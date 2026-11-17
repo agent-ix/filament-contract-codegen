@@ -284,15 +284,6 @@ pub enum UnsupportedObligation {
         /// Complete original operand intervals.
         operands: Vec<crate::core::native_integer::NativeIntegerIntervalDecision>,
     },
-    /// No kernel-checked native division or modulo plan exists, so a `div`, `rem` or `mod`
-    /// claim has no native harness (FR-057-AC-6). It is not a capacity refusal: no interval was
-    /// refused by the kernel.
-    NativeDivisionPlanUnavailable {
-        /// Authentic source operation.
-        node_id: CheckedNodeId,
-        /// Confirmed operation identity.
-        operation_identity: String,
-    },
     /// The independently selected claim's record disagrees with the selected clause; refused
     /// before any harness is generated, whatever the structural identity (FR-015-AC-48).
     V2ClauseClaimMismatch {
