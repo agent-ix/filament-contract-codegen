@@ -345,8 +345,8 @@ ships.
 
 ## Status
 
-PARTIAL (IR-854; AC-7 and AC-6 are delivered, the criteria that need a tractable
-general-route shape or a run replay stay owner: IR-854).
+PARTIAL (IR-854; AC-6 and AC-7 are delivered; AC-8, AC-9, AC-11 and AC-12 stay
+PARTIAL, owner: IR-854).
 
 Delivered and tested (TC-071): the `div`, `rem` and `mod` scalar harness under
 each law (FR-057-AC-1), its assertion structure and mapping controls over the
@@ -373,27 +373,31 @@ at the 600 s wall-clock ceiling with a peak near 8 GiB, so no general-route shap
 of `div`, `rem` or `mod` is claimed `Verified`. Each operation is a
 `not_tractable` row of the shipped scalar table at 4 bits (`route` general). The
 constant-divisor shape at 8 bits also did not finish on the general route. On the
-native route the same shape verifies, so the two routes differ by route and the
-rows show no constant/symbolic split on either route that the table would need:
-no `divisor_constant` extension is added. Shapes the record lists as unmeasured
-carry no claim.
+native route the same shape verifies. No general-route shape was measured
+`Verified`, so the general-route rows show no constant/symbolic split. The native
+route does show one (constant divisors verified where the symbolic divisor did
+not finish), and the `divisor_constant` extension is not yet added: see the open
+gap under AC-9. Shapes the record lists as unmeasured carry no claim.
 
 Partly delivered (PARTIAL):
 
-- AC-7: the native minimum (the 8-bit constant divisor, every operation and law)
-  is `Verified`. Other native shapes carry the kernel's copied rows (one
-  `tractable` row at 8 bits and one `not_tractable` row at 16 bits per operation,
-  with `provenance`), which state the least tractable profile and the symbolic
-  divisor; the kernel measured constant divisors verified at 64 bits, which the
-  rows neither record nor refuse until the table grows a divisor-shape feature.
-  The 16-bit rows over-refuse those combinations. No shape beyond those measured
-  is claimed `Verified`. The general-route shapes are `not_tractable` (above).
 - AC-9: the `not_tractable` rows exist and the decided run wrappers refuse at
   their width, but the measurement record does not cover every listed operation,
   shape, route and width. Unmeasured: constant divisors at 16, 32 and 63 bits
   and negative constant divisors on the general route, and the native shapes
   other than the 8-bit constant divisor and the 4-bit symbolic mutant fixture.
   The record lists them.
+  Open gap (AC-9's "no shipped row refuses a shape measured `Verified`" does not
+  hold for the native route): the shipped native `not_tractable` rows at 16 bits
+  for `filament.op.integer.div`, `filament.op.integer.rem` and
+  `filament.op.integer.mod` refuse every native harness at 16 bits and above.
+  They state the least tractable profile and the symbolic divisor, because the
+  table keys on operation id and width alone. The kernel measured constant
+  divisors verified at 64 bits (some at 128), so a native constant-divisor
+  harness at 16 bits or more is refused at run time although the kernel's
+  record shows it `Verified`; generation is unaffected. The gap closes when the
+  table grows a divisor-shape (and profile) feature and the rows are split
+  by it; that is not part of this change and is owned by a separate ticket.
 - AC-11: tested as sibling independence for integer add, subtract, multiply and
   negate generated with and without a division claim, plus FR-015-AC-115's
   existing reference-copy equivalence. The before/after comparison for the

@@ -596,6 +596,39 @@ fn native_route_min_over_minus_one_and_zero_divisor_are_typed_refusals() {
     }
 }
 
+/// FR-057-AC-5, native route: `i64::MIN rem -1` and `i64::MIN mod -1` complete `0` (the one
+/// overflowing quotient leaves a zero remainder), a zero divisor is `DivisionByZero`, and a
+/// remainder outside the explicit result range is the typed out-of-domain refusal. The divisor
+/// range `[-2, 0]` and the result range `[0, 0]` give a completed pair (`MIN`, `-1`), a refused
+/// pair (`MIN + 1`, `-2`: a nonzero remainder under every law) and a zero divisor; the host
+/// control checks each point against the independent expected side and its mapping mutants.
+#[trace("TC-071", "FR-057-AC-5")]
+#[test]
+fn native_route_min_rem_and_mod_over_minus_one_complete_zero_and_zero_divisor_is_typed() {
+    for (profile, operation, member) in [
+        (DivisionProfile::Truncating, "rem", Some("Remainder")),
+        (DivisionProfile::Floor, "rem", Some("Remainder")),
+        (DivisionProfile::Euclidean, "rem", Some("Remainder")),
+        (DivisionProfile::Euclidean, "mod", None),
+    ] {
+        let shape = Shape {
+            profile,
+            operation,
+            left: (i64::MIN, i64::MIN + 1),
+            right: (-2, 0),
+            narrow: Some((0, 0)),
+            unwind: 12,
+        };
+        run_host_on(
+            &shape,
+            true,
+            ((i64::MIN, i64::MIN + 1), (-2, 0)),
+            member,
+            &format!("ir854-min-{operation}-{profile:?}"),
+        );
+    }
+}
+
 const DIFF_TEST: &str = r#"
 #[cfg(test)]
 mod diff {
@@ -1981,37 +2014,134 @@ fn expect_native_verified(shape: &Shape, name: &str) {
     );
 }
 
-macro_rules! native_constant_divisor_verifies {
-    ($($test:ident: $profile:ident, $operation:literal;)*) => {$(
-        /// FR-057-AC-7: the healthy native harness of the 8-bit constant divisor classifies
-        /// `Verified` under installed Kani.
-        #[trace("TC-071", "FR-057-AC-7")]
-        #[test]
-        #[ignore = "kani lane: run serially through make kani-gate"]
-        fn $test() {
-            expect_native_verified(
-                &Shape {
-                    profile: DivisionProfile::$profile,
-                    operation: $operation,
-                    left: (-128, 127),
-                    right: (8, 8),
-                    narrow: None,
-                    unwind: 3,
-                },
-                concat!("ir854-native-const8-", $operation, "-", stringify!($profile)),
-            );
-        }
-    )*};
+/// The 8-bit constant divisor: a dividend over `[-128, 127]` and the literal divisor `8`.
+fn native_constant_divisor_8_bit(profile: DivisionProfile, operation: &'static str, name: &str) {
+    expect_native_verified(
+        &Shape {
+            profile,
+            operation,
+            left: (-128, 127),
+            right: (8, 8),
+            narrow: None,
+            unwind: 3,
+        },
+        name,
+    );
 }
 
-native_constant_divisor_verifies! {
-    native_constant_divisor_8_bit_div_truncating_verifies: Truncating, "div";
-    native_constant_divisor_8_bit_div_floor_verifies: Floor, "div";
-    native_constant_divisor_8_bit_div_euclidean_verifies: Euclidean, "div";
-    native_constant_divisor_8_bit_rem_truncating_verifies: Truncating, "rem";
-    native_constant_divisor_8_bit_rem_floor_verifies: Floor, "rem";
-    native_constant_divisor_8_bit_rem_euclidean_verifies: Euclidean, "rem";
-    native_constant_divisor_8_bit_mod_verifies: Euclidean, "mod";
+/// FR-057-AC-7: the healthy native harness of the 8-bit constant divisor classifies `Verified`
+/// under installed Kani (div, Truncating).
+#[trace("TC-071", "FR-057-AC-7")]
+#[test]
+#[ignore = "kani lane: run serially through make kani-gate"]
+fn native_constant_divisor_8_bit_div_truncating_verifies() {
+    native_constant_divisor_8_bit(
+        DivisionProfile::Truncating,
+        "div",
+        "ir854-native-const8-div-Truncating",
+    );
+}
+
+/// FR-057-AC-7: the healthy native harness of the 8-bit constant divisor classifies `Verified`
+/// under installed Kani (div, Floor).
+#[trace("TC-071", "FR-057-AC-7")]
+#[test]
+#[ignore = "kani lane: run serially through make kani-gate"]
+fn native_constant_divisor_8_bit_div_floor_verifies() {
+    native_constant_divisor_8_bit(
+        DivisionProfile::Floor,
+        "div",
+        "ir854-native-const8-div-Floor",
+    );
+}
+
+/// FR-057-AC-7: the healthy native harness of the 8-bit constant divisor classifies `Verified`
+/// under installed Kani (div, Euclidean).
+#[trace("TC-071", "FR-057-AC-7")]
+#[test]
+#[ignore = "kani lane: run serially through make kani-gate"]
+fn native_constant_divisor_8_bit_div_euclidean_verifies() {
+    native_constant_divisor_8_bit(
+        DivisionProfile::Euclidean,
+        "div",
+        "ir854-native-const8-div-Euclidean",
+    );
+}
+
+/// FR-057-AC-7: the healthy native harness of the 8-bit constant divisor classifies `Verified`
+/// under installed Kani (rem, Truncating).
+#[trace("TC-071", "FR-057-AC-7")]
+#[test]
+#[ignore = "kani lane: run serially through make kani-gate"]
+fn native_constant_divisor_8_bit_rem_truncating_verifies() {
+    native_constant_divisor_8_bit(
+        DivisionProfile::Truncating,
+        "rem",
+        "ir854-native-const8-rem-Truncating",
+    );
+}
+
+/// FR-057-AC-7: the healthy native harness of the 8-bit constant divisor classifies `Verified`
+/// under installed Kani (rem, Floor).
+#[trace("TC-071", "FR-057-AC-7")]
+#[test]
+#[ignore = "kani lane: run serially through make kani-gate"]
+fn native_constant_divisor_8_bit_rem_floor_verifies() {
+    native_constant_divisor_8_bit(
+        DivisionProfile::Floor,
+        "rem",
+        "ir854-native-const8-rem-Floor",
+    );
+}
+
+/// FR-057-AC-7: the healthy native harness of the 8-bit constant divisor classifies `Verified`
+/// under installed Kani (rem, Euclidean).
+#[trace("TC-071", "FR-057-AC-7")]
+#[test]
+#[ignore = "kani lane: run serially through make kani-gate"]
+fn native_constant_divisor_8_bit_rem_euclidean_verifies() {
+    native_constant_divisor_8_bit(
+        DivisionProfile::Euclidean,
+        "rem",
+        "ir854-native-const8-rem-Euclidean",
+    );
+}
+
+/// FR-057-AC-7: the healthy native harness of the 8-bit constant divisor classifies `Verified`
+/// under installed Kani (mod, Euclidean).
+#[trace("TC-071", "FR-057-AC-7")]
+#[test]
+#[ignore = "kani lane: run serially through make kani-gate"]
+fn native_constant_divisor_8_bit_mod_verifies() {
+    native_constant_divisor_8_bit(
+        DivisionProfile::Euclidean,
+        "mod",
+        "ir854-native-const8-mod-Euclidean",
+    );
+}
+
+/// The `i64` operands of a Kani concrete playback test, in draw order: each is the
+/// little-endian byte vector under a `// <value>` comment inside `concrete_vals`.
+fn playback_operands(counterexample: &str) -> Vec<i64> {
+    counterexample
+        .lines()
+        .filter_map(|line| {
+            let bytes = line.trim().strip_prefix("vec![")?.strip_suffix("],")?;
+            let bytes = bytes
+                .split(',')
+                .map(|byte| byte.trim().parse::<u8>().ok())
+                .collect::<Option<Vec<_>>>()?;
+            Some(i64::from_le_bytes(bytes.try_into().ok()?))
+        })
+        .collect()
+}
+
+/// The playback decoder reads the draw-order operands, including a negative one.
+#[trace("TC-071", "FR-057-AC-8")]
+#[test]
+fn the_playback_decoder_reads_the_draw_order_operands() {
+    let playback = "fn t() {\n    let concrete_vals: Vec<Vec<u8>> = vec![\n        // -3\n        vec![253, 255, 255, 255, 255, 255, 255, 255],\n        // 2\n        vec![2, 0, 0, 0, 0, 0, 0, 0],\n    ];\n}";
+    assert_eq!(playback_operands(playback), [-3, 2]);
 }
 
 fn expect_native_mutants_falsified(
@@ -2043,13 +2173,19 @@ fn expect_native_mutants_falsified(
             &manifest,
             Some(&mutated),
         );
+        let filament_contract_codegen::KaniRunOutcome::Falsified { counterexample } =
+            &evidence.outcome
+        else {
+            panic!(
+                "{name}: a seeded mutant is falsified with playback, got {:?}",
+                evidence.outcome
+            );
+        };
+        let operands = playback_operands(counterexample);
+        assert_eq!(operands.len(), 2, "{name}: {counterexample}");
         assert!(
-            matches!(
-                evidence.outcome,
-                filament_contract_codegen::KaniRunOutcome::Falsified { .. }
-            ),
-            "{name}: a seeded mutant is falsified with playback, got {:?}",
-            evidence.outcome
+            (-8..=7).contains(&operands[0]) && (-3..=3).contains(&operands[1]),
+            "{name}: playback operands {operands:?} lie in the fixture's ranges"
         );
     }
 }

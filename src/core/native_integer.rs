@@ -113,4 +113,35 @@ mod tests {
         assert_eq!(decision.lower.parse::<i128>().unwrap(), i128::MIN);
         assert_eq!(decision.upper.parse::<i128>().unwrap(), i128::MAX);
     }
+
+    /// A decision without a division law serializes without the key, so every selection that
+    /// predates the field keeps its identity bytes; a recorded law is part of the identity.
+    #[trace("TC-071", "FR-057-AC-12")]
+    #[test]
+    fn division_profile_is_absent_from_non_division_identity_bytes() {
+        let decision = |profile: Option<&str>| NativeIntegerOperationDecision {
+            node_id: serde_json::from_value(serde_json::json!({
+                "package": "native-identity-test",
+                "path": ["operation"],
+                "ordinal": 0,
+            }))
+            .expect("checked node identity"),
+            step: 0,
+            operation_identity: "filament.op.integer.add".to_owned(),
+            operands: Vec::new(),
+            capacity: None,
+            semantic_domain: None,
+            division_profile: profile.map(str::to_owned),
+        };
+        let annotation = |profile| {
+            let mut selection = NativeIntegerSelection::new();
+            selection.operations.push(decision(profile));
+            selection.annotation().unwrap()
+        };
+        let absent = annotation(None);
+        assert!(!absent.contains("divisionProfile"), "{absent}");
+        let present = annotation(Some("filament.value.integer-division.floor/v1"));
+        assert!(present.contains("\"divisionProfile\""), "{present}");
+        assert_ne!(absent, present);
+    }
 }

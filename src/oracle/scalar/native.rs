@@ -91,6 +91,9 @@ pub(crate) fn render(
         return None;
     };
     let identity = decision.operation_identity.as_str();
+    if decision.division_profile.is_some() {
+        return None;
+    }
     if CatalogOperator::from_identity(identity)?
         .entry()
         .scalar_operator
@@ -186,15 +189,16 @@ impl NativeDivision {
 
     /// The division family of a catalogued identity and the law its decision recorded.
     fn of(identity: &str, profile: Option<&str>) -> Option<Self> {
-        let profile = || {
+        let profile_of = || {
             DivisionProfile::ALL
                 .into_iter()
                 .find(|law| Some(law.definition_identity()) == profile)
         };
         match identity {
-            "filament.op.integer.div" => profile().map(Self::Divide),
-            "filament.op.integer.rem" => profile().map(Self::Remainder),
-            "filament.op.integer.mod" => Some(Self::Modulo),
+            "filament.op.integer.div" => profile_of().map(Self::Divide),
+            "filament.op.integer.rem" => profile_of().map(Self::Remainder),
+            // A `mod` carries no law: a recorded one is a selection this generator did not build.
+            "filament.op.integer.mod" => profile.is_none().then_some(Self::Modulo),
             _ => None,
         }
     }
@@ -292,6 +296,9 @@ pub(crate) fn render_selected(symbol: &str, selection: &NativeIntegerSelection) 
         .entry()
         .scalar_operator
     {
+        // Only `div` and `rem` record a law; an arithmetic decision carrying one was not built
+        // by `select`.
+        Some(_) if decision.division_profile.is_some() => None,
         Some(operator) => render(symbol, operator, selection),
         None => render_division(symbol, selection),
     }
@@ -328,4 +335,74 @@ pub(crate) fn render_division(symbol: &str, selection: &NativeIntegerSelection) 
         source,
         [subject.as_str()],
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ix_trace_rs::trace;
+
+    fn node() -> CheckedNodeId {
+        serde_json::from_value(serde_json::json!({
+            "package": "native-division-render-test",
+            "path": ["operation"],
+            "ordinal": 0,
+        }))
+        .expect("checked node identity")
+    }
+
+    fn division(identity: &str, operation: NativeDivision) -> NativeIntegerSelection {
+        select_division(
+            &node(),
+            identity,
+            "oracle",
+            operation,
+            &[(-8, 7), (1, 3)],
+            (-8, 8),
+        )
+        .expect("admitted native division plan")
+        .1
+    }
+
+    /// A recorded law belongs to `div` and `rem` only: a `mod` or an arithmetic decision carrying
+    /// one, and a `div` or `rem` without one, render nothing.
+    #[trace("TC-071", "FR-057-AC-6")]
+    #[test]
+    fn a_division_profile_is_rendered_only_for_div_and_rem() {
+        let law = DivisionProfile::Floor.definition_identity().to_owned();
+        for (identity, operation) in [
+            (
+                "filament.op.integer.div",
+                NativeDivision::Divide(DivisionProfile::Floor),
+            ),
+            (
+                "filament.op.integer.rem",
+                NativeDivision::Remainder(DivisionProfile::Floor),
+            ),
+            ("filament.op.integer.mod", NativeDivision::Modulo),
+        ] {
+            let healthy = division(identity, operation);
+            assert!(render_selected("oracle", &healthy).is_some(), "{identity}");
+            let mut flipped = healthy.clone();
+            flipped.operations[0].division_profile = match operation {
+                NativeDivision::Modulo => Some(law.clone()),
+                _ => None,
+            };
+            assert!(render_selected("oracle", &flipped).is_none(), "{identity}");
+            assert!(render_division("oracle", &flipped).is_none(), "{identity}");
+        }
+        let (_, mut add) = select(
+            &node(),
+            "filament.op.integer.add",
+            "oracle",
+            IntegerOperator::Add,
+            &[(0, 9), (1, 1)],
+            (0, 10),
+        )
+        .expect("admitted native add plan");
+        assert!(render_selected("oracle", &add).is_some());
+        add.operations[0].division_profile = Some(law);
+        assert!(render_selected("oracle", &add).is_none());
+        assert!(render("oracle", IntegerOperator::Add, &add).is_none());
+    }
 }

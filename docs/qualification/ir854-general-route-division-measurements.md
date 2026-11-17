@@ -74,8 +74,9 @@ The shipped scalar table (`docs/qualification/ir1530-general-route-scalar-table.
 `max_operand_bits` 4, `wall_seconds` 600 and the largest peak measured for that operation's 4-bit
 shapes. 4 bits is the smallest listed width that did not finish. The constant-divisor shape at 8
 bits also did not finish, so no general-route shape was measured `Verified` and the rows show no
-constant/symbolic split: no `divisor_constant` extension is added and no row refuses a shape
-measured `Verified`. Each row applies to every law of its operation; the 4-bit symbolic shape was measured under each
+constant/symbolic split: no `divisor_constant` extension is added for these general-route rows and none refuses a shape
+measured `Verified`. The native 16-bit rows are a different matter: they refuse constant divisors the
+kernel verified (the open gap under FR-057-AC-9). Each row applies to every law of its operation; the 4-bit symbolic shape was measured under each
 law.
 
 ## Native-route disposition of FR-057-AC-7 (IR-854)

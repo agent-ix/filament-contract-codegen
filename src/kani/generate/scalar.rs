@@ -715,6 +715,35 @@ mod native_selection_tests {
         assert!(claim.native_integer_selection.is_none());
         assert!(claim.oracle_source.is_empty());
     }
+
+    /// FR-057-AC-6: a division, remainder or modulo plan the kernel refuses (here a reversed
+    /// divisor interval, which `NativeIntegerInterval::new` rejects) settles as
+    /// `NativeIntegerCapacity` carrying the complete operand intervals, with no selection and no
+    /// oracle source.
+    #[trace("TC-071", "FR-057-AC-6")]
+    #[test]
+    fn native_division_plan_the_kernel_refuses_settles_native_integer_capacity() {
+        use filament_exact::DivisionProfile;
+        for operation in [
+            ScalarOperation::Divide(DivisionProfile::Floor),
+            ScalarOperation::Remainder(DivisionProfile::Truncating),
+            ScalarOperation::Modulo,
+        ] {
+            let mut claim = lowered(operation, vec![(-8, 7), (3, -3)]);
+            let Err(UnsupportedObligation::NativeIntegerCapacity { operands, .. }) =
+                claim.select_native_integer()
+            else {
+                panic!("a refused plan is NativeIntegerCapacity");
+            };
+            assert_eq!(operands.len(), 2);
+            assert_eq!(
+                (operands[1].lower.as_str(), operands[1].upper.as_str()),
+                ("3", "-3")
+            );
+            assert!(claim.native_integer_selection.is_none());
+            assert!(claim.oracle_source.is_empty());
+        }
+    }
 }
 
 pub(super) fn derive_domain<Body>(
