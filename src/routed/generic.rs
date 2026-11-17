@@ -10,174 +10,11 @@
 use std::collections::BTreeSet;
 
 use fsl_replay::ProofBound;
-use serde::Serialize;
 
-use crate::routed::capability::{
-    BackendDescriptor, CapabilityKind, Cause, Disposition, ExtentClassification, Mode,
+use crate::routed::vocabulary::{
+    BackendDescriptor, CapabilityKind, Cause, Disposition, Dynamics, ExtentClassification,
+    ItemRequirements, Mode, RequestedEvidence, Requirement,
 };
-
-/// The dynamics a backend decides (FSpec FR-193 "Routing a hybrid item").
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum Dynamics {
-    /// Temporal items whose subject has no hybrid dynamics.
-    Discrete,
-    /// Items that carry the hybrid-dynamics requirement.
-    Hybrid,
-}
-
-/// A fairness kind a backend decides (FSpec FR-368).
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum FairnessKind {
-    /// Weak fairness.
-    Weak,
-    /// Strong fairness.
-    Strong,
-}
-
-/// A state-graph claim form a backend decides (FSpec FR-390).
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum StateGraphForm {
-    /// `possible`.
-    Possible,
-    /// `always possible`.
-    AlwaysPossible,
-    /// `unique path`.
-    UniquePath,
-}
-
-/// A state-space reduction a backend applies (FSpec FR-382).
-///
-/// Declaration order is the order in which negotiation names the first
-/// unadvertised reduction of an item.
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum Reduction {
-    /// Symmetry reduction.
-    Symmetry,
-    /// Partial-order reduction.
-    PartialOrder,
-    /// A state constraint.
-    Constraint,
-}
-
-/// An obligation form of the SMT backend's declared set (FSpec FR-349).
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum ObligationForm {
-    /// An FR-346 quantification obligation.
-    Quantification,
-    /// An FR-347 induction obligation.
-    Induction,
-    /// An FR-348 composition obligation.
-    Composition,
-    /// An FR-147 mathematical-integer obligation.
-    MathematicalInteger,
-}
-
-/// The evidence kind of a probabilistic item (FSpec FR-290 "Evidence kinds").
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum EvidenceKind {
-    /// Statistical evidence.
-    Statistical,
-    /// Exact evidence.
-    Exact,
-}
-
-/// The evidence kind an item names when it is not one of the two.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum RequestedEvidence {
-    /// The item names one of the two evidence kinds.
-    Known(EvidenceKind),
-    /// The item names a label that is neither, reported verbatim.
-    Unknown(String),
-}
-
-/// What a manifest entry declares beyond identity, modes and domains (FSpec FR-331).
-///
-/// Every member defaults to the empty set, which is how the manifest spells
-/// an absent member: a backend that declares none decides `discrete`
-/// dynamics only, no fairness kind, no state-graph form, no reduction, no
-/// obligation form and no evidence kind.
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub struct BackendProfile {
-    /// The dynamics decided; empty means `discrete` only.
-    pub dynamics: BTreeSet<Dynamics>,
-    /// The fairness kinds decided.
-    pub fairness_kinds: BTreeSet<FairnessKind>,
-    /// The state-graph claim forms decided.
-    pub state_graph_forms: BTreeSet<StateGraphForm>,
-    /// The state-space reductions applied.
-    pub reductions: BTreeSet<Reduction>,
-    /// The obligation forms discharged.
-    pub obligation_forms: BTreeSet<ObligationForm>,
-    /// The evidence kinds advertised for `probabilistic-satisfaction`.
-    pub evidence_kinds: BTreeSet<EvidenceKind>,
-}
-
-impl BackendProfile {
-    fn decides(&self, dynamics: Dynamics) -> bool {
-        if self.dynamics.is_empty() {
-            dynamics == Dynamics::Discrete
-        } else {
-            self.dynamics.contains(&dynamics)
-        }
-    }
-}
-
-/// The requirements an item carries beyond kind and extent (FSpec FR-331).
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub struct ItemRequirements {
-    /// The evidence kind a `probabilistic-satisfaction` item names; absent when it names none.
-    pub evidence: Option<RequestedEvidence>,
-    /// Whether the item carries the `hybrid-dynamics` requirement.
-    pub hybrid_dynamics: bool,
-    /// The item's resolved fairness set.
-    pub fairness: BTreeSet<FairnessKind>,
-    /// The state-graph form of a state-graph item.
-    pub state_graph_form: Option<StateGraphForm>,
-    /// The reductions the item selects.
-    pub reductions: BTreeSet<Reduction>,
-    /// The obligation form of an SMT-discharged item.
-    pub obligation_form: Option<ObligationForm>,
-}
-
-/// One requirement a candidate does not advertise, named by an `unsupported` warning.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
-#[serde(rename_all = "kebab-case", tag = "requirement", content = "name")]
-pub enum Requirement {
-    /// A fairness kind.
-    Fairness(FairnessKind),
-    /// A state-graph claim form.
-    StateGraphForm(StateGraphForm),
-    /// A state-space reduction.
-    Reduction(Reduction),
-    /// An SMT obligation form.
-    ObligationForm(ObligationForm),
-}
-
-impl Requirement {
-    /// The requirement as the warning spells it.
-    #[must_use]
-    pub fn describe(self) -> String {
-        match self {
-            Self::Fairness(kind) => format!("fairness kind {}", wire(kind)),
-            Self::StateGraphForm(form) => format!("state-graph form {}", wire(form)),
-            Self::Reduction(reduction) => format!("reduction {}", wire(reduction)),
-            Self::ObligationForm(form) => format!("obligation form {}", wire(form)),
-        }
-    }
-}
-
-fn wire<T: Serialize>(value: T) -> String {
-    serde_json::to_value(value)
-        .ok()
-        .and_then(|value| value.as_str().map(str::to_owned))
-        .unwrap_or_default()
-}
 
 /// Settle one item on one candidate from the manifest entry and the item alone.
 ///
@@ -359,7 +196,7 @@ fn negotiate_dynamics(
 fn inconsistent(backend: &BackendDescriptor) -> Disposition {
     Disposition::InvalidRequest {
         cause: Cause::InconsistentCandidates {
-            candidates: vec![crate::routed::capability::Candidate {
+            candidates: vec![crate::routed::vocabulary::Candidate {
                 identity: backend.identity.clone(),
             }],
         },
