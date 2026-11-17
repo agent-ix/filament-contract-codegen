@@ -18,14 +18,17 @@ mod tests {
         RequirementOccurrence, RequirementRecordInput, RequirementRecords, RoutedRequirement,
     };
     use crate::routed::capability::{
-        negotiate_backend_provider, negotiate_contract_package, BackendDescriptor,
-        BackendProviderEnvelope, Candidate, Candidates, CapabilityKind, ContractItemSettlement,
-        Disposition, EnvelopeRefusal, ExtentClassification, KaniForm, Mode, ProviderOrigin,
-        RequestItem, RequestedKind, BACKEND_PROVIDER_CONTRACT, CAPABILITY_VOCABULARY,
+        negotiate_backend_provider, negotiate_contract_package, BackendProviderEnvelope,
+        Candidates, ContractItemSettlement, EnvelopeRefusal, KaniForm, RequestItem, RequestedKind,
+        BACKEND_PROVIDER_CONTRACT, CAPABILITY_VOCABULARY,
     };
     use crate::routed::generate::{
         generate_routed as generate_routed_impl, GenerationContexts, KaniGenerationContext,
         KindOutput, RoutedGeneration, RoutedGenerationError, RoutedGenerationItem,
+    };
+    use crate::routed::vocabulary::{
+        BackendDescriptor, Candidate, CapabilityKind, Disposition, ExtentClassification, Mode,
+        ProviderOrigin,
     };
     use filament_contract_model::{
         CheckedNodeId, CheckedNodeTag, CheckedOccurrenceRole, CheckedPackageEvidence,
@@ -253,7 +256,7 @@ mod tests {
             .expect("process item settles");
         assert!(matches!(
             valid_result[0].disposition,
-            crate::routed::capability::Disposition::Supported { .. }
+            crate::routed::vocabulary::Disposition::Supported { .. }
         ));
         let refused = negotiate_backend_provider(&envelope(vec![refused_item.clone()]))
             .expect_err("imported package read must refuse");
@@ -1104,7 +1107,7 @@ mod tests {
         assert_eq!(backend.request_index, 2);
         assert!(matches!(
             backend.disposition,
-            crate::routed::capability::Disposition::Supported { .. }
+            crate::routed::vocabulary::Disposition::Supported { .. }
         ));
         assert!(settled.iter().all(|item| item.node_id != function));
         assert_eq!(
@@ -1280,7 +1283,7 @@ mod tests {
         let result = negotiate_contract_package(checked, &admitted, &positions, &envelope)
             .expect("admitted package settles");
         assert!(
-            matches!(result[1].backend.as_ref().map(|item| &item.disposition), Some(crate::routed::capability::Disposition::Supported { backend }) if backend == "kani")
+            matches!(result[1].backend.as_ref().map(|item| &item.disposition), Some(crate::routed::vocabulary::Disposition::Supported { backend }) if backend == "kani")
         );
         assert_eq!(
             crate::oracle::function::take_function_preflight_reads(),
@@ -1430,7 +1433,7 @@ mod tests {
     #[trace("TC-030")]
     #[test]
     fn routed_forms_batch_graph_lookup_and_scalar_family_derivation() {
-        use crate::routed::capability::{Cause, KaniFormFamily};
+        use crate::routed::vocabulary::{Cause, KaniFormFamily};
         use exact_function_fixture::{
             ac11_classifier_package, code_id, source_bound_call_package, SOURCE_CALL,
             SOURCE_FUNCTION,
@@ -1700,8 +1703,8 @@ mod tests {
                 matches!(
                     backend,
                     Some(crate::routed::capability::ItemSettlement {
-                        disposition: crate::routed::capability::Disposition::InvalidRequest {
-                            cause: crate::routed::capability::Cause::AbsentKind,
+                        disposition: crate::routed::vocabulary::Disposition::InvalidRequest {
+                            cause: crate::routed::vocabulary::Cause::AbsentKind,
                         },
                         ..
                     })
@@ -2315,8 +2318,8 @@ mod tests {
                 manifest: vec![BackendDescriptor {
                     identity: "kani".to_owned(),
                     advertised: vec![(
-                        crate::routed::capability::CapabilityKind::ValueValidity,
-                        crate::routed::capability::Mode::Bounded,
+                        crate::routed::vocabulary::CapabilityKind::ValueValidity,
+                        crate::routed::vocabulary::Mode::Bounded,
                     )],
                     origin: ProviderOrigin::Linked,
                     profile: Default::default(),
@@ -2325,10 +2328,10 @@ mod tests {
                 }],
                 items: vec![RequestItem {
                     kind: RequestedKind::Known(
-                        crate::routed::capability::CapabilityKind::ValueValidity,
+                        crate::routed::vocabulary::CapabilityKind::ValueValidity,
                     ),
-                    extent: Some(crate::routed::capability::ExtentClassification {
-                        extent: crate::routed::capability::Mode::Bounded,
+                    extent: Some(crate::routed::vocabulary::ExtentClassification {
+                        extent: crate::routed::vocabulary::Mode::Bounded,
                         finite_bound_available: true,
                         domains: Vec::new(),
                         bounds: Vec::new(),
@@ -2355,7 +2358,7 @@ mod tests {
             assert!(
                 matches!(
                     settle(&checked, positions.to_vec(), request_index),
-                    crate::routed::capability::Disposition::Supported { .. }
+                    crate::routed::vocabulary::Disposition::Supported { .. }
                 ),
                 "selected occurrence {request_index} must settle"
             );
@@ -2369,8 +2372,8 @@ mod tests {
         }
         assert!(matches!(
             settle(&checked, missing, 1),
-            crate::routed::capability::Disposition::InvalidRequest {
-                cause: crate::routed::capability::Cause::KaniFormInvalid {
+            crate::routed::vocabulary::Disposition::InvalidRequest {
+                cause: crate::routed::vocabulary::Cause::KaniFormInvalid {
                     refusal:
                         crate::kani::generate::outcome::InvalidObligationItem::ScalarResultMissing,
                     ..
@@ -2389,8 +2392,8 @@ mod tests {
         }
         assert!(matches!(
             settle(&checked, cross_context.clone(), 1),
-            crate::routed::capability::Disposition::InvalidRequest {
-                cause: crate::routed::capability::Cause::KaniFormInvalid {
+            crate::routed::vocabulary::Disposition::InvalidRequest {
+                cause: crate::routed::vocabulary::Cause::KaniFormInvalid {
                     refusal:
                         crate::kani::generate::outcome::InvalidObligationItem::ScalarContextMismatch,
                     ..
@@ -2399,13 +2402,13 @@ mod tests {
         ));
         assert!(matches!(
             settle(&checked, cross_context.clone(), 0),
-            crate::routed::capability::Disposition::Supported { .. }
+            crate::routed::vocabulary::Disposition::Supported { .. }
         ));
         let foreign_checked = admitted_named_source("foreign-items", SOURCE);
         assert!(matches!(
             settle(&foreign_checked, positions.to_vec(), 0),
-            crate::routed::capability::Disposition::InvalidRequest {
-                cause: crate::routed::capability::Cause::KaniFormInvalid {
+            crate::routed::vocabulary::Disposition::InvalidRequest {
+                cause: crate::routed::vocabulary::Cause::KaniFormInvalid {
                     refusal:
                         crate::kani::generate::outcome::InvalidObligationItem::ScalarSourceMismatch,
                     ..
@@ -2422,8 +2425,8 @@ mod tests {
         }
         assert!(matches!(
             settle(&checked, absent_application, 0),
-            crate::routed::capability::Disposition::InvalidRequest {
-                cause: crate::routed::capability::Cause::KaniFormInvalid {
+            crate::routed::vocabulary::Disposition::InvalidRequest {
+                cause: crate::routed::vocabulary::Cause::KaniFormInvalid {
                     refusal:
                         crate::kani::generate::outcome::InvalidObligationItem::ScalarContextMismatch,
                     ..
@@ -2451,8 +2454,8 @@ mod tests {
         }
         assert!(matches!(
             settle(&checked, foreign_conversion, 0),
-            crate::routed::capability::Disposition::InvalidRequest {
-                cause: crate::routed::capability::Cause::KaniFormInvalid {
+            crate::routed::vocabulary::Disposition::InvalidRequest {
+                cause: crate::routed::vocabulary::Cause::KaniFormInvalid {
                     refusal:
                         crate::kani::generate::outcome::InvalidObligationItem::ScalarContextMismatch,
                     ..
@@ -2463,8 +2466,8 @@ mod tests {
         missing_root.remove(1);
         assert!(matches!(
             settle(&checked, missing_root, 0),
-            crate::routed::capability::Disposition::InvalidRequest {
-                cause: crate::routed::capability::Cause::KaniFormInvalid {
+            crate::routed::vocabulary::Disposition::InvalidRequest {
+                cause: crate::routed::vocabulary::Cause::KaniFormInvalid {
                     refusal: crate::kani::generate::outcome::InvalidObligationItem::ScalarPositionMismatch,
                     ..
                 }

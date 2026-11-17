@@ -4,6 +4,8 @@
 //! The capability settlement point and the generation arm that runs a routed backend kind live
 //! here.
 
+// The value types settlement is written in; below both arms.
+pub(crate) mod vocabulary;
 // Capability settlement.
 // Implements: FR-019
 pub(crate) mod capability;

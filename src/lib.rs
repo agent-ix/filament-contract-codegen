@@ -268,22 +268,22 @@ pub use kani::terminal::{
 };
 pub use routed::capability::{
     negotiate_backend_provider, negotiate_contract_package, negotiate_item,
-    project_contract_package_incomplete, project_contract_package_refusal, BackendDescriptor,
-    BackendId, BackendKind, BackendProviderEnvelope, Candidate, Candidates, CapabilityKind, Cause,
-    ContractItemSettlement, ContractNegotiationError, ContractPackageIncompleteProjection,
-    ContractPackageRefusalProjection, Disposition, EnvelopeRefusal, ExtentClassification,
-    ExtentDomain, ItemSettlement, KaniForm, KaniFormFamily, KaniFormIdentity, KaniFormName,
-    KaniObligationRole, KaniStateFrameRole, Mode, ProviderOrigin, RequestItem, RequestedKind,
-    BACKEND_PROVIDER_CONTRACT, CAPABILITY_VOCABULARY,
+    project_contract_package_incomplete, project_contract_package_refusal, BackendId, BackendKind,
+    BackendProviderEnvelope, Candidates, ContractItemSettlement, ContractNegotiationError,
+    ContractPackageIncompleteProjection, ContractPackageRefusalProjection, EnvelopeRefusal,
+    ItemSettlement, KaniForm, RequestItem, RequestedKind, BACKEND_PROVIDER_CONTRACT,
+    CAPABILITY_VOCABULARY,
 };
 pub use routed::generate::{
     generate_routed, generate_routed_admitted, generate_routed_native, GenerationContexts,
     KaniGenerationContext, KindOutput, RoutedGeneration, RoutedGenerationError,
     RoutedGenerationItem, RoutedItemConstructionError, RoutedItemOutput,
 };
-pub use routed::generic::{
-    BackendProfile, Dynamics, EvidenceKind, FairnessKind, ItemRequirements, ObligationForm,
-    Reduction, RequestedEvidence, Requirement, StateGraphForm,
+pub use routed::vocabulary::{
+    BackendDescriptor, BackendProfile, Candidate, CapabilityKind, Cause, Disposition, Dynamics,
+    EvidenceKind, ExtentClassification, ExtentDomain, FairnessKind, ItemRequirements,
+    KaniFormFamily, KaniFormIdentity, KaniFormName, KaniObligationRole, KaniStateFrameRole, Mode,
+    ObligationForm, ProviderOrigin, Reduction, RequestedEvidence, Requirement, StateGraphForm,
 };
 pub use strategy::harness::{
     generate_tristate_harness, HarnessDiagnostic, HarnessErrorCode, HarnessRequest,

@@ -39,7 +39,10 @@ use crate::{
     oracle::scalar::{
         generate_contract_scalar_oracles, ContractScalarError, ExactScalarClaim, ExactScalarOracles,
     },
-    routed::capability::{BackendDescriptor, BackendKind, Candidate},
+    routed::{
+        capability::BackendKind,
+        vocabulary::{BackendDescriptor, Candidate},
+    },
 };
 
 /// One item the driver routed to a backend.
@@ -1081,7 +1084,7 @@ mod tests {
             InvalidObligationItem, ObligationDisposition, ObligationRecord, ObligationSubject,
         },
         kani::identity::{KaniScalarObligationHarness, ScalarObligationIdentity},
-        routed::capability::{BackendKind, Candidate},
+        routed::{capability::BackendKind, vocabulary::Candidate},
     };
     use ix_trace_rs::trace;
 
