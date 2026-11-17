@@ -236,7 +236,7 @@ pub(super) fn owner_evaluation(
     ]);
     let snapshot = json!({
         "format":"filament.state.snapshot/v1",
-        "identity":{"authority":"agent-ix","identity":"constrained-current","revision_namespace":"git","revision":"fixture"},
+        "identity":{"authority":"agent-ix","identity":"constrained-current"},
         "observation":"current","model":{"identity":MODEL},
         "anchor":{"kind":"handler","name":"control"},
         "populations":[{"population":population,"complete":true,"objects":[{"key":"self","type":OBJECT,"fields":fields}]}]

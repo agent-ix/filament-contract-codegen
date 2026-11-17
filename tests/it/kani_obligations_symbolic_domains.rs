@@ -33,7 +33,6 @@ use fsl_replay::{
 };
 use ix_trace_rs::trace;
 use serde_json::{json, Value};
-use sha2::{Digest, Sha256};
 use std::{collections::BTreeMap, env, fs, path::PathBuf, process::Command, time::Duration};
 
 const NODE_ID: &str = "ix://ir268.test/domain/Node";
@@ -1970,12 +1969,11 @@ fn native_collection_precondition(
         "items": {"ordered-set": items.iter().map(ToString::to_string).map(|item| json!({"integer": item})).collect::<Vec<_>>()},
         "flags": {"sequence": []},
     });
-    let model_digest = Sha256::digest(&fixture.model_bytes);
     let snapshot = json!({
         "format": "filament.state.snapshot/v1",
-        "identity": {"authority": "agent-ix", "identity": "ix://ir268.test/collection/prestate", "revision_namespace": "git", "revision": "fixture"},
+        "identity": {"authority": "agent-ix", "identity": "ix://ir268.test/collection/prestate"},
         "observation": "pre",
-        "model": {"identity": "ir268.test/domain", "version": "1.0.0", "digest": format!("sha256-jcs:{model_digest:x}")},
+        "model": {"identity": "ir268.test/domain"},
         "populations": [{"population": POPULATION_ID, "complete": true, "objects": [{"key": object.key, "type": NODE_ID, "fields": fields}]}],
     });
     evaluate_clause(ClauseEvaluationRequest {
