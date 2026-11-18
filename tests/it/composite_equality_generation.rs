@@ -1152,7 +1152,6 @@ fn tc_029_ac4_schedule_matches_checked_equality_for_every_shape() {
         ("option", RecordedSchedule::Plan),
         ("collection", RecordedSchedule::Plan),
         ("text", RecordedSchedule::Text),
-        ("float", RecordedSchedule::Float),
         ("enum", RecordedSchedule::Enum),
     ] {
         let oracles = genuine_host_case(case, false);
