@@ -517,7 +517,7 @@ fn falsified_entry(
     driver: &DriverFalsification<'_>,
 ) -> Result<CompositeShadowSettlement, CompositeShadowError> {
     let artifact = driver.artifact;
-    let (_, artifact_claim, artifact_limits) = artifact.request();
+    let (_, artifact_claim, _) = artifact.request();
     let tie = |claim: &fsl_replay::CompositeParityClaim| {
         CompositeIdentity::new(
             request.wire().obligation_identity.clone(),
@@ -530,7 +530,6 @@ fn falsified_entry(
     };
     if tie(&artifact_claim) != tie(request.claim())
         || artifact.operands() != &operands
-        || artifact_limits != request.replay_limits()
         || artifact
             .check_sent_context(request.wire(), request.replay_limits())
             .is_err()
