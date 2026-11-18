@@ -24,7 +24,7 @@ pub const SEMANTIC_VALUE_DEPENDENCY_SOURCE: &str =
 
 /// Source of the checked-package model the function and equality oracles read.
 pub const MODEL_DEPENDENCY_SOURCE: &str =
-    "git = \"https://github.com/agent-ix/filament-contract-ir\", tag = \"v0.1.4\"";
+    "git = \"https://github.com/agent-ix/filament-contract-ir\", tag = \"v0.1.5\"";
 
 /// Source of the checked-closure evaluator the function oracle names.
 pub const EVAL_DEPENDENCY_SOURCE: &str =
@@ -34,9 +34,9 @@ pub const EVAL_DEPENDENCY_SOURCE: &str =
 pub const TRACE_DEPENDENCY_SOURCE: &str =
     "git = \"https://github.com/agent-ix/ix-trace-rs\", tag = \"v0.1.2\"";
 
-/// Source of the admitted-context facade (`fsl-replay`): the current FSL main revision, pinned
-/// while no fsl-* release tag carries the v0.1.6 evaluator dependencies.
-pub const FSL_REPLAY_DEPENDENCY_SOURCE: &str = "git = \"https://github.com/agent-ix/filament-spec-language\", rev = \"feb486e9f2e5ad9d1c0c8ffb0bf664cd69cb62f5\"";
+/// Source of the admitted-context facade (`fsl-replay`): current FSL main, pinned while no fsl-*
+/// release tag carries the v0.1.6 evaluator and v0.1.5 contract-model dependencies.
+pub const FSL_REPLAY_DEPENDENCY_SOURCE: &str = "git = \"https://github.com/agent-ix/filament-spec-language\", rev = \"daa0c5e4284cc0ebb1927cdf3dec0cb957270b0c\"";
 
 /// The `[package.metadata.kani]` table every generated oracle crate's manifest carries. CBMC
 /// tracks heap objects field by field only up to 64 bytes by default; RT's `Value` and `ValueType`
