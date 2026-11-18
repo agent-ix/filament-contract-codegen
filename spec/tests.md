@@ -23,8 +23,9 @@ Each subsystem owns one matrix beside its requirements, per
 
 ## Known red tests (IR-1566)
 
-Moving CG to the latest first-party pins leaves 42 `--test it` tests red by design; each passes on the
-previous pins. The criteria they back carry a "Known red" prefix in their requirement rows.
+Moving CG to the latest first-party pins leaves 42 `--test it` tests red by design; 41 pass on the
+previous pins, and `integer_division_harness::a_division_harness_at_or_above_its_row_width_is_refused_before_kani_and_below_it_runs`
+was already red there (FSL `Unproved(Nonzero)`; the folded nonzero fixtures fix that cause, and it is now red for the kernel reason). The criteria they back carry a "Known red" prefix in their requirement rows.
 
 - QSL-2173 (38 tests, 18 `float_scalar_harness`, 17 `enum_scalar_harness`, 3 `scalar_source_forms`): the corpus
   sources contain a Float64 `=`, and FSL refuses the whole package with `FloatEqualityScheduleNotEmitted`. Criteria:

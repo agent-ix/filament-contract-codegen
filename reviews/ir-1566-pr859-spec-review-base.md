@@ -30,3 +30,11 @@ The pin-policy wording is consistent across AD-002, FR-018, FR-031 and TC-029, a
 | ID | Severity | Summary | Refs |
 | --- | --- | --- | --- |
 | FND-010 | low | FR-048-AC-6 is still compound. The new clause ("a source divisor FSL cannot prove nonzero is refused at compile time with `undefined_expression` (`unproved-nonzero`) and never reaches Undefined") is joined by a semicolon to the Undefined-retention sentence, beside the Refused/Incomplete and CallFailure sentences: four claims in one row. The compile refusal is FSL behaviour and could be its own AC (or a cited FSL dependency). | spec/kani/functional/FR-048-constrained-state-clause-method.md:208 |
+
+## Dispositions
+
+Round 1 at d42182dc. `make spec` with FSPEC_DIR af8dd1d3 exits 0, and its warnings are only on rows this PR did not edit.
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-010 | fixed | FR-048-AC-6 is now the single Undefined-retention claim. The split adds AC-12 (unproved-nonzero compile refusal), AC-13 (Refused/Incomplete keep their causes) and AC-14 (CallFailure stops as runtime_invariant), one claim each. The lib test `conversion_preserves_original_causes...`, which asserts all four, is tagged AC-6/12/13/14. The it tests at constrained_method.rs:145 and :400 keep AC-6 only, which is correct: they check the Undefined stop and the rendered "undefined constraint evaluation" branch. |

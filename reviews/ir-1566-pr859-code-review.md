@@ -44,3 +44,24 @@ The pin move itself is clean: every tag exists and matches the lock, the lock di
 | FND-004 | low | The emitted function-oracle manifest still names `filament-contract-codegen` by `branch = "main"`. A generator built from any other revision emits a crate that resolves CG main, whose pins can differ from the generator's own consts. That is the duplicate-crate risk the PR removes elsewhere. Pre-existing; CG's only tag (v0.1.0) is stale. | src/core/profile.rs:58 |
 | FND-005 | low | The drift test compares only the first `name = ` line per crate, so the dev-dependency lines of filament-contract-model (Cargo.toml:61) and filament-contract-runtime (Cargo.toml:66) are not compared with the consts. cargo `--locked` resolution is the only guard. | src/core/profile.rs:181-189 |
 | FND-011 | low | The added `"ieee" => plain("filament.op.ieee.numeric_equal")` arm is dead: `family_of` maps T_FLOAT64 to `"structural"` and never returns `"ieee"`. | tests/composite_equality_support/package.rs:267 |
+
+## Dispositions
+
+Round 1 at d42182dc (commits 1dd649c6 and d42182dc over 101943e2). Every outcome was verified against the code at d42182dc, in a fresh worktree with its own target and FSPEC_DIR af8dd1d3.
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-001 | fixed | 1dd649c6 deletes all 10 `logs/` files, and `git ls-tree d42182dc logs` is empty. Lead note: the files remain in the PR's commits 239c93b8, 27be8481 and e74b573a, which stay on the public `refs/pull/859` regardless. The repo allows rebase merge as well as squash, so the PR must be squash-merged, or a rebase merge carries them into main's history. |
+| FND-002 | fixed | The pin is now `rev = 88698958380d220c1f6b1a57114f4c6f4744ce5a`, the merge commit of FSL #2882 (MERGED). `git merge-base --is-ancestor 88698958 origin/main` succeeds, and FSL main 995eb8ff is 1 commit ahead. FSL's only tags are v0.1.0 and v0.2.0 (d853efae, 2026-09-13), with no fsl-* tag. Its first-party dependencies are all tags. The lock holds the 25 first-party packages once each, and the third-party set differs from main only by chrono removed. The Cargo.toml:42-45 and profile.rs:37-40 comments now say "a commit of FSL main (88698958, FSL #2882), reachable from main". |
+| FND-003 | fixed | The dev dependency is now `version = "0.1.1", ..., tag = "v0.1.1"`. The lock records `filament-specification-qualification 0.1.1 ?tag=v0.1.1#1946638c`, which equals `git ls-remote refs/tags/v0.1.1^{}`. The cargo-deny wildcard warning is gone. |
+| FND-004 | accepted-no-change | Kept, with a doc comment on `function_oracle_crate_manifest` (profile.rs:56-59): CG has no usable tag, and every test replaces the line with a `path` dependency. That is accurate, and the residual risk is now stated where the line is emitted. |
+| FND-005 | fixed | `lines()` now collects every `name = ` line and asserts each. Mutant: Cargo.toml:67 (dev `filament-contract-runtime`) with its keys reordered (`tag` before `git`). This is the same source to cargo, so `--locked` still builds, and the test fails with "does not spell `git = ...`". The dev lines are now guarded by the test itself. |
+| FND-011 | fixed | The `"ieee"` arm is removed (tests/composite_equality_support/package.rs). `tc_029_ac50_*` passes at d42182dc. |
+
+## New findings (disposition pass 1)
+
+| ID | Severity | Summary | Refs |
+| --- | --- | --- | --- |
+| FND-013 | low | The module doc still says the sources are a "release tag (an interim revision of an FSL PR for FSL until it merges)", but the pin is now a commit of FSL main (Cargo.toml:42 and profile.rs:37 both say so). The doc and the const comment disagree. | src/core/profile.rs:5 |
+
+Round-1 checks at d42182dc: `--lib` 618 passed, 0 failed, 36 ignored. `--test it` 1123 passed, 42 failed, 127 ignored, the same 42 names as 101943e2. `cargo fmt --check` 0. `clippy --locked --all-targets -D warnings` 0. `cargo tree -d --locked`: no agent-ix crate duplicated. `cargo deny check` exit 4: only `error[rejected]` fsl-route `AGPL-3.0-or-later` (pre-existing on main), with `advisories ok, bans ok, licenses FAILED, sources ok` and no wildcard warning. `make spec` 0, and its warnings are on rows this PR did not edit.
