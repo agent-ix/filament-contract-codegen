@@ -23,7 +23,7 @@ use filament_contract_codegen::{
 
 /// Whether the row `label` is run: every row when `COMPOSITE_KANI_ROW` is unset, so that a
 /// measuring script can run one row to a scope of its own.
-fn selected(label: &str) -> bool {
+pub(super) fn selected(label: &str) -> bool {
     std::env::var("COMPOSITE_KANI_ROW").map_or(true, |row| row == label)
 }
 
@@ -60,7 +60,7 @@ fn crate_with(harness: &KaniShadowHarness, name: &str) -> PathBuf {
     directory
 }
 
-fn prove(harness: &KaniShadowHarness, name: &str) -> (KaniExecutionEvidence, f64) {
+pub(super) fn prove(harness: &KaniShadowHarness, name: &str) -> (KaniExecutionEvidence, f64) {
     let directory = crate_with(harness, name);
     let installation = KaniInstallation::discover().expect("cargo-kani is installed");
     let cancel = Cancel::new();
@@ -149,7 +149,7 @@ fn tc_025_budget_probe_verifies_a_mixed_closure_of_the_requested_size() {
 }
 
 /// The lines of the generated crate's source at which a check failed.
-fn failed_lines(evidence: &KaniExecutionEvidence) -> Vec<u32> {
+pub(super) fn failed_lines(evidence: &KaniExecutionEvidence) -> Vec<u32> {
     let mut lines: Vec<u32> = evidence
         .checks
         .iter()
@@ -164,7 +164,7 @@ fn failed_lines(evidence: &KaniExecutionEvidence) -> Vec<u32> {
 }
 
 /// The line of the written crate source on which `needle` first appears.
-fn line_of(harness: &KaniShadowHarness, needle: &str) -> u32 {
+pub(super) fn line_of(harness: &KaniShadowHarness, needle: &str) -> u32 {
     let source = format!(
         "//! Generated shadow check crate.\n\n{}",
         harness.rust.contents
@@ -173,12 +173,12 @@ fn line_of(harness: &KaniShadowHarness, needle: &str) -> u32 {
     u32::try_from(source[..offset].matches('\n').count() + 1).unwrap()
 }
 
-const VERDICT_ASSERT: &str = "assert!(verdict == expected_verdict);";
+pub(super) const VERDICT_ASSERT: &str = "assert!(verdict == expected_verdict);";
 const PAIRS_ASSERT: &str = "assert!(pairs == expected_pairs);";
 
 /// Replaces `from` by `to` in the shadow source and in the refinement program, which carries the
 /// same shadow.
-fn mutate(harness: &mut KaniShadowHarness, from: &str, to: &str) {
+pub(super) fn mutate(harness: &mut KaniShadowHarness, from: &str, to: &str) {
     assert!(
         harness.rust.contents.contains(from),
         "the mutation target is emitted: {from}"
