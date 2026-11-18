@@ -324,12 +324,16 @@ impl Shape {
             "x: Int[{}, {}], y: Int[{}, {}]",
             self.left.0, self.left.1, self.right.0, self.right.1
         );
-        let text = source(&[(
-            "subject",
-            &parameters,
-            "Integer",
-            &format!("x {} y", self.operation),
-        )]);
+        let expression = format!("x {} y", self.operation);
+        let text = if self.right.0 > 0 || self.right.1 < 0 {
+            // A divisor range that excludes zero needs no guard (FSL refuses the guarded form,
+            // whose else branch proves the divisor zero).
+            format!(
+                "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nfunction subject using v({parameters}): Integer pure {{ {expression} }}\n"
+            )
+        } else {
+            source(&[("subject", &parameters, "Integer", &expression)])
+        };
         let package = compile(&text, self.profile);
         let node = division_node(&package, "subject");
         routed_nodes(&package, std::slice::from_ref(&node), self.unwind, native)

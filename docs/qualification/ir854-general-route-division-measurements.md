@@ -101,17 +101,17 @@ CG routes `select_native_integer` through the kernel's `Divide` and `Modulo` pla
 generated native harnesses exist. Each run is `cargo test --test it -- --ignored --exact` of the named
 ignored test, one job at a time under the 24 GiB scope (memory swap off), `--unwind 3 --solver cadical`
 through the execution module, wall seconds as recorded by the run and memory peak as the scope's cgroup
-`memory.peak` (it includes the test process, so it is an upper bound for the prover).
+`memory.peak` (it includes the test process, so it is an upper bound for the prover). The seven rows were re-run at the head that merged main (the pre-built test binary is run, so the peak excludes the cargo build); the 8-bit constant divisor is compiled from an unguarded source because FSL refuses the guarded form over a divisor range that excludes zero.
 
 | Shape | Operation, law | Verdict | Wall s | Scope peak bytes |
 | --- | --- | --- | --- | --- |
-| dividend `[-128, 127]`, divisor `8` | div, floor | Verified | 22.5 | 1902702592 |
-| same | div, truncating | Verified | 18.8 | 1492271104 |
-| same | div, Euclidean | Verified | 18.8 | 1465257984 |
-| same | rem, truncating | Verified | 17.7 | 1368702976 |
-| same | rem, floor | Verified | 17.3 | 1352966144 |
-| same | rem, Euclidean | Verified | 17.2 | 1349300224 |
-| same | mod | Verified | 17.0 | 1348071424 |
+| dividend `[-128, 127]`, divisor `8` | div, floor | Verified | 18.9 | 1423757312 |
+| same | div, truncating | Verified | 22.4 | 1589321728 |
+| same | div, Euclidean | Verified | 18.8 | 1422372864 |
+| same | rem, truncating | Verified | 17.7 | 1323241472 |
+| same | rem, floor | Verified | 17.3 | 1308073984 |
+| same | rem, Euclidean | Verified | 17.4 | 1309028352 |
+| same | mod | Verified | 17.0 | 1307557888 |
 
 Mutant fixture: dividend `[-8, 7]`, divisor `[-3, 3]`, explicit result `[-3, 3]`, native `div` floor. The
 healthy harness is `Verified` (20.0 s). Each seeded mutant is `Falsified` with solver playback of

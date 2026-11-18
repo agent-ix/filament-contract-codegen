@@ -345,7 +345,8 @@ ships.
 
 ## Status
 
-PARTIAL (IR-854; AC-6 and AC-7 are delivered; AC-8, AC-9, AC-11 and AC-12 stay
+PARTIAL (IR-854; AC-6 and AC-7 are delivered, but the AC-7 row carries a "Known red (IR-1566, IR-1568)" prefix and the tagged table test of AC-7
+(`the_shipped_table_holds_the_kernel_native_division_rows_on_the_native_route`) is one of the known reds; the seven native Kani runs pass; AC-8, AC-9, AC-11 and AC-12 stay
 PARTIAL, owner: IR-854).
 
 Delivered and tested (TC-071): the `div`, `rem` and `mod` scalar harness under
@@ -381,8 +382,10 @@ gap under AC-9. Shapes the record lists as unmeasured carry no claim.
 
 Partly delivered (PARTIAL):
 
-- AC-9: the `not_tractable` rows exist and the decided run wrappers refuse at
-  their width, but the measurement record does not cover every listed operation,
+- AC-9: the `not_tractable` rows exist, but at this head every row is recorded at
+  kernel_version 1 against KERNEL_VERSION 2, so the decider (`src/kani/tractability.rs`)
+  matches no row and refuses nothing until IR-1568 re-measures the rows; once it does
+  the run wrappers refuse at their width. Further, the measurement record does not cover every listed operation,
   shape, route and width. Unmeasured: constant divisors at 16, 32 and 63 bits
   and negative constant divisors on the general route, and the native shapes
   other than the 8-bit constant divisor and the 4-bit symbolic mutant fixture.
@@ -390,7 +393,7 @@ Partly delivered (PARTIAL):
   Open gap (AC-9's "no shipped row refuses a shape measured `Verified`" does not
   hold for the native route): the shipped native `not_tractable` rows at 16 bits
   for `filament.op.integer.div`, `filament.op.integer.rem` and
-  `filament.op.integer.mod` refuse every native harness at 16 bits and above.
+  `filament.op.integer.mod` refuse every native harness at 16 bits and above once the rows are current (the gap is latent until IR-1568, then live).
   They state the least tractable profile and the symbolic divisor, because the
   table keys on operation id and width alone. The kernel measured constant
   divisors verified at 64 bits (some at 128), so a native constant-divisor
@@ -398,7 +401,7 @@ Partly delivered (PARTIAL):
   record shows it `Verified`; generation is unaffected. The gap closes when the
   table grows a divisor-shape (and profile) feature and the rows are split
   by it; that is not part of this change and is owned by IR-1561 (the divisor-shape
-  feature).
+  feature), which depends on IR-1568.
 - AC-11: tested as sibling independence for integer add, subtract, multiply and
   negate generated with and without a division claim, plus FR-015-AC-115's
   existing reference-copy equivalence. The before/after comparison for the
