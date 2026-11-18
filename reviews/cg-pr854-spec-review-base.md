@@ -24,3 +24,15 @@ Clean. Nothing to review in the spec.
 | ID | Severity | Summary | Refs |
 | --- | --- | --- | --- |
 | FND-001 | low | No findings (placeholder) | - |
+
+## Extension review (disposition pass 2)
+
+Scope extension at head 93fb4342 (`git diff babf58d5...93fb4342 -- spec plan`). Ticket: IR-854. The only spec change is the FR-048-AC-6 row.
+
+- FR-048-AC-6 (examined). The added clause is true at the pinned FSL: the lib conversion test asserts the `UndefinedExpression` / `unproved-nonzero` compile refusal. It is matrix-tagged (TC-062: `src/kani/terminal/constrained/tests.rs:74`, `tests/it/constrained_method.rs:145`, `:400`) and is tested at head. `make spec` exits 0, and FR-048 has no grammar warning.
+
+## New findings (disposition pass 2)
+
+| ID | Severity | Summary | Refs |
+| --- | --- | --- | --- |
+| FND-002 | medium | The amended FR-048-AC-6 puts test-design prose into the criterion: "so the conversion rule is checked on the owner's own Undefined evaluation and the refusal is checked as the typed compile cause". The AC grows to four claims and mixes a statement about FSL's behaviour with how CG's test is built. "The owner's own Undefined evaluation" also reads as owner-produced, while the test constructs the value directly. Keep the behaviour, for example "an unproved-nonzero source divisor is refused at compile time with `undefined_expression` and never reaches Undefined", and state in TC-062 or the test that the Undefined input is directly constructed. | spec/kani/functional/FR-048-constrained-state-clause-method.md:208 |

@@ -46,14 +46,11 @@ pub(crate) fn division_node(
     let found = ["div", "rem", "mod"]
         .into_iter()
         .filter_map(|operation| {
-            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                application_in(
-                    package,
-                    function,
-                    &format!("filament.op.integer.{operation}"),
-                )
-            }))
-            .ok()
+            find_application_in(
+                package,
+                function,
+                &format!("filament.op.integer.{operation}"),
+            )
         })
         .collect::<Vec<_>>();
     assert_eq!(found.len(), 1, "{function} holds exactly one division");
@@ -112,6 +109,17 @@ pub(crate) fn application_in(
     function: &str,
     identity: &str,
 ) -> filament_contract_model::CheckedNodeId {
+    find_application_in(package, function, identity)
+        .unwrap_or_else(|| panic!("{function} holds a {identity} node"))
+}
+
+/// [`application_in`] without the panic: `None` when `function` holds no such node. A missing
+/// function declaration still fails loudly, as a different fault.
+pub(crate) fn find_application_in(
+    package: &CheckedPackageV2,
+    function: &str,
+    identity: &str,
+) -> Option<filament_contract_model::CheckedNodeId> {
     use filament_contract_model::CheckedTerm;
     let declaration = package
         .resolved_graph()
@@ -150,9 +158,7 @@ pub(crate) fn application_in(
                         })
                     })
         })
-        .unwrap_or_else(|| panic!("{function} holds a {identity} node"))
-        .node_id
-        .clone()
+        .map(|node| node.node_id.clone())
 }
 
 /// Routes `function` of `package` as one request and returns the generation.

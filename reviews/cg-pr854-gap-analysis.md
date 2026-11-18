@@ -36,3 +36,19 @@ Coverage for FR-014 and FR-056 is intact. FR-048-AC-6 lost its only authentic ow
 | --- | --- | --- |
 | FND-001 | deferred | QSL-2361 now records, in comment bf74557d, the restoration of an owner-produced `Undefined` test for FR-048-AC-6, or an explicit decision that the hand-built value is the accepted evidence. The comment names the IR code lead as owner. At cb7b27a3, the code points to QSL-2361 at `src/kani/terminal/constrained/tests.rs:183` and `tests/it/constrained_method.rs:420-423`. |
 | FND-002 | deferred | Comment bf74557d on QSL-2361 records reverting the `<=` stand-in to an equality over `mod` in both fixtures. The comment names the IR code lead as owner. At cb7b27a3, pointers are at `tests/it/constrained_method.rs:420-423` and `:656`. |
+| FND-001 | accepted-no-change | Extension at 93fb4342: the lead ruled to keep the directly constructed `ClauseEvaluation::Undefined` as the only input for the Undefined-to-EvaluationViolation mapping, because FSL #2738 makes the refusal intended and no FSL-compiled clause can reach Undefined by a zero divisor. The test now also asserts the typed FSL compile refusal (`UndefinedExpression`, `unproved-nonzero`). The QSL-2361 pointer was removed from the code. The wording of that decision is spec-review FND-002 and code-review FND-005. |
+| FND-002 | deferred | Extension at 93fb4342: both `<=` sites now point to the tag-pin PR IR-1566 (`tests/it/constrained_method.rs:420-424`, `:657`). IR-854 comment f8a151cb measured that the revert passes on FSL 130391bc7. That IR-1566 does not yet record the revert is FND-003. |
+
+## Extension review (disposition pass 2)
+
+Scope extension at head 93fb4342 (`git diff babf58d5...93fb4342`). Ticket: IR-854.
+
+- FR-057-AC-1, AC-2, AC-3, AC-5, AC-6, AC-9, AC-10, AC-11 and AC-12 (examined, TC-071 `integer_division_harness`). All 14 non-ignored tests pass at head, and 10 of them failed before with `Unproved(Nonzero)`. Their trace tags and assertions are unchanged. Mutants in the operand-range, operator, result-bound and zero-divisor regions are each killed (see code-review). The guard is an FSL compile device only: the routed division harness has no path condition and still draws the zero divisor. No criterion lost coverage.
+- FR-048-AC-6 (examined). It is tagged by the lib conversion test (`tests.rs:74`) and by `constrained_method.rs:145` and `:400`. The new compile-refusal assertion tests the amended clause. The directly constructed Undefined tests the mapping.
+- FR-048-AC-2 and FR-048-AC-8 (context_only). Only comments changed.
+
+## New findings (disposition pass 2)
+
+| ID | Severity | Summary | Refs |
+| --- | --- | --- | --- |
+| FND-003 | low | Both `<=` stand-in comments say the revert to `=` over `mod` "lands with the tag-pin PR (IR-1566)", but IR-1566 does not record it. Its description lists the vc v0.2.0 move, the `EqualitySchedule::Float` arm and the tag set, and it has no comments. Its owner could land the pin without reverting the 3+3 `<=` sites. | tests/it/constrained_method.rs:420-424,657; IR-1566 |

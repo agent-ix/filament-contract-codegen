@@ -195,7 +195,7 @@ fn conversion_preserves_original_causes_and_rejects_malformed_or_cross_method_ev
         ),
         "{compile:?}"
     );
-    // The conversion rule for an owner `Undefined` evaluation is checked on the owner's own
+    // The conversion rule for an `Undefined` evaluation is checked on a directly constructed
     // value, since no FSL-compiled clause here can produce one.
     let undefined = fsl_replay::ClauseEvaluation::Undefined {
         reason: "division-by-zero",
