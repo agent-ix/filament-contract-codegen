@@ -400,35 +400,41 @@ fn installed_small_method_controls_retain_boundary_safety_and_no_boundary_succes
 #[trace("TC-062", "FR-048-AC-1", "FR-048-AC-6", "FR-048-AC-11")]
 #[test]
 fn boolean_and_partial_conditions_use_the_owner_oracle_and_unbounded_domains_refuse() {
-    for condition in ["self.flag", "true", "false", "self.n mod self.aux = 0"] {
+    for condition in ["self.flag", "true", "false", "self.n mod self.aux <= 0"] {
         let f = fixture(
-            &document(),
+            &nonzero_aux_document(),
             "constrained-conditions",
             "self.n <= 3",
             &[condition],
         );
-        let initial = initial(0);
+        let initial = initial_positive_aux(0);
         let bindings = bindings(&f);
         let request = request(&f, &initial, &bindings);
         let method = emit_method(&request).expect("Boolean and partial integer owner conditions");
-        if condition == "self.n mod self.aux = 0" {
+        if condition == "self.n mod self.aux <= 0" {
             assert!(method
                 .rust()
                 .contents
                 .contains("undefined constraint evaluation"));
         }
-        let outcome = owner_evaluation(&f, "Limit0", 0, false, 0, request.evaluator_limits);
-        if condition != "self.n mod self.aux = 0" {
-            assert!(matches!(
-                outcome,
-                fsl_replay::ClauseEvaluation::Completed(value) if value == (condition == "true")
-            ));
-        } else {
-            assert!(matches!(
-                outcome,
-                fsl_replay::ClauseEvaluation::Undefined { .. }
-            ));
-            assert!(method.rust().contents.contains("rt::modulo"));
+        // FSL's owner evaluator at `n = 1`, `aux = 2`: `1 mod 2 <= 0` is false, so a constant-true
+        // owner would fail here. A zero `aux` is outside the `Positive` type, so the owner's
+        // `Undefined` is not reachable from FSL source: FSL refuses an unproved-nonzero divisor at
+        // compile time (see the lib conversion test). The `<=` stand-in for `= 0` (FSL emission
+        // refused `=` over `mod` at the pinned rev) reverts with the tag-pin PR (IR-1566).
+        let outcome = owner_evaluation(&f, "Limit0", 1, false, 2, request.evaluator_limits);
+        let expected = condition == "true";
+        assert!(
+            matches!(outcome, fsl_replay::ClauseEvaluation::Completed(value) if value == expected),
+            "{condition}: {outcome:?}"
+        );
+        if condition == "self.n mod self.aux <= 0" {
+            // CG's own rendering: the modulo takes the left operand, then the right, then the
+            // domain, so an operand swap fails here.
+            assert!(method
+                .rust()
+                .contents
+                .contains("rt::modulo(left, right, &domain, meter)"));
         }
     }
     for slot in ["unread-field", "uncalled-parameter", "uncalled-result"] {
@@ -648,26 +654,30 @@ fn a_standalone_collection_constraint_remains_unsupported_without_a_harness() {
 #[trace("TC-062", "FR-048-AC-2", "FR-048-AC-8")]
 #[test]
 fn same_named_general_clause_bodies_and_preconditions_cannot_reuse_a_method() {
+    // `<=` stands in for `= c` because the pinned FSL rev refuses `=` over `mod`; the revert lands with the tag-pin PR (IR-1566).
     for changed in ["safety", "constraint", "precondition"] {
         let make = |constant: u8| {
             let safety = if changed == "safety" {
-                format!("self.n mod self.aux = {constant}")
+                format!("self.n mod self.aux <= {constant}")
             } else {
                 "self.n <= 3".into()
             };
             let constraint = if changed == "constraint" {
-                format!("self.n mod self.aux = {constant}")
+                format!("self.n mod self.aux <= {constant}")
             } else {
                 "self.n < 2".into()
             };
             let precondition = if changed == "precondition" {
-                format!("delta mod self.aux = {constant}")
+                format!("delta mod self.aux <= {constant}")
             } else {
                 "delta >= 0".into()
             };
             let source = format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.model.complete/v1\";\nmodel M = \"{MODEL}\";\ninvariant Safe using v on M::Node at current {{ {safety} }}\nconstraint Limit0 using v on M::Node at current {{ {constraint} }}\npre Ready using v on M::Node::nudge {{ {precondition} }}\n");
-            let bytes = quire_canonical::to_vec(&document(), quire_canonical::Limits::new(1 << 20))
-                .unwrap();
+            let bytes = quire_canonical::to_vec(
+                &nonzero_aux_document(),
+                quire_canonical::Limits::new(1 << 20),
+            )
+            .unwrap();
             fixture_source(bytes, "same-labelled-general-body", source)
         };
         let a = make(0);
@@ -682,7 +692,7 @@ fn same_named_general_clause_bodies_and_preconditions_cannot_reuse_a_method() {
             serde_json::to_value(&b.constraints[0]).unwrap(),
             "{changed}: nominal constraint IDs alone do not bind content"
         );
-        let initial = initial(0);
+        let initial = initial_positive_aux(0);
         let bindings_a = bindings(&a);
         let bindings_b = bindings(&b);
         let request_a = request(&a, &initial, &bindings_a);
