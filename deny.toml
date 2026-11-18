@@ -12,44 +12,12 @@ allow = [
     # `ar_archive_writer` (a build dependency of `stacker`, reached through the IR
     # and FSL dependencies). Apache-2.0 plus LLVM's standard exception; still permissive.
     "Apache-2.0 WITH LLVM-exception",
+    # First-party agent-ix crates are AGPL-3.0-or-later (owner decision 2026-09-14,
+    # agent-ix/filament-contract-codegen#45). Allowed globally (IR-1570) rather than
+    # through per-crate exceptions, which drifted from the resolved graph.
+    "AGPL-3.0-or-later",
 ]
 confidence-threshold = 0.9
-# First-party agent-ix crates are AGPL-3.0-or-later (owner decision 2026-09-14,
-# agent-ix/filament-contract-codegen#45). Exceptions are scoped to this crate and the
-# sibling filament-contract-* crates it consumes so the third-party allow-list stays
-# permissive-only.
-exceptions = [
-    { allow = ["AGPL-3.0-or-later"], crate = "filament-contract-codegen" },
-    # First-party compile-time macro for production #[implements] markers. Scoped to
-    # ix-trace-rs; remove this exception when CG removes those markers and the dependency.
-    { allow = ["AGPL-3.0-or-later"], crate = "ix-trace-rs" },
-    { allow = ["AGPL-3.0-or-later"], crate = "filament-contract-ir" },
-    { allow = ["AGPL-3.0-or-later"], crate = "filament-contract-model" },
-    { allow = ["AGPL-3.0-or-later"], crate = "filament-contract-runtime" },
-    { allow = ["AGPL-3.0-or-later"], crate = "filament-verification-contracts" },
-    # IR-254: fsl-replay (the only FSL crate this repository may depend on, per
-    # FSL arch-lint T12-A) and its own transitive closure -- all first-party
-    # agent-ix crates under the same AGPL-3.0-or-later decision above.
-    { allow = ["AGPL-3.0-or-later"], crate = "fsl-cst" },
-    { allow = ["AGPL-3.0-or-later"], crate = "fsl-eval" },
-    { allow = ["AGPL-3.0-or-later"], crate = "fsl-forms" },
-    { allow = ["AGPL-3.0-or-later"], crate = "fsl-foundation" },
-    { allow = ["AGPL-3.0-or-later"], crate = "fsl-package" },
-    { allow = ["AGPL-3.0-or-later"], crate = "fsl-replay" },
-    { allow = ["AGPL-3.0-or-later"], crate = "fsl-semantics" },
-    { allow = ["AGPL-3.0-or-later"], crate = "quire-canonical" },
-    { allow = ["AGPL-3.0-or-later"], crate = "quire-canonical-derive" },
-    { allow = ["AGPL-3.0-or-later"], crate = "filament-checked" },
-    { allow = ["AGPL-3.0-or-later"], crate = "filament-exact" },
-    { allow = ["AGPL-3.0-or-later"], crate = "filament-eval" },
-    { allow = ["AGPL-3.0-or-later"], crate = "filament-semantic-value" },
-    { allow = ["AGPL-3.0-or-later"], crate = "filament-walk" },
-    { allow = ["AGPL-3.0-or-later"], crate = "quire-rs" },
-    { allow = ["AGPL-3.0-or-later"], crate = "agent-ix-extraction-frontend" },
-    { allow = ["AGPL-3.0-or-later"], crate = "agent-ix-semantic-ir" },
-    # quire-rs resolves this first-party AGPL schema from filament-core-data.
-    { allow = ["AGPL-3.0-or-later"], crate = "agent-ix-semantic-schema" },
-]
 
 [bans]
 multiple-versions = "allow"
