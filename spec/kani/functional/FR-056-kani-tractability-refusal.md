@@ -54,16 +54,16 @@ a `not_tractable` row at 16 bits per operation (FR-057).
 
 The kernel's native float and rational rows (filament-exact #172, merged as 85034c5c; FR-405 and
 TC-953, FR-408 and TC-956) are in the table too, one row per harness of the records with `route`
-`native`, so the table holds 74 rows: 16 general-route and integer rows, 44 float rows and 14
-rational rows. A float row is one operation, width and rounding class (`NearestEven`, `Exact`, or
+`native`, so the table holds 77 rows: 16 general-route and integer rows, 44 float rows, 14
+rational rows and 3 decimal rows (a `verus_proved` row is described below). A float row is one operation, width and rounding class (`NearestEven`, `Exact`, or
 directed and nearest-away together), its `max_operand_bits` the float width (32 or 64); the class and
 the kernel harness id are in its `provenance`, which the decider never reads. Of the 44, 32 are
 `tractable` (VERIFIED, covers reached) and 12 are `not_tractable` solver hangs (seven at the 600 s
 probe, not extended; five at the 1800 s cap after a 600 s probe that timed out), each with no
-verdict and no proof claimed, owner IR-1551 (named in `provenance`, since a row has no owner field).
+verdict and no Kani proof claimed, the part of each the Verus proof does not state is not scheduled (the row's `provenance` names no owner); the Verus proof of the kernel's record for these twelve is recorded on the rows (below).
 A rational row is one CG-domain operation (`max_operand_bits` 8, magnitudes below 256: 8
 `tractable`) or one full-`i64` operation (`max_operand_bits` 64: from-parts admission, equality,
-ordering, add, subtract and multiply, six `not_tractable` rows at 900 s, no verdict, owner IR-1544).
+ordering, add, subtract and multiply, six `not_tractable` rows at 900 s, no Kani verdict, the part the Verus proof does not state not scheduled; the Verus proof of the kernel's record for them is recorded on the rows, below).
 The from-parts row's id `filament.native.rational.from_i64_parts` names the subject of the harness
 and is not a catalog operation. The tier lemma harnesses and the charge-denial harnesses of TC-956
 are not operations and have no row; their record stays in TC-956. The rows keep the kernel's
@@ -74,6 +74,38 @@ carries no integer operand width, so no float row selects a clause. Rows of one 
 that differ only in rounding class share a key, so a `not_tractable` row would also refuse a verified
 class of the same operation and width if a width were ever supplied; the table has no rounding feature
 (the same limitation as the division rows).
+
+The Verus verdicts of the kernel's record (IR-1562) are data on the table, never a mechanism. A row
+may carry an optional `verus_proof` (`records`, `changes`, `theorems`, `proved`, `not_proved`,
+`assumes`, `run`), which names the filament-exact requirement and test-case ids, the merged
+filament-exact changes and the theorems of the record, states exactly what the proof states for the
+row and what it does not, what it assumes, and the recorded run; it names no tool version. The decider
+never reads it, and it never changes the row's Kani `verdict`. Recorded this way: the twelve float
+`not_tractable` rows (filament-exact FR-405-AC-17 and AC-18, TC-953, #181: the numeric path of the
+planners and `round`; not the NaN result, the special operands, the charges or the composition inside
+`arithmetic`, and for the four `Exact` rows not the strict refusal), the six full-`i64` rational rows
+(FR-408-AC-13 to AC-15, TC-956, #175; the equality row is a statement over the cross products, with the
+production function completed by a Kani harness the row does not carry), and the three native `div`,
+`rem` and `mod` rows at 16 bits (FR-409-AC-11 and AC-12, TC-957, #179: the relation of
+`native_div_rem` over all of `i128`; the divisor-shape split of those rows is IR-1561). A new verdict,
+`verus_proved`, is for a row with no Kani probe: it requires a `verus_proof`, carries `null`
+`wall_seconds` and `peak_bytes` (a Kani verdict row requires `wall_seconds`), and never refuses.
+Three such decimal rows (`max_operand_bits` 128, the width of the proved coefficient domain) record the
+constructor and normalized view (`filament.native.decimal.from_bindings`; FR-402-AC-13 to AC-15,
+TC-950, #186), the six operations (add, sub, mul, div, negate and the subject id
+`filament.native.decimal.round`, which has no catalog id; FR-403-AC-15 and AC-16, TC-951, #188) and the
+ordering (lt, le, gt, ge). The constructor row assumes that the 39-entry `POWERS_OF_TEN` table holds
+`10^0` through `10^38` (a constant-initializer loop that Verus cannot check, covered by a host test in
+filament-exact). The operation and ordering proof is a mathematical statement (admission grounds in
+order, the exact or rounded coefficient, the loss record, the order by value) for all `i128`
+coefficients and `u32` scales; it is not equality with `evaluate_decimal` or `order_numbers`, whose
+agreement stays on the filament-exact host differential (FR-403-AC-11 and AC-12). The rational proofs
+assume `Meter::charge_units` appends an admitted request (filament-exact FR-408 Behavior 18a);
+admission for them stays with FR-359 and the CG-domain Kani rows. A `verus_proved` decimal row never
+refuses, although the kernel's Kani harnesses for those subjects never returned (FR-403 Status): when
+the decimal carrier reaches the decider, a 128-bit decimal clause that reaches Kani needs its own
+`not_tractable` row, which IR-259 owns. No row claims the CG measurement of the decimal carrier (filament-exact FR-402-AC-11,
+FR-403-AC-13, IR-259).
 
 The generation-time decider runs AFTER the operator check of FR-015-AC-42: it sees only operations the V2 clause
 path accepts today (connectives, the six integer comparisons, integer add, subtract, multiply and
@@ -132,9 +164,13 @@ package or the filesystem.
 The table SHALL be data with one row per measured probe: `operation_ids` (catalog ids; a record row
 whose subject is not a catalog operation may name the subject instead, and no clause carries that id, so
 it never selects),
-`route` (`general` or `native`), `max_operand_bits`, `collection_bound`, `verdict` (`tractable` or `not_tractable`), `wall_seconds`,
+`route` (`general` or `native`), `max_operand_bits`, `collection_bound`, `verdict` (`tractable`, `not_tractable` or `verus_proved`), `wall_seconds` (a number on a `tractable` or `not_tractable` row; `null` exactly on a `verus_proved` row, whose key is still required),
 `peak_bytes` (`null` when the runner reported no peak), optionally a `provenance` text (a row copied from another repository's record names that record; it never selects a row), optionally the Kani, CBMC and solver versions the probe ran under (a row recorded without tool versions, as QSL-406 and EA-49 direct, loads, and a tool version never selects a row), and the generator and kernel version the probe
-ran against. CG SHALL load it from a file and SHALL contain no per-operation tractability code. A
+ran against. A row MAY carry a `verus_proof` (`records`, `changes`, `theorems`, `proved`, `not_proved`,
+`assumes`, `run`; no other key), the Verus proof of the kernel's record for the row; it never changes the
+row's Kani verdict and never selects a row. A `verus_proved` row is one with no Kani probe: it SHALL
+carry a `verus_proof` and `null` `wall_seconds` and `peak_bytes`, and the decider SHALL never refuse on it.
+A `tractable` or `not_tractable` row SHALL carry a `wall_seconds`. CG SHALL load it from a file and SHALL contain no per-operation tractability code. A
 malformed row SHALL fail the load with the row index; it SHALL NOT be skipped silently. A row
 without a `route` key, or with any other `route` value, is malformed like any row with a missing
 field; there is no default route.
@@ -157,7 +193,7 @@ native-route clause, and the reverse. The decider does not infer one route from 
 |----|----------|--------------|
 | FR-056-AC-1 | The decider is one interface taking only the clause-feature value of the Behavior section and returning `Run` or `Refuse { reason, evidence_row }`. The table lookup is the only production decider and implements that interface; test-only deciders (FR-056-AC-12) are allowed. The interface's parameter type is the feature value alone, so a decider cannot receive the clause body, package or filesystem handle; this is checked by the compiler and by inspection of the interface signature. | Inspection |
 | FR-056-AC-2 | CG exposes the width of each operation after range propagation as a clause feature, equal to the width the clause oracle rendering already computes (v2.rs and oracle/clause/native.rs), for an integer chain `a * b + c` over `Int[0, 2^k]` bounds at three widths. CG also exposes the route of the negotiation as a clause feature, `general` for `IntegerRoute::General` and `native` for `IntegerRoute::Native`, for the same clause. Mutant: exposing the declared operand width instead of the propagated width fails at the multiply-then-add case; reporting a fixed route fails the route check. | Test |
-| FR-056-AC-3 | The table loads from a data file with the fields of the Behavior section; a row with an unknown verdict, a missing field, a missing or unknown `route` or a non-integer width fails the load naming the row index; an empty table loads and every clause runs. No per-operation code exists: adding a row for a new operation id changes a clause's decision with no source change. Mutant: skipping a malformed row fails the load check. | Test |
+| FR-056-AC-3 | The table loads from a data file with the fields of the Behavior section; a row with an unknown verdict (the verdicts are `tractable`, `not_tractable` and `verus_proved`), a missing field, a missing or unknown `route` or a non-integer width fails the load naming the row index; an empty table loads and every clause runs. No per-operation code exists: adding a row for a new operation id changes a clause's decision with no source change. Mutant: skipping a malformed row fails the load check. | Test |
 | FR-056-AC-4 | A clause containing operation id O (accepted by the V2 clause path) at width W with a current `not_tractable` row for O at `max_operand_bits <= W` is refused as `V2ClauseNotTractable` with no harness. The refusal names the clause `node_id`, the operation id, the width, the route, the evidence row (its full fields) and the tool versions the row records, if any, with the generator and kernel versions. A supported sibling item of the same request is unaffected (FR-015-AC-23). A clause holding an operator the V2 path refuses is still `V2ClauseOperatorNotSupported`, not this refusal. Mutant: omitting the node, route, row or a recorded version, or reporting the refusal as `V2ClauseOperatorNotSupported`, fails. | Test |
 | FR-056-AC-5 | The boundary is inclusive and per operation, in bits as defined in Terms: a row at `max_operand_bits = 64` refuses an operation over `Int[0, 2^64 - 1]` (64 bits) and over `Int[0, 2^64]` (65 bits), and does not refuse one over `Int[0, 2^32]` (33 bits); a `not_tractable` row for operation A does not refuse a clause holding only operation B; a clause holding A and B refuses on A. These cases hold the route fixed (a row and a clause on the same route). Mutant: strict `<`, a width counted without the sign bit, or matching any operation fails. | Test |
 | FR-056-AC-6 | A clause with no qualifying row is `Run`, and its generation output, harness bytes and identity record are byte-identical to the output with an empty table. A `tractable` row never refuses. Mutant: refusing on a `tractable` row, or changing the harness when the table is non-empty, fails. | Test |
@@ -170,6 +206,8 @@ native-route clause, and the reverse. The decider does not infer one route from 
 | FR-056-AC-13 | Through CG's runner under installed Kani, one clause the table lets through ends with an executed verdict (`Verified` or `Falsified`), recorded with its wall time, the Kani version and CG's generator and kernel versions; and a clause holding a measured-bad row for an integer operation the V2 path accepts (integer multiply at a width at or above the row's bound) is refused as `V2ClauseNotTractable` with no Kani launch, and a narrower multiply is not refused. The Decimal multiply at full width row is exercised the same way only once IR-1444 lets it reach the decider. A probe record does not substitute. | Test (installed Kani) |
 | FR-056-AC-14 | Lookup matches rows only for the clause's route. The same clause (one operation, one width) and a `not_tractable` row for that operation at a bound at or below the width: with the row on `general` the clause is refused as `V2ClauseNotTractable` on the `general` route and the decider returns `Run` on the `native` route (the item is not refused as `V2ClauseNotTractable`; it may still end in another disposition such as `RenderFailed`); with the row on `native` the reverse. A `tractable` row does not refuse on either route. The refusal reports the clause's route. A `native` row at a smaller bound than a qualifying `general` row does not take precedence over it on the `general` route. Mutant: ignoring the route (matching on operation and width alone) refuses the native clause in the first case and fails. | Test |
 | FR-056-AC-15 | Known red (IR-1566, IR-1568): filament-exact KERNEL_VERSION is 2 and every row of the shipped table is recorded at kernel_version 1, so FR-056-AC-7 ignores them all and the tests of this criterion that need a current row fail until IR-1568 re-measures the rows under kernel 2 (the version fields are not edited). Meanwhile `decide` skips every row and returns Run, so the 31 `not_tractable` rows refuse nothing and the FR-056-AC-15 opt-in is inert. A routed exact-scalar harness submitted with a caller-passed table (CG ships its single shipped scalar table, `TractabilityTable::shipped_general_route_scalar`, equal to `docs/qualification/ir1530-general-route-scalar-table.json`, which holds general-route and native-route rows, each distinguished by its required `route` field) to `execute_kani_obligation_decided` or `execute_kani_obligations_decided` is decided through the same decider seam with features on its route (`general` for the `rt::Integer` carrier, `native` for the native integer carrier), its operation identity, the largest bit width of its argument bounds and the argument bounds. When a current `not_tractable` row of that route qualifies, the call returns `DecidedRunRefusal::NotTractable` carrying `UnsupportedObligation::V2ClauseNotTractable` (node id, operation id, width, route, the full row with its Kani, CBMC, solver, generator and kernel versions) before any Kani process starts, so a missing launcher or crate is never reached; a batch, including a mixed one, is refused whole. Rows apply per route across both shapes, a V2 clause at generation and a routed scalar harness at the run: the cost the general-route row records is the `rt::Integer` carrier, not the shape, so that row would also refuse a general-route V2 clause, and the shipped scalar row is scoped by use (it is passed to the decided run wrappers and is not a generation `tractability_table`). Only rows of the harness's own route apply (FR-056-AC-14), so a shipped general-route row never refuses a native-route harness and a shipped native-route row never refuses a general-route harness; a width below the row's `max_operand_bits` runs. Mutants: matching rows across routes, refusing the native-route harness, or refusing only the offending member of a batch fails. The wall-clock ceiling stays the backstop for every harness the decider runs. | Test |
+| FR-056-AC-16 | The shipped scalar table carries a `verus_proof` on exactly 24 rows: the twelve float `not_tractable` rows of filament-exact FR-405, the six full-`i64` rational rows of FR-408, the three native `div`, `rem` and `mod` rows of FR-409 (each keeping its Kani `not_tractable` verdict) and three `verus_proved` decimal rows (the constructor and normalized view of FR-402, the six operations and the ordering of FR-403), with no other row carrying one. Each proof's `records`, `changes`, `theorems`, `proved`, `not_proved`, `assumes` and `run` equal the kernel's record (TC-950, TC-951, TC-953, TC-956, TC-957); a row that cites a record id, change or theorem the record does not hold, or changes a count, an assumption or an unproved set, fails the test. Mutants: dropping a proof, adding one to another row, changing a verified or mutant count, or dropping an assumption fails. | Test |
+| FR-056-AC-17 | The loader rejects, naming the row index, a `verus_proved` row without a `verus_proof` or with a `wall_seconds` or `peak_bytes`, a `tractable` or `not_tractable` row with a null `wall_seconds`, and a `verus_proof` with an unknown key; and a `verus_proved` row never makes the decider refuse a clause, so a decimal clause on it runs. Mutants: accepting any of the rejected rows, or letting a `verus_proved` row refuse, fails. | Test |
 
 ## Dependencies
 
@@ -195,9 +233,12 @@ run-level refusal of the general-route scalar harness, `src/kani/terminal/tracta
 implemented and host-tested. The host test `tc_070_the_ac13_multiply_fixtures_split_on_the_row_bound`
 negotiates on both routes: the general-route row refuses the general clause and not the native one.
 FR-056-AC-15 also covers the shipped native float and rational rows (IR-260, IR-258, IR-854): the table
-loads 74 rows, and `tc_070_the_shipped_table_holds_the_kernel_native_float_and_rational_rows` checks
+loads 77 rows, and `tc_070_the_shipped_table_holds_the_kernel_native_float_and_rational_rows` checks
 the counts, the verdicts, the limits and that every row names its record, its harness and (for
-`not_tractable`) its owner. The rows are copied, not re-measured; no Kani run is part of this change.
+`not_tractable`) its owner. The rows are copied, not re-measured; no Kani run is part of this change. The Verus verdicts and the
+three decimal rows (IR-1562) are checked by `tc_070_the_verus_verdicts_sit_on_exactly_the_rows_the_kernel_proves`,
+`tc_070_the_decimal_rows_state_the_proof_scope_and_never_refuse` and
+`tc_070_the_loader_rejects_rows_that_contradict_their_verdict`. The first two are tagged FR-056-AC-16 and the third FR-056-AC-17.
 FR-056-AC-1 to AC-9 and AC-11 to AC-12 are implemented and test-backed on the host
 (`tests/it/kani_tractability.rs`; corpus and baseline in `tests/fixtures/tractability/`).
 FR-056-AC-10 is partial: the shipped corpus holds twenty-six measured rows. Ten are `verified` or

@@ -349,7 +349,7 @@ pub use kani::output::playback::{
 pub use kani::tractability::{
     ClauseFeatures, Decision, GenerationOptions, InputBound, IntegerRoute, NotTractable,
     OperationWidth, RowVerdict, TractabilityDecider, TractabilityLoadError, TractabilityRow,
-    TractabilityTable, WallSeconds, GENERATOR_VERSION, KERNEL_VERSION,
+    TractabilityTable, VerusProof, WallSeconds, GENERATOR_VERSION, KERNEL_VERSION,
 };
 pub use publication::publish::{write_bundle_atomic, PublishedBundleIdentity};
 pub use replay::composite::{

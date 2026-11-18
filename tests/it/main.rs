@@ -105,6 +105,7 @@ mod kani_probes;
 mod kani_run_scan;
 mod kani_stdout_capture;
 mod kani_tractability;
+mod kani_verus_record;
 mod layout;
 mod model_enum_scalar;
 mod native_v2_helper_playback;
