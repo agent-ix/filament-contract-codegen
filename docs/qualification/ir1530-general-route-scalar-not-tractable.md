@@ -184,3 +184,11 @@ no harness.
 
 Kani's symbolic `f32` division is bit-wrong at `0x800000A9 / 0x9C873333` (the correct result is
 `0x1BA00000`), which is why the `div` row has no host-division reference.
+
+## Status at the kernel-2 pins (IR-1566, owner IR-1568)
+
+All 74 rows of `ir1530-general-route-scalar-table.json` are recorded at `kernel_version` 1, and CG now links filament-exact
+with `KERNEL_VERSION` 2. FR-056-AC-7 ignores a row whose kernel version differs, so `shipped_general_route_scalar()`
+currently refuses no clause: `decide` returns Run for every request, and the 31 `not_tractable` rows (FR-056-AC-15) are inert, so a
+known-intractable clause runs until its Kani timeout. The rows are re-measured under kernel 2 by IR-1568; their version
+fields are not edited without that measurement.

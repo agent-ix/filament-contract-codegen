@@ -178,7 +178,9 @@ pub use oracle::bound_v1::{
 
 pub use crate::core::identity::{HarnessPath, HarnessSymbol, ModuleSymbol, SymbolError};
 pub use crate::core::profile::{
-    EXACT_DEPENDENCY_SOURCE, RUNTIME_DEPENDENCY_SOURCE, SEMANTIC_VALUE_DEPENDENCY_SOURCE,
+    EVAL_DEPENDENCY_SOURCE, EXACT_DEPENDENCY_SOURCE, FSL_REPLAY_DEPENDENCY_SOURCE,
+    MODEL_DEPENDENCY_SOURCE, RUNTIME_DEPENDENCY_SOURCE, SEMANTIC_VALUE_DEPENDENCY_SOURCE,
+    TRACE_DEPENDENCY_SOURCE,
 };
 pub use core::contract_package::{
     routed_contract_lowering_profile, AdmittedItemAccounting, ContractDriverResultSelection,
@@ -327,19 +329,20 @@ pub use kani::generate::outcome::{
     UnsupportedObligation, V2ClauseControlReason, MAX_OBLIGATION_ITEMS, MAX_OBLIGATION_UNWIND,
 };
 pub use kani::identity::{
-    CollectionElementIdentity, CollectionKindIdentity, CollectionObjectFieldIdentity,
-    CollectionObligationIdentity, CollectionOperationConditionIdentity,
-    CollectionOperationIdentity, CollectionOperationValueIdentity, CollectionPreconditionIdentity,
-    CollectionPredicateIdentity, EmbeddedOracle, GraphEdgeIdentity, GraphObligationIdentity,
-    KaniCollectionObligationHarness, KaniGraphObligationHarness, KaniObligationHarness,
-    KaniObligationIdentity, KaniScalarObligationHarness, KaniV2ClauseObligationHarness,
-    ObligationBinding, ObligationKind, ScalarGuardDomain, ScalarGuardInput,
-    ScalarIntegerRepresentation, ScalarObligationArgument, ScalarObligationIdentity,
-    ScalarOriginalLimitsError, StateComparison, StateFieldDomain, StateFrameHarness,
-    StateFrameIdentity, StateFrameProperty, StateFrameRecordError, StateFrameScope,
-    StateUnrangedField, StateUnrangedReason, V2ClauseClaimField, V2ClauseElementDomain,
-    V2ClauseObligationClaim, V2ClauseObligationIdentity, V2ClauseObligationRecord,
-    V2ClauseParameter, V2ClauseRead, V2ClauseSelection, V2ClauseStateField,
+    CollectionElementIdentity, CollectionIfBranch, CollectionKindIdentity,
+    CollectionObjectFieldIdentity, CollectionObligationIdentity,
+    CollectionOperationConditionIdentity, CollectionOperationIdentity,
+    CollectionOperationValueIdentity, CollectionPreconditionIdentity, CollectionPredicateIdentity,
+    EmbeddedOracle, GraphEdgeIdentity, GraphObligationIdentity, KaniCollectionObligationHarness,
+    KaniGraphObligationHarness, KaniObligationHarness, KaniObligationIdentity,
+    KaniScalarObligationHarness, KaniV2ClauseObligationHarness, ObligationBinding, ObligationKind,
+    ScalarGuardDomain, ScalarGuardInput, ScalarIntegerRepresentation, ScalarObligationArgument,
+    ScalarObligationIdentity, ScalarOriginalLimitsError, StateComparison, StateFieldDomain,
+    StateFrameHarness, StateFrameIdentity, StateFrameProperty, StateFrameRecordError,
+    StateFrameScope, StateUnrangedField, StateUnrangedReason, V2ClauseClaimField,
+    V2ClauseElementDomain, V2ClauseObligationClaim, V2ClauseObligationIdentity,
+    V2ClauseObligationRecord, V2ClauseParameter, V2ClauseRead, V2ClauseSelection,
+    V2ClauseStateField,
 };
 pub use kani::output::playback::{
     parse_assertion_playback, select_counterexample, CounterexamplePlayback, Playback,
@@ -348,7 +351,7 @@ pub use kani::output::playback::{
 pub use kani::tractability::{
     ClauseFeatures, Decision, GenerationOptions, InputBound, IntegerRoute, NotTractable,
     OperationWidth, RowVerdict, TractabilityDecider, TractabilityLoadError, TractabilityRow,
-    TractabilityTable, WallSeconds, GENERATOR_VERSION, KERNEL_VERSION,
+    TractabilityTable, VerusProof, WallSeconds, GENERATOR_VERSION, KERNEL_VERSION,
 };
 pub use publication::publish::{write_bundle_atomic, PublishedBundleIdentity};
 pub use replay::composite::{
@@ -367,6 +370,10 @@ pub use replay::composite_shadow_route::{
     refinement_state, settle_composite_shadow, shadow_harness_bounds, CompositeShadowError,
     CompositeShadowSettlement, DriverFalsification, ParityReport, ShadowClaim, ShadowRoute,
     ShadowRun,
+};
+pub use replay::composite_leaves::{
+    decode_composite_falsification, rebuild_composite_operands, reconstruct_composite_operands,
+    DecodedCompositeLeaves,
 };
 pub use replay::frame::{
     FrameClaimMember, FrameReplay, FrameReplayError, FrameReplayInputs, PreStateFault, ScopeMember,

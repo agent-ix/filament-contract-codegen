@@ -5,7 +5,7 @@ use crate::oracle::clause::V2ClauseOracle;
 use crate::{
     core::identity::HarnessPath,
     kani::abi::{adapter_options, witness_options, KaniPrimitiveType, KaniSolver},
-    kani::identity::{CollectionKindIdentity, CollectionPredicateIdentity},
+    kani::identity::{CollectionIfBranch, CollectionKindIdentity, CollectionPredicateIdentity},
 };
 use std::collections::BTreeSet;
 use syn::{
@@ -323,6 +323,22 @@ impl CollectionSpec {
                 format!("item >= {threshold}")
             }
             CollectionPredicateIdentity::IntegerEqual { value } => format!("item == {value}"),
+            CollectionPredicateIdentity::IntegerIfAtMost {
+                split,
+                then_branch,
+                else_branch,
+                bound,
+            } => {
+                let branch = |branch: &CollectionIfBranch| match branch {
+                    CollectionIfBranch::Element => "item".to_owned(),
+                    CollectionIfBranch::Literal { value } => value.to_string(),
+                };
+                format!(
+                    "(if item < {split} {{ {} }} else {{ {} }}) <= {bound}",
+                    branch(then_branch),
+                    branch(else_branch)
+                )
+            }
             CollectionPredicateIdentity::BooleanNotEqual { value } => format!("item != {value}"),
         }
     }

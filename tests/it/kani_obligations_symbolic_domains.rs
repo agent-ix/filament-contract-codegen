@@ -33,7 +33,6 @@ use fsl_replay::{
 };
 use ix_trace_rs::trace;
 use serde_json::{json, Value};
-use sha2::{Digest, Sha256};
 use std::{collections::BTreeMap, env, fs, path::PathBuf, process::Command, time::Duration};
 
 const NODE_ID: &str = "ix://ir268.test/domain/Node";
@@ -1970,12 +1969,11 @@ fn native_collection_precondition(
         "items": {"ordered-set": items.iter().map(ToString::to_string).map(|item| json!({"integer": item})).collect::<Vec<_>>()},
         "flags": {"sequence": []},
     });
-    let model_digest = Sha256::digest(&fixture.model_bytes);
     let snapshot = json!({
         "format": "filament.state.snapshot/v1",
-        "identity": {"authority": "agent-ix", "identity": "ix://ir268.test/collection/prestate", "revision_namespace": "git", "revision": "fixture"},
+        "identity": {"authority": "agent-ix", "identity": "ix://ir268.test/collection/prestate"},
         "observation": "pre",
-        "model": {"identity": "ir268.test/domain", "version": "1.0.0", "digest": format!("sha256-jcs:{model_digest:x}")},
+        "model": {"identity": "ir268.test/domain"},
         "populations": [{"population": POPULATION_ID, "complete": true, "objects": [{"key": object.key, "type": NODE_ID, "fields": fields}]}],
     });
     evaluate_clause(ClauseEvaluationRequest {
@@ -4071,4 +4069,209 @@ fn replay_scalar_limits() -> ScalarLimits {
         work_units: 1_000,
         result_units: 1_000,
     }
+}
+
+const IF_CLAUSE: &str = "invariant CollectionReady using v on M::Node at current";
+
+fn if_claim_harness(body: &str) -> KaniCollectionObligationHarness {
+    let fixture = try_emitted_from_document_and_clause(model_document(), IF_CLAUSE, body)
+        .expect("FSL emits and IR admits the collection-if clause");
+    qualified_collection_harness(&fixture, "filament.op.collection.forall")
+}
+
+#[trace("FR-015-AC-155", "TC-025")]
+#[test]
+fn collection_element_if_lowers_to_the_direct_harness_with_one_if_per_element() {
+    let harness =
+        if_claim_harness("forall(item in self.items: (if item < 2 then item else 2) <= 2)");
+    assert_eq!(
+        harness.identity.predicate,
+        CollectionPredicateIdentity::IntegerIfAtMost {
+            split: 2,
+            then_branch: filament_contract_codegen::CollectionIfBranch::Element,
+            else_branch: filament_contract_codegen::CollectionIfBranch::Literal { value: 2 },
+            bound: 2,
+        }
+    );
+    let source = &harness.rust.contents;
+    assert_eq!(
+        source
+            .matches("(if item < 2 { item } else { 2 }) <= 2")
+            .count(),
+        1,
+        "{source}"
+    );
+    let claim = source
+        .find("let claim = (0..selected_items_len).all(")
+        .expect("the bounded iteration");
+    let rendered = source.find("(if item < 2").expect("the rendered if");
+    let assertion = source.find("assert!(claim").expect("the harness assertion");
+    assert!(claim < rendered && rendered < assertion);
+    assert!(source.contains("selected_items_len >= 0 && selected_items_len <= 3"));
+
+    let mutant =
+        if_claim_harness("forall(item in self.items: (if item < 2 then item else 3) <= 2)");
+    assert_ne!(harness.identity, mutant.identity);
+    assert!(mutant
+        .rust
+        .contents
+        .contains("(if item < 2 { item } else { 3 }) <= 2"));
+}
+
+/// What the generator makes of one `if` element body: the predicate it keeps, or `None` when the
+/// claim is recorded `unsupported` with the typed claim-shape reason and emits no harness.
+fn if_claim_predicate(body: &str) -> Option<CollectionPredicateIdentity> {
+    let fixture = try_emitted_from_document_and_clause(model_document(), IF_CLAUSE, body)
+        .unwrap_or_else(|error| panic!("{body}: {error}"));
+    let operation = if body.starts_with("exists") {
+        "filament.op.collection.exists"
+    } else {
+        "filament.op.collection.forall"
+    };
+    let KaniObligationOutcome::Emitted {
+        records,
+        collection_harnesses,
+        ..
+    } = collection_item_outcome(&fixture, operation, 8)
+    else {
+        panic!("{body}: an item disposition");
+    };
+    match &records[0].disposition {
+        ObligationDisposition::Supported { .. } => {
+            let [harness] = collection_harnesses.as_slice() else {
+                panic!("{body}: one harness");
+            };
+            Some(harness.identity.predicate.clone())
+        }
+        ObligationDisposition::Unsupported {
+            reason:
+                UnsupportedObligation::CollectionClaimNotRendered {
+                    reason:
+                        filament_contract_codegen::CollectionUnsupportedReason::UnsupportedClaimShape,
+                    ..
+                },
+        } => {
+            assert!(collection_harnesses.is_empty(), "{body}");
+            None
+        }
+        other => panic!("{body}: {other:?}"),
+    }
+}
+
+#[trace("FR-015-AC-155", "TC-025")]
+#[test]
+fn collection_element_if_accepts_exactly_the_closed_shape() {
+    use filament_contract_codegen::CollectionIfBranch::{Element, Literal};
+    let accepted = |split, then_branch, else_branch, bound| {
+        Some(CollectionPredicateIdentity::IntegerIfAtMost {
+            split,
+            then_branch,
+            else_branch,
+            bound,
+        })
+    };
+    for (body, expected) in [
+        (
+            "forall(item in self.items: (if item < 2 then item else 2) <= 2)",
+            accepted(2, Element, Literal { value: 2 }, 2),
+        ),
+        (
+            "forall(item in self.items: (if item < 2 then 1 else item) <= 3)",
+            accepted(2, Literal { value: 1 }, Element, 3),
+        ),
+        (
+            "forall(item in self.items: (if item < 2 then 0 else 1) <= 1)",
+            accepted(2, Literal { value: 0 }, Literal { value: 1 }, 1),
+        ),
+        (
+            "forall(item in self.items: (if item < 2 then item else item) <= 3)",
+            accepted(2, Element, Element, 3),
+        ),
+        (
+            "exists(item in self.items: (if item < 2 then item else 2) <= 2)",
+            accepted(2, Element, Literal { value: 2 }, 2),
+        ),
+        // Refused: the condition.
+        ("forall(item in self.items: (if item <= 2 then item else 2) <= 2)", None),
+        ("forall(item in self.items: (if item > 2 then item else 2) <= 2)", None),
+        ("forall(item in self.items: (if 2 < item then item else 2) <= 2)", None),
+        ("forall(item in self.items: (if 1 < 2 then item else 2) <= 2)", None),
+        // Refused: the branches.
+        ("forall(item in self.items: (if item < 2 then item + 1 else 2) <= 2)", None),
+        (
+            "forall(item in self.items: (if item < 2 then (if item < 1 then item else 1) else 2) <= 2)",
+            None,
+        ),
+        // Refused: the comparison and its operands.
+        ("forall(item in self.items: (if item < 2 then item else 2) >= 2)", None),
+        ("forall(item in self.items: (if item < 2 then item else 2) < 2)", None),
+        ("forall(item in self.items: (if item < 2 then item else 2) <= item)", None),
+        ("forall(item in self.items: 2 >= (if item < 2 then item else 2))", None),
+        // Refused: a negative literal is a negation, not a literal.
+        ("forall(item in self.items: (if item < -1 then item else 2) <= 2)", None),
+        ("forall(item in self.items: (if item < 2 then -1 else 2) <= 2)", None),
+        ("forall(item in self.items: (if item < 2 then item else 2) <= -1)", None),
+    ] {
+        assert_eq!(if_claim_predicate(body), expected, "{body}");
+    }
+}
+
+#[trace("FR-015-AC-155", "TC-025")]
+#[test]
+fn collection_element_if_in_an_operation_precondition_is_refused_without_a_harness() {
+    let fixture = precondition_collection_fixture(
+        "forall(item in self.items: (if item < 2 then item else 2) <= 2)",
+    );
+    let KaniObligationOutcome::Emitted {
+        records,
+        v2_clause_harnesses,
+        collection_harnesses,
+        ..
+    } = precondition_collection_outcome(&fixture, 8, None)
+    else {
+        panic!("the operation clause settles per item");
+    };
+    assert!(v2_clause_harnesses.is_empty() && collection_harnesses.is_empty());
+    assert!(matches!(
+        &records[0].disposition,
+        ObligationDisposition::Unsupported {
+            reason: UnsupportedObligation::CollectionClaimNotRendered {
+                reason:
+                    filament_contract_codegen::CollectionUnsupportedReason::UnsupportedClaimShape,
+                ..
+            }
+        }
+    ));
+}
+
+#[trace("FR-015-AC-159", "FR-017-AC-63", "TC-025")]
+#[test]
+#[ignore = "kani lane: run serially through make kani-gate"]
+fn tc_025_real_kani_collection_if_claim_verifies() {
+    let installation = KaniInstallation::discover().expect("cargo-kani is installed");
+    let healthy =
+        if_claim_harness("forall(item in self.items: (if item < 2 then item else 2) <= 2)");
+    let evidence = run_collection_kani(&installation, &healthy, "if-healthy");
+    assert_eq!(evidence.outcome, KaniRunOutcome::Verified);
+    assert_eq!(evidence.exit_code, Some(0));
+}
+
+#[trace("FR-015-AC-159", "FR-017-AC-63", "TC-025")]
+#[test]
+#[ignore = "kani lane: run serially through make kani-gate"]
+fn tc_025_real_kani_collection_if_else_mutant_falsifies() {
+    let installation = KaniInstallation::discover().expect("cargo-kani is installed");
+    let mutant =
+        if_claim_harness("forall(item in self.items: (if item < 2 then item else 3) <= 2)");
+    let evidence = run_collection_kani(&installation, &mutant, "if-mutant");
+    let KaniRunOutcome::Falsified { counterexample } = &evidence.outcome else {
+        panic!("the else-branch mutant must falsify: {evidence:?}");
+    };
+    assert!(counterexample.contains(mutant.identity.harness_symbol.as_str()));
+    let values = collection_playback_values(counterexample);
+    assert!(
+        values.iter().any(|value| *value >= 2),
+        "a distinguishing element of at least 2: {values:?}"
+    );
+    assert_ne!(evidence.exit_code, Some(0));
 }

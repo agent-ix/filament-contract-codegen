@@ -1079,6 +1079,7 @@ mod tests {
             super::super::CheckedSemanticNodeV2 {
                 node_id: parameter.clone(),
                 owner_model: None,
+                check_mode: None,
                 schema_version: "filament.checked-semantic-graph/v2".into(),
                 node_tag: "value".into(),
                 semantic_form: "parameter".into(),
@@ -1103,6 +1104,7 @@ mod tests {
                 super::super::CheckedSemanticNodeV2 {
                     node_id,
                     owner_model: None,
+                    check_mode: None,
                     schema_version: "filament.checked-semantic-graph/v2".into(),
                     node_tag: "expression".into(),
                     semantic_form: "call".into(),

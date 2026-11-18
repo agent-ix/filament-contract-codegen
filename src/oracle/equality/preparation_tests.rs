@@ -100,9 +100,26 @@ fn emitted_preparation_retains_native_errors_and_semantic_precedence() {
     fs::write(&library, format!("{emitted}\n{NATIVE_CHECKS}")).unwrap();
     fs::write(scratch.join("source.native"), SOURCE).unwrap();
     fs::write(scratch.join("checked-package.json"), compiled.bytes()).unwrap();
-    let manifest = format!("{}\n[dev-dependencies]\nfsv-failing-allocator = {{ git = \"https://github.com/agent-ix/filament-semantic-value\", branch = \"main\" }}\nfilament-exact = {{ {}, features = [\"test-support\"] }}\n", crate::core::profile::equality_oracle_crate_manifest("equality-native-preparation"), crate::core::profile::EXACT_DEPENDENCY_SOURCE);
+    let manifest = format!("{}\n[dev-dependencies]\nfsv-failing-allocator = {{ {} }}\nfilament-exact = {{ {}, features = [\"test-support\"] }}\n", crate::core::profile::equality_oracle_crate_manifest("equality-native-preparation"), crate::core::profile::SEMANTIC_VALUE_DEPENDENCY_SOURCE, crate::core::profile::EXACT_DEPENDENCY_SOURCE);
     fs::write(scratch.join("Cargo.toml"), manifest).unwrap();
     fs::copy(root.join("Cargo.lock"), scratch.join("Cargo.lock")).unwrap();
+    // The scratch adds a dependency from a git source the lock already pins, and resolving that
+    // offline would move every package of the source to the newest cached branch head. Hold each
+    // such package at the revision the root lock names.
+    let lock = fs::read_to_string(root.join("Cargo.lock")).unwrap();
+    for package in ["filament-semantic-value", "filament-exact"] {
+        let rev = locked_git_revision(&lock, package);
+        let hold = Command::new(env!("CARGO"))
+            .args(["update", "--offline", "-p", package, "--precise", &rev])
+            .current_dir(&scratch)
+            .output()
+            .unwrap();
+        assert!(
+            hold.status.success(),
+            "hold {package} at {rev}: {}",
+            String::from_utf8_lossy(&hold.stderr)
+        );
+    }
     let metadata = Command::new(env!("CARGO"))
         .args(["metadata", "--offline", "--format-version", "1"])
         .current_dir(&scratch)
@@ -214,3 +231,24 @@ fn preparation_preserves_owner_errors_and_semantics() {
 }
 }
 "#;
+
+/// The git revision `Cargo.lock` records for `package`.
+fn locked_git_revision(lock: &str, package: &str) -> String {
+    let header = format!("name = \"{package}\"\n");
+    let entry = lock
+        .split("[[package]]")
+        .find(|entry| entry.contains(&header));
+    let source = entry
+        .and_then(|entry| {
+            entry
+                .lines()
+                .find(|line| line.starts_with("source = \"git+"))
+        })
+        .unwrap_or_else(|| panic!("{package} is a locked git package"));
+    source
+        .rsplit('#')
+        .next()
+        .unwrap()
+        .trim_end_matches('"')
+        .to_owned()
+}

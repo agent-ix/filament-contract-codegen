@@ -27,12 +27,12 @@ use crate::{
             },
         },
         identity::{
-            CollectionElementIdentity, CollectionKindIdentity, CollectionObligationIdentity,
-            CollectionPreconditionIdentity, CollectionPredicateIdentity,
-            KaniCollectionObligationHarness, KaniV2ClauseObligationHarness, ObligationKind,
-            ProofDependencySnapshot, ScalarIntegerRepresentation, SymbolicBounds,
-            V2ClauseElementDomain, V2ClauseObligationIdentity, V2ClauseParameter, V2ClauseRead,
-            V2ClauseSelection,
+            CollectionElementIdentity, CollectionIfBranch, CollectionKindIdentity,
+            CollectionObligationIdentity, CollectionPreconditionIdentity,
+            CollectionPredicateIdentity, KaniCollectionObligationHarness,
+            KaniV2ClauseObligationHarness, ObligationKind, ProofDependencySnapshot,
+            ScalarIntegerRepresentation, SymbolicBounds, V2ClauseElementDomain,
+            V2ClauseObligationIdentity, V2ClauseParameter, V2ClauseRead, V2ClauseSelection,
         },
     },
 };
@@ -1038,16 +1038,29 @@ fn resolve_predicate(
     let parameter_count = claim_parameters(graph, claim)
         .map(<[CheckedTerm]>::len)
         .ok_or(CollectionDomainRefusal::UnsupportedShape)?;
+    let is_element = |node: &CheckedSemanticNodeV2| {
+        node.semantic_form.as_ref() == "parameter"
+            && parameter_name(graph, node) == Some(binder_name)
+            && parameter_level(graph, node) == Some(parameter_count as u64)
+            && &node.semantic_type == element_type
+    };
+    if let (CollectionElementDomain::Integer { .. }, "filament.op.integer.le") =
+        (element, operation)
+    {
+        if let Some(selected) = arguments
+            .first()
+            .and_then(term_target)
+            .and_then(|id| graph.node(&id))
+            .filter(|node| operation_identity(graph, node) == Some("filament.op.control.if"))
+        {
+            return resolve_if_at_most(graph, selected, &arguments[1], &is_element, element_type);
+        }
+    }
     let selected_parameter = arguments
         .iter()
         .filter_map(term_target)
         .filter_map(|id| graph.node(&id))
-        .find(|node| {
-            node.semantic_form.as_ref() == "parameter"
-                && parameter_name(graph, node) == Some(binder_name)
-                && parameter_level(graph, node) == Some(parameter_count as u64)
-                && &node.semantic_type == element_type
-        })
+        .find(|node| is_element(node))
         .ok_or(CollectionDomainRefusal::UnsupportedShape)?;
     // For `>=`, the bound variable must be the left operand. Equality is symmetric.
     let selected_index = arguments
@@ -1076,6 +1089,56 @@ fn resolve_predicate(
         }
         _ => Err(CollectionDomainRefusal::UnsupportedShape),
     }
+}
+
+/// `(if element < split then A else B) <= bound`, where each branch is the element or an integer
+/// literal. Any other `if` shape stays an unsupported claim shape.
+fn resolve_if_at_most(
+    graph: &CollectionNodeIndex<'_>,
+    conditional: &CheckedSemanticNodeV2,
+    bound: &CheckedTerm,
+    is_element: &dyn Fn(&CheckedSemanticNodeV2) -> bool,
+    element_type: &CheckedNodeId,
+) -> Result<CollectionPredicateIdentity, CollectionDomainRefusal> {
+    let [condition, then_term, else_term] = graph
+        .term(conditional)
+        .and_then(application_arguments)
+        .ok_or(CollectionDomainRefusal::UnsupportedShape)?
+    else {
+        return Err(CollectionDomainRefusal::UnsupportedShape);
+    };
+    let condition_node = term_target(condition)
+        .and_then(|id| graph.node(&id))
+        .filter(|node| operation_identity(graph, node) == Some("filament.op.integer.lt"))
+        .ok_or(CollectionDomainRefusal::UnsupportedShape)?;
+    let [left, right] = graph
+        .term(condition_node)
+        .and_then(application_arguments)
+        .ok_or(CollectionDomainRefusal::UnsupportedShape)?
+    else {
+        return Err(CollectionDomainRefusal::UnsupportedShape);
+    };
+    if !term_target(left)
+        .and_then(|id| graph.node(&id))
+        .is_some_and(is_element)
+    {
+        return Err(CollectionDomainRefusal::UnsupportedShape);
+    }
+    let split = integer_literal(graph, right, element_type)?;
+    let branch = |term: &CheckedTerm| match term_target(term)
+        .and_then(|id| graph.node(&id))
+        .filter(|node| is_element(node))
+    {
+        Some(_) => Ok(CollectionIfBranch::Element),
+        None => integer_literal(graph, term, element_type)
+            .map(|value| CollectionIfBranch::Literal { value }),
+    };
+    Ok(CollectionPredicateIdentity::IntegerIfAtMost {
+        split,
+        then_branch: branch(then_term)?,
+        else_branch: branch(else_term)?,
+        bound: integer_literal(graph, bound, element_type)?,
+    })
 }
 
 fn collection_element_type(
@@ -1523,6 +1586,7 @@ pub(crate) mod tests {
                 declaration: None,
                 owner: None,
                 owner_model: None,
+                check_mode: None,
                 body: CheckedTerm::Literal {
                     type_id: node("3"),
                     value_kind: LiteralKind::Boolean,
@@ -1897,6 +1961,7 @@ pub(crate) mod tests {
             declaration: None,
             owner: None,
             owner_model: None,
+            check_mode: None,
             body,
         };
         let conversion = term(ApplicationOperator::Convert, "filament.op.quantity.convert");
