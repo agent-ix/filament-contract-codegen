@@ -588,6 +588,11 @@ impl OriginalCompositeEqRequest {
         &self.operands
     }
 
+    /// The replay-input limits the request is sent under.
+    pub fn replay_limits(&self) -> fsl_replay::ReplayLimits {
+        self.replay_limits
+    }
+
     /// The retained positional operand and domain body passed to FSL's identity owner.
     pub fn preimage(&self) -> &ParityPreimage {
         &self.preimage

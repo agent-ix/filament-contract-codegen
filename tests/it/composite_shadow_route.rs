@@ -16,6 +16,7 @@ use filament_contract_codegen::{
     KaniShadowHarness, LockedSource, ParityReport, ProofSubject, RefinementClass,
     RefinementSummary, ReplayInputs, ShadowClaim, ShadowOperand, ShadowRoute, WitnessDecodeLimits,
 };
+use filament_contract_codegen::{KaniExecutionEvidence, SymbolicArgumentBounds, SymbolicBounds};
 use filament_contract_model::{CheckedNodeId, CheckedOccurrence, CheckedPackageReadLimits};
 use filament_exact::Outcome;
 use fsl_replay::{
@@ -58,6 +59,15 @@ fn limits(work: u64) -> filament_exact::ScalarLimits {
 }
 
 pub(super) fn fixture_with(work: u64) -> Fixture {
+    fixture_in(work, ReplayLimits::default(), BTreeMap::new())
+}
+
+/// A fixture over a context with these accounting, replay and stage limits.
+fn fixture_in(
+    work: u64,
+    replay_limits: ReplayLimits,
+    stage_limits: BTreeMap<String, u64>,
+) -> Fixture {
     let corpus = corpus();
     let compiled = fixture::compile(fixture::BOUNDED_CASE);
     let context = filament_contract_codegen::OriginalCompositeEqContext::new(
@@ -73,10 +83,10 @@ pub(super) fn fixture_with(work: u64) -> Fixture {
             source: source(),
             dependencies: vec![],
             accounting_limits: limits(work),
-            stage_limits: BTreeMap::new(),
+            stage_limits,
             supplied_limits: None,
             declared_domains: vec![],
-            replay_limits: ReplayLimits::default(),
+            replay_limits,
         },
         "fr",
         CheckedPackageReadLimits::bounded(),
@@ -154,6 +164,32 @@ impl Fixture {
     }
 }
 
+/// The evidence of a run of `harness`: the figures a real run records beside its outcome.
+pub(super) fn evidence_of(
+    harness: &KaniShadowHarness,
+    outcome: KaniRunOutcome,
+    checks: u32,
+) -> KaniExecutionEvidence {
+    let identity = &harness.identity;
+    let mut evidence = synthetic_evidence(outcome, checks);
+    evidence.harness_path = harness.harness_path();
+    evidence.shadow_size = Some(identity.size_record());
+    evidence.unwind = identity.unwind;
+    evidence.solver = identity.solver;
+    evidence.symbolic_arguments = identity
+        .leaves
+        .iter()
+        .map(|leaf| SymbolicArgumentBounds {
+            identifier: leaf.name.clone(),
+            bounds: SymbolicBounds::Integer {
+                minimum: leaf.drawn.0,
+                maximum: leaf.drawn.1,
+            },
+        })
+        .collect();
+    evidence
+}
+
 fn settle_with(
     fx: &Fixture,
     harness: &KaniShadowHarness,
@@ -161,7 +197,7 @@ fn settle_with(
     checks: u32,
     refinement: Option<RefinementSummary>,
 ) -> Result<CompositeShadowSettlement, CompositeShadowError> {
-    let evidence = synthetic_evidence(outcome, checks);
+    let evidence = evidence_of(harness, outcome, checks);
     settle_composite_shadow(
         &fx.claim(),
         &filament_contract_codegen::ShadowRun {
@@ -320,6 +356,7 @@ fn tc_048_a_retained_disagreement_fails_every_backend_outcome() {
 
 /// FR-029-AC-25 and AC-26: with no disagreement every shadow-inconclusive reason maps through the
 /// ordinary rows, and none is coerced into verified evidence.
+#[trace("TC-048", "FR-029-AC-23")]
 #[trace("TC-048", "FR-029-AC-25")]
 #[trace("TC-048", "FR-029-AC-26")]
 #[trace("TC-048", "FR-029-AC-30")]
@@ -375,7 +412,8 @@ fn tc_048_a_shadow_inconclusive_outcome_maps_through_the_ordinary_rows() {
         }
     }
     // The cause row: out of memory is resource exhaustion.
-    let mut evidence = synthetic_evidence(
+    let mut evidence = evidence_of(
+        &fx.harness,
         reason(KaniInconclusiveReason::FailedWithoutCounterexample),
         0,
     );
@@ -441,7 +479,7 @@ fn tc_048_a_harness_of_another_claim_refuses_with_no_value() {
     // The request itself names the original operation: the other operator refuses first.
     let mut claim = fx.claim();
     claim.operator = EqualityOperator::NotEqual;
-    let evidence = synthetic_evidence(KaniRunOutcome::Verified, 5);
+    let evidence = evidence_of(&fx.harness, KaniRunOutcome::Verified, 5);
     assert!(matches!(
         settle_composite_shadow(
             &claim,
@@ -454,6 +492,17 @@ fn tc_048_a_harness_of_another_claim_refuses_with_no_value() {
         ),
         Err(CompositeShadowError::Build(_))
     ));
+}
+
+/// A stopped exact run.
+fn stopped() -> filament_exact::Incomplete {
+    filament_exact::Incomplete {
+        limit_kind: filament_exact::LimitKind::IntegerBits,
+        limit: 1,
+        consumed: 0,
+        next_charge: filament_exact::Integer::from(1_i64),
+        charge_point: filament_exact::ChargePoint::DecimalOperands,
+    }
 }
 
 /// The playback of the two parameters, the lower node's entries first.
@@ -483,16 +532,28 @@ pub(super) fn authenticated(
     operands: [WitnessValue; 2],
     outcome: Outcome<bool>,
 ) -> filament_contract_codegen::AuthenticatedCompositeArtifact {
-    let binding = fx
+    authenticated_in(fx, fx, operands, outcome, &fx.bounds(&fx.harness), 100_000)
+}
+
+/// An artifact authenticated by `by`'s context, for the bounds and work limit given.
+fn authenticated_in(
+    by: &Fixture,
+    fx: &Fixture,
+    operands: [WitnessValue; 2],
+    outcome: Outcome<bool>,
+    bounds: &[fsl_replay::ProofBound],
+    work_limit: u64,
+) -> filament_contract_codegen::AuthenticatedCompositeArtifact {
+    let binding = by
         .context
         .retain_generated_artifact(
             &fx.corpus.oracles,
             &fx.node,
             &fx.occurrence,
             EqualityOperator::Equal,
-            &fx.bounds(&fx.harness),
+            bounds,
             operands.clone(),
-            100_000,
+            work_limit,
         )
         .expect("the original generation backs the claim");
     let body = binding.body().clone();
@@ -531,7 +592,7 @@ fn falsify(
     refinement: Option<RefinementSummary>,
     driver: Option<&DriverFalsification<'_>>,
 ) -> Result<CompositeShadowSettlement, CompositeShadowError> {
-    let evidence = synthetic_evidence(outcome.clone(), 0);
+    let evidence = evidence_of(&fx.harness, outcome.clone(), 0);
     settle_composite_shadow(
         &fx.claim(),
         &filament_contract_codegen::ShadowRun {
@@ -555,6 +616,7 @@ pub(super) fn result_of(settled: &CompositeShadowSettlement) -> &CompositeParity
 /// native observation. A shadow that calls unequal operands equal diverges from the exact
 /// comparison; the shadow that agrees with it does not reproduce; nothing is `Refuted`.
 #[trace("TC-048", "FR-029-AC-20")]
+#[trace("TC-048", "FR-029-AC-31")]
 #[trace("TC-048", "FR-033-AC-19")]
 #[trace("TC-048", "FR-033-AC-7")]
 #[test]
@@ -628,11 +690,7 @@ fn tc_048_a_falsified_shadow_replays_through_fsl_from_a_cg_built_request() {
         NativeParityObservation::Incomplete(fsl_replay::NativeCause::new("limit".into())),
         NativeParityObservation::ExecutionFault(fsl_replay::NativeCause::new("fault".into())),
     ] {
-        let stopped_artifact = authenticated(
-            &fx,
-            operands.clone(),
-            Outcome::Undefined(filament_exact::Undefined::DivisionByZero),
-        );
+        let stopped_artifact = authenticated(&fx, operands.clone(), Outcome::Incomplete(stopped()));
         let settled = falsify(
             &fx,
             &outcome,
@@ -683,6 +741,7 @@ fn tc_048_a_falsified_shadow_replays_through_fsl_from_a_cg_built_request() {
 /// FR-029-AC-20 (F-4 and F-5): the original accounting limit stops the settlement at its own
 /// stage, as `Incomplete(ResourceExhausted)`, even before the refinement ceiling is read.
 #[trace("TC-048", "FR-029-AC-20")]
+#[trace("TC-048", "FR-029-AC-23")]
 #[test]
 fn tc_048_the_original_accounting_limit_stops_the_settlement_at_its_stage() {
     let fx = fixture_with(1);
@@ -726,6 +785,7 @@ fn tc_048_the_original_accounting_limit_stops_the_settlement_at_its_stage() {
 /// retained disagreement is not lost to a missing observation.
 #[trace("TC-048", "FR-033-AC-19")]
 #[trace("TC-048", "FR-029-AC-24")]
+#[trace("TC-048", "FR-029-AC-27")]
 #[test]
 fn tc_048_the_native_observation_is_tied_to_the_authenticated_artifact() {
     let fx = fixture_default();
@@ -806,4 +866,271 @@ fn tc_048_the_route_refinement_state_agrees_with_the_strength_projection() {
             "{summary:?}"
         );
     }
+}
+
+/// FR-029-AC-27: the evidence is the run of the harness being settled. A verified run of another
+/// harness (its path, size record, unwind bound, solver or symbolic arguments) refuses with no
+/// value instead of settling `Proved` under this harness's bounds.
+#[trace("TC-048", "FR-029-AC-27")]
+#[test]
+fn tc_048_the_evidence_of_another_harness_refuses_with_no_value() {
+    let fx = fixture_default();
+    let run = |edit: &dyn Fn(&mut KaniExecutionEvidence)| {
+        let mut evidence = evidence_of(&fx.harness, KaniRunOutcome::Verified, 5);
+        edit(&mut evidence);
+        settle_composite_shadow(
+            &fx.claim(),
+            &filament_contract_codegen::ShadowRun {
+                harness: &fx.harness,
+                evidence: &evidence,
+                refinement: EXHAUSTIVE,
+            },
+            None,
+        )
+    };
+    assert_eq!(
+        run(&|_| {}).unwrap().terminal,
+        proved(5),
+        "the own run settles"
+    );
+    let cases: [(&str, &dyn Fn(&mut KaniExecutionEvidence)); 5] = [
+        ("harness path", &|e| {
+            e.harness_path = "some::other::harness".into()
+        }),
+        ("shadow size", &|e| {
+            e.shadow_size = e.shadow_size.map(|mut size| {
+                size.size += 1;
+                size
+            });
+        }),
+        ("no shadow size", &|e| e.shadow_size = None),
+        ("unwind", &|e| e.unwind += 1),
+        ("symbolic arguments", &|e| e.symbolic_arguments.clear()),
+    ];
+    for (name, edit) in cases {
+        assert!(
+            matches!(run(edit), Err(CompositeShadowError::EvidenceMismatch)),
+            "{name}"
+        );
+    }
+}
+
+/// FR-033-AC-19: the native observation is the artifact's own run, pair by pair of outcome
+/// kinds; a stop observed as a refusal, or an undefined operation as any observation, is refused.
+#[trace("TC-048", "FR-033-AC-19")]
+#[trace("TC-048", "FR-029-AC-27")]
+#[test]
+fn tc_048_each_native_observation_pairs_only_with_its_own_artifact_outcome() {
+    let fx = fixture_default();
+    let (outcome, operands) = falsified_outcome(&fx);
+    let refusal = || filament_exact::Refusal::CheckedInvariant {
+        cause: filament_exact::CheckedInvariantCause::GeneratedDescriptorReconstructionFailed,
+    };
+    let exact = EqualityOutcome {
+        equal: false,
+        pair_count: 4,
+    };
+    let natives = || {
+        [
+            ("completed", NativeParityObservation::Completed(exact)),
+            (
+                "refused",
+                NativeParityObservation::Refused(fsl_replay::Code::InvalidRequest),
+            ),
+            (
+                "incomplete",
+                NativeParityObservation::Incomplete(fsl_replay::NativeCause::new("limit".into())),
+            ),
+            (
+                "fault",
+                NativeParityObservation::ExecutionFault(fsl_replay::NativeCause::new("f".into())),
+            ),
+        ]
+    };
+    // For each artifact outcome, the native observations it may accompany.
+    let table: [(&str, Outcome<bool>, &[&str]); 4] = [
+        ("completed", Outcome::Completed(false), &["completed"]),
+        ("refused", Outcome::Refused(refusal()), &["refused"]),
+        (
+            "incomplete",
+            Outcome::Incomplete(stopped()),
+            &["incomplete", "fault"],
+        ),
+        (
+            "undefined",
+            Outcome::Undefined(filament_exact::Undefined::DivisionByZero),
+            &[],
+        ),
+    ];
+    for (artifact_name, artifact_outcome, allowed) in table {
+        let artifact = authenticated(&fx, operands.clone(), artifact_outcome);
+        for (native_name, native) in natives() {
+            let settled = falsify(
+                &fx,
+                &outcome,
+                EXHAUSTIVE,
+                Some(&DriverFalsification {
+                    artifact: &artifact,
+                    shadow: exact,
+                    native: Some(native),
+                }),
+            );
+            let tied = allowed.contains(&native_name);
+            assert_eq!(
+                tied,
+                settled.is_ok(),
+                "artifact {artifact_name} with native {native_name}: {settled:?}"
+            );
+            if !tied {
+                assert!(matches!(
+                    settled,
+                    Err(CompositeShadowError::NativeContradictsArtifact)
+                ));
+            }
+        }
+    }
+}
+
+/// FR-033-AC-19 and FR-029-AC-27: an artifact authenticated for other bounds, another work limit,
+/// another stage limit or other replay limits is not this claim's: each refuses with no value.
+#[trace("TC-048", "FR-033-AC-19")]
+#[trace("TC-048", "FR-029-AC-27")]
+#[test]
+fn tc_048_an_artifact_of_other_bounds_limits_or_context_refuses_with_no_value() {
+    let fx = fixture_default();
+    let (outcome, operands) = falsified_outcome(&fx);
+    let exact = EqualityOutcome {
+        equal: false,
+        pair_count: 4,
+    };
+    let native = NativeParityObservation::Completed(exact);
+    let settle_artifact = |artifact: &filament_contract_codegen::AuthenticatedCompositeArtifact| {
+        falsify(
+            &fx,
+            &outcome,
+            EXHAUSTIVE,
+            Some(&DriverFalsification {
+                artifact,
+                shadow: exact,
+                native: Some(native.clone()),
+            }),
+        )
+    };
+    let own = authenticated(&fx, operands.clone(), Outcome::Completed(false));
+    assert!(
+        settle_artifact(&own).is_ok(),
+        "the claim's own artifact settles"
+    );
+
+    let by_bounds = authenticated_in(
+        &fx,
+        &fx,
+        operands.clone(),
+        Outcome::Completed(false),
+        &[],
+        100_000,
+    );
+    let looser = fixture_with(u64::MAX - 1);
+    let by_accounting = authenticated_in(
+        &looser,
+        &fx,
+        operands.clone(),
+        Outcome::Completed(false),
+        &fx.bounds(&fx.harness),
+        100_000,
+    );
+    let staged = fixture_in(
+        u64::MAX,
+        ReplayLimits::default(),
+        BTreeMap::from([("s1.input_bytes".to_owned(), 1 << 20)]),
+    );
+    let by_stage = authenticated_in(
+        &staged,
+        &fx,
+        operands.clone(),
+        Outcome::Completed(false),
+        &fx.bounds(&fx.harness),
+        100_000,
+    );
+    let narrow = fixture_in(
+        u64::MAX,
+        ReplayLimits::default().with_input_bytes(ReplayLimits::default().input_bytes * 2),
+        BTreeMap::new(),
+    );
+    let by_replay_limits = authenticated_in(
+        &narrow,
+        &fx,
+        operands,
+        Outcome::Completed(false),
+        &fx.bounds(&fx.harness),
+        100_000,
+    );
+    for (name, artifact) in [
+        ("bounds", &by_bounds),
+        ("accounting limits", &by_accounting),
+        ("stage limit", &by_stage),
+        ("replay limits", &by_replay_limits),
+    ] {
+        assert!(
+            matches!(
+                settle_artifact(artifact),
+                Err(CompositeShadowError::ArtifactMismatch)
+            ),
+            "{name}"
+        );
+    }
+}
+
+/// FR-029-AC-24 and AC-25: a cancelled run is never shadow evidence. It takes the ordinary row
+/// `Incomplete(Cancelled)` with or without a retained disagreement, through no FSL facade, for
+/// both cancellation sources.
+#[trace("TC-048", "FR-029-AC-24")]
+#[trace("TC-048", "FR-029-AC-25")]
+#[test]
+fn tc_048_a_cancelled_run_takes_the_ordinary_row_even_with_a_retained_disagreement() {
+    let fx = fixture_default();
+    for (source, cause) in [
+        (
+            filament_contract_ir::kani::KaniCancellationSource::Requested,
+            filament_exact::CancelCause::Requested,
+        ),
+        (
+            filament_contract_ir::kani::KaniCancellationSource::Deadline,
+            filament_exact::CancelCause::Deadline,
+        ),
+    ] {
+        for refinement in [None, EXHAUSTIVE, Some(RefinementSummary::Disagreed)] {
+            let settled = settle(&fx, KaniRunOutcome::Cancelled { source }, 0, refinement);
+            assert_eq!(
+                settled.terminal,
+                TerminalValue::Incomplete(IncompleteCause::Cancelled { source: cause }),
+                "{refinement:?}"
+            );
+            assert_eq!(settled.route, ShadowRoute::Ordinary);
+            assert!(settled.report.is_none());
+        }
+    }
+}
+
+/// FR-029-AC-27: a drawn leaf range FSL cannot take as a bound refuses with the leaf and FSL's
+/// cause, not as another claim's operands.
+#[trace("TC-048", "FR-029-AC-27")]
+#[test]
+fn tc_048_an_inverted_drawn_range_names_its_leaf_and_the_cause() {
+    let fx = fixture_default();
+    let mut inverted = fx.harness.clone();
+    let leaf = inverted
+        .identity
+        .leaves
+        .iter_mut()
+        .find(|leaf| leaf.path == "b")
+        .expect("the bounded integer leaf");
+    leaf.drawn = (3, 1);
+    let Err(CompositeShadowError::DrawnBound { path, cause, .. }) =
+        settle_with(&fx, &inverted, KaniRunOutcome::Verified, 5, EXHAUSTIVE)
+    else {
+        panic!("a drawn bound refusal");
+    };
+    assert_eq!(path, "b");
+    assert!(!cause.is_empty());
 }

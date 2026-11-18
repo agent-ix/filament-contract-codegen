@@ -45,6 +45,7 @@ use crate::{
             leaf_binding::{integer_positions, LeafBindingRefusal},
             refinement::{ProofSubject, RefinementClass, RefinementSummary},
             shadow::{KaniShadowHarness, OperandSource, ShadowIdentity},
+            SymbolicArgumentBounds, SymbolicBounds,
         },
         output::playback::parse_assertion_playback,
         run::execute::KaniExecutionEvidence,
@@ -86,7 +87,11 @@ pub struct ShadowRun<'a> {
 pub struct DriverFalsification<'a> {
     /// The original generated artifact and native context, authenticated by the driver's capture.
     pub artifact: &'a AuthenticatedCompositeArtifact,
-    /// The shadow's verdict and occurrence-pair count at the rebuilt operands.
+    /// The shadow's verdict and occurrence-pair count at the rebuilt operands, as the driver
+    /// re-executed the harness's shadow there. It is a driver measurement that alone decides
+    /// FSL's F-7 row (divergence against agreement) and nothing in the Kani run, the playback or
+    /// the authenticated artifact (which is the exact oracle's run, not the shadow's) can derive
+    /// it: it is a named trust assumption of the driver (IR-1567).
     pub shadow: EqualityOutcome,
     /// The driver's native observation at those operands; `None` when it made none.
     pub native: Option<NativeParityObservation>,
@@ -103,8 +108,21 @@ pub enum CompositeShadowError {
     OperatorMismatch,
     /// The harness's operand sources are not the claim's operands.
     OperandMismatch,
+    /// The run's evidence is not the run of this harness: its harness path, size record, unwind
+    /// bound, solver or symbolic arguments are another harness's.
+    EvidenceMismatch,
     /// The harness's leaves cannot be keyed as FSL positions.
     Bounds(LeafBindingRefusal),
+    /// A drawn leaf range is not a bound FSL accepts (an inverted range, for one); it names the
+    /// leaf and FSL's cause.
+    DrawnBound {
+        /// The drawn parameter node.
+        node: String,
+        /// The leaf path.
+        path: String,
+        /// FSL's refusal.
+        cause: String,
+    },
     /// The request or the claim could not be built from the original proving context.
     Build(Box<CompositeBuildError>),
     /// A falsified run has no driver observation to settle through.
@@ -235,11 +253,16 @@ pub fn shadow_harness_bounds(
                 .iter()
                 .find(|leaf| &leaf.node == node && &leaf.path == path)
                 .ok_or(CompositeShadowError::OperandMismatch)?;
+            let drawn = |cause: String| CompositeShadowError::DrawnBound {
+                node: node.clone(),
+                path: path.clone(),
+                cause,
+            };
             let range = FiniteBound::integer_range(
                 Integer::from(leaf.drawn.0),
                 Integer::from(leaf.drawn.1),
             )
-            .map_err(|_| CompositeShadowError::OperandMismatch)?;
+            .map_err(|cause| drawn(format!("{cause:?}")))?;
             bounds.push(
                 ProofBound::new(
                     DomainKey::Node {
@@ -249,11 +272,40 @@ pub fn shadow_harness_bounds(
                     Some(DomainKind::Integer),
                     range,
                 )
-                .map_err(|_| CompositeShadowError::OperandMismatch)?,
+                .map_err(|cause| drawn(format!("{cause:?}")))?,
             );
         }
     }
     Ok(bounds)
+}
+
+/// Whether the evidence is the run of this harness: the harness path, the size record, the unwind
+/// bound, the solver and the symbolic arguments the run recorded are the identity's own.
+fn check_evidence(
+    harness: &KaniShadowHarness,
+    evidence: &KaniExecutionEvidence,
+) -> Result<(), CompositeShadowError> {
+    let identity = &harness.identity;
+    let arguments: Vec<SymbolicArgumentBounds> = identity
+        .leaves
+        .iter()
+        .map(|leaf| SymbolicArgumentBounds {
+            identifier: leaf.name.clone(),
+            bounds: SymbolicBounds::Integer {
+                minimum: leaf.drawn.0,
+                maximum: leaf.drawn.1,
+            },
+        })
+        .collect();
+    if evidence.harness_path != harness.harness_path()
+        || evidence.shadow_size != Some(identity.size_record())
+        || evidence.unwind != identity.unwind
+        || evidence.solver != identity.solver
+        || evidence.symbolic_arguments != arguments
+    {
+        return Err(CompositeShadowError::EvidenceMismatch);
+    }
+    Ok(())
 }
 
 /// Whether the harness names the claim's node, operation and operands.
@@ -311,9 +363,35 @@ fn consistent(artifact: &Outcome<bool>, native: &NativeParityObservation) -> boo
         (Outcome::Completed(verdict), NativeParityObservation::Completed(outcome)) => {
             outcome.equal == *verdict
         }
-        (Outcome::Completed(_), _) => false,
-        (_, NativeParityObservation::Completed(_)) => false,
-        (_, _) => true,
+        (
+            Outcome::Completed(_),
+            NativeParityObservation::Refused(_)
+            | NativeParityObservation::Incomplete(_)
+            | NativeParityObservation::ExecutionFault(_),
+        ) => false,
+        (Outcome::Refused(_), NativeParityObservation::Refused(_)) => true,
+        (
+            Outcome::Refused(_),
+            NativeParityObservation::Completed(_)
+            | NativeParityObservation::Incomplete(_)
+            | NativeParityObservation::ExecutionFault(_),
+        ) => false,
+        (
+            Outcome::Incomplete(_),
+            NativeParityObservation::Incomplete(_) | NativeParityObservation::ExecutionFault(_),
+        ) => true,
+        (
+            Outcome::Incomplete(_),
+            NativeParityObservation::Completed(_) | NativeParityObservation::Refused(_),
+        ) => false,
+        // An undefined operation has no native observation of its own.
+        (
+            Outcome::Undefined(_),
+            NativeParityObservation::Completed(_)
+            | NativeParityObservation::Refused(_)
+            | NativeParityObservation::Incomplete(_)
+            | NativeParityObservation::ExecutionFault(_),
+        ) => false,
     }
 }
 
@@ -338,6 +416,7 @@ pub fn settle_composite_shadow(
     // operands the bounds are keyed by, and the settled one is built over the bounds.
     let probe = claim_request(claim, &[])?;
     check_harness(claim, run.harness, &probe)?;
+    check_evidence(run.harness, run.evidence)?;
     let bounds = shadow_harness_bounds(&run.harness.identity, &probe, package)?;
     let request = claim_request(claim, &bounds)?;
     let evidence = run.evidence;
@@ -389,8 +468,6 @@ pub fn settle_composite_shadow(
     }
 }
 
-// The 192-byte refusal is retained inline to preserve the public PackageRead payload.
-#[allow(clippy::result_large_err)]
 fn claim_request(
     claim: &ShadowClaim<'_>,
     bounds: &[ProofBound],
@@ -453,8 +530,9 @@ fn falsified_entry(
     };
     if tie(&artifact_claim) != tie(request.claim())
         || artifact.operands() != &operands
+        || artifact_limits != request.replay_limits()
         || artifact
-            .check_sent_context(request.wire(), artifact_limits)
+            .check_sent_context(request.wire(), request.replay_limits())
             .is_err()
     {
         return Err(CompositeShadowError::ArtifactMismatch);
