@@ -419,8 +419,9 @@ fn boolean_and_partial_conditions_use_the_owner_oracle_and_unbounded_domains_ref
         }
         // FSL's owner evaluator at `n = 1`, `aux = 2`: `1 mod 2 <= 0` is false, so a constant-true
         // owner would fail here. A zero `aux` is outside the `Positive` type, so the owner's
-        // `Undefined` is not reachable from FSL source any more; QSL-2361 restores that test and
-        // reverts the `<=` stand-in for `= 0` (FSL emission refuses `=` over `mod`).
+        // `Undefined` is not reachable from FSL source: FSL refuses an unproved-nonzero divisor at
+        // compile time (see the lib conversion test). The `<=` stand-in for `= 0` (FSL emission
+        // refused `=` over `mod` at the pinned rev) reverts with the tag-pin PR (IR-1566).
         let outcome = owner_evaluation(&f, "Limit0", 1, false, 2, request.evaluator_limits);
         let expected = condition == "true";
         assert!(
@@ -653,7 +654,7 @@ fn a_standalone_collection_constraint_remains_unsupported_without_a_harness() {
 #[trace("TC-062", "FR-048-AC-2", "FR-048-AC-8")]
 #[test]
 fn same_named_general_clause_bodies_and_preconditions_cannot_reuse_a_method() {
-    // `<=` stands in for `= c` because FSL emission refuses `=` over `mod`; QSL-2361 reverts it.
+    // `<=` stands in for `= c` because the pinned FSL rev refuses `=` over `mod`; the revert lands with the tag-pin PR (IR-1566).
     for changed in ["safety", "constraint", "precondition"] {
         let make = |constant: u8| {
             let safety = if changed == "safety" {

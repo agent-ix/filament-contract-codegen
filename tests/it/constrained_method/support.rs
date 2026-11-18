@@ -68,15 +68,39 @@ pub(super) struct Fixture {
     pub(super) safety: CheckedNodeId,
     pub(super) constraints: Vec<CheckedNodeId>,
 }
-pub(super) fn fixture(doc: &Value, name: &str, safety: &str, constraints: &[&str]) -> Fixture {
-    let bytes = quire_canonical::to_vec(doc, quire_canonical::Limits::new(1 << 20)).unwrap();
+fn clause_source(safety: &str, constraints: &[&str]) -> String {
     let mut source=format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.model.complete/v1\";\nmodel M = \"{MODEL}\";\ninvariant Safe using v on M::Node at current {{ {safety} }}\n");
     for (index, body) in constraints.iter().enumerate() {
         source.push_str(&format!(
             "constraint Limit{index} using v on M::Node at current {{ {body} }}\n"
         ));
     }
-    fixture_source(bytes, name, source)
+    source
+}
+pub(super) fn fixture(doc: &Value, name: &str, safety: &str, constraints: &[&str]) -> Fixture {
+    let bytes = quire_canonical::to_vec(doc, quire_canonical::Limits::new(1 << 20)).unwrap();
+    fixture_source(bytes, name, clause_source(safety, constraints))
+}
+/// The typed refusal FSL gives when it compiles the same clause source.
+pub(super) fn compile_refusal(
+    doc: &Value,
+    name: &str,
+    safety: &str,
+    constraints: &[&str],
+) -> Box<fsl_replay::CallSiteRefusal> {
+    let bytes = quire_canonical::to_vec(doc, quire_canonical::Limits::new(1 << 20)).unwrap();
+    let source = clause_source(safety, constraints);
+    call_site(
+        SourceIdentity::new("agent-ix", format!("{name}.native")),
+        name.to_owned(),
+        "constrained.native",
+        source.as_bytes(),
+        [bytes.as_slice()],
+        &DependencyInput::default(),
+        &ClauseName(Identifier::new("Safe").unwrap()),
+    )
+    .err()
+    .expect("FSL refuses the clause source")
 }
 pub(super) fn fixture_source(bytes: Vec<u8>, name: &str, source: String) -> Fixture {
     let site = call_site(

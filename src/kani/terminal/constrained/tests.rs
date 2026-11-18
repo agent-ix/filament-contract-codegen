@@ -178,9 +178,25 @@ fn conversion_preserves_original_causes_and_rejects_malformed_or_cross_method_ev
         incomplete,
         fsl_replay::ClauseEvaluation::Incomplete(_)
     ));
-    // FSL no longer compiles a divisor it cannot prove nonzero, so no authentic clause reaches
-    // `Undefined` by dividing by zero; the owner's own tabled value stands in for it.
-    // QSL-2361 restores a real owner `Undefined` test for FR-048-AC-6.
+    // FSL refuses a divisor it cannot prove nonzero when it compiles the source, so a zero
+    // divisor is the owner's typed compile refusal and never a runtime `Undefined` evaluation.
+    let compile = support::compile_refusal(
+        &support::document(),
+        "constrained-zero-divisor",
+        "self.n <= 3",
+        &["self.n mod self.aux = 0"],
+    );
+    assert!(
+        matches!(
+            &*compile,
+            fsl_replay::CallSiteRefusal::Compile { code, message }
+                if *code == fsl_replay::Code::UndefinedExpression
+                    && message.contains("unproved-nonzero")
+        ),
+        "{compile:?}"
+    );
+    // The conversion rule for an owner `Undefined` evaluation is checked on the owner's own
+    // value, since no FSL-compiled clause here can produce one.
     let undefined = fsl_replay::ClauseEvaluation::Undefined {
         reason: "division-by-zero",
     };
