@@ -49,7 +49,8 @@ The FSL facade API is delivered on FSL main by merged PR #1483; its
 filament-eval root-call-site behavior is specified by FR-262. The CG concrete owner-path consumer acquires the original checked closure,
 compares its retained canonical package bytes with the separately admitted IR
 package, selects its callable and registers the generated body through this facade. FSL arch-lint T12-A still bars CG from fsl-eval and
-checker/package internals; CG shall use only the FR-485 facade
+checker internals, and CG names `fsl-package` only for the types that layer owns, such as
+`ObligationIdentity`; CG shall use only the FR-485 facade
 for checked-closure acquisition and application, not RT's port or those
 internal modules (FR-014-AC-47).
 The generator shall not preserve the port through an alias, wrapper or compatibility layer.

@@ -63,8 +63,9 @@ and who reports each failure.
 `DomainKind::Collection` for cardinality and `DomainKind::Integer` for element ranges.
 
 Nothing else crosses. CG holds no copy of an envelope, witness, replay source, terminal record or
-obligation identity type, and neither does IR. CG's only FSL dependency is the `fsl-replay` crate
-(the one FSL entry in `Cargo.toml`).
+obligation identity type, and neither does IR. CG's FSL dependencies are the `fsl-replay` crate and `fsl-package`, for `ObligationIdentity`,
+which `fsl-replay` does not re-export (FSL QSL-1109, QSL-2166), and no other FSL crate (the two FSL
+entries in `Cargo.toml`).
 
 ### Versioned contracts and how identity is asserted
 

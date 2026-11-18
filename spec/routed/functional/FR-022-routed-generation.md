@@ -152,8 +152,9 @@ output belong to IR-629; they do not change this crate boundary.
   a Cargo package cycle.
 - Not `fsl-route`'s `BackendId`: FSL ADR-011 §2.1 and ADR-013 T-7 put no
   shared Rust crate between FSL and CG for these types; each side converts
-  its data at the driver boundary. Taking it would also widen this crate's one FSL edge
-  (`fsl-replay`) that filament-driver FR-001-AC-1 asserts.
+  its data at the driver boundary. Taking it would also widen this crate's FSL edges
+  (`fsl-replay` and `fsl-package`, for `ObligationIdentity`, and no other FSL crate)
+  that filament-driver FR-001-AC-1 asserts.
 - Not the IR model crate: the IR is target-neutral and cannot name a CG
   backend kind, and this crate depends on the IR, not the other way round.
 

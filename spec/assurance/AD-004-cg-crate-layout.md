@@ -760,7 +760,8 @@ it needs no CG-side copy and no copied fixture. Before step 4f it passed through
 exemplar move and a passing V2 control remain open follow-up work, not prerequisites for deleting
 deprecated V1 code. Until they land, this regression requirement is unmet, not waived or narrowed.
 A CG-side control is described only if the `fsl-replay` facade offers a way to
-build the package: CG may depend on `fsl-replay` only (`Cargo.toml`, FSL arch-lint T12-A), and the
+build the package: CG may depend on the `fsl-replay` facade and `fsl-package` only (`Cargo.toml`, FSL arch-lint T12-A,
+FSL FR-059 FB-05), and `fsl-package` holds data types such as `ObligationIdentity`, not a lowering entry; the
 V1 control's package is built by `filament_spec_language::lowering::lower_for(.., IntegerIrV1)` in
 FSL's root crate (as the SR-662 review found; not checked here), which CG cannot call. If the
 facade offers no way, a CG-side control is a need routed to FSL, not a fixture. This AD did not

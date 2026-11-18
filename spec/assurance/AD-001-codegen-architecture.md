@@ -223,22 +223,26 @@ success fallback, and no requirement converts one into another.
 | CG → FSV | Generated calls to `check_equality` and `CheckedEquality::evaluate` | `filament-semantic-value` | Passes checked operands and preserves the owner's outcome. |
 | CG → RT | Generated calls into `filament_contract_runtime::scalar` for lazy Boolean evaluation and `filament_contract_runtime::exact` for runtime-owned package and function execution, including `PackageDeclarations::check` and `CheckedPackage::call` | Contract Runtime | Emits calls and charges nothing itself. |
 | FSL → CG | The FR-331 envelope, its `candidates`, and the registered descriptor's typed `ProviderOrigin` | FSpec owns the envelope and candidate wire; FSL `route` computes candidates and its registry holds origin | The driver projects one FSL registry descriptor to CG's own descriptor, copying identity, advertised pairs and `origin()` without changing meaning. FR-019 reads that value; FR-022 generates for what was routed. No direct CG dependency on `fsl-route` and no origin member is added to FR-331 wire. |
-| CG → FSL | `Witness`, `ReplaySource`, the counterexample envelope `WitnessEnvelope`, `ObligationIdentity`, the replay request, `replay` and `replay_frame` | FSL `fsl-replay` | Builds them and calls the facade. Target: no copy of these types in CG or in Contract IR; see Current state. |
+| CG → FSL | `Witness`, `ReplaySource`, the counterexample envelope `WitnessEnvelope`, the replay request, `replay` and `replay_frame`; `ObligationIdentity` | FSL `fsl-replay`; `ObligationIdentity` from FSL `fsl-package` (no `fsl-replay` re-export) | Builds them and calls the facade. Target: no copy of these types in CG or in Contract IR; see Current state. |
 | Backend adapter → CG common intake | Typed success submission (assignments, backend identity, FSL obligation identity, declared domains, source/provenance, replay packet members) or typed decode refusal (backend identity, obligation identity, cause) | CG intake; FSL owns envelope and identity types | Adapter keeps native text and decoding; common intake reports decode refusal, then checks domains and FSL admission for a successful submission before replay. |
 | CG → FSL | The FR-331 terminal value of a run | FSL `fsl-replay` | The Kani adapter maps `KaniRunOutcome` to `TerminalValue` in one total match, one value per run (FR-029). An item settled `unsupported` at negotiation has no terminal value. |
 | CG ↔ Kani | The option vector in, the exported JSON report and the printed concrete playback out | Kani | Only `src/kani_transcript.rs` reads either. The verdict comes from the report; the playback is a payload. |
 
 ## Decisions
 
-- FSL owns the replay and proof types in `fsl-replay`: `Witness`, `ReplaySource`, the
-  counterexample envelope, the FR-331 terminal record and `ObligationIdentity`. Contract IR holds
-  no copy of them. CG uses FSL's `ObligationIdentity` and FSL's envelope, and keeps the Kani
-  transcript parser as part of its backend adapter. The authority is the `fsl-replay` API, which
-  defines all five types.
+- FSL owns the replay and proof types: `Witness`, `ReplaySource`, the counterexample envelope and
+  the FR-331 terminal record in `fsl-replay`, and `ObligationIdentity` in `fsl-package` (FSL
+  QSL-1109, CF-IR-04), which `fsl-replay` does not re-export. Contract IR holds no copy of them.
+  CG uses FSL's `ObligationIdentity` and FSL's envelope, and keeps the Kani transcript parser as
+  part of its backend adapter. The authority is the FSL API: `fsl-replay` defines four of the five
+  types and `fsl-package` defines `ObligationIdentity`. `fsl-replay` already depends on
+  `fsl-package`, so CG's direct dependency on it adds no crate to CG's graph.
 - CG owns minimization lineage as immutable records referring to exact FSL envelopes, parent
   revisions and opaque obligation identities. The FSL envelope and packet are unchanged.
-- CG builds FSL's `ObligationIdentity` as the ADR-013 O-09 digest of the subject node id,
-  occurrence key, obligation kind and arguments, with no `source_span` (AD-003 E-1), and builds its envelopes as FSL's `WitnessEnvelope` (FR-024).
+- CG builds `fsl_package::ObligationIdentity` with `new(node key, model, ordinal)` or
+  `from_claim_occurrence(&OccurrenceKey)`, from FSL-supplied keys (`NodeKey` comes from FSL
+  accessors; CG computes no digest) (AD-003 E-1). Obligation kind and arguments are not part of
+  FSL's identity; CG keeps them in its own records. CG builds its envelopes as FSL's `WitnessEnvelope` (FR-024).
 - CG replays only through `fsl_replay::replay`, the layer-6 facade (FSL ADR-013 TK-01), and frame
   counterexamples only through `fsl_replay::replay_frame` (FSL FR-116). No replay path takes a
   caller-supplied executor (FSL ADR-011 FB-07).

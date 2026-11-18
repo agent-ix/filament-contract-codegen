@@ -339,7 +339,7 @@ by filament-integration IR-842.
    `Outcome<bool>` (FR-014-AC-35). Compile the crate against the runtime alone and run each oracle
    over the bounded domain beside direct runtime execution. Outcomes, charges and counters agree on
    every input (FR-014-AC-37). No comparison with the FSL value authority runs here: it is outside
-   CG's boundary (CG may call the `fsl-replay` facade only, FSL arch-lint T12-A), owned by
+   CG's boundary (CG may use only the `fsl-replay` facade and `fsl-package`, which has no evaluator, FSL arch-lint T12-A), owned by
    filament-integration IR-842, and FR-014-AC-47 keeps CG's artifacts from claiming it.
 2. Generate an oracle over an `implies` node and read its source map. It declares the consequent
    count, one evaluation-entry probe on the function-entry line outside every consequent region and
