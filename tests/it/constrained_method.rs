@@ -519,7 +519,7 @@ fn run_installed(method: &KaniConstrainedMethodHarness) -> ConstrainedBackendEvi
     let scratch = crate::scratch_crate::TemporaryDirectory::new("constrained-method-installed");
     std::fs::create_dir_all(scratch.path.as_path().join("src")).unwrap();
     std::fs::create_dir_all(scratch.path.as_path().join(".cargo")).unwrap();
-    crate::scratch_crate::write_manifest(scratch.path.as_path(),"[package]\nname=\"constrained_method_control\"\nversion=\"0.0.0\"\nedition=\"2021\"\n[workspace]\n[dependencies]\nfilament-exact={git=\"https://github.com/agent-ix/filament-exact\",branch=\"main\"}\nfilament-contract-runtime={git=\"https://github.com/agent-ix/filament-contract-runtime\",branch=\"main\",features=[\"exact\"]}\n");
+    crate::scratch_crate::write_manifest(scratch.path.as_path(),&format!("[package]\nname=\"constrained_method_control\"\nversion=\"0.0.0\"\nedition=\"2021\"\n[workspace]\n[dependencies]\nfilament-exact={{{}}}\nfilament-contract-runtime={{{},features=[\"exact\"]}}\n",filament_contract_codegen::EXACT_DEPENDENCY_SOURCE,filament_contract_codegen::RUNTIME_DEPENDENCY_SOURCE));
     std::fs::write(
         scratch.path.as_path().join(".cargo/config.toml"),
         "[build]\njobs=2\n",

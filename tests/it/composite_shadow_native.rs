@@ -26,7 +26,7 @@ use super::composite_shadow::{
     generate, DUO_EQUAL, FLAGS_EQUAL, FLAGS_NOT_EQUAL, NESTED_OPTION_EQUAL, OPTION_EQUAL,
 };
 use super::exact_scalar_agreement::{
-    composite_manifest_for_shared_target, AGREEMENT_DEV_DEPENDENCIES,
+    composite_manifest_for_shared_target, agreement_dev_dependencies,
 };
 use super::scratch_crate::{
     agreement_target, lock_agreement_build, resolve_seeded_lock, TemporaryDirectory,
@@ -228,7 +228,8 @@ pub(super) fn build(workspace: &Path, members: &[Member]) -> Vec<Vec<PathBuf>> {
         }
         write!(
             manifest,
-            "\n[dev-dependencies]\n{AGREEMENT_DEV_DEPENDENCIES}"
+            "\n[dev-dependencies]\n{}",
+            agreement_dev_dependencies()
         )
         .unwrap();
         fs::write(root.join("Cargo.toml"), manifest).unwrap();

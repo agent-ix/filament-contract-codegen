@@ -321,8 +321,10 @@ impl ScratchCrate {
         // test's sources are older than another's build. Each crate is named after its own label.
         let package = format!("ir1509-clause-controls-{label}");
         let manifest = format!(
-            "[package]\nname = \"{package}\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nfilament-exact = {{ git = \"https://github.com/agent-ix/filament-exact\", branch = \"main\" }}\nfilament-semantic-value = {{ git = \"https://github.com/agent-ix/filament-semantic-value\", branch = \"main\" }}\n{patch}\n[workspace]\n",
-            runtime_dependency(&["exact"])
+            "[package]\nname = \"{package}\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[dependencies]\n{}\nfilament-exact = {{ {} }}\nfilament-semantic-value = {{ {} }}\n{patch}\n[workspace]\n",
+            runtime_dependency(&["exact"]),
+            filament_contract_codegen::EXACT_DEPENDENCY_SOURCE,
+            filament_contract_codegen::SEMANTIC_VALUE_DEPENDENCY_SOURCE
         );
         write_manifest(&directory.path, &manifest);
         fs::write(

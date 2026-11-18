@@ -65,9 +65,9 @@ fn original_model_enum_eq_ne_generate_and_execute_all_four_truth_arms() {
     // The agreement fixture consumes the native reader; it is not part of the emitted oracle.
     let artifacts = oracles.artifacts.iter().map(|artifact| {
         let contents = if artifact.path == "Cargo.toml" {
-            artifact.contents.replacen("[dependencies]\n", concat!(
-                "[dependencies]\n",
-                "filament-contract-model = { git = \"https://github.com/agent-ix/filament-contract-ir\", tag = \"v0.1.0\" }\n"
+            artifact.contents.replacen("[dependencies]\n", &format!(
+                "[dependencies]\nfilament-contract-model = {{ {} }}\n",
+                filament_contract_codegen::MODEL_DEPENDENCY_SOURCE
             ), 1)
         } else { artifact.contents.clone() };
         (artifact.path.clone(), contents)

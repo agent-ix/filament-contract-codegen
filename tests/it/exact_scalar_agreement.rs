@@ -23,12 +23,14 @@ use std::{
 /// Contract Runtime the generated crate already depends on. Matching
 /// constraints from this repository's manifest use its seeded dependency
 /// resolution before the locked native test.
-pub(super) const AGREEMENT_DEV_DEPENDENCIES: &str = concat!(
-    "fsl-replay = { version = \"=0.1.0\", git = \"https://github.com/agent-ix/filament-spec-language\", branch = \"main\" }\n",
-    "serde_json = \"=1.0.151\"\nsha2 = \"=0.10.9\"\n",
-    "ix-trace-rs = { version = \"0.1\", git = \"https://github.com/agent-ix/ix-trace-rs\", branch = \"main\" }\n",
-    "filament-exact = { git = \"https://github.com/agent-ix/filament-exact\", branch = \"main\", features = [\"test-support\"] }\n",
-);
+pub(super) fn agreement_dev_dependencies() -> String {
+    format!(
+        "fsl-replay = {{ version = \"=0.3.0\", {} }}\nserde_json = \"=1.0.151\"\nsha2 = \"=0.10.9\"\nix-trace-rs = {{ version = \"0.1.2\", {} }}\nfilament-exact = {{ {}, features = [\"test-support\"] }}\n",
+        filament_contract_codegen::FSL_REPLAY_DEPENDENCY_SOURCE,
+        filament_contract_codegen::TRACE_DEPENDENCY_SOURCE,
+        filament_contract_codegen::EXACT_DEPENDENCY_SOURCE,
+    )
+}
 
 /// Writes `artifacts` (path, contents) as a crate at `<target tmp>/<label>`,
 /// adds `extra_files` beside them, registers `cases` (a path under this
@@ -78,8 +80,9 @@ pub(super) fn stage_composite_agreement_case<'a>(
     let cases_path = Path::new(env!("CARGO_MANIFEST_DIR")).join(cases);
     write!(
         manifest,
-        "\n[[test]]\nname = \"agreement\"\npath = {:?}\n\n[dev-dependencies]\n{AGREEMENT_DEV_DEPENDENCIES}",
+        "\n[[test]]\nname = \"agreement\"\npath = {:?}\n\n[dev-dependencies]\n{}",
         cases_path.to_str().expect("UTF-8 repository path"),
+        agreement_dev_dependencies(),
     )
     .expect("write to String");
     fs::write(manifest_path, manifest).expect("write composite workspace member");
@@ -251,8 +254,9 @@ fn run_agreement_cases_with_expectation<'a>(
     let target_dir = super::scratch_crate::agreement_target();
     write!(
         manifest,
-        "\n[[test]]\nname = \"agreement\"\npath = {:?}\n\n[dev-dependencies]\n{AGREEMENT_DEV_DEPENDENCIES}",
+        "\n[[test]]\nname = \"agreement\"\npath = {:?}\n\n[dev-dependencies]\n{}",
         cases_path.to_str().expect("UTF-8 repository path"),
+        agreement_dev_dependencies(),
     )
     .expect("write to String");
     fs::write(&manifest_path, manifest).expect("extend generated manifest");

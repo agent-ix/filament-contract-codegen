@@ -221,7 +221,8 @@ qualification through the actual owning capability.
 - A generated crate: `Cargo.toml` (`publish = false`, direct exact/FSV
   dependencies, and root `fsl-replay` for admitted-context lookup) and
   `src/lib.rs`. The single `core/profile` manifest authority supplies normal
-  Git branch-main dependencies; consumer lockfiles perform ordinary resolution.
+  Git dependencies on the release tags (and, for `fsl-replay`, the revision) CG's own
+  `Cargo.toml` names, so no first-party crate resolves from a branch or twice.
 - One public opaque `PreparedEqualityEnvironment<'ctx>` type whose private
   fields retain `Option<&'ctx fsl_replay::AdmittedContext>`, expected
   original package and item/descriptor binding, admitted FSV `TypeEnvironment`,

@@ -42,7 +42,7 @@ filament-contract-runtime = { version = "0.1.1", git = "https://github.com/agent
 # IR-1566 INTERIM rev pin: the head of FSL PR #2841, the first FSL revision whose own first-party
 # dependencies are all release tags (main at 130391bc still names `branch = "main"`, which Cargo
 # resolves as a second copy of every first-party crate). Swap to the fsl-* tag cut after #2841 merges.
-fsl-replay = { version = "0.3.0", git = "https://github.com/agent-ix/filament-spec-language", rev = "89751e13349918d63fa1254bb352f6b4b3be0f26" }
+fsl-replay = { version = "0.3.0", git = "https://github.com/agent-ix/filament-spec-language", rev = "ec52f8bbedf22f22df9f90deb4409c58cd97916d" }
 filament-eval = { version = "0.1.4", git = "https://github.com/agent-ix/filament-eval", tag = "v0.1.4" }
 # RFC 8785 encoding for CG artifact JSON, document content hashes, and fixed-shape records.
 quire-canonical = { version = "0.3.1", git = "https://github.com/agent-ix/quire-canonical", tag = "v0.3.1", features = ["serde_json"] }

@@ -225,7 +225,7 @@ fn genuine_carried_quantity_u01_conversion_generates() {
             "assert_eq!(actual.magnitude(), &expected); assert_eq!(actual.unit(), &m.id());",
         )
     );
-    run_native("quantity-source-forms", manifest, &native, "fsl-replay = { git = \"https://github.com/agent-ix/filament-spec-language\", branch = \"main\" }\n");
+    run_native("quantity-source-forms", manifest, &native, &format!("fsl-replay = {{ {} }}\n", filament_contract_codegen::FSL_REPLAY_DEPENDENCY_SOURCE));
 }
 
 pub(crate) fn run_native(label: &str, manifest: &str, source: &str, dependencies: &str) {
@@ -233,7 +233,7 @@ pub(crate) fn run_native(label: &str, manifest: &str, source: &str, dependencies
     let scratch = crate::scratch_crate::TemporaryDirectory::new(label);
     fs::create_dir_all(scratch.path.join("src")).unwrap();
     let manifest = crate::scratch_crate::per_label_package(manifest, label);
-    let manifest = format!("{manifest}\n[dev-dependencies]\nfilament-exact = {{ git = \"https://github.com/agent-ix/filament-exact\", branch = \"main\", features = [\"test-support\"] }}\n{dependencies}");
+    let manifest = format!("{manifest}\n[dev-dependencies]\nfilament-exact = {{ {}, features = [\"test-support\"] }}\n{dependencies}", filament_contract_codegen::EXACT_DEPENDENCY_SOURCE);
     fs::write(scratch.path.join("Cargo.toml"), manifest).unwrap();
     fs::write(scratch.path.join("src/lib.rs"), source).unwrap();
     crate::scratch_crate::resolve_seeded_lock(&scratch.path);
@@ -606,5 +606,5 @@ fn carried_input_native_harness_component_executes_owner_admission_and_conversio
         "owner::convert_quantity(operand, m.unit(), &owner::QuantityTarget::Exact, &mut generated_meter)",
         "assert_eq!(actual, direct);",
     );
-    run_native("carried-input-harness-component", &manifest, &native, "fsl-replay = { git = \"https://github.com/agent-ix/filament-spec-language\", branch = \"main\" }\n");
+    run_native("carried-input-harness-component", &manifest, &native, &format!("fsl-replay = {{ {} }}\n", filament_contract_codegen::FSL_REPLAY_DEPENDENCY_SOURCE));
 }
