@@ -111,6 +111,33 @@ pub enum RowVerdict {
     Tractable,
     /// The probe did not finish within the ceiling.
     NotTractable,
+    /// No Kani probe was run; the row records a deductive (Verus) proof held in the kernel's
+    /// record, stated by the row's `verus_proof`. The decider never refuses on such a row.
+    VerusProved,
+}
+
+/// What a Verus proof held in the kernel's (filament-exact's) record states for a row, and what
+/// it leaves unproved. It names the record by requirement, test-case and merged-change ids, never
+/// by a tool version. The decider never reads it.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct VerusProof {
+    /// The filament-exact requirement and test-case ids that hold the proof's statement and its
+    /// run (for example `FR-405-AC-17` and `TC-953`).
+    pub records: Vec<String>,
+    /// The merged filament-exact changes that delivered the proof (for example
+    /// `filament-exact#181`).
+    pub changes: Vec<String>,
+    /// The theorems of the record that state the proved part of the row.
+    pub theorems: Vec<String>,
+    /// Exactly what the proof states for the row.
+    pub proved: String,
+    /// What the proof does not state for the row.
+    pub not_proved: String,
+    /// What the proof assumes without proving.
+    pub assumes: String,
+    /// The recorded run of the proof and of its mutants, as the record states it.
+    pub run: String,
 }
 
 fn required<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
@@ -174,8 +201,10 @@ pub struct TractabilityRow {
     pub collection_bound: Option<u64>,
     /// The measured verdict.
     pub verdict: RowVerdict,
-    /// Wall-clock seconds the probe took, fractional allowed.
-    pub wall_seconds: WallSeconds,
+    /// Wall-clock seconds the probe took, fractional allowed; `null` exactly on a `verus_proved`
+    /// row, where no Kani probe ran. The key is required.
+    #[serde(deserialize_with = "required")]
+    pub wall_seconds: Option<WallSeconds>,
     /// Peak memory of the probe in bytes, `null` when the runner reported none. The key is
     /// required.
     #[serde(deserialize_with = "required")]
@@ -195,6 +224,11 @@ pub struct TractabilityRow {
     /// row.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub provenance: Option<String>,
+    /// The Verus proof the kernel's record holds for this row, when it holds one. It never
+    /// changes the row's Kani `verdict`, and the decider never reads it; it is required on a
+    /// `verus_proved` row.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub verus_proof: Option<VerusProof>,
     /// The generator version the probe ran against.
     pub generator_version: String,
     /// The kernel version the probe ran against.
@@ -202,6 +236,23 @@ pub struct TractabilityRow {
 }
 
 impl TractabilityRow {
+    /// Why the row contradicts its verdict: a Kani verdict needs the probe's wall time, and a
+    /// `verus_proved` verdict needs its proof and records no Kani measurement.
+    fn inconsistency(&self) -> Option<&'static str> {
+        match self.verdict {
+            RowVerdict::VerusProved if self.verus_proof.is_none() => {
+                Some("a verus_proved row needs a verus_proof")
+            }
+            RowVerdict::VerusProved if self.wall_seconds.is_some() || self.peak_bytes.is_some() => {
+                Some("a verus_proved row records no Kani wall_seconds or peak_bytes")
+            }
+            RowVerdict::Tractable | RowVerdict::NotTractable if self.wall_seconds.is_none() => {
+                Some("a Kani verdict row needs wall_seconds")
+            }
+            _ => None,
+        }
+    }
+
     fn is_current(&self, features: &ClauseFeatures) -> bool {
         self.route == features.route
             && self.generator_version == features.generator_version
@@ -365,6 +416,15 @@ impl TractabilityTable {
                 })
             })
             .collect::<Result<Vec<TractabilityRow>, _>>()?;
+        for (row, value) in rows.iter().enumerate() {
+            if let Some(message) = value.inconsistency() {
+                return Err(TractabilityLoadError::MalformedRow {
+                    path: path.to_owned(),
+                    row,
+                    message: message.to_owned(),
+                });
+            }
+        }
         Ok(Self { rows })
     }
 }
