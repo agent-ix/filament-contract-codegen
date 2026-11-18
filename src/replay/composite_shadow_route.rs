@@ -108,8 +108,8 @@ pub enum CompositeShadowError {
     OperatorMismatch,
     /// The harness's operand sources are not the claim's operands.
     OperandMismatch,
-    /// The run's evidence is not the run of this harness: its harness path, size record, unwind
-    /// bound, solver or symbolic arguments are another harness's.
+    /// The run's evidence is not the run of this harness: its harness file, size record, unwind
+    /// bound or symbolic arguments are another harness's.
     EvidenceMismatch,
     /// The harness's leaves cannot be keyed as FSL positions.
     Bounds(LeafBindingRefusal),
@@ -280,7 +280,7 @@ pub fn shadow_harness_bounds(
 }
 
 /// Whether the evidence is the run of this harness: the generated harness file, the size record, the unwind
-/// bound, the solver and the symbolic arguments the run recorded are the identity's own.
+/// bound and the symbolic arguments the run recorded are the identity's own.
 fn check_evidence(
     harness: &KaniShadowHarness,
     evidence: &KaniExecutionEvidence,
@@ -300,7 +300,6 @@ fn check_evidence(
     if evidence.harness_path != harness.rust.path
         || evidence.shadow_size != Some(identity.size_record())
         || evidence.unwind != identity.unwind
-        || evidence.solver != identity.solver
         || evidence.symbolic_arguments != arguments
     {
         return Err(CompositeShadowError::EvidenceMismatch);

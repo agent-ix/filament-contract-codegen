@@ -52,3 +52,12 @@ nothing tests. The PARTIAL remainders point at an owner that is not a ticket.
 - Matrix: `quoin matrix --repo . --json` at 124ea590, criteria above all `tagged`.
 - Route tests 9/9 pass; mutation results in SR-17940486709564847048062.
 - Linear: IR-team issues scanned for a follow-up owner; none found.
+
+## Dispositions
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-001 | fixed | Round 1 at baecb8c0: Linear IR-1567 ("IR-806 follow-up: remaining composite-shadow production-route ACs", Backlog, project Kani Lowering MVP) exists. Every PARTIAL remainder and tests.md row cites IR-1567, and no "IR-806 follow-up" text is left in spec/. |
+| FND-002 | fixed | Round 1 at baecb8c0: FR-029-AC-27 reads "PARTIAL (IR-806 PR-3; owner IR-1567 for the remainder)". It lists the implemented and tested bindings and, as PLANNED, the work-limit, ceiling, declared-domain/content and retained-bytes gaps. tests.md has a separate Partial row for AC-27, and the Covered row now spans AC-23 to AC-26. |
+| FND-003 | fixed | Round 1 at baecb8c0: the FR-033-AC-19 PLANNED (IR-1567) remainder lists the driver-supplied native observation without a pair count, the shadow trust assumption, the synthetic capture, changed bytes/source refused by IR-1184 rather than the route, and the unbuilt body-only mutant. Other bounds and limits are now tested through the route. |
+| FND-004 | fixed | Round 1 at baecb8c0: the falsified test is tagged FR-029-AC-31; the inconclusive-rows and accounting-limit tests are tagged FR-029-AC-23; the native-tie test is tagged FR-029-AC-27. |

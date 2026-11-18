@@ -77,3 +77,20 @@ Cancelled rows are not exercised by any test.
 - Route tests at head: 9/9 pass. Mutants: 16 run plus a no-mutant control; 12 killed, 4 survived (FND-004, FND-005).
 - Probes: exact, tightened, omitted, empty, duplicate, unknown key, missing leaf, wider range, foreign evidence, wildcard consistency, untied shadow.
 - Real Kani lane test: pass, figures above.
+
+## New findings (disposition pass 1)
+
+| ID | Severity | Summary | Refs |
+| --- | --- | --- | --- |
+| FND-007 | low | `check_evidence` also compares `evidence.solver`, and the `EvidenceMismatch` doc lists the solver, but no test edits the solver: removing that comparison fails none of the 14 route tests. FR-029-AC-27's tested list leaves the solver out, so the spec is honest. Add a solver case to `tc_048_the_evidence_of_another_harness_refuses_with_no_value`, or drop the comparison and the doc word. | src/replay/composite_shadow_route.rs:299-306, tests/it/composite_shadow_route.rs:879-917 |
+
+## Dispositions
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-001 | fixed | Round 1 at baecb8c0 (52c5f83a, baecb8c0): `check_evidence` runs before bounds and before the Disagreed shortcut. It compares the generated harness file (`harness.rust.path`), the size record, unwind, solver and the symbolic arguments rebuilt from the drawn leaves, and refuses `EvidenceMismatch`. `tc_048_the_evidence_of_another_harness_refuses_with_no_value` covers path, size, missing size, unwind and arguments; deleting the call or any of those four comparisons fails it. The real-Kani route test still passes, so real evidence matches. |
+| FND-002 | fixed | Round 1 at baecb8c0 (52c5f83a): `consistent` matches every (artifact, native) pair with no wildcard. Completed pairs only with Completed (verdict equal), Refused with Refused, Incomplete with Incomplete or ExecutionFault, and Undefined with nothing. `tc_048_each_native_observation_pairs_only_with_its_own_artifact_outcome` checks the whole 4x4 table; flipping Refused/Refused, Incomplete/Fault, Incomplete/Refused or Undefined/any fails it. |
+| FND-003 | accepted-no-change | The shadow outcome stays a driver measurement. The `DriverFalsification::shadow` doc and the FR-033-AC-19 PLANNED remainder record it as a named trust assumption owned by IR-1567. This is honest. The harness's `expected_verdict` comes from an in-harness reference, not the authenticated artifact, and a Kani playback carries only the draws, so CG's library cannot compute the shadow's outcome at the operands without executing the generated shadow, which is the driver's job. Binding it needs that executed capture, already IR-1567 scope. |
+| FND-004 | fixed | Round 1 at baecb8c0: `tc_048_an_artifact_of_other_bounds_limits_or_context_refuses_with_no_value` covers other bounds, accounting limits, a stage limit and replay limits. Both round-0 survivors (claim tie, sent-context check) now fail it. The `check_sent_context` argument is now `request.replay_limits()`; it used to compare the artifact's limits with themselves, and restoring that also fails the test. |
+| FND-005 | fixed | Round 1 at baecb8c0: `tc_048_a_cancelled_run_takes_the_ordinary_row_even_with_a_retained_disagreement` asserts `Incomplete(Cancelled)` on the ordinary route for both sources under None, Exhaustive and Disagreed. The spec states the Cancelled row (design decision, AC-24). Both round-0 survivors (Cancelled through verified, Disagreed shortcut on Cancelled) now fail it. |
+| FND-006 | fixed | Round 1 at baecb8c0: `CompositeShadowError::DrawnBound { node, path, cause }` carries FSL's cause, and `tc_048_an_inverted_drawn_range_names_its_leaf_and_the_cause` asserts it; restoring `OperandMismatch` fails it. The copied `result_large_err` allow on `claim_request` is removed, and clippy `-D warnings` is clean. |

@@ -45,3 +45,16 @@ design decision does not state how a disagreement with a cancelled run settles.
 
 - `make spec` exit 0; matrix rows in both tests.md files agree with the AC Status text, except
   FR-029-AC-27 (see SR-17940486709564847048063 FND-002).
+
+## New findings (disposition pass 1)
+
+| ID | Severity | Summary | Refs |
+| --- | --- | --- | --- |
+| FND-003 | low | The tests.md FR-029-AC-27 row says the "claim (bounds, work limit)" binding refuses. The FR-029-AC-27 PLANNED (IR-1567) text says "the operand projection's work limit is not part of the claim identity and no artifact tie covers it". The test varies the accounting `work_units` limit (`fixture_with(u64::MAX - 1)`), not the projection work limit, so the row should say "accounting limits". | spec/kani/matrix/tests.md:104, spec/kani/functional/FR-029-run-outcome-terminal-record.md (FR-029-AC-27) |
+
+## Dispositions
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-001 | fixed | Round 1 at baecb8c0: the heading reads "IR-806 PR-3 production route built, remainder IR-1567". The body names `settle_composite_shadow` and IR-1567 instead of "pending". The TC-048 sentence lists AC-31, AC-19, AC-23 to AC-26 and AC-30 as built, and AC-20 and AC-27 as PARTIAL (IR-1567). |
+| FND-002 | fixed | Round 1 at baecb8c0: the design decision reads "any retained disagreement of a run that was not cancelled" and states that a cancelled run with a retained disagreement is `Incomplete(Cancelled)`. AC-24 says the same and cites `tc_048_a_cancelled_run_takes_the_ordinary_row_even_with_a_retained_disagreement`. |
