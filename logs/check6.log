@@ -1,0 +1,16 @@
+warning: use of deprecated method `std::sync::atomic::Atomic::<u64>::fetch_update`: renamed to `try_update` for consistency
+  --> /tmp/claude-1000/-home-peter-dev/dfe813ef-7b9a-4e0c-b398-12e7cce8dd5a/scratchpad/fsl-fix/fsl-foundation/src/tally.rs:20:14
+   |
+20 |             .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |total| {
+   |              ^^^^^^^^^^^^
+   |
+   = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+   |
+20 -             .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |total| {
+20 +             .try_update(Ordering::Relaxed, Ordering::Relaxed, |total| {
+   |
+
+warning: `fsl-foundation` (lib) generated 1 warning (run `cargo fix --lib -p fsl-foundation` to apply 1 suggestion)
+    Checking filament-contract-codegen v0.1.0 (/home/peter/dev/worktrees/IR-1566-pins)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 13.04s

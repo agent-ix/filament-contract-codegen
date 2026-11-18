@@ -1,0 +1,36 @@
+    Checking filament-exact v0.3.0 (https://github.com/agent-ix/filament-exact?tag=v0.3.0#086c11fc)
+    Checking agent-ix-semantic-ir v0.1.1 (https://github.com/agent-ix/filament-core-data?tag=agent-ix-semantic-ir-v0.1.1#c23980ea)
+    Checking agent-ix-extraction-frontend v0.2.1 (https://github.com/agent-ix/filament-core-data?tag=agent-ix-semantic-ir-v0.1.1#c23980ea)
+    Checking filament-semantic-value v0.1.5 (https://github.com/agent-ix/filament-semantic-value?tag=v0.1.5#f808f269)
+    Checking fsl-foundation v0.1.0 (https://github.com/agent-ix/filament-spec-language?rev=89751e13349918d63fa1254bb352f6b4b3be0f26#89751e13)
+    Checking filament-contract-model v0.1.2 (https://github.com/agent-ix/filament-contract-ir?tag=v0.1.4#f9963634)
+    Checking filament-checked v0.1.4 (https://github.com/agent-ix/filament-eval?tag=v0.1.4#dd9f701f)
+    Checking filament-eval v0.1.4 (https://github.com/agent-ix/filament-eval?tag=v0.1.4#dd9f701f)
+    Checking filament-contract-runtime v0.1.1 (https://github.com/agent-ix/filament-contract-runtime?tag=v0.1.1#15ebe69d)
+    Checking fsl-cst v0.1.0 (https://github.com/agent-ix/filament-spec-language?rev=89751e13349918d63fa1254bb352f6b4b3be0f26#89751e13)
+    Checking fsl-forms v0.1.0 (https://github.com/agent-ix/filament-spec-language?rev=89751e13349918d63fa1254bb352f6b4b3be0f26#89751e13)
+    Checking fsl-semantics v0.1.0 (https://github.com/agent-ix/filament-spec-language?rev=89751e13349918d63fa1254bb352f6b4b3be0f26#89751e13)
+    Checking filament-contract-ir v0.1.4 (https://github.com/agent-ix/filament-contract-ir?tag=v0.1.4#f9963634)
+    Checking fsl-package v0.3.0 (https://github.com/agent-ix/filament-spec-language?rev=89751e13349918d63fa1254bb352f6b4b3be0f26#89751e13)
+    Checking fsl-route v0.1.0 (https://github.com/agent-ix/filament-spec-language?rev=89751e13349918d63fa1254bb352f6b4b3be0f26#89751e13)
+    Checking fsl-eval v0.1.0 (https://github.com/agent-ix/filament-spec-language?rev=89751e13349918d63fa1254bb352f6b4b3be0f26#89751e13)
+error[E0063]: missing field `frame_depth` in initializer of `Evaluation`
+   --> /home/peter/.cargo/git/checkouts/filament-spec-language-1ba4ce0e71f23cf3/89751e1/fsl-eval/src/value/expression/bare.rs:293:27
+    |
+293 |                 return Ok(Evaluation {
+    |                           ^^^^^^^^^^ missing `frame_depth`
+
+error[E0063]: missing field `frame_depth` in initializer of `Evaluation`
+   --> /home/peter/.cargo/git/checkouts/filament-spec-language-1ba4ce0e71f23cf3/89751e1/fsl-eval/src/value/expression/bare.rs:302:27
+    |
+302 |                 return Ok(Evaluation {
+    |                           ^^^^^^^^^^ missing `frame_depth`
+
+error[E0063]: missing field `frame_depth` in initializer of `Evaluation`
+   --> /home/peter/.cargo/git/checkouts/filament-spec-language-1ba4ce0e71f23cf3/89751e1/fsl-eval/src/value/expression/bare.rs:369:23
+    |
+369 |             return Ok(Evaluation {
+    |                       ^^^^^^^^^^ missing `frame_depth`
+
+For more information about this error, try `rustc --explain E0063`.
+error: could not compile `fsl-eval` (lib) due to 3 previous errors

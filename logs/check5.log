@@ -1,0 +1,129 @@
+     Locking 8 packages to highest compatible versions
+      Adding fsl-cst v0.1.0 (/tmp/claude-1000/-home-peter-dev/dfe813ef-7b9a-4e0c-b398-12e7cce8dd5a/scratchpad/fsl-fix/fsl-cst)
+      Adding fsl-eval v0.1.0 (/tmp/claude-1000/-home-peter-dev/dfe813ef-7b9a-4e0c-b398-12e7cce8dd5a/scratchpad/fsl-fix/fsl-eval)
+      Adding fsl-forms v0.1.0 (/tmp/claude-1000/-home-peter-dev/dfe813ef-7b9a-4e0c-b398-12e7cce8dd5a/scratchpad/fsl-fix/fsl-forms)
+      Adding fsl-foundation v0.1.0 (/tmp/claude-1000/-home-peter-dev/dfe813ef-7b9a-4e0c-b398-12e7cce8dd5a/scratchpad/fsl-fix/fsl-foundation)
+      Adding fsl-package v0.3.0 (/tmp/claude-1000/-home-peter-dev/dfe813ef-7b9a-4e0c-b398-12e7cce8dd5a/scratchpad/fsl-fix/fsl-package)
+      Adding fsl-replay v0.3.0 (/tmp/claude-1000/-home-peter-dev/dfe813ef-7b9a-4e0c-b398-12e7cce8dd5a/scratchpad/fsl-fix/fsl-replay)
+      Adding fsl-route v0.1.0 (/tmp/claude-1000/-home-peter-dev/dfe813ef-7b9a-4e0c-b398-12e7cce8dd5a/scratchpad/fsl-fix/fsl-route)
+      Adding fsl-semantics v0.1.0 (/tmp/claude-1000/-home-peter-dev/dfe813ef-7b9a-4e0c-b398-12e7cce8dd5a/scratchpad/fsl-fix/fsl-semantics)
+    Checking fsl-foundation v0.1.0 (/tmp/claude-1000/-home-peter-dev/dfe813ef-7b9a-4e0c-b398-12e7cce8dd5a/scratchpad/fsl-fix/fsl-foundation)
+warning: use of deprecated method `std::sync::atomic::Atomic::<u64>::fetch_update`: renamed to `try_update` for consistency
+  --> /tmp/claude-1000/-home-peter-dev/dfe813ef-7b9a-4e0c-b398-12e7cce8dd5a/scratchpad/fsl-fix/fsl-foundation/src/tally.rs:20:14
+   |
+20 |             .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |total| {
+   |              ^^^^^^^^^^^^
+   |
+   = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+   |
+20 -             .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |total| {
+20 +             .try_update(Ordering::Relaxed, Ordering::Relaxed, |total| {
+   |
+
+warning: `fsl-foundation` (lib) generated 1 warning (run `cargo fix --lib -p fsl-foundation` to apply 1 suggestion)
+    Checking fsl-cst v0.1.0 (/tmp/claude-1000/-home-peter-dev/dfe813ef-7b9a-4e0c-b398-12e7cce8dd5a/scratchpad/fsl-fix/fsl-cst)
+    Checking fsl-forms v0.1.0 (/tmp/claude-1000/-home-peter-dev/dfe813ef-7b9a-4e0c-b398-12e7cce8dd5a/scratchpad/fsl-fix/fsl-forms)
+    Checking fsl-semantics v0.1.0 (/tmp/claude-1000/-home-peter-dev/dfe813ef-7b9a-4e0c-b398-12e7cce8dd5a/scratchpad/fsl-fix/fsl-semantics)
+    Checking fsl-package v0.3.0 (/tmp/claude-1000/-home-peter-dev/dfe813ef-7b9a-4e0c-b398-12e7cce8dd5a/scratchpad/fsl-fix/fsl-package)
+    Checking fsl-route v0.1.0 (/tmp/claude-1000/-home-peter-dev/dfe813ef-7b9a-4e0c-b398-12e7cce8dd5a/scratchpad/fsl-fix/fsl-route)
+    Checking fsl-eval v0.1.0 (/tmp/claude-1000/-home-peter-dev/dfe813ef-7b9a-4e0c-b398-12e7cce8dd5a/scratchpad/fsl-fix/fsl-eval)
+    Checking fsl-replay v0.3.0 (/tmp/claude-1000/-home-peter-dev/dfe813ef-7b9a-4e0c-b398-12e7cce8dd5a/scratchpad/fsl-fix/fsl-replay)
+    Checking filament-contract-codegen v0.1.0 (/home/peter/dev/worktrees/IR-1566-pins)
+error[E0004]: non-exhaustive patterns: `EqualitySchedule::Float` not covered
+    --> src/oracle/equality/mod.rs:695:15
+     |
+ 695 |         match schedule {
+     |               ^^^^^^^^ pattern `EqualitySchedule::Float` not covered
+     |
+note: `EqualitySchedule` defined here
+    --> /home/peter/.cargo/git/checkouts/filament-semantic-value-191101eec73b74de/f808f26/src/declaration.rs:5376:1
+     |
+5376 | pub enum EqualitySchedule {
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+5377 |     /// A top-level IEEE pair: the FR-148 `numericEqual` schedule.
+5378 |     Float,
+     |     ----- not covered
+     = note: the matched value is of type `EqualitySchedule`
+help: ensure that all possible cases are being handled by adding a match arm with a wildcard pattern or an explicit pattern as shown
+     |
+ 699 ~             EqualitySchedule::Plan => Ok(Self::Plan),
+ 700 ~             EqualitySchedule::Float => todo!(),
+     |
+
+error[E0004]: non-exhaustive patterns: `&filament_exact::ValueType::Bytes` and `&filament_exact::ValueType::JsonObject` not covered
+   --> src/oracle/function/kani_descriptor.rs:272:40
+    |
+272 |             Step::Visit(node) => match node {
+    |                                        ^^^^ patterns `&filament_exact::ValueType::Bytes` and `&filament_exact::ValueType::JsonObject` not covered
+    |
+note: `filament_exact::ValueType` defined here
+   --> /home/peter/.cargo/git/checkouts/filament-exact-19d53c2623cc349e/086c11f/src/value.rs:348:1
+    |
+348 | pub enum ValueType {
+    | ^^^^^^^^^^^^^^^^^^
+...
+372 |     Bytes,
+    |     ----- not covered
+373 |     /// A canonical RFC 8785 (JCS) JSON value.
+374 |     JsonObject,
+    |     ---------- not covered
+    = note: the matched value is of type `&filament_exact::ValueType`
+help: ensure that all possible cases are being handled by adding a match arm with a wildcard pattern, a match arm with multiple or-patterns as shown, or multiple match arms
+    |
+331 ~                 },
+332 +                 &filament_exact::ValueType::Bytes | &filament_exact::ValueType::JsonObject => todo!()
+    |
+
+error[E0004]: non-exhaustive patterns: `&filament_exact::ValueType::Bytes` and `&filament_exact::ValueType::JsonObject` not covered
+   --> src/oracle/function/owner_path.rs:466:15
+    |
+466 |         match value_type {
+    |               ^^^^^^^^^^ patterns `&filament_exact::ValueType::Bytes` and `&filament_exact::ValueType::JsonObject` not covered
+    |
+note: `filament_exact::ValueType` defined here
+   --> /home/peter/.cargo/git/checkouts/filament-exact-19d53c2623cc349e/086c11f/src/value.rs:348:1
+    |
+348 | pub enum ValueType {
+    | ^^^^^^^^^^^^^^^^^^
+...
+372 |     Bytes,
+    |     ----- not covered
+373 |     /// A canonical RFC 8785 (JCS) JSON value.
+374 |     JsonObject,
+    |     ---------- not covered
+    = note: the matched value is of type `&filament_exact::ValueType`
+help: ensure that all possible cases are being handled by adding a match arm with a wildcard pattern, a match arm with multiple or-patterns as shown, or multiple match arms
+    |
+491 ~             | filament_exact::ValueType::CarriedQuantity(_) => {},
+492 +             &filament_exact::ValueType::Bytes | &filament_exact::ValueType::JsonObject => todo!()
+    |
+
+For more information about this error, try `rustc --explain E0004`.
+error: could not compile `filament-contract-codegen` (lib) due to 3 previous errors
+warning: build failed, waiting for other jobs to finish...
+error[E0004]: non-exhaustive patterns: `&filament_exact::ValueType::Bytes` and `&filament_exact::ValueType::JsonObject` not covered
+   --> src/oracle/function/kani_descriptor/tests.rs:146:11
+    |
+146 |     match value {
+    |           ^^^^^ patterns `&filament_exact::ValueType::Bytes` and `&filament_exact::ValueType::JsonObject` not covered
+    |
+note: `filament_exact::ValueType` defined here
+   --> /home/peter/.cargo/git/checkouts/filament-exact-19d53c2623cc349e/086c11f/src/value.rs:348:1
+    |
+348 | pub enum ValueType {
+    | ^^^^^^^^^^^^^^^^^^
+...
+372 |     Bytes,
+    |     ----- not covered
+373 |     /// A canonical RFC 8785 (JCS) JSON value.
+374 |     JsonObject,
+    |     ---------- not covered
+    = note: the matched value is of type `&filament_exact::ValueType`
+help: ensure that all possible cases are being handled by adding a match arm with a wildcard pattern, a match arm with multiple or-patterns as shown, or multiple match arms
+    |
+166 ~         ValueType::Population(_) => "Population",
+167 ~         &filament_exact::ValueType::Bytes | &filament_exact::ValueType::JsonObject => todo!(),
+    |
+
+error: could not compile `filament-contract-codegen` (lib test) due to 4 previous errors

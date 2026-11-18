@@ -1,0 +1,92 @@
+    Checking fsl-foundation v0.1.0 (https://github.com/agent-ix/filament-spec-language?rev=eb692bf3#eb692bf3)
+    Checking filament-checked v0.1.5 (https://github.com/agent-ix/filament-eval?tag=v0.1.5#a308414b)
+    Checking filament-eval v0.1.5 (https://github.com/agent-ix/filament-eval?tag=v0.1.5#a308414b)
+    Checking fsl-cst v0.1.0 (https://github.com/agent-ix/filament-spec-language?rev=eb692bf3#eb692bf3)
+    Checking fsl-forms v0.1.0 (https://github.com/agent-ix/filament-spec-language?rev=eb692bf3#eb692bf3)
+    Checking fsl-semantics v0.1.0 (https://github.com/agent-ix/filament-spec-language?rev=eb692bf3#eb692bf3)
+error[E0004]: non-exhaustive patterns: `&filament_checked::NodeKind::ReferenceLiteral { .. }` not covered
+   --> /home/peter/.cargo/git/checkouts/filament-spec-language-1ba4ce0e71f23cf3/eb692bf/fsl-semantics/src/check/claims.rs:467:11
+    |
+467 |     match node.kind() {
+    |           ^^^^^^^^^^^ pattern `&filament_checked::NodeKind::ReferenceLiteral { .. }` not covered
+    |
+note: `filament_checked::NodeKind<ir::NodeId>` defined here
+   --> /home/peter/.cargo/git/checkouts/filament-eval-cd4aa2b43ef7df46/a308414/crates/filament-checked/src/node.rs:276:1
+    |
+276 | pub enum NodeKind<Child = NodeId, Literal = CheckedLiteral> {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+284 |     ReferenceLiteral {
+    |     ---------------- not covered
+    = note: the matched value is of type `&filament_checked::NodeKind<ir::NodeId>`
+help: ensure that all possible cases are being handled by adding a match arm with a wildcard pattern or an explicit pattern as shown
+    |
+540 ~         NodeKind::TupleProject { .. } | NodeKind::Index { .. } => false,
+541 ~         &filament_checked::NodeKind::ReferenceLiteral { .. } => todo!(),
+    |
+
+error[E0004]: non-exhaustive patterns: `&filament_checked::NodeKind::ReferenceLiteral { .. }` not covered
+    --> /home/peter/.cargo/git/checkouts/filament-spec-language-1ba4ce0e71f23cf3/eb692bf/fsl-semantics/src/check/ir.rs:1150:11
+     |
+1150 |     match kind {
+     |           ^^^^ pattern `&filament_checked::NodeKind::ReferenceLiteral { .. }` not covered
+     |
+note: `filament_checked::NodeKind<ir::NodeId>` defined here
+    --> /home/peter/.cargo/git/checkouts/filament-eval-cd4aa2b43ef7df46/a308414/crates/filament-checked/src/node.rs:276:1
+     |
+ 276 | pub enum NodeKind<Child = NodeId, Literal = CheckedLiteral> {
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+ 284 |     ReferenceLiteral {
+     |     ---------------- not covered
+     = note: the matched value is of type `&filament_checked::NodeKind<ir::NodeId>`
+help: ensure that all possible cases are being handled by adding a match arm with a wildcard pattern or an explicit pattern as shown
+     |
+1282 ~         },
+1283 +         &filament_checked::NodeKind::ReferenceLiteral { .. } => todo!()
+     |
+
+error[E0004]: non-exhaustive patterns: `&filament_checked::NodeKind::ReferenceLiteral { .. }` not covered
+    --> /home/peter/.cargo/git/checkouts/filament-spec-language-1ba4ce0e71f23cf3/eb692bf/fsl-semantics/src/check/lowering.rs:4546:39
+     |
+4546 |         let (keyed, operands) = match node.kind() {
+     |                                       ^^^^^^^^^^^ pattern `&filament_checked::NodeKind::ReferenceLiteral { .. }` not covered
+     |
+note: `filament_checked::NodeKind<ir::NodeId>` defined here
+    --> /home/peter/.cargo/git/checkouts/filament-eval-cd4aa2b43ef7df46/a308414/crates/filament-checked/src/node.rs:276:1
+     |
+ 276 | pub enum NodeKind<Child = NodeId, Literal = CheckedLiteral> {
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+ 284 |     ReferenceLiteral {
+     |     ---------------- not covered
+     = note: the matched value is of type `&filament_checked::NodeKind<ir::NodeId>`
+help: ensure that all possible cases are being handled by adding a match arm with a wildcard pattern or an explicit pattern as shown
+     |
+5871 ~             },
+5872 +             &filament_checked::NodeKind::ReferenceLiteral { .. } => todo!()
+     |
+
+error[E0004]: non-exhaustive patterns: `&filament_checked::NodeKind::ReferenceLiteral { .. }` not covered
+   --> /home/peter/.cargo/git/checkouts/filament-spec-language-1ba4ce0e71f23cf3/eb692bf/fsl-semantics/src/check/references.rs:52:25
+    |
+ 52 |     let through = match node.kind() {
+    |                         ^^^^^^^^^^^ pattern `&filament_checked::NodeKind::ReferenceLiteral { .. }` not covered
+    |
+note: `filament_checked::NodeKind<ir::NodeId>` defined here
+   --> /home/peter/.cargo/git/checkouts/filament-eval-cd4aa2b43ef7df46/a308414/crates/filament-checked/src/node.rs:276:1
+    |
+276 | pub enum NodeKind<Child = NodeId, Literal = CheckedLiteral> {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+284 |     ReferenceLiteral {
+    |     ---------------- not covered
+    = note: the matched value is of type `&filament_checked::NodeKind<ir::NodeId>`
+help: ensure that all possible cases are being handled by adding a match arm with a wildcard pattern or an explicit pattern as shown
+    |
+121 ~         | NodeKind::Case { .. } => return None,
+122 ~         &filament_checked::NodeKind::ReferenceLiteral { .. } => todo!(),
+    |
+
+For more information about this error, try `rustc --explain E0004`.
+error: could not compile `fsl-semantics` (lib) due to 4 previous errors
