@@ -264,7 +264,6 @@ fn equality_operation(family: &str) -> Value {
             "member": null,
             "leaves": [],
         }),
-        "ieee" => plain("filament.op.ieee.numeric_equal"),
         other => plain(&format!("filament.op.{other}.eq")),
     }
 }

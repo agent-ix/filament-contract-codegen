@@ -71,7 +71,15 @@ fn evidence(method: &ConstrainedMethodIdentity) -> ConstrainedBackendEvidence {
         },
     }
 }
-#[trace("TC-062", "FR-048-AC-6", "FR-048-AC-7", "FR-048-AC-8")]
+#[trace(
+    "TC-062",
+    "FR-048-AC-6",
+    "FR-048-AC-7",
+    "FR-048-AC-8",
+    "FR-048-AC-12",
+    "FR-048-AC-13",
+    "FR-048-AC-14"
+)]
 #[test]
 fn conversion_preserves_original_causes_and_rejects_malformed_or_cross_method_evidence() {
     let f = support::fixture(

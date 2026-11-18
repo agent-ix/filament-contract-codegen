@@ -2,7 +2,7 @@
 //!
 //! The emitted oracle crate's `Cargo.toml` is written here once and called by the three oracle
 //! emitters. Every first-party dependency it names uses the source this crate's own `Cargo.toml`
-//! uses: git URL and release tag (a revision only for FSL until its tag exists). The sources are
+//! uses: git URL and release tag (an interim revision of an FSL PR for FSL until it merges). The sources are
 //! the same ones, so a scratch crate seeded with this crate's `Cargo.lock` resolves each
 //! first-party crate once and at the locked commit, with no branch resolved at generation or
 //! test time. `manifest_sources_match_this_crates_manifest` keeps the two spellings equal.
@@ -34,9 +34,10 @@ pub const EVAL_DEPENDENCY_SOURCE: &str =
 pub const TRACE_DEPENDENCY_SOURCE: &str =
     "git = \"https://github.com/agent-ix/ix-trace-rs\", tag = \"v0.1.2\"";
 
-/// Source of the admitted-context facade (`fsl-replay`). IR-1566: an interim revision pin, the
-/// head of FSL PR #2841; swap to the fsl-* release tag here and in `Cargo.toml` once it is cut.
-pub const FSL_REPLAY_DEPENDENCY_SOURCE: &str = "git = \"https://github.com/agent-ix/filament-spec-language\", rev = \"4910017c611d97d73c50ec5fdb9e4d718c4d60f4\"";
+/// Source of the admitted-context facade (`fsl-replay`). IR-1566: an interim revision of FSL PR
+/// #2841, not on FSL main; repin here and in `Cargo.toml` to the FSL main merge commit of #2841
+/// once it merges. The commit may be reachable only from that PR's refs until then.
+pub const FSL_REPLAY_DEPENDENCY_SOURCE: &str = "git = \"https://github.com/agent-ix/filament-spec-language\", rev = \"88698958380d220c1f6b1a57114f4c6f4744ce5a\"";
 
 /// The `[package.metadata.kani]` table every generated oracle crate's manifest carries. CBMC
 /// tracks heap objects field by field only up to 64 bytes by default; RT's `Value` and `ValueType`
@@ -52,7 +53,10 @@ pub(crate) fn oracle_crate_manifest(crate_name: &str) -> String {
     )
 }
 
-/// The concrete function oracle's checked-closure facade and direct leaf dependencies.
+/// The concrete function oracle's checked-closure facade and direct leaf dependencies. The
+/// `filament-contract-codegen` line stays `branch = "main"`: this crate has no usable release tag
+/// (its only tag, v0.1.0, predates the pins above) and every test replaces the line with a `path`
+/// dependency on the checkout under test, so no emitted crate resolves CG main at test time.
 pub(crate) fn function_oracle_crate_manifest(crate_name: &str) -> String {
     format!(
         "[package]\nname = \"{crate_name}\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[lib]\npath = \"src/lib.rs\"\n\n[dependencies]\nfilament-contract-codegen = {{ git = \"https://github.com/agent-ix/filament-contract-codegen\", branch = \"main\" }}\nfilament-contract-model = {{ {MODEL_DEPENDENCY_SOURCE} }}\nfsl-replay = {{ {FSL_REPLAY_DEPENDENCY_SOURCE} }}\nfilament-eval = {{ {EVAL_DEPENDENCY_SOURCE} }}\nfilament-exact = {{ {EXACT_DEPENDENCY_SOURCE} }}\nfilament-semantic-value = {{ {SEMANTIC_VALUE_DEPENDENCY_SOURCE} }}\n\n[lints.rust]\nunsafe_code = \"forbid\"\n\n{ORACLE_KANI_METADATA}[workspace]\n"
@@ -177,12 +181,14 @@ mod tests {
             std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml"),
         )
         .unwrap();
-        let line = |name: &str| {
-            manifest
+        let lines = |name: &str| {
+            let found = manifest
                 .lines()
-                .find(|line| line.starts_with(&format!("{name} = ")))
-                .unwrap_or_else(|| panic!("{name} in Cargo.toml"))
-                .to_owned()
+                .filter(|line| line.starts_with(&format!("{name} = ")))
+                .map(str::to_owned)
+                .collect::<Vec<_>>();
+            assert!(!found.is_empty(), "{name} in Cargo.toml");
+            found
         };
         for (name, source) in [
             ("filament-contract-runtime", RUNTIME_DEPENDENCY_SOURCE),
@@ -193,11 +199,12 @@ mod tests {
             ("ix-trace-rs", TRACE_DEPENDENCY_SOURCE),
             ("fsl-replay", FSL_REPLAY_DEPENDENCY_SOURCE),
         ] {
-            assert!(
-                line(name).contains(source),
-                "{name}: Cargo.toml `{}` does not spell `{source}`",
-                line(name)
-            );
+            for line in lines(name) {
+                assert!(
+                    line.contains(source),
+                    "{name}: Cargo.toml `{line}` does not spell `{source}`"
+                );
+            }
         }
     }
 

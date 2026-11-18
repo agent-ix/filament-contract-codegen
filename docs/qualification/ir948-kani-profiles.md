@@ -65,13 +65,12 @@ the clause text (`post == pre - amount`, the conjunction of its two comparisons)
 
 ## Not established
 
-- Postcondition on the specified text: one blocker with an owner. QSL refuses the specified text
-  `self.balance = pre(self.balance) - amount` with `undefined_expression (unproved-range)` (QSL-1901, which blocks IR-948
-  for the postcondition member only); the guarded, `and`-guarded, reordered, sum and difference forms are refused the same
-  way, and the conjunction `self.balance <= pre(self.balance) - amount and self.balance >= pre(self.balance) - amount` is
-  accepted. The V2 clause generator renders the state-reading postcondition (IR-948 slice 2b). The default-lane test
-  `the_postcondition_renders_and_the_specified_equality_text_is_blocked_by_qsl` pins the QSL refusal so a fix flags the
-  stale PARTIAL. FR-015-AC-129 requires the `=` text; the conjunction is the interim fixture text and earns no credit.
+- Postcondition on the specified text: not yet run under Kani. FSL now admits the specified text
+  `self.balance = pre(self.balance) - amount` (QSL-1901's `undefined_expression (unproved-range)` refusal is gone at the
+  pinned FSL), and the V2 clause generator renders the state-reading postcondition (IR-948 slice 2b). The default-lane test
+  `the_postcondition_renders_and_fsl_admits_the_specified_equality_text` fails if FSL refuses the text again. FR-015-AC-129
+  requires the executed run on the `=` text; the conjunction `self.balance <= pre(self.balance) - amount and
+  self.balance >= pre(self.balance) - amount` is the interim fixture text and earns no credit.
 - The postcondition mutant is decoded and its postcondition evaluated natively, not replayed through QSL's
   `replay_state_clause`, which has no scalar V2 postcondition envelope.
 - Frame: the profile package grants its only field, so a frame harness has nothing to forbid; the frame member is delegated
