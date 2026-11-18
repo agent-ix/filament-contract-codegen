@@ -1085,17 +1085,8 @@ fn tc_070_the_embedded_general_route_table_is_the_docs_file() {
 
 /// One expected native float or rational row of the kernel's records (filament-exact TC-953 and
 /// TC-956 at 85034c5c): operation ids, `max_operand_bits`, whether `tractable`, wall seconds (or the
-/// limit) in milliseconds, `memory.peak` bytes, the harness id, and the owner of a `not_tractable`
-/// row (empty for a `tractable` one).
-type NativeRow = (
-    &'static [&'static str],
-    u32,
-    bool,
-    u64,
-    u64,
-    &'static str,
-    &'static str,
-);
+/// limit) in milliseconds, `memory.peak` bytes and the harness id.
+type NativeRow = (&'static [&'static str], u32, bool, u64, u64, &'static str);
 
 const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
     (
@@ -1105,7 +1096,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         4900,
         630960128,
         "native_float_kani_proofs::float32_negate",
-        "",
     ),
     (
         &["filament.op.ieee.float32.add"],
@@ -1114,7 +1104,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         54100,
         978960384,
         "native_float_kani_proofs::float32_add_nearest_even",
-        "",
     ),
     (
         &["filament.op.ieee.float32.add"],
@@ -1123,7 +1112,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         36800,
         1077317632,
         "native_float_kani_proofs::float32_add_exact",
-        "",
     ),
     (
         &["filament.op.ieee.float32.add"],
@@ -1132,7 +1120,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         15800,
         1079701504,
         "native_float_kani_proofs::float32_add_directed",
-        "",
     ),
     (
         &["filament.op.ieee.float32.sub"],
@@ -1141,7 +1128,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         51200,
         971542528,
         "native_float_kani_proofs::float32_subtract_nearest_even",
-        "",
     ),
     (
         &["filament.op.ieee.float32.sub"],
@@ -1150,7 +1136,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         36500,
         1071677440,
         "native_float_kani_proofs::float32_subtract_exact",
-        "",
     ),
     (
         &["filament.op.ieee.float32.sub"],
@@ -1159,7 +1144,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         16300,
         1088585728,
         "native_float_kani_proofs::float32_subtract_directed",
-        "",
     ),
     (
         &["filament.op.ieee.float32.mul"],
@@ -1168,7 +1152,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         19800,
         906743808,
         "native_float_kani_proofs::float32_multiply_nearest_even",
-        "",
     ),
     (
         &["filament.op.ieee.float32.mul"],
@@ -1177,7 +1160,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         72700,
         925429760,
         "native_float_kani_proofs::float32_multiply_exact",
-        "",
     ),
     (
         &["filament.op.ieee.float32.mul"],
@@ -1186,7 +1168,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         14600,
         943497216,
         "native_float_kani_proofs::float32_multiply_directed",
-        "",
     ),
     (
         &["filament.op.ieee.float32.div"],
@@ -1195,7 +1176,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         600000,
         671797248,
         "native_float_kani_proofs::float32_divide_nearest_even",
-        "IR-1551",
     ),
     (
         &["filament.op.ieee.float32.div"],
@@ -1204,7 +1184,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         1800000,
         657661952,
         "native_float_kani_proofs::float32_divide_exact",
-        "IR-1551",
     ),
     (
         &["filament.op.ieee.float32.div"],
@@ -1213,7 +1192,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         188500,
         1062281216,
         "native_float_kani_proofs::float32_divide_directed",
-        "",
     ),
     (
         &["filament.op.ieee.float32.sqrt"],
@@ -1222,7 +1200,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         600000,
         773021696,
         "native_float_kani_proofs::float32_square_root_nearest_even",
-        "IR-1551",
     ),
     (
         &["filament.op.ieee.float32.sqrt"],
@@ -1231,7 +1208,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         33200,
         1402953728,
         "native_float_kani_proofs::float32_square_root_exact",
-        "",
     ),
     (
         &["filament.op.ieee.float32.sqrt"],
@@ -1240,7 +1216,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         18400,
         1149845504,
         "native_float_kani_proofs::float32_square_root_directed",
-        "",
     ),
     (
         &["filament.op.ieee.float32.fma"],
@@ -1249,7 +1224,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         600000,
         656998400,
         "native_float_kani_proofs::float32_fused_multiply_add_nearest_even",
-        "IR-1551",
     ),
     (
         &["filament.op.ieee.float32.fma"],
@@ -1258,7 +1232,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         667500,
         1238626304,
         "native_float_kani_proofs::float32_fused_multiply_add_exact",
-        "",
     ),
     (
         &["filament.op.ieee.float32.fma"],
@@ -1267,7 +1240,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         20100,
         1310621696,
         "native_float_kani_proofs::float32_fused_multiply_add_directed",
-        "",
     ),
     (
         &["filament.op.ieee.numeric_equal"],
@@ -1276,7 +1248,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         4700,
         603648000,
         "native_float_kani_proofs::float32_numeric_equal",
-        "",
     ),
     (
         &["filament.op.ieee.total_order"],
@@ -1285,7 +1256,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         4800,
         603582464,
         "native_float_kani_proofs::float32_total_order",
-        "",
     ),
     (
         &["filament.op.ieee.bit_identical"],
@@ -1294,7 +1264,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         4400,
         604430336,
         "native_float_kani_proofs::float32_bit_identical",
-        "",
     ),
     (
         &["filament.op.ieee.float64.negate"],
@@ -1303,7 +1272,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         4900,
         632463360,
         "native_float_kani_proofs::float64_negate",
-        "",
     ),
     (
         &["filament.op.ieee.float64.add"],
@@ -1312,7 +1280,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         384100,
         946696192,
         "native_float_kani_proofs::float64_add_nearest_even",
-        "",
     ),
     (
         &["filament.op.ieee.float64.add"],
@@ -1321,7 +1288,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         197700,
         1062014976,
         "native_float_kani_proofs::float64_add_exact",
-        "",
     ),
     (
         &["filament.op.ieee.float64.add"],
@@ -1330,7 +1296,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         17400,
         1029165056,
         "native_float_kani_proofs::float64_add_directed",
-        "",
     ),
     (
         &["filament.op.ieee.float64.sub"],
@@ -1339,7 +1304,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         384800,
         929964032,
         "native_float_kani_proofs::float64_subtract_nearest_even",
-        "",
     ),
     (
         &["filament.op.ieee.float64.sub"],
@@ -1348,7 +1312,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         213700,
         1023115264,
         "native_float_kani_proofs::float64_subtract_exact",
-        "",
     ),
     (
         &["filament.op.ieee.float64.sub"],
@@ -1357,7 +1320,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         17300,
         1100574720,
         "native_float_kani_proofs::float64_subtract_directed",
-        "",
     ),
     (
         &["filament.op.ieee.float64.mul"],
@@ -1366,7 +1328,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         600000,
         605556736,
         "native_float_kani_proofs::float64_multiply_nearest_even",
-        "IR-1551",
     ),
     (
         &["filament.op.ieee.float64.mul"],
@@ -1375,7 +1336,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         56000,
         924803072,
         "native_float_kani_proofs::float64_multiply_exact",
-        "",
     ),
     (
         &["filament.op.ieee.float64.mul"],
@@ -1384,7 +1344,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         14800,
         990892032,
         "native_float_kani_proofs::float64_multiply_directed",
-        "",
     ),
     (
         &["filament.op.ieee.float64.div"],
@@ -1393,7 +1352,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         600000,
         714432512,
         "native_float_kani_proofs::float64_divide_nearest_even",
-        "IR-1551",
     ),
     (
         &["filament.op.ieee.float64.div"],
@@ -1402,7 +1360,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         1800000,
         757579776,
         "native_float_kani_proofs::float64_divide_exact",
-        "IR-1551",
     ),
     (
         &["filament.op.ieee.float64.div"],
@@ -1411,7 +1368,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         1800000,
         709488640,
         "native_float_kani_proofs::float64_divide_directed",
-        "IR-1551",
     ),
     (
         &["filament.op.ieee.float64.sqrt"],
@@ -1420,7 +1376,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         600000,
         953933824,
         "native_float_kani_proofs::float64_square_root_nearest_even",
-        "IR-1551",
     ),
     (
         &["filament.op.ieee.float64.sqrt"],
@@ -1429,7 +1384,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         1800000,
         925200384,
         "native_float_kani_proofs::float64_square_root_exact",
-        "IR-1551",
     ),
     (
         &["filament.op.ieee.float64.sqrt"],
@@ -1438,7 +1392,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         25500,
         1216454656,
         "native_float_kani_proofs::float64_square_root_directed",
-        "",
     ),
     (
         &["filament.op.ieee.float64.fma"],
@@ -1447,7 +1400,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         600000,
         669093888,
         "native_float_kani_proofs::float64_fused_multiply_add_nearest_even",
-        "IR-1551",
     ),
     (
         &["filament.op.ieee.float64.fma"],
@@ -1456,7 +1408,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         1800000,
         650145792,
         "native_float_kani_proofs::float64_fused_multiply_add_exact",
-        "IR-1551",
     ),
     (
         &["filament.op.ieee.float64.fma"],
@@ -1465,7 +1416,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         25000,
         1320718336,
         "native_float_kani_proofs::float64_fused_multiply_add_directed",
-        "",
     ),
     (
         &["filament.op.ieee.numeric_equal"],
@@ -1474,7 +1424,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         4900,
         603418624,
         "native_float_kani_proofs::float64_numeric_equal",
-        "",
     ),
     (
         &["filament.op.ieee.total_order"],
@@ -1483,7 +1432,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         4600,
         602357760,
         "native_float_kani_proofs::float64_total_order",
-        "",
     ),
     (
         &["filament.op.ieee.bit_identical"],
@@ -1492,7 +1440,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         4400,
         601038848,
         "native_float_kani_proofs::float64_bit_identical",
-        "",
     ),
     (
         &["filament.native.rational.from_i64_parts"],
@@ -1501,7 +1448,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         900000,
         2147209216,
         "native_rational_from_i64_parts_matches_reference",
-        "IR-1544",
     ),
     (
         &["filament.op.rational.eq"],
@@ -1510,7 +1456,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         41200,
         1460588544,
         "native_rational_equal_cg_domain_matches_reference",
-        "",
     ),
     (
         &["filament.op.rational.lt", "filament.op.rational.le"],
@@ -1519,7 +1464,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         67400,
         1909317632,
         "native_rational_order_cg_domain_matches_reference",
-        "",
     ),
     (
         &["filament.op.rational.mul"],
@@ -1528,7 +1472,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         132200,
         3492552704,
         "native_rational_multiply_cg_domain_matches_reference",
-        "",
     ),
     (
         &["filament.op.rational.add"],
@@ -1537,7 +1480,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         280700,
         3560067072,
         "native_rational_add_cg_domain_matches_reference",
-        "",
     ),
     (
         &["filament.op.rational.sub"],
@@ -1546,7 +1488,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         300400,
         3591430144,
         "native_rational_subtract_cg_domain_matches_reference",
-        "",
     ),
     (
         &["filament.op.rational.sub"],
@@ -1555,7 +1496,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         330200,
         4093837312,
         "native_rational_subtract_cg_domain_from_i64_parts_matches_reference",
-        "",
     ),
     (
         &["filament.op.rational.add"],
@@ -1564,7 +1504,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         348800,
         6649708544,
         "native_rational_add_is_commutative_over_cg_domain",
-        "",
     ),
     (
         &["filament.op.rational.add"],
@@ -1573,7 +1512,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         348400,
         6830206976,
         "native_rational_add_is_commutative_from_i64_parts_over_cg_domain",
-        "",
     ),
     (
         &["filament.op.rational.eq"],
@@ -1582,7 +1520,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         900000,
         1389637632,
         "native_rational_equal_full_i64_matches_reference",
-        "IR-1544",
     ),
     (
         &["filament.op.rational.lt", "filament.op.rational.le"],
@@ -1591,7 +1528,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         900000,
         1860517888,
         "native_rational_order_full_i64_matches_reference",
-        "IR-1544",
     ),
     (
         &["filament.op.rational.add"],
@@ -1600,7 +1536,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         900000,
         15523975168,
         "native_rational_add_full_i64_matches_reference",
-        "IR-1544",
     ),
     (
         &["filament.op.rational.sub"],
@@ -1609,7 +1544,6 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         900000,
         15575470080,
         "native_rational_subtract_full_i64_matches_reference",
-        "IR-1544",
     ),
     (
         &["filament.op.rational.mul"],
@@ -1618,14 +1552,13 @@ const NATIVE_FLOAT_AND_RATIONAL_ROWS: [NativeRow; 58] = [
         900000,
         15391862784,
         "native_rational_multiply_full_i64_matches_reference",
-        "IR-1544",
     ),
 ];
 
 /// FR-056-AC-15 (IR-260, IR-258, IR-854): the 58 native-route float and rational rows copied from
 /// the kernel's TC-953 and TC-956 records are, in order after the 16 earlier rows, exactly the
-/// expected list: operation ids, width, verdict, wall or limit, peak, harness id and owner. A row
-/// with a wrong width, operation id, peak or wall, or without its harness id and owner in its
+/// expected list: operation ids, width, verdict, wall or limit, peak and harness id. A row
+/// with a wrong width, operation id, peak or wall, or without its harness id in its
 /// `provenance`, fails. The counts of the records (44 float rows, 32 of them VERIFIED; 14 rational
 /// rows, 8 VERIFIED) are asserted as well.
 #[trace("TC-070", "FR-056-AC-15")]
@@ -1636,7 +1569,7 @@ fn tc_070_the_shipped_table_holds_the_kernel_native_float_and_rational_rows() {
     let rows = table.rows();
     assert_eq!(rows.len(), 16 + NATIVE_FLOAT_AND_RATIONAL_ROWS.len() + 3);
     for (index, expected) in NATIVE_FLOAT_AND_RATIONAL_ROWS.iter().enumerate() {
-        let (ids, bits, tractable, wall_millis, peak, harness, owner) = *expected;
+        let (ids, bits, tractable, wall_millis, peak, harness) = *expected;
         let row = &rows[16 + index];
         let context = format!("row {}: {row:?}", 16 + index);
         assert_eq!(row.route, IntegerRoute::Native, "{context}");
@@ -1677,7 +1610,6 @@ fn tc_070_the_shipped_table_holds_the_kernel_native_float_and_rational_rows() {
                     && !provenance.contains("owner IR-"),
                 "{context}"
             );
-            assert!(!owner.is_empty(), "{context}");
         }
     }
     let float = &NATIVE_FLOAT_AND_RATIONAL_ROWS[..44];
@@ -1692,7 +1624,7 @@ fn tc_070_the_shipped_table_holds_the_kernel_native_float_and_rational_rows() {
     assert_eq!((tractable(float), tractable(rational)), (32, 8));
 }
 
-/// The theorems of the kernel's TC-953 record, transcribed; a float row that cites one the record
+/// The theorems of the kernel's TC-953 record, as CG's own pinned copy; a float row that cites one the record
 /// does not hold fails.
 const FLOAT_RECORD: [&str; 2] = ["lemma_decode_rounded", "lemma_grid_round"];
 const FLOAT_ROUND: &str = "lemma_round";
@@ -1839,8 +1771,9 @@ fn assert_proof(
         .copied()
         .find(|expected| expected.0 == index)
         .unwrap_or_else(|| panic!("{context}: the record transcription has the row"));
-    let upstream =
-        format!("{context} (upstream records {records:?}; re-transcribe per TC-070 step 16)");
+    let upstream = format!(
+        "{context} (upstream records {records:?}; re-check against the records per TC-070 step 16)"
+    );
     assert_eq!(proof.proved, proved, "{upstream}");
     assert_eq!(proof.not_proved, not_proved, "{upstream}");
     assert_eq!(proof.assumes, assumes, "{upstream}");

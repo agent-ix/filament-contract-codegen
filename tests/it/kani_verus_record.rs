@@ -1,7 +1,7 @@
-//! The Verus statements of the kernel's (filament-exact) record, as the shipped table's
-//! `verus_proof` text must read, transcribed from FR-402, FR-403, FR-405, FR-408 and FR-409 (Status
-//! and Behaviors 11, 41, 23, 18a, 24) and the Verus records of TC-950, TC-951, TC-953, TC-956 and
-//! TC-957 on filament-exact main. Re-transcribe per TC-070 step 16 when one of those records changes.
+//! A drift pin over CG's own `verus_proof` text in the shipped table, generated from that text. Its
+//! content was checked against FR-402, FR-403, FR-405, FR-408 and FR-409 (Status and Behaviors 11,
+//! 41, 23, 18a, 24) and the Verus records of TC-950, TC-951, TC-953, TC-956 and TC-957 on
+//! filament-exact at be9359f. Re-check it against those records per TC-070 step 16 when one changes.
 
 const T0: &str = r####"The specification div_rem_post of the production function native_div_rem, for every i128 dividend a and every nonzero i128 divisor b, under each of the three profiles (truncating, floor, Euclidean): the remainder r is in the profile's window, a returned quotient q satisfies a = q b + r exactly, and the quotient is absent only for i128::MIN / -1, whose remainder is zero. This row concerns the quotient q of native_div_rem; the statement holds for every width at once and for symbolic and constant divisors alike."####;
 

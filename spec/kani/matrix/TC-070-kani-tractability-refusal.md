@@ -91,14 +91,14 @@ installed Kani through CG's runner. This case is planned. Every mutant fails at 
     and a proof with an unknown field (FR-056-AC-16 for the
     rows and their text, FR-056-AC-17 for the loader and the never-refuse rule).
 
-    Re-transcription procedure. The expected `proved`, `not_proved`, `assumes` and `run` text, the
-    record ids and the theorem names are transcribed by hand into the test
-    (`tests/it/kani_verus_record.rs`, `tests/it/kani_tractability.rs`) from filament-exact `main`: the
-    Status and the Verus behaviors of FR-402 (11), FR-403 (41), FR-405 (23), FR-408 (18a) and FR-409
-    (24), and the Verus record of TC-950, TC-951, TC-953, TC-956 and TC-957. Nothing reads the upstream
-    record, so redo the transcription, update the rows and the test together, and bump the merged
-    change ids whenever one of those records changes (a new proof change, a renamed theorem, a new
-    mutant count). A failing test names the upstream records to compare. The deferral text in
+    Re-check procedure. The expected `proved`, `not_proved`, `assumes` and `run` text is a drift pin
+    over CG's own text (`tests/it/kani_verus_record.rs`, generated from the table JSON); the record
+    ids and theorem names are literals in `tests/it/kani_tractability.rs`. Their content was checked
+    against filament-exact at be9359f: the Status and the Verus behaviors of FR-402 (11), FR-403 (41),
+    FR-405 (23), FR-408 (18a) and FR-409 (24), and the Verus record of TC-950, TC-951, TC-953, TC-956
+    and TC-957. Nothing reads the upstream record, so whenever one of those records changes (a new
+    proof change, a renamed theorem, a new mutant count) re-check the rows against it, update the rows
+    and the pin together, and bump the merged change ids. A failing test names the upstream records to compare. The deferral text in
     filament-exact's FR-402, FR-403, FR-405 and FR-409 Status is dropped by a second, spec-only
     filament-exact change under IR-1562 after #856 merges; IR-1562 stays open until then.
 
