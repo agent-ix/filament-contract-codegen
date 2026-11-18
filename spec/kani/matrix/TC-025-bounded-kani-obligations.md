@@ -1187,9 +1187,12 @@ with the required author `make kani-gate`; independent review and final acceptan
     `amount <= 500`, `amount = 500`; `case` subject arm `B` as `amount * 3`, member index 1 and
     `amount = 400`; nested subject test `amount <= 500`, `amount = 500`; shadowing subject
     `amount <= 1000`, `amount = 999`; nested-rebinding subject `amount + 1 <= 1000`, `amount = 999`.
-    The collection fixture has no subject: its mutant is the generated oracle's element `if` with
-    else branch `501`, falsified at the direct harness's assertion that the admitted body holds,
-    with a collection holding an element of 500. Then run the laziness and refusal fixtures:
+    The collection fixture has no subject: over `items` of cardinality 0 to 3 with elements
+    `Int[0, 3]` and the body `(if element < 2 then element else 2) <= 2`, the healthy direct
+    harness is `Verified` and its mutant, the source clause with else branch `3` (recompiled by FSL,
+    because the runner needs the generated source byte for byte), is `Falsified` at the harness
+    assertion that the collection satisfies the selected `forall` body, with a collection holding an
+    element of at least 2. Then run the laziness and refusal fixtures:
     FR-015-AC-168 (`amount: Int[0, 999]`, the never-selected else branch `amount + 1000`: verifies,
     and the eager oracle is falsified at `the V2 postcondition holds for the produced result` with amount 0), FR-015-AC-169
     (`amount: Int[0, 1000]`, the selected else branch `amount + 1` at amount 1000: falsified at `the V2 postcondition holds for the produced result`

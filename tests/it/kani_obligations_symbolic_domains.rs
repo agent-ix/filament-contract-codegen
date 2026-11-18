@@ -4118,39 +4118,130 @@ fn collection_element_if_lowers_to_the_direct_harness_with_one_if_per_element() 
         .contains("(if item < 2 { item } else { 3 }) <= 2"));
 }
 
+/// What the generator makes of one `if` element body: the predicate it keeps, or `None` when the
+/// claim is recorded `unsupported` with the typed claim-shape reason and emits no harness.
+fn if_claim_predicate(body: &str) -> Option<CollectionPredicateIdentity> {
+    let fixture = try_emitted_from_document_and_clause(model_document(), IF_CLAUSE, body)
+        .unwrap_or_else(|error| panic!("{body}: {error}"));
+    let operation = if body.starts_with("exists") {
+        "filament.op.collection.exists"
+    } else {
+        "filament.op.collection.forall"
+    };
+    let KaniObligationOutcome::Emitted {
+        records,
+        collection_harnesses,
+        ..
+    } = collection_item_outcome(&fixture, operation, 8)
+    else {
+        panic!("{body}: an item disposition");
+    };
+    match &records[0].disposition {
+        ObligationDisposition::Supported { .. } => {
+            let [harness] = collection_harnesses.as_slice() else {
+                panic!("{body}: one harness");
+            };
+            Some(harness.identity.predicate.clone())
+        }
+        ObligationDisposition::Unsupported {
+            reason:
+                UnsupportedObligation::CollectionClaimNotRendered {
+                    reason:
+                        filament_contract_codegen::CollectionUnsupportedReason::UnsupportedClaimShape,
+                    ..
+                },
+        } => {
+            assert!(collection_harnesses.is_empty(), "{body}");
+            None
+        }
+        other => panic!("{body}: {other:?}"),
+    }
+}
+
 #[trace("FR-015-AC-155", "TC-025")]
 #[test]
-fn collection_element_if_outside_the_closed_shape_is_refused_with_the_typed_claim_shape() {
-    for body in [
-        "forall(item in self.items: (if item <= 2 then item else 2) <= 2)",
-        "forall(item in self.items: (if item < 2 then item + 1 else 2) <= 2)",
-        "forall(item in self.items: (if item < 2 then item else 2) >= 2)",
+fn collection_element_if_accepts_exactly_the_closed_shape() {
+    use filament_contract_codegen::CollectionIfBranch::{Element, Literal};
+    let accepted = |split, then_branch, else_branch, bound| {
+        Some(CollectionPredicateIdentity::IntegerIfAtMost {
+            split,
+            then_branch,
+            else_branch,
+            bound,
+        })
+    };
+    for (body, expected) in [
+        (
+            "forall(item in self.items: (if item < 2 then item else 2) <= 2)",
+            accepted(2, Element, Literal { value: 2 }, 2),
+        ),
+        (
+            "forall(item in self.items: (if item < 2 then 1 else item) <= 3)",
+            accepted(2, Literal { value: 1 }, Element, 3),
+        ),
+        (
+            "forall(item in self.items: (if item < 2 then 0 else 1) <= 1)",
+            accepted(2, Literal { value: 0 }, Literal { value: 1 }, 1),
+        ),
+        (
+            "forall(item in self.items: (if item < 2 then item else item) <= 3)",
+            accepted(2, Element, Element, 3),
+        ),
+        (
+            "exists(item in self.items: (if item < 2 then item else 2) <= 2)",
+            accepted(2, Element, Literal { value: 2 }, 2),
+        ),
+        // Refused: the condition.
+        ("forall(item in self.items: (if item <= 2 then item else 2) <= 2)", None),
+        ("forall(item in self.items: (if item > 2 then item else 2) <= 2)", None),
+        ("forall(item in self.items: (if 2 < item then item else 2) <= 2)", None),
+        ("forall(item in self.items: (if 1 < 2 then item else 2) <= 2)", None),
+        // Refused: the branches.
+        ("forall(item in self.items: (if item < 2 then item + 1 else 2) <= 2)", None),
+        (
+            "forall(item in self.items: (if item < 2 then (if item < 1 then item else 1) else 2) <= 2)",
+            None,
+        ),
+        // Refused: the comparison and its operands.
+        ("forall(item in self.items: (if item < 2 then item else 2) >= 2)", None),
+        ("forall(item in self.items: (if item < 2 then item else 2) < 2)", None),
+        ("forall(item in self.items: (if item < 2 then item else 2) <= item)", None),
+        ("forall(item in self.items: 2 >= (if item < 2 then item else 2))", None),
+        // Refused: a negative literal is a negation, not a literal.
+        ("forall(item in self.items: (if item < -1 then item else 2) <= 2)", None),
+        ("forall(item in self.items: (if item < 2 then -1 else 2) <= 2)", None),
+        ("forall(item in self.items: (if item < 2 then item else 2) <= -1)", None),
     ] {
-        let fixture = try_emitted_from_document_and_clause(model_document(), IF_CLAUSE, body)
-            .unwrap_or_else(|error| panic!("{body}: {error}"));
-        let KaniObligationOutcome::Emitted {
-            records,
-            collection_harnesses,
-            ..
-        } = collection_item_outcome(&fixture, "filament.op.collection.forall", 8)
-        else {
-            panic!("{body}: an item disposition");
-        };
-        assert!(
-            matches!(
-                records[0].disposition,
-                ObligationDisposition::Unsupported {
-                    reason: UnsupportedObligation::CollectionClaimNotRendered {
-                        reason: filament_contract_codegen::CollectionUnsupportedReason::UnsupportedClaimShape,
-                        ..
-                    }
-                }
-            ),
-            "{body}: {:?}",
-            records[0].disposition
-        );
-        assert!(collection_harnesses.is_empty());
+        assert_eq!(if_claim_predicate(body), expected, "{body}");
     }
+}
+
+#[trace("FR-015-AC-155", "TC-025")]
+#[test]
+fn collection_element_if_in_an_operation_precondition_is_refused_without_a_harness() {
+    let fixture = precondition_collection_fixture(
+        "forall(item in self.items: (if item < 2 then item else 2) <= 2)",
+    );
+    let KaniObligationOutcome::Emitted {
+        records,
+        v2_clause_harnesses,
+        collection_harnesses,
+        ..
+    } = precondition_collection_outcome(&fixture, 8, None)
+    else {
+        panic!("the operation clause settles per item");
+    };
+    assert!(v2_clause_harnesses.is_empty() && collection_harnesses.is_empty());
+    assert!(matches!(
+        &records[0].disposition,
+        ObligationDisposition::Unsupported {
+            reason: UnsupportedObligation::CollectionClaimNotRendered {
+                reason:
+                    filament_contract_codegen::CollectionUnsupportedReason::UnsupportedClaimShape,
+                ..
+            }
+        }
+    ));
 }
 
 #[trace("FR-015-AC-159", "FR-017-AC-63", "TC-025")]

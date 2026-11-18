@@ -10,9 +10,8 @@ use crate::{
     kani::{
         abi::i64_literal,
         identity::{
-            CollectionElementIdentity, CollectionIfBranch, CollectionKindIdentity,
-            CollectionObjectFieldIdentity, CollectionOperationConditionIdentity,
-            CollectionPredicateIdentity, SymbolicBounds,
+            CollectionElementIdentity, CollectionKindIdentity, CollectionObjectFieldIdentity,
+            CollectionOperationConditionIdentity, CollectionPredicateIdentity, SymbolicBounds,
         },
     },
 };
@@ -136,8 +135,10 @@ fn draw_field(source: &mut String, field: &CollectionObjectFieldIdentity) -> Opt
     Some(())
 }
 
-fn predicate(predicate: &CollectionPredicateIdentity) -> String {
-    match predicate {
+/// The element predicate of an operation-clause quantifier. The element `if` has no operation
+/// rendering: the reader refuses it before this point.
+fn predicate(predicate: &CollectionPredicateIdentity) -> Option<String> {
+    Some(match predicate {
         CollectionPredicateIdentity::IntegerGreaterOrEqual { threshold } => format!(
             "integer(item) >= &filament_exact::Integer::from({})",
             i64_literal(*threshold)
@@ -146,30 +147,11 @@ fn predicate(predicate: &CollectionPredicateIdentity) -> String {
             "integer(item) == &filament_exact::Integer::from({})",
             i64_literal(*value)
         ),
-        CollectionPredicateIdentity::IntegerIfAtMost {
-            split,
-            then_branch,
-            else_branch,
-            bound,
-        } => {
-            let branch = |branch: &CollectionIfBranch| match branch {
-                CollectionIfBranch::Element => "integer(item).clone()".to_owned(),
-                CollectionIfBranch::Literal { value } => {
-                    format!("filament_exact::Integer::from({})", i64_literal(*value))
-                }
-            };
-            format!(
-                "(if integer(item) < &filament_exact::Integer::from({}) {{ {} }} else {{ {} }}) <= filament_exact::Integer::from({})",
-                i64_literal(*split),
-                branch(then_branch),
-                branch(else_branch),
-                i64_literal(*bound)
-            )
-        }
         CollectionPredicateIdentity::BooleanNotEqual { value } => {
             format!("boolean(item) != {value}")
         }
-    }
+        CollectionPredicateIdentity::IntegerIfAtMost { .. } => return None,
+    })
 }
 
 fn quantifier(
@@ -185,7 +167,7 @@ fn quantifier(
     };
     Some(format!(
         "collection(&{state}.field_{field}).elements().iter().{method}(|item| {})",
-        predicate(claim)
+        predicate(claim)?
     ))
 }
 
