@@ -83,3 +83,13 @@ returns rc 0 with the same 8 warnings as main. `--lib` has 603 passed and 14 fai
 `--test it` has 1138 passed and 28 failed. All 42 failing tests also fail by exact name on a
 clean origin/main 2ca0277a worktree, so the PR adds no failure. FND-001 should be fixed in this
 PR.
+
+## Dispositions
+
+Round 1, checked against fix commit 8306af02.
+
+| FND | outcome | reason |
+|---|---|---|
+| FND-001 | fixed | `collection/operation.rs` `lower` returns `UnsupportedClaimShape` for `IntegerIfAtMost`, and the quantifier branch of `condition` returns `None` for it. The operation render arm is removed (`predicate` returns `None`). The new test `collection_element_if_in_an_operation_precondition_is_refused_without_a_harness` asserts no V2 or collection harness and `CollectionClaimNotRendered`/`UnsupportedClaimShape`. Removing both guards fails it. With no harness emitted, the runner has nothing to run. AC-155 Status records the operation-clause `if` as PLANNED and refused. |
+
+Round 1 gates at 8306af02, reviewer-run in its own worktree: fmt ok, and clippy `--locked --all-targets -D warnings` ok. `make spec` returns rc 0 with 8 warnings, the same as main. `--lib` has 603 passed and 14 failed; `--test it` has 1139 passed and 28 failed. These are the same 42 tests that were verified failing on clean origin/main 2ca0277a in round 0. The diff 4f33c3b2..8306af02 touches only the operation guards, the operation render arm, tests, the spec status text and the SR copies. The direct-harness render (`spec.rs`) is unchanged, so the round-0 Kani verdicts (healthy Verified, else-3 mutant Falsified) stand and were not re-run.

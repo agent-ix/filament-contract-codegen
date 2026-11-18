@@ -44,3 +44,15 @@ run" sentence.
 AC-155 and AC-159 are genuinely implemented for the direct collection harness, with executed,
 source-bound verdicts. FND-001 and FND-002 are status and procedure staleness and should be
 fixed in this PR. FND-003 can ride the same round.
+
+## Dispositions
+
+Round 1, checked against fix commit 8306af02.
+
+| FND | outcome | reason |
+|---|---|---|
+| FND-001 | fixed | The `tests.md` row now reads PARTIAL. It lists what is executed (AC-152, 153, 155, 156, 157, 159, 160, 165, 168, 169, 172), what is PARTIAL with its blocker, and the operation-clause `if` as refused (PLANNED). |
+| FND-002 | fixed | The TC-025 step 57 procedure now prescribes the `items` 0..3 `Int[0, 3]` fixture, the healthy Verified run, and the source-clause else-`3` mutant Falsified at the harness assertion with an element of at least 2. |
+| FND-003 | fixed | The table-driven `collection_element_if_accepts_exactly_the_closed_shape` pins 5 accepted identities and 13 refusals. It fails under each of these mutations: accept a `<=` condition, accept a `>=` comparison, and swap then/else in the reader. The coder left out the Boolean-element case and claimed FSL has no such body. That claim is wrong: in round 0, FSL emitted and IR admitted `forall(f in self.flags: (if f then 1 else 2) <= 2)`, and CG refused it. The omission is acceptable because the case is refused twice over. Dropping the Integer element guard (mutation M8) leaves every test green, because the `integer.lt` condition check refuses any `if` over a Boolean element, so a Boolean row would not make the guard load-bearing. |
+
+Round 1 gates at 8306af02, reviewer-run in its own worktree: fmt ok, and clippy `--locked --all-targets -D warnings` ok. `make spec` returns rc 0 with 8 warnings, the same as main. `--lib` has 603 passed and 14 failed; `--test it` has 1139 passed and 28 failed. These are the same 42 tests that were verified failing on clean origin/main 2ca0277a in round 0. The diff 4f33c3b2..8306af02 touches only the operation guards, the operation render arm, tests, the spec status text and the SR copies. The direct-harness render (`spec.rs`) is unchanged, so the round-0 Kani verdicts (healthy Verified, else-3 mutant Falsified) stand and were not re-run.

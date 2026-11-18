@@ -42,3 +42,14 @@ insensitive to the element range (one `kani::assume` per `i64` slot).
 The AC rewrites are accurate to the tests and the executed evidence. The two findings are
 disclosure and precision nits. The staleness of TC-025 step 57's procedure body and of the
 `tests.md` row is recorded in the gap-analysis (SR-17940486709564847048063).
+
+## Dispositions
+
+Round 1, checked against fix commit 8306af02.
+
+| FND | outcome | reason |
+|---|---|---|
+| FND-001 | fixed | The AC-155 and AC-159 Status cells disclose the narrowing: from 0..4 of `Int[0, 1000]`, split/bound 500 and mutant 501, to the existing fixture. They say why ("needed a second model document, not because it was impossible") and that the property proved is unchanged. |
+| FND-002 | fixed | AC-155 now reads "each branch the element or a non-negative integer literal and the split and the bound non-negative integer literals (FSL emits a negative literal as a negation, which is refused)". Three negative-literal refusal rows in the table test pin this. |
+
+Round 1 gates at 8306af02, reviewer-run in its own worktree: fmt ok, and clippy `--locked --all-targets -D warnings` ok. `make spec` returns rc 0 with 8 warnings, the same as main. `--lib` has 603 passed and 14 failed; `--test it` has 1139 passed and 28 failed. These are the same 42 tests that were verified failing on clean origin/main 2ca0277a in round 0. The diff 4f33c3b2..8306af02 touches only the operation guards, the operation render arm, tests, the spec status text and the SR copies. The direct-harness render (`spec.rs`) is unchanged, so the round-0 Kani verdicts (healthy Verified, else-3 mutant Falsified) stand and were not re-run.
