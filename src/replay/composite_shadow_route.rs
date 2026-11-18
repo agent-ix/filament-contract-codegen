@@ -279,7 +279,7 @@ pub fn shadow_harness_bounds(
     Ok(bounds)
 }
 
-/// Whether the evidence is the run of this harness: the harness path, the size record, the unwind
+/// Whether the evidence is the run of this harness: the generated harness file, the size record, the unwind
 /// bound, the solver and the symbolic arguments the run recorded are the identity's own.
 fn check_evidence(
     harness: &KaniShadowHarness,
@@ -297,7 +297,7 @@ fn check_evidence(
             },
         })
         .collect();
-    if evidence.harness_path != harness.harness_path()
+    if evidence.harness_path != harness.rust.path
         || evidence.shadow_size != Some(identity.size_record())
         || evidence.unwind != identity.unwind
         || evidence.solver != identity.solver

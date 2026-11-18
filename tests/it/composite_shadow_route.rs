@@ -175,7 +175,7 @@ pub(super) fn evidence_of(
 ) -> KaniExecutionEvidence {
     let identity = &harness.identity;
     let mut evidence = synthetic_evidence(outcome, checks);
-    evidence.harness_path = harness.harness_path();
+    evidence.harness_path = harness.rust.path.clone();
     evidence.shadow_size = Some(identity.size_record());
     evidence.unwind = identity.unwind;
     evidence.solver = identity.solver;
