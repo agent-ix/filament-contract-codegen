@@ -391,3 +391,74 @@ fn tc_025_installed_kani_verifies_a_shadow_with_its_member_order_permuted() {
     let (evidence, _) = prove(&harness, "member-order-permuted");
     assert_eq!(evidence.outcome, KaniRunOutcome::Verified);
 }
+
+/// FR-025-AC-9 and FR-033-AC-2 to FR-033-AC-5 under the installed backend: the genuine playback of
+/// a falsified composite shadow mutant is decoded through the identity's leaf bindings and rebuilt
+/// into the two operands the counterexample drew. The mutant leaves field `b` out of the
+/// comparison, so the rebuilt operands must agree on `a` and `c` and differ on `b`, and be unequal
+/// as values although the mutant's verdict calls them equal.
+#[trace("TC-048", "FR-025-AC-9")]
+#[trace("TC-048", "FR-033-AC-2")]
+#[trace("TC-048", "FR-033-AC-5")]
+#[test]
+#[ignore = "kani lane: run serially through make kani-gate"]
+fn tc_048_installed_kani_playback_of_a_falsified_mutant_decodes_and_rebuilds_both_operands() {
+    use filament_contract_codegen::{
+        parse_assertion_playback, reconstruct_composite_operands, WitnessDecodeLimits,
+    };
+    use fsl_replay::{WitnessSlot, WitnessValue};
+
+    if !selected("playback-field-left-out") {
+        return;
+    }
+    let corpus = corpus();
+    let mut harness = generate(&corpus, FLAGS_EQUAL);
+    let line = line_of(&harness, VERDICT_ASSERT);
+    mutate(&mut harness, "p0.0 && p1.0 && p2.0,", "p0.0 && p2.0,");
+    let (evidence, _) = prove(&harness, "playback-field-left-out");
+    eprintln!("MEMORY {:?}", evidence.memory);
+    assert_eq!(
+        failed_lines(&evidence),
+        [line],
+        "falsified by the verdict check only"
+    );
+    let KaniRunOutcome::Falsified { counterexample } = &evidence.outcome else {
+        panic!("falsified, not {:?}", evidence.outcome);
+    };
+    eprintln!("PLAYBACK\n{counterexample}");
+    let playback = parse_assertion_playback(counterexample, "tc-048", "playback", 1 << 20, 64)
+        .expect("Kani's own playback parses");
+    let [left, right] = reconstruct_composite_operands(
+        &harness.identity,
+        &playback,
+        WitnessDecodeLimits {
+            bytes: 1 << 20,
+            values: 64,
+        },
+    )
+    .expect("the playback decodes through the identity's leaf bindings");
+    eprintln!("LEFT  {left:?}\nRIGHT {right:?}");
+    let WitnessValue::Record { fields: l, .. } = &left else {
+        panic!("a record");
+    };
+    let WitnessValue::Record { fields: r, .. } = &right else {
+        panic!("a record");
+    };
+    let named = |fields: &'_ [fsl_replay::WitnessField], name: &str| -> usize {
+        fields.iter().position(|field| field.name == name).unwrap()
+    };
+    let same = |name: &str| l[named(l, name)].slot == r[named(r, name)].slot;
+    assert!(same("a") && same("c"), "the mutant compares only a and c");
+    assert!(
+        !same("b"),
+        "the left-out field is where the operands differ"
+    );
+    assert!(
+        left != right,
+        "the operands are unequal although the mutant says equal"
+    );
+    assert!(matches!(
+        &l[named(l, "b")].slot,
+        WitnessSlot::Present(WitnessValue::ExactInteger(_))
+    ));
+}
