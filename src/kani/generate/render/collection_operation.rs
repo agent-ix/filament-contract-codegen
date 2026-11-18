@@ -10,8 +10,9 @@ use crate::{
     kani::{
         abi::i64_literal,
         identity::{
-            CollectionElementIdentity, CollectionKindIdentity, CollectionObjectFieldIdentity,
-            CollectionOperationConditionIdentity, CollectionPredicateIdentity, SymbolicBounds,
+            CollectionElementIdentity, CollectionIfBranch, CollectionKindIdentity,
+            CollectionObjectFieldIdentity, CollectionOperationConditionIdentity,
+            CollectionPredicateIdentity, SymbolicBounds,
         },
     },
 };
@@ -145,6 +146,26 @@ fn predicate(predicate: &CollectionPredicateIdentity) -> String {
             "integer(item) == &filament_exact::Integer::from({})",
             i64_literal(*value)
         ),
+        CollectionPredicateIdentity::IntegerIfAtMost {
+            split,
+            then_branch,
+            else_branch,
+            bound,
+        } => {
+            let branch = |branch: &CollectionIfBranch| match branch {
+                CollectionIfBranch::Element => "integer(item).clone()".to_owned(),
+                CollectionIfBranch::Literal { value } => {
+                    format!("filament_exact::Integer::from({})", i64_literal(*value))
+                }
+            };
+            format!(
+                "(if integer(item) < &filament_exact::Integer::from({}) {{ {} }} else {{ {} }}) <= filament_exact::Integer::from({})",
+                i64_literal(*split),
+                branch(then_branch),
+                branch(else_branch),
+                i64_literal(*bound)
+            )
+        }
         CollectionPredicateIdentity::BooleanNotEqual { value } => {
             format!("boolean(item) != {value}")
         }

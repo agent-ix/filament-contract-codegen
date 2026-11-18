@@ -4070,3 +4070,117 @@ fn replay_scalar_limits() -> ScalarLimits {
         result_units: 1_000,
     }
 }
+
+const IF_CLAUSE: &str = "invariant CollectionReady using v on M::Node at current";
+
+fn if_claim_harness(body: &str) -> KaniCollectionObligationHarness {
+    let fixture = try_emitted_from_document_and_clause(model_document(), IF_CLAUSE, body)
+        .expect("FSL emits and IR admits the collection-if clause");
+    qualified_collection_harness(&fixture, "filament.op.collection.forall")
+}
+
+#[trace("FR-015-AC-155", "TC-025")]
+#[test]
+fn collection_element_if_lowers_to_the_direct_harness_with_one_if_per_element() {
+    let harness =
+        if_claim_harness("forall(item in self.items: (if item < 2 then item else 2) <= 2)");
+    assert_eq!(
+        harness.identity.predicate,
+        CollectionPredicateIdentity::IntegerIfAtMost {
+            split: 2,
+            then_branch: filament_contract_codegen::CollectionIfBranch::Element,
+            else_branch: filament_contract_codegen::CollectionIfBranch::Literal { value: 2 },
+            bound: 2,
+        }
+    );
+    let source = &harness.rust.contents;
+    assert_eq!(
+        source
+            .matches("(if item < 2 { item } else { 2 }) <= 2")
+            .count(),
+        1,
+        "{source}"
+    );
+    let claim = source
+        .find("let claim = (0..selected_items_len).all(")
+        .expect("the bounded iteration");
+    let rendered = source.find("(if item < 2").expect("the rendered if");
+    let assertion = source.find("assert!(claim").expect("the harness assertion");
+    assert!(claim < rendered && rendered < assertion);
+    assert!(source.contains("selected_items_len >= 0 && selected_items_len <= 3"));
+
+    let mutant =
+        if_claim_harness("forall(item in self.items: (if item < 2 then item else 3) <= 2)");
+    assert_ne!(harness.identity, mutant.identity);
+    assert!(mutant
+        .rust
+        .contents
+        .contains("(if item < 2 { item } else { 3 }) <= 2"));
+}
+
+#[trace("FR-015-AC-155", "TC-025")]
+#[test]
+fn collection_element_if_outside_the_closed_shape_is_refused_with_the_typed_claim_shape() {
+    for body in [
+        "forall(item in self.items: (if item <= 2 then item else 2) <= 2)",
+        "forall(item in self.items: (if item < 2 then item + 1 else 2) <= 2)",
+        "forall(item in self.items: (if item < 2 then item else 2) >= 2)",
+    ] {
+        let fixture = try_emitted_from_document_and_clause(model_document(), IF_CLAUSE, body)
+            .unwrap_or_else(|error| panic!("{body}: {error}"));
+        let KaniObligationOutcome::Emitted {
+            records,
+            collection_harnesses,
+            ..
+        } = collection_item_outcome(&fixture, "filament.op.collection.forall", 8)
+        else {
+            panic!("{body}: an item disposition");
+        };
+        assert!(
+            matches!(
+                records[0].disposition,
+                ObligationDisposition::Unsupported {
+                    reason: UnsupportedObligation::CollectionClaimNotRendered {
+                        reason: filament_contract_codegen::CollectionUnsupportedReason::UnsupportedClaimShape,
+                        ..
+                    }
+                }
+            ),
+            "{body}: {:?}",
+            records[0].disposition
+        );
+        assert!(collection_harnesses.is_empty());
+    }
+}
+
+#[trace("FR-015-AC-159", "FR-017-AC-63", "TC-025")]
+#[test]
+#[ignore = "kani lane: run serially through make kani-gate"]
+fn tc_025_real_kani_collection_if_claim_verifies() {
+    let installation = KaniInstallation::discover().expect("cargo-kani is installed");
+    let healthy =
+        if_claim_harness("forall(item in self.items: (if item < 2 then item else 2) <= 2)");
+    let evidence = run_collection_kani(&installation, &healthy, "if-healthy");
+    assert_eq!(evidence.outcome, KaniRunOutcome::Verified);
+    assert_eq!(evidence.exit_code, Some(0));
+}
+
+#[trace("FR-015-AC-159", "FR-017-AC-63", "TC-025")]
+#[test]
+#[ignore = "kani lane: run serially through make kani-gate"]
+fn tc_025_real_kani_collection_if_else_mutant_falsifies() {
+    let installation = KaniInstallation::discover().expect("cargo-kani is installed");
+    let mutant =
+        if_claim_harness("forall(item in self.items: (if item < 2 then item else 3) <= 2)");
+    let evidence = run_collection_kani(&installation, &mutant, "if-mutant");
+    let KaniRunOutcome::Falsified { counterexample } = &evidence.outcome else {
+        panic!("the else-branch mutant must falsify: {evidence:?}");
+    };
+    assert!(counterexample.contains(mutant.identity.harness_symbol.as_str()));
+    let values = collection_playback_values(counterexample);
+    assert!(
+        values.iter().any(|value| *value >= 2),
+        "a distinguishing element of at least 2: {values:?}"
+    );
+    assert_ne!(evidence.exit_code, Some(0));
+}
