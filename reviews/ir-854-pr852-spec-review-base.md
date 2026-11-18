@@ -51,3 +51,5 @@ delivered-and-partial contradiction (FND-001) and one loose phrase in the matrix
 |---|---|---|
 | FND-001 | fixed | The AC-7 bullet is gone from "Partly delivered"; the over-refusal now sits under AC-9. |
 | FND-002 | fixed | The matrix row now reads "the two embedded-law swaps, the oracle completing at a zero divisor and the expected side without its zero arm". |
+| FND-003 | fixed | The AC-9 bullet now says every row is kernel_version 1 against KERNEL_VERSION 2, so the decider matches no row and refuses nothing until IR-1568. The open gap is latent until IR-1568, then live, and IR-1561 depends on IR-1568. |
+| FND-004 | fixed | The Status heading now notes that the AC-7 row is Known red (IR-1566, IR-1568), that the tagged table test is a known red, and that the seven native Kani runs pass. |
