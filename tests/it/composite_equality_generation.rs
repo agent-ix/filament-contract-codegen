@@ -76,8 +76,13 @@ fn tc_029_ac50_a_top_level_float_pair_is_reader_ineligible_and_records_the_float
         Some(CheckedPackageRefusalCause::OperatorIneligible)
     );
     assert_eq!(
-        refusal.loci[0].path.as_ref().map(|path| path.as_str().to_owned()),
-        Some(format!("/semantic_graph/nodes/{position}/body/operation/leaves"))
+        refusal.loci[0]
+            .path
+            .as_ref()
+            .map(|path| path.as_str().to_owned()),
+        Some(format!(
+            "/semantic_graph/nodes/{position}/body/operation/leaves"
+        ))
     );
 
     let float = || ValueType::Float(filament_exact::FloatType::exact(IeeeWidth::Binary64));
@@ -100,7 +105,11 @@ fn tc_029_ac50_a_top_level_float_pair_is_reader_ineligible_and_records_the_float
         (EqualitySchedule::Float, RecordedSchedule::Float, "float"),
         (EqualitySchedule::Text, RecordedSchedule::Text, "text"),
         (EqualitySchedule::Enum, RecordedSchedule::Enum, "enum"),
-        (EqualitySchedule::Quantity, RecordedSchedule::Quantity, "quantity"),
+        (
+            EqualitySchedule::Quantity,
+            RecordedSchedule::Quantity,
+            "quantity",
+        ),
         (EqualitySchedule::Plan, RecordedSchedule::Plan, "plan"),
     ] {
         assert_eq!(RecordedSchedule::try_from(owner), Ok(recorded));
@@ -1759,7 +1768,10 @@ fn tc_029_ac12_manifest_is_unpublished_and_charge_free() {
     // No first-party crate resolves from a branch: each names the release tag CG's own manifest
     // names, and only `fsl-replay` (no release tag yet) names a revision.
     assert!(!manifest.contains("branch ="), "{manifest}");
-    for line in manifest.lines().filter(|line| line.contains("github.com/agent-ix/")) {
+    for line in manifest
+        .lines()
+        .filter(|line| line.contains("github.com/agent-ix/"))
+    {
         assert!(
             line.contains("tag = \"") || line.starts_with("fsl-replay = "),
             "{line}"

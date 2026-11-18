@@ -26,7 +26,7 @@ use super::composite_shadow::{
     generate, DUO_EQUAL, FLAGS_EQUAL, FLAGS_NOT_EQUAL, NESTED_OPTION_EQUAL, OPTION_EQUAL,
 };
 use super::exact_scalar_agreement::{
-    composite_manifest_for_shared_target, agreement_dev_dependencies,
+    agreement_dev_dependencies, composite_manifest_for_shared_target,
 };
 use super::scratch_crate::{
     agreement_target, lock_agreement_build, resolve_seeded_lock, TemporaryDirectory,

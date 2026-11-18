@@ -137,7 +137,9 @@ mod tests {
     #[test]
     fn only_equality_manifests_acquire_the_admitted_context_facade() {
         let equality = equality_oracle_crate_manifest("equality-probe");
-        assert!(equality.contains(&format!("fsl-replay = {{ {FSL_REPLAY_DEPENDENCY_SOURCE} }}")));
+        assert!(equality.contains(&format!(
+            "fsl-replay = {{ {FSL_REPLAY_DEPENDENCY_SOURCE} }}"
+        )));
         assert!(!equality.contains("branch ="));
         assert!(!equality.contains("test-support"));
         assert!(!oracle_crate_manifest("scalar-probe").contains("fsl-replay"));
