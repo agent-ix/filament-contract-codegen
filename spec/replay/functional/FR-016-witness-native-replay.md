@@ -214,8 +214,8 @@ verification method above remain unchanged.
 ## Dependencies
 
 - **Upstream**: [FR-015](../../kani/functional/FR-015-bounded-kani-obligations.md); FSL's
-  `fsl-replay` crate, the only FSL crate this
-  repository depends on. The replay package takes a compiled unit's package id and
+  `fsl-replay` crate and `fsl-package` (for `ObligationIdentity`), the only FSL crates this
+  repository depends on; it depends on no other FSL crate. The replay package takes a compiled unit's package id and
   parameter node ids from `fsl_replay::call_site`, which compiles the unit with its
   locked dependencies, and the request's types from `fsl-replay`'s re-exports.
 - **Downstream**: [TC-026](../matrix/TC-026-witness-native-replay.md),
