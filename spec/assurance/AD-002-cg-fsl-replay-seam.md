@@ -70,7 +70,7 @@ obligation identity type, and neither does IR. CG's only FSL dependency is the `
 
 | Contract | Spelled by | Asserted by |
 | --- | --- | --- |
-| `fsl-replay` Rust API | FSL | The compiler. CG's `Cargo.toml` names FSL's `main` branch and `Cargo.lock` selects the revision it builds against; the seam asserts nothing about that revision beyond compilation, and no digest or version check is needed: a changed type or removed function fails CG's build. |
+| `fsl-replay` Rust API | FSL | The compiler. CG's `Cargo.toml` names an FSL revision (an interim `rev` pin until the fsl-* release tag exists) and `Cargo.lock` records it; the seam asserts nothing about that revision beyond compilation, and no digest or version check is needed: a changed type or removed function fails CG's build. |
 | Request version and vocabulary members | none | FSL deleted `contract_version`, `capability_vocabulary` and `package_contract_version` from `ReplayRequestWire` and `WitnessPacket` (R-Q5, done in FSL), so the request carries no contract spelling and CG writes none. |
 | `package_id` (`filament.package.semantic/v2`) | FSL | FSL recompiles the provided source and requires the recompiled `package_id` to equal the request's (`execute.rs`, "Rule 5"; `execute/frame.rs` for the frame path). This is the one canonical content-identity digest the whole replay seam rests on: it binds a replay to the content that was proved. |
 | Source bytes | CG computes the digest with FSL's `ByteDigest` | FSL checks each provided byte against its digest (`stale_dependency/byte-digest-mismatch`). |

@@ -678,6 +678,8 @@ pub struct GeneratedCompositeEqualityClaim {
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum RecordedSchedule {
+    /// `EqualitySchedule::Float`.
+    Float,
     /// `EqualitySchedule::Text`.
     Text,
     /// `EqualitySchedule::Enum`.
@@ -693,6 +695,7 @@ impl TryFrom<EqualitySchedule> for RecordedSchedule {
 
     fn try_from(schedule: EqualitySchedule) -> Result<Self, Self::Error> {
         match schedule {
+            EqualitySchedule::Float => Ok(Self::Float),
             EqualitySchedule::Text => Ok(Self::Text),
             EqualitySchedule::Enum => Ok(Self::Enum),
             EqualitySchedule::Quantity => Ok(Self::Quantity),

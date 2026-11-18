@@ -378,12 +378,13 @@ fn the_profile_package_yields_a_harness_per_kind_with_distinct_identities() {
     assert_eq!(precondition.identity.ceilings, invariant.identity.ceilings);
 }
 
-/// The postcondition member of FR-015-AC-129 is blocked once now: the CG generator renders the
-/// state-reading postcondition (IR-948 slice 2b), and FSL still refuses the specified equality
-/// text (QSL-1901). This test fails when FSL lifts so that the PARTIAL status is revisited.
+/// The postcondition member of FR-015-AC-129: the CG generator renders the state-reading
+/// postcondition (IR-948 slice 2b), and FSL now admits the specified equality text that
+/// `unproved-range` (QSL-1901) once refused. This canary fails if FSL refuses it again; the
+/// PARTIAL status of the criterion is the IR-948 owner's to revisit.
 #[trace("FR-015-AC-129", "FR-015-AC-43", "TC-025")]
 #[test]
-fn the_postcondition_renders_and_the_specified_equality_text_is_blocked_by_qsl() {
+fn the_postcondition_renders_and_fsl_admits_the_specified_equality_text() {
     let twin = healthy();
     let located = ["CanAfford", "Debited", "NonNegative"].map(|name| twin.emitted_package(name));
     let package = &located[0].0;
@@ -438,14 +439,9 @@ fn the_postcondition_renders_and_the_specified_equality_text_is_blocked_by_qsl()
         "self.balance = pre(self.balance) - amount",
         INVARIANT,
     );
-    let Err(refusal) = equality.clause_site("Debited") else {
-        panic!("FSL refuses the specified equality text");
-    };
-    let refusal = format!("{refusal:?}");
-    assert!(
-        refusal.contains("UndefinedExpression") && refusal.contains("unproved-range"),
-        "{refusal}"
-    );
+    if let Err(refusal) = equality.clause_site("Debited") {
+        panic!("FSL admits the specified equality text: {refusal:?}");
+    }
 }
 
 fn run(label: &str, harness: &KaniV2ClauseObligationHarness) -> KaniExecutionEvidence {
