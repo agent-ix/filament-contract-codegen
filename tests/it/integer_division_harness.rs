@@ -331,7 +331,7 @@ impl Shape {
             &format!("x {} y", self.operation),
         )]);
         let package = compile(&text, self.profile);
-        let node = body_id(&package, "subject");
+        let node = division_node(&package, "subject");
         routed_nodes(&package, std::slice::from_ref(&node), self.unwind, native)
     }
 }
@@ -875,11 +875,7 @@ fn host_differential_of_the_expected_side_against_filament_exact() {
     }
 }
 
-/// FSL admits a division only over a divisor it proves nonzero, so a divisor range holding zero
-/// is built through the reader fixtures instead (`Shape` with an explicit result range).
-const PARAMETERS: &str = "x: Int[-8, 7], y: Int[1, 3]";
-/// The negative-divisor counterpart of [`PARAMETERS`].
-const NEGATIVE_DIVISOR: &str = "x: Int[-8, 7], y: Int[-3, -1]";
+const PARAMETERS: &str = "x: Int[-8, 7], y: Int[-3, 3]";
 
 /// The seven claims of FR-057-AC-1 as `(function, operation, profile)`.
 const CLAIMS: [(&str, &str, DivisionProfile); 7] = [
@@ -892,18 +888,14 @@ const CLAIMS: [(&str, &str, DivisionProfile); 7] = [
     ("md", "mod", DivisionProfile::Euclidean),
 ];
 
-/// A package with the `div`/`rem`/`mod` claims of one law and an `add` sibling, over a negative
-/// dividend and a positive divisor.
+/// A package with the `div`/`rem`/`mod` claims of one law and an `add` sibling, over operands with
+/// a negative dividend and both divisor signs.
 fn catalog(profile: DivisionProfile) -> CheckedPackageV2 {
-    catalog_over(profile, PARAMETERS)
-}
-
-fn catalog_over(profile: DivisionProfile, parameters: &str) -> CheckedPackageV2 {
     let text = source(&[
-        ("dv", parameters, "Integer", "x div y"),
-        ("rm", parameters, "Integer", "x rem y"),
-        ("md", parameters, "Integer", "x mod y"),
-        ("ad", parameters, "Int[-11, 10]", "x + y"),
+        ("dv", PARAMETERS, "Integer", "x div y"),
+        ("rm", PARAMETERS, "Integer", "x rem y"),
+        ("md", PARAMETERS, "Integer", "x mod y"),
+        ("ad", PARAMETERS, "Int[-11, 10]", "x + y"),
     ]);
     compile(&text, profile)
 }
@@ -928,13 +920,8 @@ fn unsupported(generation: &RoutedGeneration, index: usize) -> &UnsupportedOblig
 #[trace("TC-071", "FR-057-AC-1")]
 #[test]
 fn every_division_claim_of_each_law_generates_one_harness_from_its_own_node() {
-    for (profile, parameters, divisor) in DivisionProfile::ALL.into_iter().flat_map(|profile| {
-        [
-            (profile, PARAMETERS, (1, 3)),
-            (profile, NEGATIVE_DIVISOR, (-3, -1)),
-        ]
-    }) {
-        let package = catalog_over(profile, parameters);
+    for profile in DivisionProfile::ALL {
+        let package = catalog(profile);
         for (function, operation) in [("dv", "div"), ("rm", "rem"), ("md", "mod")] {
             let node = division_node(&package, function);
             let generation = routed_node(&package, &node, 12);
@@ -963,8 +950,8 @@ fn every_division_claim_of_each_law_generates_one_harness_from_its_own_node() {
                     .iter()
                     .map(|argument| (argument.minimum, argument.maximum))
                     .collect::<Vec<_>>(),
-                [(-8, 7), divisor],
-                "a negative dividend and a one-signed nonzero divisor"
+                [(-8, 7), (-3, 3)],
+                "a negative dividend and both divisor signs"
             );
             assert_eq!(
                 harness.identity.integer_representation,
@@ -996,7 +983,7 @@ fn the_harness_draws_each_operand_over_its_range_with_one_assertion_and_one_last
             "only the two operand-range assumptions: none on the divisor, dividend or outcome"
         );
         assert!(kani_module.contains("kani::assume(left >= -8_i64 && left <= 7_i64)"));
-        assert!(kani_module.contains("kani::assume(right >= 1_i64 && right <= 3_i64)"));
+        assert!(kani_module.contains("kani::assume(right >= -3_i64 && right <= 3_i64)"));
         assert_eq!(kani_module.matches("assert!(").count(), 1);
         assert_eq!(kani_module.matches("kani::cover!(").count(), 1);
         assert!(
@@ -1080,7 +1067,7 @@ fn the_expected_side_is_relational_for_div_and_euclidean_for_rem_and_mod_and_nam
 #[trace("TC-071", "FR-057-AC-5")]
 #[test]
 fn lowering_refuses_the_inferred_quotient_range_that_is_not_i64_and_a_zero_only_divisor() {
-    let wide = "x: Int[-9223372036854775808, 9223372036854775807], y: Int[1, 3]";
+    let wide = "x: Int[-9223372036854775808, 9223372036854775807], y: Int[-3, 3]";
     for (profile, operation) in [
         (DivisionProfile::Truncating, "div"),
         (DivisionProfile::Floor, "div"),
@@ -1115,15 +1102,16 @@ fn lowering_refuses_the_inferred_quotient_range_that_is_not_i64_and_a_zero_only_
         assert!(parts(&generation, 0).1.is_some(), "{operation} {profile:?}");
     }
     // A divisor range that is only zero has no completed member: the result bound is unreachable.
-    let (package, node) = super::integer_division_bounds::reader_division_operation(
-        915_100,
-        "filament.op.integer.div",
-        Some(DivisionProfile::Floor),
-        Some((-8, 7)),
-        Some((0, 0)),
-        None,
+    let package = compile(
+        &source(&[(
+            "subject",
+            "x: Int[-8, 7], y: Int[0, 0]",
+            "Integer",
+            "x div y",
+        )]),
+        DivisionProfile::Floor,
     );
-    let generation = routed_node(&package, &node, 12);
+    let generation = routed(&package, "subject", 12);
     assert!(matches!(
         unsupported(&generation, 0),
         UnsupportedObligation::ResultBoundUnreachable { .. }
@@ -1608,7 +1596,7 @@ fn general_route_symbolic_divisor_4_bit_floor_div_times_out() {
             operation: "div",
             left: (-8, 7),
             right: (-8, 7),
-            narrow: Some((-8, 8)),
+            narrow: None,
             unwind: 10,
         },
         "ir854-sym4-div-floor",
@@ -1796,7 +1784,7 @@ fn a_division_harness_at_or_above_its_row_width_is_refused_before_kani_and_below
         // Below the row, at 3 bits, the decider lets it through to the (missing) launcher.
         let text = source(&[(
             "subject",
-            "x: Int[-4, 3], y: Int[1, 2]",
+            "x: Int[-4, 3], y: Int[-2, 2]",
             "Integer",
             &format!("x {operation} y"),
         )]);
