@@ -1095,7 +1095,7 @@ fn hand_written_claim(
         maximum,
     };
     V2ClauseObligationClaim {
-        obligation: fsl_replay::ObligationIdentity::new(
+        obligation: fsl_package::ObligationIdentity::new(
             crate::common::v2_claim::resolved_key(package, clause),
             None,
             0,

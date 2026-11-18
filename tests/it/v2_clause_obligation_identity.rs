@@ -13,7 +13,7 @@ use filament_contract_codegen::{
 };
 use filament_contract_model::{CheckedNodeId, CheckedPackageV2};
 use filament_exact::{NodeKey, PathSegment};
-use fsl_replay::{ModelIdentity, ObligationIdentity};
+use fsl_package::{ModelIdentity, ObligationIdentity};
 use ix_trace_rs::trace;
 
 use super::kani_obligations_state_frame::native_twin::Twin;

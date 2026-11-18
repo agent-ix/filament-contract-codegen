@@ -20,10 +20,10 @@ use filament_contract_codegen::{
 };
 use filament_contract_model::{CheckedNodeId, CheckedPackageV2};
 use filament_semantic_value::catalog::Category;
+use fsl_package::{ModelIdentity, ObligationIdentity};
 use fsl_replay::{
     replay_state_clause, AnchorKind, ClauseName, ClauseSelectionInput, DisagreementCause,
-    Identifier, ModelIdentity, ObligationIdentity, ReplayRefusal, ReplayResult,
-    StateClauseReplayResult, WitnessSettlement,
+    Identifier, ReplayRefusal, ReplayResult, StateClauseReplayResult, WitnessSettlement,
 };
 use serde_json::{json, Value};
 
