@@ -14,7 +14,7 @@ use crate::kani::{
     identity::{
         CollectionElementIdentity, CollectionKindIdentity, CollectionObjectFieldIdentity,
         CollectionOperationConditionIdentity, CollectionOperationIdentity,
-        CollectionOperationValueIdentity, SymbolicBounds,
+        CollectionOperationValueIdentity, CollectionPredicateIdentity, SymbolicBounds,
     },
 };
 use filament_contract_model::{
@@ -156,6 +156,12 @@ pub(super) fn lower(
     claim: &crate::kani::identity::V2ClauseObligationClaim,
 ) -> Result<LoweredOperation, CollectionDomainRefusal> {
     let failure = || refused(CollectionUnsupportedReason::UnsupportedClaimShape);
+    if matches!(
+        selected.predicate,
+        CollectionPredicateIdentity::IntegerIfAtMost { .. }
+    ) {
+        return Err(failure());
+    }
     let node = graph.index.node(clause).ok_or_else(failure)?;
     let (kind, declared, body) = state_clause_parts(&graph.index, node).ok_or_else(failure)?;
     let anchor_id = anchor(graph, clause).ok_or_else(failure)?;
@@ -409,6 +415,12 @@ fn condition(
             .fields
             .iter()
             .position(|field| field.field_name == collection.field_name)?;
+        if matches!(
+            collection.predicate,
+            CollectionPredicateIdentity::IntegerIfAtMost { .. }
+        ) {
+            return None;
+        }
         return Some(CollectionOperationConditionIdentity::Quantifier {
             field,
             operation: collection.quantifier_operation,

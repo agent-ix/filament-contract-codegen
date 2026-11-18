@@ -19,6 +19,8 @@ cgroup, no swap. Probe context: `ir1447-kani-control-probe.md`.
 | FR-015-AC-169 | selected refusing branch | Falsified | 126.4 s | 10,371,416,064 B | amount = 1000 |
 | FR-015-AC-172 | unread refusing initializer | Falsified | 142.0 s | 14,534,299,648 B | amount = 1000 |
 | FR-015-AC-172 | clause without the unread `let` (`result = (amount >= 0)`, `Int[0, 1000]`) | Verified | 6.1 s | 488,370,176 B | none |
+| FR-015-AC-159 | collection if healthy (`forall(item in self.items: (if item < 2 then item else 2) <= 2)`, `items` 0 to 3 of `Int[0, 3]`, direct collection harness, unwind 8) | Verified, cover satisfied | 0.46 s test run (cold build plus run: 5.3 s for healthy and mutant together, peak 1,142,304,768 B) | 3,267,690,496 B (whole scope, including the test rebuild) | none |
+| FR-015-AC-159 | collection if mutant (else branch `3`) | Falsified (witness phase) | 0.94 s test run | 180,699,136 B (whole scope, test binary already built) | an element of at least 2 |
 
 Falsified runs of the let, if and nested rows fail at the step "the produced V2 Boolean result
 agrees with the independent checked condition".
@@ -36,10 +38,17 @@ The hand-edited generated oracles are also run as host stop probes: eager gives
 `Err(IntegerOutOfDomain)`, and skip-unread gives `Ok(true)` where the healthy oracle stops. The
 `false`-mapping mutant has no equivalent clause, so its Kani verdict is not run; only its stop is.
 
+The collection rows run `tc_025_real_kani_collection_if_claim_verifies` and
+`tc_025_real_kani_collection_if_else_mutant_falsifies` one Kani job at a time, each in its own
+`systemd-run --user --scope -p MemoryMax=24G -p MemorySwapMax=0` under `flock /tmp/cargo-slot.lock`.
+The mutant is a source-authored clause recompiled by FSL, because the runner needs the generated
+source byte for byte. The collection `if` is emitted by the FSL pinned in `Cargo.lock`
+(`be88cde3`); no pin moved.
+
 ## Not run (PARTIAL)
 
 Union `case` (AC-154, 158, 162, 163, 171; FR-025-AC-19) needs a union operation parameter in the
-subject signature; collection `if` (AC-155, 159) needs a collection predicate arm; shadowing
+subject signature; shadowing
 (AC-170, 173) needs constructed packages; AC-161 and the four other reasons of AC-167 have no
 reachable FSL clause fixture (their `control_operands` shape checks and the reader's `case_term`
 are tested over FSL-compiled function packages); the `let` of `filament.op.option.value` clause of

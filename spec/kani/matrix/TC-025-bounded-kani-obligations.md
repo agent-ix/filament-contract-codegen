@@ -1171,7 +1171,7 @@ with the required author `make kani-gate`; independent review and final acceptan
 
 ## Control construct lowering (IR-1447)
 
-57. FR-015-AC-152 to FR-015-AC-173 (PARTIAL, IR-1447: `let`, `if`, nested and the laziness, refusal and unread-initializer fixtures are executed, the union `case`, collection and shadowing fixtures are not; the eager-branch and skip-unread mutants of AC-168 and AC-172 run as equivalent packages (the runner requires the generated source byte for byte), the `false`-mapping mutant of AC-169 as a host stop probe only; AC-166 has no test for the `option.value` clause; FR-025-AC-19 is TC-036 step 19). Control construct lowering.
+57. FR-015-AC-152 to FR-015-AC-173 (PARTIAL, IR-1447: `let`, `if`, nested and the laziness, refusal and unread-initializer fixtures are executed, the collection `if` of AC-155 and AC-159 is executed (direct collection harness, healthy `Verified`, else-branch mutant `Falsified`); the union `case` and shadowing fixtures are not; the eager-branch and skip-unread mutants of AC-168 and AC-172 run as equivalent packages (the runner requires the generated source byte for byte), the `false`-mapping mutant of AC-169 as a host stop probe only; AC-166 has no test for the `option.value` clause; FR-025-AC-19 is TC-036 step 19). Control construct lowering.
     Generate a native V2 clause harness for each fixture of FR-015-AC-152 to FR-015-AC-155,
     FR-015-AC-164, FR-015-AC-170 and FR-015-AC-173 (`let`, `if`, `case` over a three-member arity-0
     union drawn as an `i64` member index, an `if` in an invariant collection `forall`, the nested
@@ -1187,9 +1187,12 @@ with the required author `make kani-gate`; independent review and final acceptan
     `amount <= 500`, `amount = 500`; `case` subject arm `B` as `amount * 3`, member index 1 and
     `amount = 400`; nested subject test `amount <= 500`, `amount = 500`; shadowing subject
     `amount <= 1000`, `amount = 999`; nested-rebinding subject `amount + 1 <= 1000`, `amount = 999`.
-    The collection fixture has no subject: its mutant is the generated oracle's element `if` with
-    else branch `501`, falsified at the direct harness's assertion that the admitted body holds,
-    with a collection holding an element of 500. Then run the laziness and refusal fixtures:
+    The collection fixture has no subject: over `items` of cardinality 0 to 3 with elements
+    `Int[0, 3]` and the body `(if element < 2 then element else 2) <= 2`, the healthy direct
+    harness is `Verified` and its mutant, the source clause with else branch `3` (recompiled by FSL,
+    because the runner needs the generated source byte for byte), is `Falsified` at the harness
+    assertion that the collection satisfies the selected `forall` body, with a collection holding an
+    element of at least 2. Then run the laziness and refusal fixtures:
     FR-015-AC-168 (`amount: Int[0, 999]`, the never-selected else branch `amount + 1000`: verifies,
     and the eager oracle is falsified at `the V2 postcondition holds for the produced result` with amount 0), FR-015-AC-169
     (`amount: Int[0, 1000]`, the selected else branch `amount + 1` at amount 1000: falsified at `the V2 postcondition holds for the produced result`
