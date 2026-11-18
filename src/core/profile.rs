@@ -28,16 +28,15 @@ pub const MODEL_DEPENDENCY_SOURCE: &str =
 
 /// Source of the checked-closure evaluator the function oracle names.
 pub const EVAL_DEPENDENCY_SOURCE: &str =
-    "git = \"https://github.com/agent-ix/filament-eval\", tag = \"v0.1.4\"";
+    "git = \"https://github.com/agent-ix/filament-eval\", tag = \"v0.1.6\"";
 
 /// Source of the criterion-binding attribute macro scratch crates use.
 pub const TRACE_DEPENDENCY_SOURCE: &str =
     "git = \"https://github.com/agent-ix/ix-trace-rs\", tag = \"v0.1.2\"";
 
-/// Source of the admitted-context facade (`fsl-replay`). IR-1566: an interim revision of FSL main
-/// (b7414640, FSL #2917); no fsl-* tag exists yet, so swap to the tag here and in `Cargo.toml`
-/// once one is cut.
-pub const FSL_REPLAY_DEPENDENCY_SOURCE: &str = "git = \"https://github.com/agent-ix/filament-spec-language\", rev = \"b74146405bc8e213252d4096a017c5de0d6afe45\"";
+/// Source of the admitted-context facade (`fsl-replay`): the current FSL main revision, pinned
+/// while no fsl-* release tag carries the v0.1.6 evaluator dependencies.
+pub const FSL_REPLAY_DEPENDENCY_SOURCE: &str = "git = \"https://github.com/agent-ix/filament-spec-language\", rev = \"feb486e9f2e5ad9d1c0c8ffb0bf664cd69cb62f5\"";
 
 /// The `[package.metadata.kani]` table every generated oracle crate's manifest carries. CBMC
 /// tracks heap objects field by field only up to 64 bytes by default; RT's `Value` and `ValueType`
