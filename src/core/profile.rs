@@ -35,9 +35,9 @@ pub const TRACE_DEPENDENCY_SOURCE: &str =
     "git = \"https://github.com/agent-ix/ix-trace-rs\", tag = \"v0.1.2\"";
 
 /// Source of the admitted-context facade (`fsl-replay`). IR-1566: an interim revision of FSL main
-/// (88698958, FSL #2882); no fsl-* tag exists yet, so swap to the tag here and in `Cargo.toml`
+/// (b7414640, FSL #2917); no fsl-* tag exists yet, so swap to the tag here and in `Cargo.toml`
 /// once one is cut.
-pub const FSL_REPLAY_DEPENDENCY_SOURCE: &str = "git = \"https://github.com/agent-ix/filament-spec-language\", rev = \"88698958380d220c1f6b1a57114f4c6f4744ce5a\"";
+pub const FSL_REPLAY_DEPENDENCY_SOURCE: &str = "git = \"https://github.com/agent-ix/filament-spec-language\", rev = \"b74146405bc8e213252d4096a017c5de0d6afe45\"";
 
 /// The `[package.metadata.kani]` table every generated oracle crate's manifest carries. CBMC
 /// tracks heap objects field by field only up to 64 bytes by default; RT's `Value` and `ValueType`
