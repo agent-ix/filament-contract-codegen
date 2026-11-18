@@ -468,7 +468,7 @@ dependencies = [
  "filament-exact",
  "filament-semantic-value",
  "filament-specification-qualification",
- "filament-verification-contracts 0.2.0",
+ "filament-verification-contracts",
  "fsl-replay",
  "ix-trace-rs",
  "jsonschema 0.17.1",
@@ -506,7 +506,7 @@ source = "git+https://github.com/agent-ix/filament-contract-ir?tag=v0.1.5#71914a
 dependencies = [
  "filament-exact",
  "filament-semantic-value",
- "filament-verification-contracts 0.2.1",
+ "filament-verification-contracts",
  "filament-walk",
  "ix-trace-rs",
  "jsonschema 0.17.1",
@@ -579,23 +579,6 @@ dependencies = [
 name = "filament-specification-qualification"
 version = "0.1.1"
 source = "git+https://github.com/agent-ix/filament-specification?tag=v0.1.1#1946638cc301d236190f66cf30e272b8a2b85aca"
-
-[[package]]
-name = "filament-verification-contracts"
-version = "0.2.0"
-source = "git+https://github.com/agent-ix/filament-verification-contracts?tag=v0.2.0#ded996da2c3591818f7658d0518f6637b79bf2f4"
-dependencies = [
- "jsonschema 0.55.1",
- "quire-canonical",
- "regress",
- "schemars",
- "serde",
- "serde_json",
- "sha2",
- "thiserror",
- "time",
- "typify",
-]
 
 [[package]]
 name = "filament-verification-contracts"
