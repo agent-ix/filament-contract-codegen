@@ -39,11 +39,10 @@ filament-contract-runtime = { version = "0.1.1", git = "https://github.com/agent
 # fsl-replay is the only FSL crate this repository depends on (FSL arch-lint T12-A); the
 # replay adapter in src/replay/function.rs builds its requests from `call_site` and the crate's own
 # re-exports and goes through its `replay` entry. Cargo.lock records the selected public source.
-# IR-1566 INTERIM rev pin: a commit of FSL PR #2841 (its head when pinned), which is not on FSL main
-# and moves when that PR is force-pushed. It is the first FSL revision whose own first-party
-# dependencies are all release tags (FSL main still names `branch = "main"`, which Cargo resolves
-# as a second copy of every first-party crate). Repin to the FSL main merge commit of #2841 once it
-# merges (IR-1566); until then a rewritten PR can leave this commit reachable only from other refs.
+# IR-1566 INTERIM rev pin: a commit of FSL main (88698958, FSL #2882), reachable from main. No fsl-*
+# release tag carries tag-pinned first-party dependencies yet; this is the first main revision whose
+# own first-party dependencies are all release tags (earlier main names `branch = "main"`, which
+# Cargo resolves as a second copy of every first-party crate). Swap to the fsl-* tag once one is cut.
 fsl-replay = { version = "0.3.0", git = "https://github.com/agent-ix/filament-spec-language", rev = "88698958380d220c1f6b1a57114f4c6f4744ce5a" }
 filament-eval = { version = "0.1.4", git = "https://github.com/agent-ix/filament-eval", tag = "v0.1.4" }
 # RFC 8785 encoding for CG artifact JSON, document content hashes, and fixed-shape records.
