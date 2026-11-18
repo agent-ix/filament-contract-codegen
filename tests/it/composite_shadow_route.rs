@@ -164,6 +164,9 @@ impl Fixture {
     }
 }
 
+/// An edit of the evidence of a run.
+type Edit<'a> = &'a dyn Fn(&mut KaniExecutionEvidence);
+
 /// The evidence of a run of `harness`: the figures a real run records beside its outcome.
 pub(super) fn evidence_of(
     harness: &KaniShadowHarness,
@@ -893,7 +896,7 @@ fn tc_048_the_evidence_of_another_harness_refuses_with_no_value() {
         proved(5),
         "the own run settles"
     );
-    let cases: [(&str, &dyn Fn(&mut KaniExecutionEvidence)); 5] = [
+    let cases: [(&str, Edit); 5] = [
         ("harness path", &|e| {
             e.harness_path = "some::other::harness".into()
         }),
