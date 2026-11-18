@@ -71,12 +71,26 @@ pub(super) fn expected_side(operation: ScalarOperation, lower: i64, upper: i64) 
 /// The outcome mapping of a division claim, as one function over the oracle's result: exactly the
 /// outcomes FR-057 allows are accepted and every other outcome, including `Incomplete` and a
 /// refusal with another cause or member, is rejected.
-pub(super) fn outcome_mapping(operation: ScalarOperation, lower: i64, upper: i64) -> String {
-    let signature = "fn outcome_agrees<E>(left: i64, right: i64, outcome: &Result<rt::Outcome<rt::Integer>, E>) -> bool {\n    let zero_divisor = expected_zero_divisor(right);\n";
+pub(super) fn outcome_mapping(
+    operation: ScalarOperation,
+    lower: i64,
+    upper: i64,
+    native: bool,
+) -> String {
+    let carrier = if native {
+        "nx::NativeInteger"
+    } else {
+        "rt::Integer"
+    };
+    let signature = format!("fn outcome_agrees<E>(left: i64, right: i64, outcome: &Result<rt::Outcome<{carrier}>, E>) -> bool {{\n    let zero_divisor = expected_zero_divisor(right);\n");
     let (setup, completed, refused) = match operation {
         ScalarOperation::Divide(_) => (
             "    let admitted = !zero_divisor && expected_admitted(i128::from(left), i128::from(right));\n".to_owned(),
-            "        Ok(rt::Outcome::Completed(value)) => match (value.is_negative(), value.abs().to_u64()) {\n            (false, Some(magnitude)) => admitted && expected_member(i128::from(left), i128::from(right), i128::from(magnitude)),\n            (true, Some(magnitude)) => admitted && expected_member(i128::from(left), i128::from(right), -i128::from(magnitude)),\n            _ => false,\n        },\n".to_owned(),
+            if native {
+                format!("        Ok(rt::Outcome::Completed(value)) => admitted && value.value() >= i128::from({}) && value.value() <= i128::from({}) && expected_member(i128::from(left), i128::from(right), value.value()),\n", i64_literal(lower), i64_literal(upper))
+            } else {
+                "        Ok(rt::Outcome::Completed(value)) => match (value.is_negative(), value.abs().to_u64()) {\n            (false, Some(magnitude)) => admitted && expected_member(i128::from(left), i128::from(right), i128::from(magnitude)),\n            (true, Some(magnitude)) => admitted && expected_member(i128::from(left), i128::from(right), -i128::from(magnitude)),\n            _ => false,\n        },\n".to_owned()
+            },
             "        Ok(rt::Outcome::Refused(rt::Refusal::DivisionOutOfDomain { member: rt::DivisionMember::Quotient, .. })) => !zero_divisor && !admitted,\n",
         ),
         ScalarOperation::Remainder(_) | ScalarOperation::Modulo => {
@@ -91,7 +105,11 @@ pub(super) fn outcome_mapping(operation: ScalarOperation, lower: i64, upper: i64
                     i64_literal(lower),
                     i64_literal(upper)
                 ),
-                "        Ok(rt::Outcome::Completed(value)) => admitted && *value == rt::Integer::from(expected),\n".to_owned(),
+                if native {
+                    "        Ok(rt::Outcome::Completed(value)) => admitted && value.value() == expected,\n".to_owned()
+                } else {
+                    "        Ok(rt::Outcome::Completed(value)) => admitted && *value == rt::Integer::from(expected),\n".to_owned()
+                },
                 refusal,
             )
         }
@@ -116,6 +134,7 @@ pub(super) fn render(
     };
     let scalar_limits = crate::kani::abi::SCALAR_HARNESS_LIMITS;
     let operation = lowered.operation;
+    let native = lowered.native_integer_selection.is_some();
     let mut body = Vec::new();
     for (name, (minimum, maximum)) in operation.operand_names().iter().zip(&lowered.operands) {
         body.push(Statement::Input {
@@ -131,7 +150,11 @@ pub(super) fn render(
                 binding(
                     name,
                     None,
-                    Init::Expression(expr(&format!("rt::Integer::from({name})"))?),
+                    Init::Expression(expr(&if native {
+                        format!("nx::NativeInteger::new(i128::from({name}))")
+                    } else {
+                        format!("rt::Integer::from({name})")
+                    })?),
                 ),
             ],
         });
@@ -172,10 +195,16 @@ pub(super) fn render(
         None,
         Init::Expression(expr("matches!(outcome, Ok(rt::Outcome::Completed(_)))")?),
     )));
+    if native {
+        // The meter and the outcome hold symbolic-discriminant sum types, one with a heap arm. The
+        // native proof never drops them; the cover reads the plain `bool` above and stays last.
+        body.push(Statement::Forget("meter".to_owned()));
+        body.push(Statement::Forget("outcome".to_owned()));
+    }
     let support = format!(
         "\n{}\n{}",
         expected_side(operation, lowered.lower, lowered.upper),
-        outcome_mapping(operation, lowered.lower, lowered.upper)
+        outcome_mapping(operation, lowered.lower, lowered.upper, native)
     );
     let spec = HarnessSpec::new(
         format!(
@@ -202,8 +231,12 @@ pub(super) fn render(
         _ => None,
     };
     let identity = ScalarObligationIdentity {
-        integer_representation: crate::kani::identity::ScalarIntegerRepresentation::General,
-        native_integer_selection: None,
+        integer_representation: if native {
+            crate::kani::identity::ScalarIntegerRepresentation::Native
+        } else {
+            crate::kani::identity::ScalarIntegerRepresentation::General
+        },
+        native_integer_selection: lowered.native_integer_selection.clone(),
         ceilings: request.ceilings,
         node_id: lowered.node_id.clone(),
         operation_identity: lowered.operation_identity.clone(),

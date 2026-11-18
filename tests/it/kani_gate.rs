@@ -15,7 +15,7 @@ use std::{
 use syn::{visit::Visit, Expr, Item, Lit, Meta};
 
 static NEXT_SANDBOX: AtomicU64 = AtomicU64::new(0);
-const EXPECTED_KANI_FILTERS: [&str; 10] = [
+const EXPECTED_KANI_FILTERS: [&str; 12] = [
     "kani_obligations",
     "kani_obligations_symbolic_domains",
     "skeleton_spine",
@@ -26,6 +26,8 @@ const EXPECTED_KANI_FILTERS: [&str; 10] = [
     "enum_scalar_harness",
     "float_scalar_harness",
     "shadow_kani",
+    "native_constant_divisor_8_bit",
+    "native_div_floor_mutants",
 ];
 
 struct Sandbox {

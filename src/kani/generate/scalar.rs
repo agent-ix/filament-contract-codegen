@@ -579,21 +579,16 @@ impl LoweredScalarClaim {
 
     /// Select the exact kernel native route from the full original operand intervals.
     pub(super) fn select_native_integer(&mut self) -> Result<(), UnsupportedObligation> {
+        use crate::oracle::scalar::native::NativeDivision;
         let operator = match self.operation {
-            ScalarOperation::Add => IntegerOperator::Add,
-            ScalarOperation::Subtract => IntegerOperator::Subtract,
-            ScalarOperation::Multiply => IntegerOperator::Multiply,
-            ScalarOperation::Negate => IntegerOperator::Negate,
+            ScalarOperation::Add => Ok(IntegerOperator::Add),
+            ScalarOperation::Subtract => Ok(IntegerOperator::Subtract),
+            ScalarOperation::Multiply => Ok(IntegerOperator::Multiply),
+            ScalarOperation::Negate => Ok(IntegerOperator::Negate),
             ScalarOperation::Implies => return Ok(()),
-            // CG does not wire the kernel's native division plan into a harness yet (FR-057-AC-6).
-            ScalarOperation::Divide(_)
-            | ScalarOperation::Remainder(_)
-            | ScalarOperation::Modulo => {
-                return Err(UnsupportedObligation::NativeDivisionPlanUnavailable {
-                    node_id: self.node_id.clone(),
-                    operation_identity: self.operation_identity.clone(),
-                })
-            }
+            ScalarOperation::Divide(profile) => Err(NativeDivision::Divide(profile)),
+            ScalarOperation::Remainder(profile) => Err(NativeDivision::Remainder(profile)),
+            ScalarOperation::Modulo => Err(NativeDivision::Modulo),
         };
         let refusal = || UnsupportedObligation::NativeIntegerCapacity {
             node_id: self.node_id.clone(),
@@ -609,14 +604,24 @@ impl LoweredScalarClaim {
                 )
                 .collect(),
         };
-        let (source, selected) = crate::oracle::scalar::native::select(
-            &self.node_id,
-            &self.operation_identity,
-            &self.oracle_symbol,
-            operator,
-            &self.operands,
-            (self.lower, self.upper),
-        )
+        let (source, selected) = match operator {
+            Ok(operator) => crate::oracle::scalar::native::select(
+                &self.node_id,
+                &self.operation_identity,
+                &self.oracle_symbol,
+                operator,
+                &self.operands,
+                (self.lower, self.upper),
+            ),
+            Err(division) => crate::oracle::scalar::native::select_division(
+                &self.node_id,
+                &self.operation_identity,
+                &self.oracle_symbol,
+                division,
+                &self.operands,
+                (self.lower, self.upper),
+            ),
+        }
         .ok_or_else(refusal)?;
         self.oracle_source = source;
         self.native_integer_selection = Some(selected);
@@ -709,6 +714,35 @@ mod native_selection_tests {
         ));
         assert!(claim.native_integer_selection.is_none());
         assert!(claim.oracle_source.is_empty());
+    }
+
+    /// FR-057-AC-6: a division, remainder or modulo plan the kernel refuses (here a reversed
+    /// divisor interval, which `NativeIntegerInterval::new` rejects) settles as
+    /// `NativeIntegerCapacity` carrying the complete operand intervals, with no selection and no
+    /// oracle source.
+    #[trace("TC-071", "FR-057-AC-6")]
+    #[test]
+    fn native_division_plan_the_kernel_refuses_settles_native_integer_capacity() {
+        use filament_exact::DivisionProfile;
+        for operation in [
+            ScalarOperation::Divide(DivisionProfile::Floor),
+            ScalarOperation::Remainder(DivisionProfile::Truncating),
+            ScalarOperation::Modulo,
+        ] {
+            let mut claim = lowered(operation, vec![(-8, 7), (3, -3)]);
+            let Err(UnsupportedObligation::NativeIntegerCapacity { operands, .. }) =
+                claim.select_native_integer()
+            else {
+                panic!("a refused plan is NativeIntegerCapacity");
+            };
+            assert_eq!(operands.len(), 2);
+            assert_eq!(
+                (operands[1].lower.as_str(), operands[1].upper.as_str()),
+                ("3", "-3")
+            );
+            assert!(claim.native_integer_selection.is_none());
+            assert!(claim.oracle_source.is_empty());
+        }
     }
 }
 

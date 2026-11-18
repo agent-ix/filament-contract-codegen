@@ -299,6 +299,15 @@ impl Shape {
     }
 
     pub(crate) fn generation(&self) -> RoutedGeneration {
+        self.generate(false)
+    }
+
+    /// The same shape routed through the native entry (FR-057-AC-6).
+    pub(crate) fn native_generation(&self) -> RoutedGeneration {
+        self.generate(true)
+    }
+
+    fn generate(&self, native: bool) -> RoutedGeneration {
         if let Some(narrow) = self.narrow {
             let profile = (self.operation != "mod").then_some(self.profile);
             let (package, node) = super::integer_division_bounds::reader_division_operation(
@@ -309,19 +318,25 @@ impl Shape {
                 Some(self.right),
                 Some(narrow),
             );
-            return routed_node(&package, &node, self.unwind);
+            return routed_nodes(&package, std::slice::from_ref(&node), self.unwind, native);
         }
         let parameters = format!(
             "x: Int[{}, {}], y: Int[{}, {}]",
             self.left.0, self.left.1, self.right.0, self.right.1
         );
-        let text = source(&[(
-            "subject",
-            &parameters,
-            "Integer",
-            &format!("x {} y", self.operation),
-        )]);
-        routed(&compile(&text, self.profile), "subject", self.unwind)
+        let expression = format!("x {} y", self.operation);
+        let text = if self.right.0 > 0 || self.right.1 < 0 {
+            // A divisor range that excludes zero needs no guard (FSL refuses the guarded form,
+            // whose else branch proves the divisor zero).
+            format!(
+                "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nfunction subject using v({parameters}): Integer pure {{ {expression} }}\n"
+            )
+        } else {
+            source(&[("subject", &parameters, "Integer", &expression)])
+        };
+        let package = compile(&text, self.profile);
+        let node = division_node(&package, "subject");
+        routed_nodes(&package, std::slice::from_ref(&node), self.unwind, native)
     }
 }
 
@@ -393,6 +408,7 @@ fn host_crate(
     mutants: &[(&str, String, &str)],
     member: Option<&str>,
 ) -> String {
+    let native = harness.identity.native_integer_selection.is_some();
     let (lower, upper) = result_range(harness);
     let ((al, ah), (bl, bh)) = operands;
     let divide = |member: &str| {
@@ -435,6 +451,21 @@ fn host_crate(
         .replace("@REFUSAL@", &refusal)
         .replace("@OTHER_REFUSAL@", &other)
         .replace("@MUTANT_CHECKS@", &checks);
+    let test =
+        if native {
+            test.replace("rt::Outcome<rt::Integer>", "rt::Outcome<nx::NativeInteger>")
+            .replace(
+                "&rt::Integer::from(a), &rt::Integer::from(b)",
+                "&nx::NativeInteger::new(i128::from(a)), &nx::NativeInteger::new(i128::from(b))",
+            )
+            .replace(
+                "rt::Integer::from(1_000_003_i64)",
+                "nx::NativeInteger::new(1_000_003)",
+            )
+            .replace("Completed(rt::Integer::from(0_i64))", "Completed(nx::NativeInteger::new(0))")
+        } else {
+            test
+        };
     format!("{}\n{test}", host_prefix(harness))
 }
 
@@ -471,12 +502,20 @@ fn mapping_mutants(
             "incomplete",
         ),
     ];
-    let value_check = if mapping.contains("expected_member(") {
+    let value_check = if mapping.contains("admitted && value.value() >=") {
+        mutate(
+            &mapping,
+            "admitted && value.value() >=",
+            "true || value.value() >=",
+        )
+    } else if mapping.contains("expected_member(") {
         mutate(
             &mapping,
             "admitted && expected_member(",
             "true || expected_member(",
         )
+    } else if mapping.contains("value.value() == expected") {
+        mutate(&mapping, "admitted && value.value() == expected", "true")
     } else {
         mutate(
             &mapping,
@@ -499,8 +538,18 @@ fn mapping_mutants(
     mutants
 }
 
-fn run_host(shape: &Shape, operands: ((i64, i64), (i64, i64)), member: Option<&str>, label: &str) {
-    let generation = shape.generation();
+fn run_host_on(
+    shape: &Shape,
+    native: bool,
+    operands: ((i64, i64), (i64, i64)),
+    member: Option<&str>,
+    label: &str,
+) {
+    let generation = if native {
+        shape.native_generation()
+    } else {
+        shape.generation()
+    };
     let (harness, _) = harness_of(&generation).expect("a division harness");
     let mutants = mapping_mutants(harness, member);
     let crate_text = host_crate(harness, operands, &mutants, member);
@@ -510,6 +559,12 @@ fn run_host(shape: &Shape, operands: ((i64, i64), (i64, i64)), member: Option<&s
 #[trace("TC-071", "FR-057-AC-2", "FR-057-AC-4")]
 #[test]
 fn host_controls_each_law_and_member_against_filament_exact() {
+    for native in [false, true] {
+        host_controls(native);
+    }
+}
+
+fn host_controls(native: bool) {
     for (index, (profile, operation, narrow, member)) in [
         (
             DivisionProfile::Truncating,
@@ -540,11 +595,78 @@ fn host_controls_each_law_and_member_against_filament_exact() {
             narrow: Some(narrow),
             unwind: 12,
         };
-        run_host(
+        run_host_on(
             &shape,
+            native,
             ((-9, 9), (-4, 4)),
             member,
-            &format!("ir854-host-{index}"),
+            &format!(
+                "ir854-host-{}-{index}",
+                if native { "native" } else { "general" }
+            ),
+        );
+    }
+}
+
+/// FR-057-AC-5, native route: over a divisor range holding zero and `-1`, the dividend
+/// `i64::MIN` completes only where the quotient is in the explicit result range. `i64::MIN div -1`
+/// is the typed out-of-domain refusal, zero is `DivisionByZero`, and the kernel plan agrees with
+/// the independent expected side at every point.
+#[trace("TC-071", "FR-057-AC-5")]
+#[test]
+fn native_route_min_over_minus_one_and_zero_divisor_are_typed_refusals() {
+    for (profile, operation, member) in [
+        (DivisionProfile::Truncating, "div", Some("Quotient")),
+        (DivisionProfile::Floor, "div", Some("Quotient")),
+        (DivisionProfile::Euclidean, "div", Some("Quotient")),
+    ] {
+        let shape = Shape {
+            profile,
+            operation,
+            left: (i64::MIN, i64::MIN + 1),
+            right: (-1, 0),
+            narrow: Some((i64::MIN, i64::MAX)),
+            unwind: 12,
+        };
+        run_host_on(
+            &shape,
+            true,
+            ((i64::MIN, i64::MIN + 1), (-1, 0)),
+            member,
+            &format!("ir854-min-{profile:?}"),
+        );
+    }
+}
+
+/// FR-057-AC-5, native route: `i64::MIN rem -1` and `i64::MIN mod -1` complete `0` (the one
+/// overflowing quotient leaves a zero remainder), a zero divisor is `DivisionByZero`, and a
+/// remainder outside the explicit result range is the typed out-of-domain refusal. The divisor
+/// range `[-2, 0]` and the result range `[0, 0]` give a completed pair (`MIN`, `-1`), a refused
+/// pair (`MIN + 1`, `-2`: a nonzero remainder under every law) and a zero divisor; the host
+/// control checks each point against the independent expected side and its mapping mutants.
+#[trace("TC-071", "FR-057-AC-5")]
+#[test]
+fn native_route_min_rem_and_mod_over_minus_one_complete_zero_and_zero_divisor_is_typed() {
+    for (profile, operation, member) in [
+        (DivisionProfile::Truncating, "rem", Some("Remainder")),
+        (DivisionProfile::Floor, "rem", Some("Remainder")),
+        (DivisionProfile::Euclidean, "rem", Some("Remainder")),
+        (DivisionProfile::Euclidean, "mod", None),
+    ] {
+        let shape = Shape {
+            profile,
+            operation,
+            left: (i64::MIN, i64::MIN + 1),
+            right: (-2, 0),
+            narrow: Some((0, 0)),
+            unwind: 12,
+        };
+        run_host_on(
+            &shape,
+            true,
+            ((i64::MIN, i64::MIN + 1), (-2, 0)),
+            member,
+            &format!("ir854-min-{operation}-{profile:?}"),
         );
     }
 }
@@ -1013,7 +1135,7 @@ fn lowering_refuses_the_inferred_quotient_range_that_is_not_i64_and_a_zero_only_
 
 #[trace("TC-071", "FR-057-AC-6")]
 #[test]
-fn the_native_route_refuses_each_division_claim_and_leaves_its_sibling_byte_identical() {
+fn the_native_route_plans_each_division_claim_and_leaves_its_sibling_byte_identical() {
     for profile in DivisionProfile::ALL {
         let package = catalog(profile);
         let nodes = [
@@ -1023,21 +1145,49 @@ fn the_native_route_refuses_each_division_claim_and_leaves_its_sibling_byte_iden
             application_in(&package, "ad", "filament.op.integer.add"),
         ];
         let together = routed_nodes(&package, &nodes, 12, true);
-        for (index, identity) in [
-            (0, "filament.op.integer.div"),
-            (1, "filament.op.integer.rem"),
-            (2, "filament.op.integer.mod"),
+        for (index, identity, plan) in [
+            (0, "filament.op.integer.div", "Divide"),
+            (1, "filament.op.integer.rem", "Divide"),
+            (2, "filament.op.integer.mod", "Modulo"),
         ] {
-            assert!(parts(&together, index).1.is_none(), "no harness");
-            let UnsupportedObligation::NativeDivisionPlanUnavailable {
-                node_id,
-                operation_identity,
-            } = unsupported(&together, index)
-            else {
-                panic!("{:?}", unsupported(&together, index));
-            };
-            assert_eq!(node_id, &nodes[index]);
-            assert_eq!(operation_identity, identity);
+            let (record, harness) = parts(&together, index);
+            assert!(
+                matches!(record.disposition, ObligationDisposition::Supported { .. }),
+                "{identity}: {:?}",
+                record.disposition
+            );
+            let harness = harness.expect("a native division harness");
+            assert_eq!(harness.identity.node_id, nodes[index]);
+            assert_eq!(harness.identity.operation_identity, identity);
+            assert_eq!(
+                harness.identity.integer_representation,
+                filament_contract_codegen::ScalarIntegerRepresentation::Native
+            );
+            let selection = harness
+                .identity
+                .native_integer_selection
+                .as_ref()
+                .expect("the harness records the kernel plan it was built from");
+            assert_eq!(selection.operations.len(), 1);
+            assert_eq!(selection.operations[0].node_id, nodes[index]);
+            assert_eq!(
+                selection.operations[0].division_profile.as_deref(),
+                (identity != "filament.op.integer.mod").then(|| profile.definition_identity())
+            );
+            let text = &harness.rust.contents;
+            assert!(
+                text.contains(&format!("nx::NativeIntegerOperation::{plan} {{")),
+                "{identity}: {text}"
+            );
+            assert!(text.contains("nx::evaluate_native_integer_arithmetic("));
+            assert!(
+                !text.contains("rt::divide(") && !text.contains("rt::modulo("),
+                "a native harness embeds no general-route division"
+            );
+            assert!(
+                !text.contains("rt::Integer"),
+                "no general integer in a native harness"
+            );
         }
         let alone = routed_nodes(&package, &nodes[3..], 12, true);
         let sibling = parts(&together, 3);
@@ -1751,5 +1901,351 @@ fn general_route_zero_completing_mutant_times_out() {
         filament_contract_codegen::KaniRunOutcome::Inconclusive {
             reason: filament_contract_codegen::KaniInconclusiveReason::TimedOut
         }
+    );
+}
+
+// ---- native route: seeded mutants and the installed Kani lane (FR-057-AC-7, AC-8) ----
+
+/// The AC-8 mutants of one native harness as `(name, mutated source)`: the embedded plan's law
+/// swapped for each other law, the wrong member or operator, a completed value at a zero divisor
+/// in the oracle, a wrong expected-side window and a removed expected-side zero arm.
+pub(crate) fn native_kani_mutants(
+    harness: &KaniScalarObligationHarness,
+    operation: &str,
+    profile: DivisionProfile,
+) -> Vec<(String, String)> {
+    let text = harness.rust.contents.as_str();
+    let symbol = &harness.identity.oracle_symbol;
+    let oracle = function_text(text, &format!("pub fn {symbol}")).to_owned();
+    let splice = |mutated: String| text.replacen(&oracle, &mutated, 1);
+    let mut mutants = Vec::new();
+    let profile_name = format!("{profile:?}");
+    if operation != "mod" {
+        for other in DivisionProfile::ALL
+            .into_iter()
+            .filter(|other| *other != profile)
+        {
+            mutants.push((
+                format!("profile-{profile_name}-as-{other:?}"),
+                splice(mutate(
+                    &oracle,
+                    &format!("profile: rt::DivisionProfile::{profile_name}"),
+                    &format!("profile: rt::DivisionProfile::{other:?}"),
+                )),
+            ));
+        }
+    }
+    match operation {
+        "rem" => mutants.push((
+            "rem-with-quotient-member".to_owned(),
+            splice(mutate(
+                &oracle,
+                "member: rt::DivisionMember::Remainder",
+                "member: rt::DivisionMember::Quotient",
+            )),
+        )),
+        "div" => mutants.push((
+            "div-with-remainder-member".to_owned(),
+            splice(mutate(
+                &oracle,
+                "member: rt::DivisionMember::Quotient",
+                "member: rt::DivisionMember::Remainder",
+            )),
+        )),
+        _ => {}
+    }
+    mutants.push((
+        "completes-at-zero".to_owned(),
+        splice(mutate(
+            &oracle,
+            "    let plan =",
+            "    if right.value() == 0 {\n        return Ok(rt::Outcome::Completed(nx::NativeInteger::new(0)));\n    }\n    let plan =",
+        )),
+    ));
+    let window_profile = if operation == "mod" {
+        DivisionProfile::Euclidean
+    } else {
+        profile
+    };
+    let other = match window_profile {
+        DivisionProfile::Truncating => DivisionProfile::Floor,
+        _ => DivisionProfile::Truncating,
+    };
+    mutants.push((
+        "expected-window-table-of-another-law".to_owned(),
+        mutate(text, window_arms(window_profile), window_arms(other)),
+    ));
+    mutants.push((
+        "expected-zero-arm-removed".to_owned(),
+        mutate(
+            text,
+            "fn expected_zero_divisor(b: i64) -> bool {\n    b == 0\n}",
+            "fn expected_zero_divisor(b: i64) -> bool {\n    false\n}",
+        ),
+    ));
+    mutants
+}
+
+/// The native fixture of the AC-8 mutants: a negative dividend, both divisor signs and zero, with
+/// an explicit result range that excludes some members.
+fn native_mutant_fixture(profile: DivisionProfile, operation: &'static str) -> Shape {
+    Shape {
+        profile,
+        operation,
+        left: (-8, 7),
+        right: (-3, 3),
+        narrow: Some(match operation {
+            "div" => (-3, 3),
+            "rem" => (-1, 1),
+            _ => (0, 1),
+        }),
+        unwind: 3,
+    }
+}
+
+/// FR-057-AC-8, native route: every mutant of every operation and law changes the routed source,
+/// and the set holds both groups.
+#[trace("TC-071", "FR-057-AC-8")]
+#[test]
+fn the_native_seeded_mutants_change_the_routed_source_and_cover_both_groups() {
+    for (_, operation, profile) in CLAIMS {
+        let shape = native_mutant_fixture(profile, operation);
+        let generation = shape.native_generation();
+        let (harness, _) = harness_of(&generation).expect("a native division harness");
+        assert_eq!(
+            harness.identity.integer_representation,
+            filament_contract_codegen::ScalarIntegerRepresentation::Native
+        );
+        let mutants = native_kani_mutants(harness, operation, profile);
+        for (name, mutated) in &mutants {
+            assert_ne!(mutated, &harness.rust.contents, "{operation} {name}");
+        }
+        let names = mutants
+            .iter()
+            .map(|(name, _)| name.as_str())
+            .collect::<Vec<_>>();
+        for required in [
+            "completes-at-zero",
+            "expected-window-table-of-another-law",
+            "expected-zero-arm-removed",
+        ] {
+            assert!(
+                names.contains(&required),
+                "{operation} {profile:?}: {required}"
+            );
+        }
+        assert_eq!(
+            names
+                .iter()
+                .filter(|name| name.starts_with("profile-"))
+                .count(),
+            if operation == "mod" { 0 } else { 2 },
+            "{operation} {profile:?}: both wrong laws"
+        );
+    }
+}
+
+fn expect_native_verified(shape: &Shape, name: &str) {
+    let generation = shape.native_generation();
+    let (harness, manifest) = harness_of(&generation).expect("a native division harness");
+    let evidence = run_under_real_kani(name, harness, &manifest, None);
+    assert_eq!(
+        evidence.outcome,
+        filament_contract_codegen::KaniRunOutcome::Verified,
+        "{name}: the healthy native harness verifies"
+    );
+}
+
+/// The 8-bit constant divisor: a dividend over `[-128, 127]` and the literal divisor `8`.
+fn native_constant_divisor_8_bit(profile: DivisionProfile, operation: &'static str, name: &str) {
+    expect_native_verified(
+        &Shape {
+            profile,
+            operation,
+            left: (-128, 127),
+            right: (8, 8),
+            narrow: None,
+            unwind: 3,
+        },
+        name,
+    );
+}
+
+/// FR-057-AC-7: the healthy native harness of the 8-bit constant divisor classifies `Verified`
+/// under installed Kani (div, Truncating).
+#[trace("TC-071", "FR-057-AC-7")]
+#[test]
+#[ignore = "kani lane: run serially through make kani-gate"]
+fn native_constant_divisor_8_bit_div_truncating_verifies() {
+    native_constant_divisor_8_bit(
+        DivisionProfile::Truncating,
+        "div",
+        "ir854-native-const8-div-Truncating",
+    );
+}
+
+/// FR-057-AC-7: the healthy native harness of the 8-bit constant divisor classifies `Verified`
+/// under installed Kani (div, Floor).
+#[trace("TC-071", "FR-057-AC-7")]
+#[test]
+#[ignore = "kani lane: run serially through make kani-gate"]
+fn native_constant_divisor_8_bit_div_floor_verifies() {
+    native_constant_divisor_8_bit(
+        DivisionProfile::Floor,
+        "div",
+        "ir854-native-const8-div-Floor",
+    );
+}
+
+/// FR-057-AC-7: the healthy native harness of the 8-bit constant divisor classifies `Verified`
+/// under installed Kani (div, Euclidean).
+#[trace("TC-071", "FR-057-AC-7")]
+#[test]
+#[ignore = "kani lane: run serially through make kani-gate"]
+fn native_constant_divisor_8_bit_div_euclidean_verifies() {
+    native_constant_divisor_8_bit(
+        DivisionProfile::Euclidean,
+        "div",
+        "ir854-native-const8-div-Euclidean",
+    );
+}
+
+/// FR-057-AC-7: the healthy native harness of the 8-bit constant divisor classifies `Verified`
+/// under installed Kani (rem, Truncating).
+#[trace("TC-071", "FR-057-AC-7")]
+#[test]
+#[ignore = "kani lane: run serially through make kani-gate"]
+fn native_constant_divisor_8_bit_rem_truncating_verifies() {
+    native_constant_divisor_8_bit(
+        DivisionProfile::Truncating,
+        "rem",
+        "ir854-native-const8-rem-Truncating",
+    );
+}
+
+/// FR-057-AC-7: the healthy native harness of the 8-bit constant divisor classifies `Verified`
+/// under installed Kani (rem, Floor).
+#[trace("TC-071", "FR-057-AC-7")]
+#[test]
+#[ignore = "kani lane: run serially through make kani-gate"]
+fn native_constant_divisor_8_bit_rem_floor_verifies() {
+    native_constant_divisor_8_bit(
+        DivisionProfile::Floor,
+        "rem",
+        "ir854-native-const8-rem-Floor",
+    );
+}
+
+/// FR-057-AC-7: the healthy native harness of the 8-bit constant divisor classifies `Verified`
+/// under installed Kani (rem, Euclidean).
+#[trace("TC-071", "FR-057-AC-7")]
+#[test]
+#[ignore = "kani lane: run serially through make kani-gate"]
+fn native_constant_divisor_8_bit_rem_euclidean_verifies() {
+    native_constant_divisor_8_bit(
+        DivisionProfile::Euclidean,
+        "rem",
+        "ir854-native-const8-rem-Euclidean",
+    );
+}
+
+/// FR-057-AC-7: the healthy native harness of the 8-bit constant divisor classifies `Verified`
+/// under installed Kani (mod, Euclidean).
+#[trace("TC-071", "FR-057-AC-7")]
+#[test]
+#[ignore = "kani lane: run serially through make kani-gate"]
+fn native_constant_divisor_8_bit_mod_verifies() {
+    native_constant_divisor_8_bit(
+        DivisionProfile::Euclidean,
+        "mod",
+        "ir854-native-const8-mod-Euclidean",
+    );
+}
+
+/// The `i64` operands of a Kani concrete playback test, in draw order: each is the
+/// little-endian byte vector under a `// <value>` comment inside `concrete_vals`.
+fn playback_operands(counterexample: &str) -> Vec<i64> {
+    counterexample
+        .lines()
+        .filter_map(|line| {
+            let bytes = line.trim().strip_prefix("vec![")?.strip_suffix("],")?;
+            let bytes = bytes
+                .split(',')
+                .map(|byte| byte.trim().parse::<u8>().ok())
+                .collect::<Option<Vec<_>>>()?;
+            Some(i64::from_le_bytes(bytes.try_into().ok()?))
+        })
+        .collect()
+}
+
+/// The playback decoder reads the draw-order operands, including a negative one.
+#[trace("TC-071", "FR-057-AC-8")]
+#[test]
+fn the_playback_decoder_reads_the_draw_order_operands() {
+    let playback = "fn t() {\n    let concrete_vals: Vec<Vec<u8>> = vec![\n        // -3\n        vec![253, 255, 255, 255, 255, 255, 255, 255],\n        // 2\n        vec![2, 0, 0, 0, 0, 0, 0, 0],\n    ];\n}";
+    assert_eq!(playback_operands(playback), [-3, 2]);
+}
+
+fn expect_native_mutants_falsified(
+    profile: DivisionProfile,
+    operation: &'static str,
+    wanted: &[&str],
+) {
+    let shape = native_mutant_fixture(profile, operation);
+    let generation = shape.native_generation();
+    let (harness, manifest) = harness_of(&generation).expect("a native division harness");
+    let healthy = run_under_real_kani(
+        &format!("ir854-native-healthy-{operation}-{profile:?}"),
+        harness,
+        &manifest,
+        None,
+    );
+    assert_eq!(
+        healthy.outcome,
+        filament_contract_codegen::KaniRunOutcome::Verified,
+        "the healthy mutant fixture verifies before it is mutated"
+    );
+    for (name, mutated) in native_kani_mutants(harness, operation, profile) {
+        if !wanted.contains(&name.as_str()) {
+            continue;
+        }
+        let evidence = run_under_real_kani(
+            &format!("ir854-native-mutant-{operation}-{profile:?}-{name}"),
+            harness,
+            &manifest,
+            Some(&mutated),
+        );
+        let filament_contract_codegen::KaniRunOutcome::Falsified { counterexample } =
+            &evidence.outcome
+        else {
+            panic!(
+                "{name}: a seeded mutant is falsified with playback, got {:?}",
+                evidence.outcome
+            );
+        };
+        let operands = playback_operands(counterexample);
+        assert_eq!(operands.len(), 2, "{name}: {counterexample}");
+        assert!(
+            (-8..=7).contains(&operands[0]) && (-3..=3).contains(&operands[1]),
+            "{name}: playback operands {operands:?} lie in the fixture's ranges"
+        );
+    }
+}
+
+/// FR-057-AC-8: the wrong-profile and missing-zero-guard mutants of the native `div` harness are
+/// `Falsified` with solver playback under installed Kani.
+#[trace("TC-071", "FR-057-AC-8")]
+#[test]
+#[ignore = "kani lane: run serially through make kani-gate"]
+fn native_div_floor_mutants_wrong_profile_and_missing_zero_guard_are_falsified() {
+    expect_native_mutants_falsified(
+        DivisionProfile::Floor,
+        "div",
+        &[
+            "profile-Floor-as-Truncating",
+            "profile-Floor-as-Euclidean",
+            "completes-at-zero",
+            "expected-zero-arm-removed",
+        ],
     );
 }

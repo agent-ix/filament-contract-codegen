@@ -73,9 +73,10 @@ The shipped scalar table (`docs/qualification/ir1530-general-route-scalar-table.
 `not_tractable` row per operation (`filament.op.integer.div`, `rem`, `mod`), route `general`,
 `max_operand_bits` 4, `wall_seconds` 600 and the largest peak measured for that operation's 4-bit
 shapes. 4 bits is the smallest listed width that did not finish. The constant-divisor shape at 8
-bits also did not finish, so no shape was measured `Verified` at any width and the rows show no
-constant/symbolic split: no `divisor_constant` extension is added and no row refuses a shape
-measured `Verified`. Each row applies to every law of its operation; the 4-bit symbolic shape was measured under each
+bits also did not finish, so no general-route shape was measured `Verified` and the rows show no
+constant/symbolic split: no `divisor_constant` extension is added for these general-route rows and none refuses a shape
+measured `Verified`. The native 16-bit rows are a different matter: they refuse constant divisors the
+kernel verified (the open gap under FR-057-AC-9). Each row applies to every law of its operation; the 4-bit symbolic shape was measured under each
 law.
 
 ## Native-route disposition of FR-057-AC-7 (IR-854)
@@ -94,7 +95,30 @@ not-tractable row. Input: the proofs-2 analysis of the kernel's record (filament
   all `i128`, each verified in under 15 s). It is an unlanded scratch refactor with no committed
   harness, so no row and no claim.
 
-These verdicts belong to the kernel's harnesses. FR-057-AC-7 asks for CG's generated harnesses to
-classify `Verified` on the native route. The kernel's plan (IR-1541, done) is in the locked kernel,
-but CG's `select_native_integer` still returns `NativeDivisionPlanUnavailable`, so CG builds no native
-division harness and AC-7 stays PARTIAL. The planner folded that wiring into IR-854 as its next PR (route `select_native_integer` through the IR-1541 plan; CG's own harnesses Verified on the native route, or a recorded measured not-tractable row): owner: IR-854 (next PR).
+## Native route, CG's own generated harnesses
+
+CG routes `select_native_integer` through the kernel's `Divide` and `Modulo` plan, so its own
+generated native harnesses exist. Each run is `cargo test --test it -- --ignored --exact` of the named
+ignored test, one job at a time under the 24 GiB scope (memory swap off), `--unwind 3 --solver cadical`
+through the execution module, wall seconds as recorded by the run and memory peak as the scope's cgroup
+`memory.peak` (it includes the test process, so it is an upper bound for the prover). The seven rows were re-run at the head that merged main (the pre-built test binary is run, so the peak excludes the cargo build); the 8-bit constant divisor is compiled from an unguarded source because FSL refuses the guarded form over a divisor range that excludes zero.
+
+| Shape | Operation, law | Verdict | Wall s | Scope peak bytes |
+| --- | --- | --- | --- | --- |
+| dividend `[-128, 127]`, divisor `8` | div, floor | Verified | 18.9 | 1423757312 |
+| same | div, truncating | Verified | 22.4 | 1589321728 |
+| same | div, Euclidean | Verified | 18.8 | 1422372864 |
+| same | rem, truncating | Verified | 17.7 | 1323241472 |
+| same | rem, floor | Verified | 17.3 | 1308073984 |
+| same | rem, Euclidean | Verified | 17.4 | 1309028352 |
+| same | mod | Verified | 17.0 | 1307557888 |
+
+Mutant fixture: dividend `[-8, 7]`, divisor `[-3, 3]`, explicit result `[-3, 3]`, native `div` floor. The
+healthy harness is `Verified` (20.0 s). Each seeded mutant is `Falsified` with solver playback of
+in-domain operands: the embedded law swapped to truncating (79.5 s, playback `-3, 2`), to Euclidean
+(78.0 s, `7, -3`), the oracle completing at a zero divisor (78.4 s, `-8, 0`) and the expected side
+without its zero arm (74.1 s, `2, 0`). The four mutants and the healthy run together peaked at
+7228067840 bytes in the scope. AC-7's native minimum (the 8-bit constant divisor, every operation and
+law) is met by CG's own harnesses.
+
+The general-route rows above are unchanged: the same 8-bit constant divisor did not finish there.

@@ -3435,6 +3435,7 @@ mod native_probe_tests {
                 operands: vec![interval(0, 1000), interval(1, 1)],
                 capacity: Some(interval(1, 1001)),
                 semantic_domain: Some(interval(0, 1000)),
+                division_profile: None,
             },
             Decision {
                 node_id,
@@ -3443,6 +3444,7 @@ mod native_probe_tests {
                 operands: vec![interval(1, 1000), interval(2, 2)],
                 capacity: Some(interval(2, 2000)),
                 semantic_domain: None,
+                division_profile: None,
             },
         ];
         let mut probes = vec![
