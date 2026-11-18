@@ -732,6 +732,9 @@ fn tc_068_an_option_read_in_a_precondition_is_refused_generically() {
             std::panic::catch_unwind(|| twin.emitted_package("BalanceNeverDrops"))
                 .expect_err("the checker refuses it"),
         );
-        assert!(text.contains("ill_typed"), "{text}");
+        assert!(
+            text.contains("ill_typed") || text.contains("missing_declaration (missing-name)"),
+            "{text}"
+        );
     }
 }

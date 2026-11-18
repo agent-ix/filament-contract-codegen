@@ -417,7 +417,9 @@ fn coherent_bounded_arithmetic_control_is_decided_by_the_owner_reader() {
 fn reader_admitted_literal_fallbacks_and_bounded_stops_preserve_native_accounting() {
     use std::{fmt::Write as _, fs, process::Command};
 
-    use filament_contract_codegen::{EXACT_DEPENDENCY_SOURCE, SEMANTIC_VALUE_DEPENDENCY_SOURCE};
+    use filament_contract_codegen::{
+        EXACT_DEPENDENCY_SOURCE, SEMANTIC_VALUE_DEPENDENCY_SOURCE, TRACE_DEPENDENCY_SOURCE,
+    };
 
     use super::{scratch_crate, v2_clause_integer_literal_agreement::NATIVE_SUPPORT};
 
@@ -523,7 +525,7 @@ fn controlled_{index}() {{
     )
     .unwrap();
     let manifest = format!(
-        "[package]\nname = \"controlled-literal-native\"\nversion = \"0.0.0\"\nedition = \"2021\"\n\n[dependencies]\nfilament-exact = {{ {EXACT_DEPENDENCY_SOURCE}, features = [\"test-support\"] }}\nfilament-semantic-value = {{ {SEMANTIC_VALUE_DEPENDENCY_SOURCE} }}\n{}\nix-trace-rs = {{ git = \"https://github.com/agent-ix/ix-trace-rs\", branch = \"main\" }}\n[workspace]\n",
+        "[package]\nname = \"controlled-literal-native\"\nversion = \"0.0.0\"\nedition = \"2021\"\n\n[dependencies]\nfilament-exact = {{ {EXACT_DEPENDENCY_SOURCE}, features = [\"test-support\"] }}\nfilament-semantic-value = {{ {SEMANTIC_VALUE_DEPENDENCY_SOURCE} }}\n{}\nix-trace-rs = {{ {TRACE_DEPENDENCY_SOURCE} }}\n[workspace]\n",
         scratch_crate::runtime_dependency(&["exact"]),
     );
     scratch_crate::write_manifest(&scratch.path, &manifest);

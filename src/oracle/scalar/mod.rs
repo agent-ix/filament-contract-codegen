@@ -426,6 +426,7 @@ impl ScalarForm {
             | LiteralKind::String
             | LiteralKind::Uuid
             | LiteralKind::Timestamp
+            | LiteralKind::Reference
             | LiteralKind::None => return None,
         })
     }
