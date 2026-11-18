@@ -68,6 +68,7 @@ mod composite_equality_generation;
 mod composite_original_eq;
 mod composite_parity_converter;
 mod composite_playback_decode;
+mod composite_shadow_route;
 mod composite_record_residuals;
 mod composite_shadow;
 mod composite_shadow_families;

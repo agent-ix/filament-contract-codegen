@@ -13,6 +13,9 @@ pub(crate) mod composite_builder;
 // Playback decode and operand rebuild through a composite shadow identity's leaf bindings.
 // Implements: FR-025-AC-9, FR-033-AC-2, FR-033-AC-3, FR-033-AC-4, FR-033-AC-5
 pub(crate) mod composite_leaves;
+// The shadow-aware production route of a composite bounded-shadow run.
+// Implements: FR-029-AC-19, FR-029-AC-25, FR-029-AC-30, FR-033-AC-19
+pub(crate) mod composite_shadow_route;
 // Native replay of a frame counterexample.
 // Implements: FR-015-AC-33
 pub(crate) mod frame;

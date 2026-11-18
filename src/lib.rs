@@ -357,7 +357,12 @@ pub use replay::composite::{
 };
 pub use replay::composite_builder::{
     CompositeBuildError, CompositePacketMember, OriginalCompositeEqContext,
-    OriginalCompositeEqReport, OriginalCompositeEqRequest,
+    OriginalCompositeEqReport, OriginalCompositeEqRequest, OriginalCompositeFalsifiedReport,
+};
+pub use replay::composite_shadow_route::{
+    refinement_state, settle_composite_shadow, shadow_harness_bounds, CompositeShadowError,
+    CompositeShadowSettlement, DriverFalsification, ParityReport, ShadowClaim, ShadowRoute,
+    ShadowRun,
 };
 pub use replay::composite_leaves::{
     decode_composite_falsification, rebuild_composite_operands, reconstruct_composite_operands,

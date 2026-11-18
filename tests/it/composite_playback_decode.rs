@@ -22,7 +22,7 @@ use super::composite_shadow::{
 };
 
 #[derive(Clone, Copy)]
-enum E {
+pub(super) enum E {
     B(bool),
     I(i64),
 }
@@ -39,7 +39,7 @@ fn entry_text(entry: E) -> String {
     )
 }
 
-fn transcript_for(harness: &str, entries: &[E]) -> String {
+pub(super) fn transcript_for(harness: &str, entries: &[E]) -> String {
     let body: String = entries.iter().copied().map(entry_text).collect();
     format!(
         "/// Test generated for harness `{harness}`\n\
@@ -52,7 +52,7 @@ fn transcript_for(harness: &str, entries: &[E]) -> String {
     )
 }
 
-fn harness_path(identity: &ShadowIdentity) -> String {
+pub(super) fn harness_path(identity: &ShadowIdentity) -> String {
     format!("{}::{}", identity.module_symbol, identity.harness_symbol)
 }
 
@@ -74,7 +74,7 @@ fn reconstruct(
 }
 
 /// One `Flags { a, b, c? }` parameter's entries: `c` is drawn only when its state is 0.
-fn flags(a: bool, b: i64, state: i64, c: i64) -> Vec<E> {
+pub(super) fn flags(a: bool, b: i64, state: i64, c: i64) -> Vec<E> {
     let mut entries = vec![E::B(a), E::I(b), E::I(state)];
     if state == 0 {
         entries.push(E::I(c));

@@ -22,16 +22,21 @@ use fsl_replay::{
     compile_admitted, parity_obligation, settle_verified_shadow, AdmittedCompilation,
     AdmittedContext, AdmittedRefusal, BoundEntries, CompileUnit, CompositeEvidence,
     CompositeIdentity, CompositeParityClaim, DependencyInput, Domain, DomainKey, EnvelopeSource,
-    EqualityOperator, Identifier, IdentityEncodeError, NoPayload, OccurrenceKey, OperandIdentity,
-    Origin, ParityArgument, ParityPreimage, ProofBound, QualifiedName, ReplayRequest,
+    EqualityOperator, FalsifiedParity, Identifier, IdentityEncodeError, NoPayload, OccurrenceKey,
+    OperandIdentity, Origin, ParityArgument, ParityPreimage, ProofBound, QualifiedName,
+    ReplayRequest,
     ReplayRequestRefusal, ReplayRequestWire, ReplayTarget, ReplayTargetMembers, RequestTargetWire,
     Role, VerifiedShadow, VerifiedShadowReport, WitnessEnvelope, WitnessPacket, WitnessRefusal,
 };
+use fsl_replay::{replay_composite_parity, CompositeParityReport};
 
 use crate::core::ir::node_key::checked_node_key;
 
 use super::{
-    composite::{verified_shadow_terminal_value, CompositeReportError, VerifiedShadowSettlement},
+    composite::{
+        composite_parity_terminal_value, verified_shadow_terminal_value, CompositeParitySettlement,
+        CompositeReportError, VerifiedShadowSettlement,
+    },
     function::{DependencyLockError, LockedSource, ReplayInputs},
 };
 
@@ -610,6 +615,59 @@ impl OriginalCompositeEqRequest {
         verified_shadow_terminal_value(&sent, Some(&report))
             .map_err(CompositeBuildError::Report)?;
         Ok(OriginalCompositeEqReport { sent, report })
+    }
+}
+
+impl OriginalCompositeEqRequest {
+    /// Invoke FSL's public falsified-parity facade with the decoded operands, the retained shadow
+    /// comparison, the driver's native observation and the refinement evidence.
+    ///
+    /// The genuine returned report passes the full-identity converter before returning.
+    ///
+    /// # Errors
+    /// Returns a binding refusal without a terminal value if FSL's report does not match what was sent.
+    // The 192-byte refusal is retained inline to preserve the public PackageRead payload.
+    #[allow(clippy::result_large_err)]
+    pub fn settle_falsified(
+        self,
+        falsified: FalsifiedParity,
+    ) -> Result<OriginalCompositeFalsifiedReport, CompositeBuildError> {
+        let sent = CompositeIdentity::new(
+            self.wire.obligation_identity.clone(),
+            &self.claim,
+            CompositeEvidence::Falsified(Box::new(falsified.clone())),
+        );
+        let report = replay_composite_parity(self.wire, self.claim, falsified, self.replay_limits);
+        composite_parity_terminal_value(&sent, Some(&report))
+            .map_err(CompositeBuildError::Report)?;
+        Ok(OriginalCompositeFalsifiedReport { sent, report })
+    }
+}
+
+/// A genuine falsified-parity FSL report and the immutable sent identity the converter checked.
+#[derive(Debug)]
+pub struct OriginalCompositeFalsifiedReport {
+    sent: CompositeIdentity,
+    report: CompositeParityReport,
+}
+
+impl OriginalCompositeFalsifiedReport {
+    /// The complete claim retained before invoking FSL.
+    pub fn sent(&self) -> &CompositeIdentity {
+        &self.sent
+    }
+
+    /// FSL's genuine public facade report.
+    pub fn report(&self) -> &CompositeParityReport {
+        &self.report
+    }
+
+    /// Read the report through the binding-checked converter.
+    ///
+    /// # Errors
+    /// Returns the converter's typed full-identity refusal, without a value.
+    pub fn settlement(&self) -> Result<CompositeParitySettlement<'_>, CompositeReportError> {
+        composite_parity_terminal_value(&self.sent, Some(&self.report))
     }
 }
 
