@@ -5,7 +5,8 @@
 
 use std::fmt;
 
-use fsl_replay::{Identifier, NodeKey, ObligationIdentity, OccurrenceKey, OperationSite};
+use fsl_package::ObligationIdentity;
+use fsl_replay::{Identifier, NodeKey, OccurrenceKey, OperationSite};
 
 use crate::kani::{
     abi::KaniPrimitiveType,

@@ -10,10 +10,11 @@
 //! invents no value for any field.
 
 use filament_contract_model::{CheckedNodeId, CheckedNodeOwner, CheckedPackageV2};
+use fsl_package::ObligationIdentity;
 use fsl_replay::{
-    call_site, AnchorKind, ClauseName, ClauseSelectionInput, EnvelopeSource, ObligationIdentity,
-    QualifiedName, ReplayPackage, ReplaySource, ReplayTargetMembers, RequestTargetWire,
-    SelectedAnchor, SelectedObject, StateClauseCounterexample, WitnessPacket, WitnessValue,
+    call_site, AnchorKind, ClauseName, ClauseSelectionInput, EnvelopeSource, QualifiedName,
+    ReplayPackage, ReplaySource, ReplayTargetMembers, RequestTargetWire, SelectedAnchor,
+    SelectedObject, StateClauseCounterexample, WitnessPacket, WitnessValue,
 };
 use quire_canonical::FixedShape;
 use serde::Serialize;

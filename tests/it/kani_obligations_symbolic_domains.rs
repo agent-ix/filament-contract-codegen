@@ -22,14 +22,15 @@ use filament_contract_model::{
 };
 use filament_exact::CollectionKind;
 use filament_semantic_value::catalog::Category;
+use fsl_package::ObligationIdentity;
 use fsl_replay::{
     call_site, evaluate_clause, object_reference_witness, replay, write_object_environment,
     ClauseEvaluation, ClauseEvaluationRequest, ClauseIncomplete, ClauseName, ClauseObservation,
     ClauseRefusal, DeclarationKey, DependencyInput, DomainPackageRef, EnvironmentLabels,
     EnvironmentModel, EnvironmentObject, EnvironmentPopulation, EvaluatedValue, Identifier,
-    ModelNormalizationLimits, ObligationIdentity, ObservationLimits, QualifiedName, ReplayLimits,
-    ReplayRequestWire, ReplayResult, ReplaySource, RequestTargetWire, ScalarLimits, SelectedObject,
-    SnapshotValue, SourceIdentity, SpineLimits, StateEnvironment, WitnessValue,
+    ModelNormalizationLimits, ObservationLimits, QualifiedName, ReplayLimits, ReplayRequestWire,
+    ReplayResult, ReplaySource, RequestTargetWire, ScalarLimits, SelectedObject, SnapshotValue,
+    SourceIdentity, SpineLimits, StateEnvironment, WitnessValue,
 };
 use ix_trace_rs::trace;
 use serde_json::{json, Value};

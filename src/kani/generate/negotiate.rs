@@ -82,7 +82,7 @@ use filament_contract_model::{
     CheckedSourceMapEntry, CheckedTerm, ContractPackageV1, ContractSourceV1, StateClauseKind,
 };
 
-use fsl_replay::ObligationIdentity;
+use fsl_package::ObligationIdentity;
 
 use crate::{
     core::contract_package::ContractDriverResultSelection,

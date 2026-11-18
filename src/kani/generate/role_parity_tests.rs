@@ -47,10 +47,10 @@ fn role_identities() -> StateFrameRoleIdentities {
         .expect("a node key")
     };
     StateFrameRoleIdentities::new(
-        fsl_replay::ObligationIdentity::new(node("contract"), None, 3),
-        fsl_replay::ObligationIdentity::new(
+        fsl_package::ObligationIdentity::new(node("contract"), None, 3),
+        fsl_package::ObligationIdentity::new(
             node("frame"),
-            Some(fsl_replay::ModelIdentity::new("model")),
+            Some(fsl_package::ModelIdentity::new("model")),
             4,
         ),
     )
@@ -60,7 +60,7 @@ fn role_identities() -> StateFrameRoleIdentities {
 fn role_identity(
     identities: &StateFrameRoleIdentities,
     role: StateFrameRole,
-) -> &fsl_replay::ObligationIdentity {
+) -> &fsl_package::ObligationIdentity {
     match role {
         StateFrameRole::Contract => identities.contract(),
         StateFrameRole::Frame => identities.frame(),

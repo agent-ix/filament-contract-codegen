@@ -1,7 +1,7 @@
 //! The persisted wire form of a state-frame harness's FSL [`ObligationIdentity`]
 //! (FR-015-AC-138).
 //!
-//! The pinned `fsl_replay::ObligationIdentity` derives no serde, so this form is CG's own:
+//! The pinned `fsl_package::ObligationIdentity` derives no serde, so this form is CG's own:
 //! `{"node": {"package", "path", "ordinal"}, "model": {"identity"}, "ordinal"}`, `model` absent
 //! when the identity has none. A path segment is `{"text": <string>}` or
 //! `{"node": <node object>}`; a `Node` segment nests a whole key and is never flattened to text.
@@ -9,7 +9,7 @@
 //! (FR-015-AC-139).
 
 use filament_exact::{NodeKey, PathSegment};
-use fsl_replay::{ModelIdentity, ObligationIdentity};
+use fsl_package::{ModelIdentity, ObligationIdentity};
 use serde::{
     de::Error as _, ser::Error as _, ser::SerializeMap, ser::SerializeSeq, Deserialize,
     Deserializer, Serialize, Serializer,

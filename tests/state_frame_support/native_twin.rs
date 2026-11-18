@@ -658,9 +658,9 @@ impl Twin {
 
     /// The `contract` identity FSL's selected clause site mints for `clause`: the identity a
     /// caller supplies for a postcondition harness (FR-024-AC-71).
-    pub fn clause_identity(&self, clause: &str) -> fsl_replay::ObligationIdentity {
+    pub fn clause_identity(&self, clause: &str) -> fsl_package::ObligationIdentity {
         let site = self.clause_site(clause).expect("FSL clause site");
-        fsl_replay::ObligationIdentity::new(
+        fsl_package::ObligationIdentity::new(
             site.node,
             None,
             u32::try_from(site.occurrence.origin().ordinal()).expect("claim ordinal"),
@@ -2305,7 +2305,7 @@ impl Twin {
             post_state: vec![(balance, post.0), (audit, post.1)],
             obligation_identity: {
                 let site = self.clause_site(clause).expect("FSL clause site");
-                fsl_replay::ObligationIdentity::new(
+                fsl_package::ObligationIdentity::new(
                     site.node,
                     None,
                     u32::try_from(site.occurrence.origin().ordinal()).expect("claim ordinal"),

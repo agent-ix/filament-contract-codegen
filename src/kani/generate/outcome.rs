@@ -7,7 +7,7 @@ use filament_contract_model::{
     CheckedPackageIncomplete, CheckedPackageLimit, CheckedPackageRefusal, CheckedPackageV2,
     CheckedSourceMapEntry, ContractPackageV1,
 };
-use fsl_replay::ObligationIdentity;
+use fsl_package::ObligationIdentity;
 use serde::{Serialize, Serializer};
 
 use crate::{

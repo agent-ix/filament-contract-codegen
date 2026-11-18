@@ -13,7 +13,7 @@ use filament_contract_codegen::{
     StateFrameIdentity, StateFrameObligations, StateFrameRecordError, StateFrameRefusal,
     StateFrameRequest, StateFrameRole, StateFrameRoleIdentities, StateFrameRoleIdentitiesError,
 };
-use fsl_replay::{ModelIdentity, ObligationIdentity};
+use fsl_package::{ModelIdentity, ObligationIdentity};
 use ix_trace_rs::trace;
 use serde_json::{json, Value};
 

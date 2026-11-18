@@ -383,7 +383,7 @@ fn original_parameter_operands_build_positional_identity_and_public_verified_rep
     let obligation = parity_obligation(request.preimage()).unwrap();
     assert_eq!(
         obligation,
-        fsl_replay::ObligationIdentity::new(
+        fsl_package::ObligationIdentity::new(
             node_key(&package, &node),
             None,
             u32::try_from(occurrence.ordinal).expect("admitted occurrence ordinal fits"),
@@ -1281,7 +1281,7 @@ fn tc_035_original_composite_request_requires_its_own_packet() {
     let mut wrong_obligation = context
         .parity_packet(&node, &occurrence, EqualityOperator::Equal, &[], 100_000)
         .expect("the checked claim supplies another packet");
-    wrong_obligation.obligation_identity = Some(fsl_replay::ObligationIdentity::new(
+    wrong_obligation.obligation_identity = Some(fsl_package::ObligationIdentity::new(
         node_key(&package, &node),
         None,
         1,

@@ -3,7 +3,8 @@
 
 use filament_contract_codegen::StateFrameRoleIdentities;
 use filament_exact::PathSegment;
-use fsl_replay::{ModelIdentity, NodeKey, ObligationIdentity};
+use fsl_package::{ModelIdentity, ObligationIdentity};
+use fsl_replay::NodeKey;
 
 fn key(package: &str, path: &str, ordinal: u64) -> NodeKey {
     NodeKey::new(package, vec![PathSegment::Text(path.to_owned())], ordinal).expect("a node key")

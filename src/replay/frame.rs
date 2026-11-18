@@ -20,12 +20,13 @@ use std::{collections::BTreeMap, fmt};
 
 use filament_contract_model::{CheckedPackageLockV2, CheckedPackageV2, ContractSourceV1};
 use filament_exact::NodeKey;
+use fsl_package::ObligationIdentity;
 use fsl_replay::{
     call_site, replay_frame, CallSiteRefusal, ClaimedChange, DocumentRef, EmptyQualifiedName,
     EnvelopeSource, FrameCounterexample, FrameOperation, FrameReplayResult, MalformedTranscript,
-    ObligationIdentity, OccurrenceKey, OperationName, OperationSite, ReplayLimits, ReplayRefusal,
-    ReplayRequest, ReplayRequestWire, ReplaySource, ReplayTargetMembers, RequestTargetWire,
-    WitnessEnvelope, WitnessPacket, WitnessRefusal, WitnessValue,
+    OccurrenceKey, OperationName, OperationSite, ReplayLimits, ReplayRefusal, ReplayRequest,
+    ReplayRequestWire, ReplaySource, ReplayTargetMembers, RequestTargetWire, WitnessEnvelope,
+    WitnessPacket, WitnessRefusal, WitnessValue,
 };
 use serde::Deserialize;
 

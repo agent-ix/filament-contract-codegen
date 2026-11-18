@@ -8,14 +8,15 @@ use filament_contract_codegen::{
 };
 use filament_contract_model::CheckedNodeId;
 use filament_exact::PathSegment;
+use fsl_package::ObligationIdentity;
 use fsl_replay::{
     replay_composite_parity, settle_verified_shadow, Certification, CompositeEvidence,
     CompositeIdentity, CompositeParityClaim, CompositeParityResult, EqualityOperator,
     EqualityOutcome, FalsifiedParity, Identifier, InconclusiveCause, Integer,
-    NativeParityObservation, NodeKey, ObligationIdentity, OccurrenceKey, Origin, ProofBasis,
-    Refinement, ReplayLimits, ReplayRefusal, ReplayRequest, ReplayRequestRefusal,
-    ReplayRequestWire, ReplaySource, RequestTargetWire, Role, ScalarLimits, StateEnvironment,
-    TerminalValue, VerifiedShadow, VerifiedShadowResult, WitnessValue,
+    NativeParityObservation, NodeKey, OccurrenceKey, Origin, ProofBasis, Refinement, ReplayLimits,
+    ReplayRefusal, ReplayRequest, ReplayRequestRefusal, ReplayRequestWire, ReplaySource,
+    RequestTargetWire, Role, ScalarLimits, StateEnvironment, TerminalValue, VerifiedShadow,
+    VerifiedShadowResult, WitnessValue,
 };
 use ix_trace_rs::trace;
 

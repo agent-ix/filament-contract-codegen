@@ -55,10 +55,11 @@ use filament_contract_model::{
     CheckedMemberType, CheckedNodeId, CheckedPackageReadLimits, CheckedPackageV2, CheckedTerm,
 };
 use filament_semantic_value::catalog::Category;
+use fsl_package::ObligationIdentity;
 use fsl_replay::{
     CallSiteRefusal, DisagreementCause, FrameChange, FrameIdentityMismatch, Identifier,
-    InconclusiveCause, ObligationIdentity, OccurrenceKey, OperationSite, Origin, QualifiedName,
-    ReplayRefusal, ReplayResult, ReplaySource, Role, TerminalValue, Verdict, WitnessSettlement,
+    InconclusiveCause, OccurrenceKey, OperationSite, Origin, QualifiedName, ReplayRefusal,
+    ReplayResult, ReplaySource, Role, TerminalValue, Verdict, WitnessSettlement,
 };
 use ix_trace_rs::trace;
 use native_twin::{

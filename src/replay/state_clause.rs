@@ -112,7 +112,7 @@ pub struct StateClauseReplayInputs<'a> {
     /// natively over the pre state.
     pub post_state: Vec<(String, i64)>,
     /// The identity of the obligation the counterexample falsified.
-    pub obligation_identity: fsl_replay::ObligationIdentity,
+    pub obligation_identity: fsl_package::ObligationIdentity,
 }
 
 /// Why the framed model declaration does not supply the requested field list.

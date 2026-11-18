@@ -312,7 +312,7 @@ fn each_single_retained_member_change_refuses_the_genuine_report() {
         let mut changed = claim.clone();
         match member {
             0 => {
-                changed_wire.obligation_identity = fsl_replay::ObligationIdentity::new(
+                changed_wire.obligation_identity = fsl_package::ObligationIdentity::new(
                     claim.node.clone(),
                     None,
                     wire.obligation_identity.ordinal() + 1,
@@ -396,7 +396,7 @@ fn fsl_refuses_a_changed_node_identity_as_stale_dependency() {
     }
 
     let mut stale = wire.clone();
-    stale.obligation_identity = fsl_replay::ObligationIdentity::new(
+    stale.obligation_identity = fsl_package::ObligationIdentity::new(
         wire.obligation_identity.node().clone(),
         None,
         wire.obligation_identity.ordinal() + 1,

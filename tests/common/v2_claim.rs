@@ -9,7 +9,7 @@ use filament_contract_model::{
     CheckedNodeId, CheckedNodePathSegment, CheckedPackageV2, CheckedTerm,
 };
 use filament_exact::{NodeKey, PathSegment};
-use fsl_replay::ObligationIdentity;
+use fsl_package::ObligationIdentity;
 
 /// The key CG's resolver yields for `clause`: the package's structural key for the node,
 /// rebuilt as a `NodeKey` (FR-015-AC-135). Fixtures that are not exercising the binding use it.
