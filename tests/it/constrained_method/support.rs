@@ -81,7 +81,8 @@ pub(super) fn fixture(doc: &Value, name: &str, safety: &str, constraints: &[&str
     let bytes = quire_canonical::to_vec(doc, quire_canonical::Limits::new(1 << 20)).unwrap();
     fixture_source(bytes, name, clause_source(safety, constraints))
 }
-/// The typed refusal FSL gives when it compiles the same clause source.
+/// The typed refusal FSL gives when it compiles the same clause source. Only the lib test uses it.
+#[allow(dead_code)]
 pub(super) fn compile_refusal(
     doc: &Value,
     name: &str,
@@ -99,8 +100,7 @@ pub(super) fn compile_refusal(
         &DependencyInput::default(),
         &ClauseName(Identifier::new("Safe").unwrap()),
     )
-    .err()
-    .expect("FSL refuses the clause source")
+    .expect_err("FSL refuses the clause source")
 }
 pub(super) fn fixture_source(bytes: Vec<u8>, name: &str, source: String) -> Fixture {
     let site = call_site(
