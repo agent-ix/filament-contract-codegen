@@ -228,6 +228,7 @@ fn family_of(code: u32) -> &'static str {
         T_BOOLEAN => "boolean",
         T_INTEGER | T_INTEGER_BOUNDED => "integer",
         T_TEXT => "text",
+        T_FLOAT64 => "structural",
         T_DECIMAL_SMALL | T_DECIMAL_WIDE => "decimal",
         T_RATIONAL_NARROW | T_RATIONAL_WIDE | T_RATIONAL_INT => "rational",
         R_POINT | R_FLOAT | R_DUP | R_SELF | R_PAIR_OF_POINTS | R_WITH_REF | R_TREE_CYCLE => {
@@ -263,6 +264,7 @@ fn equality_operation(family: &str) -> Value {
             "member": null,
             "leaves": [],
         }),
+        "ieee" => plain("filament.op.ieee.numeric_equal"),
         other => plain(&format!("filament.op.{other}.eq")),
     }
 }
@@ -1675,6 +1677,19 @@ pub fn byte_ceiling_package() -> PackageBuilder {
 
 pub fn nested_ieee_package() -> PackageBuilder {
     corpus_package_with_nested_ieee()
+}
+
+/// The corpus with its nested IEEE equality replaced by an equality over two top-level `float64`
+/// operands.
+pub fn top_level_ieee_package() -> PackageBuilder {
+    let mut builder = corpus_package_with_nested_ieee();
+    builder.omit_code(E_NESTED_IEEE);
+    builder.application_code(
+        E_TOP_LEVEL_IEEE,
+        "binary",
+        binary_body(T_FLOAT64, T_FLOAT64),
+    );
+    builder
 }
 
 // ---------------------------------------------------------------------------
