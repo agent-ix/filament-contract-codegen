@@ -73,11 +73,34 @@ installed Kani through CG's runner. This case is planned. Every mutant fails at 
     at 3 bits run (the sub row starts at 4 bits), and native-route features at the same widths run
     (FR-056-AC-15).
 
-15. Load the shipped table and assert it holds 74 rows, of which the native-route float rows are 44
+15. Load the shipped table and assert it holds 77 rows, of which the native-route float rows are 44
     (32 `tractable`, 12 `not_tractable`: seven at 600 s and five at 1800 s) and the native-route
     rational rows 14 (8 `tractable` at 8 bits, 6 `not_tractable` at 64 bits and 900 s); assert each
-    row names the filament-exact record, the harness and, when `not_tractable`, its owner (IR-1551 for
-    float, IR-1544 for rational) (FR-056-AC-15).
+    row names the filament-exact record, the harness and, when `not_tractable`, the measuring
+    record (FR-056-AC-15).
+
+16. Assert the `verus_proof` field sits on exactly 24 rows: the twelve float, six full-`i64` rational
+    and three native `div`, `rem` and `mod` rows, each keeping its `not_tractable` verdict, and the
+    three decimal rows, each `verus_proved` with null `wall_seconds` and `peak_bytes`; assert each
+    proof's filament-exact record ids, merged changes and theorem names equal the kernel's record
+    (TC-953, TC-956, TC-957, TC-950, TC-951), that the float rows keep the common unproved set, the
+    `Exact` rows the strict refusal, the equality row its Kani completion, the decimal rows the
+    `POWERS_OF_TEN` assumption and the statement that the proof is not equality with `evaluate_decimal`
+    and `order_numbers`; assert a `verus_proved` row never refuses; and assert the loader rejects a
+    `verus_proved` row without a proof or with a Kani measurement, a Kani verdict without a wall time,
+    and a proof with an unknown field (FR-056-AC-16 for the
+    rows and their text, FR-056-AC-17 for the loader and the never-refuse rule).
+
+    Re-check procedure. The expected `proved`, `not_proved`, `assumes` and `run` text is a drift pin
+    over CG's own text (`tests/it/kani_verus_record.rs`, generated from the table JSON); the record
+    ids and theorem names are literals in `tests/it/kani_tractability.rs`. Their content was checked
+    against filament-exact at be9359f: the Status and the Verus behaviors of FR-402 (11), FR-403 (41),
+    FR-405 (23), FR-408 (18a) and FR-409 (24), and the Verus record of TC-950, TC-951, TC-953, TC-956
+    and TC-957. Nothing reads the upstream record, so whenever one of those records changes (a new
+    proof change, a renamed theorem, a new mutant count) re-check the rows against it, update the rows
+    and the pin together, and bump the merged change ids. A failing test names the upstream records to compare. The deferral text in
+    filament-exact's FR-402, FR-403, FR-405 and FR-409 Status is dropped by a second, spec-only
+    filament-exact change under IR-1562 after #856 merges; IR-1562 stays open until then.
 
 ## Expected Results
 
@@ -87,4 +110,4 @@ unchanged.
 
 ## Status
 
-Steps 1 to 9, 11 and 12 are implemented and tagged (IR-1526) and the route additions (steps 2 to 4, 7a and 10) are implemented (IR-1530); step 14 is implemented and tagged (IR-1530); step 15 is implemented and tagged (IR-260, IR-258, IR-854); step 10 is partial (see FR-056 Status). Step 13 is coded as a kani-lane test and was executed under installed Kani 0.68.0 (Verified, 235.5 s); the multiply refusal half runs as a host test until an installed-Kani run covers it.
+Steps 1 to 9, 11 and 12 are implemented and tagged (IR-1526) and the route additions (steps 2 to 4, 7a and 10) are implemented (IR-1530); step 14 is implemented and tagged (IR-1530); steps 15 and 16 (FR-056-AC-15, AC-16 and AC-17) are implemented and tagged (IR-260, IR-258, IR-854, IR-1562); step 10 is partial (see FR-056 Status). Step 13 is coded as a kani-lane test and was executed under installed Kani 0.68.0 (Verified, 235.5 s); the multiply refusal half runs as a host test until an installed-Kani run covers it.

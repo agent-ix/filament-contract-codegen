@@ -755,10 +755,35 @@ pub enum CollectionPredicateIdentity {
         /// The compared integer value.
         value: i64,
     },
+    /// `(if element < split then then_branch else else_branch) <= bound` over an admitted
+    /// integer range.
+    IntegerIfAtMost {
+        /// The element is below this value when the `then` branch is selected.
+        split: i64,
+        /// The value selected when the element is below `split`.
+        then_branch: CollectionIfBranch,
+        /// The value selected otherwise.
+        else_branch: CollectionIfBranch,
+        /// The inclusive upper bound the selected value is compared with.
+        bound: i64,
+    },
     /// `element != value` over admitted Boolean elements.
     BooleanNotEqual {
         /// The compared Boolean value.
         value: bool,
+    },
+}
+
+/// The value one branch of a collection element `if` yields.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(tag = "branch", rename_all = "snake_case")]
+pub enum CollectionIfBranch {
+    /// The element itself.
+    Element,
+    /// An integer literal.
+    Literal {
+        /// The literal value.
+        value: i64,
     },
 }
 
@@ -1468,3 +1493,6 @@ pub(crate) mod refinement;
 
 // The identity of a bounded-shadow harness and its refinement obligation (FR-028-AC-14, AC-18).
 pub(crate) mod shadow;
+
+// The leaf bindings of a composite shadow identity (FR-025-AC-9).
+pub(crate) mod leaf_binding;

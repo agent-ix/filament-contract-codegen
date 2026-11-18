@@ -85,6 +85,19 @@ pub enum LeafKind {
     SlotState,
 }
 
+impl LeafKind {
+    /// The primitive type a leaf of this kind is drawn as; the one table the generator, the call
+    /// order check and the playback decoder share.
+    #[must_use]
+    pub const fn primitive(self) -> crate::kani::abi::KaniPrimitiveType {
+        use crate::kani::abi::KaniPrimitiveType;
+        match self {
+            Self::Boolean | Self::Presence => KaniPrimitiveType::Boolean,
+            Self::Integer | Self::SlotState => KaniPrimitiveType::I64,
+        }
+    }
+}
+
 /// One leaf of the identity: its declared and drawn domains.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -130,8 +143,27 @@ pub struct UnexercisedCoverage {
 pub struct PinnedLeaf {
     /// The leaf name.
     pub name: String,
+    /// The operand position (0 left, 1 right) the literal stands at.
+    pub operand: usize,
+    /// The leaf's path inside the operand; the same path a drawn leaf of that shape has.
+    pub path: String,
+    /// What the leaf stands for.
+    pub kind: LeafKind,
     /// The value, in the encoding of the refinement domain.
     pub value: i64,
+}
+
+/// What stands at one operand position of the claimed expression.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum OperandSource {
+    /// A parameter, whose leaves the harness draws; both positions naming one node share them.
+    Parameter {
+        /// The parameter's checked node id.
+        node: String,
+    },
+    /// A literal, whose leaves are the identity's pinned leaves of this position.
+    Literal,
 }
 
 /// What the composite-equality family adds to the identity (FR-015-AC-76).
@@ -146,6 +178,8 @@ pub struct CompositeIdentity {
     pub operand_types: RecordedOperandTypes,
     /// The closure's pair-node count.
     pub pair_nodes: u32,
+    /// What stands at the left and the right operand position.
+    pub operands: [OperandSource; 2],
     /// Literal operand leaves.
     pub pinned: Vec<PinnedLeaf>,
     /// Each unexercised behaviour with its covering criterion and its backing state.

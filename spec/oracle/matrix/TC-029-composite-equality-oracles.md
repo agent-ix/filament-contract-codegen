@@ -98,7 +98,7 @@ the enum-only owner facade does not excuse dropping it.
    `crates/filament-contract-model/src/checked_package/v2/model_members.rs`.
    Assert the generated source contains no `unwrap`, `expect`, panicking index or
    charge or pair-count literal, and that the crate manifest declares
-   `publish = false` and the runtime dependency (git source, `branch = "main"`, no pinned `rev`)
+   `publish = false` and the runtime dependency (git source and the release `tag` CG's own `Cargo.toml` names, no `branch`)
    with the `exact` feature only for Runtime residue; direct exact/FSV and
    equality's root replay dependency come from the same profile authority.
 4. Generate the corpus crate at test time, compile it with the agreement cases

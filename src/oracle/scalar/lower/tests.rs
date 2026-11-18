@@ -54,6 +54,7 @@ fn inference_node(
             node_id: id,
             owner: None,
             owner_model: None,
+            check_mode: None,
             schema_version: "filament.checked-semantic-graph/v2".into(),
             node_tag: tag.into(),
             semantic_form: form.into(),

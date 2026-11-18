@@ -17,9 +17,8 @@ use fsl_replay::{
 };
 use ix_trace_rs::trace;
 
-use super::{
-    exact_function_agreement::body_id,
-    routed_generation::{admitted_routing_input, generate_routed, kani_context, kani_parts, route},
+use super::routed_generation::{
+    admitted_routing_input, generate_routed, kani_context, kani_parts, route,
 };
 
 pub(crate) fn role(profile: DivisionProfile) -> DefinitionRole {
@@ -30,12 +29,42 @@ pub(crate) fn role(profile: DivisionProfile) -> DefinitionRole {
     }
 }
 
+/// `x div y`, `x rem y` and `x mod y` behind a `y != 0` guard: FSL refuses a source divisor it
+/// cannot prove nonzero, and the guard proves it while the operands keep their declared ranges.
+fn guarded(expression: &str) -> String {
+    match expression {
+        "x div y" | "x rem y" | "x mod y" => format!("if y != 0 then {expression} else 0"),
+        other => other.to_owned(),
+    }
+}
+
+/// The only division application of `function`.
+pub(crate) fn division_node(
+    package: &CheckedPackageV2,
+    function: &str,
+) -> filament_contract_model::CheckedNodeId {
+    let found = ["div", "rem", "mod"]
+        .into_iter()
+        .filter_map(|operation| {
+            find_application_in(
+                package,
+                function,
+                &format!("filament.op.integer.{operation}"),
+            )
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(found.len(), 1, "{function} holds exactly one division");
+    found.into_iter().next().unwrap()
+}
+
 /// One function of the corpus source: `name using v(parameters): Integer pure { expression }`.
+/// A division expression is written behind a nonzero guard on its divisor.
 pub(crate) fn source(functions: &[(&str, &str, &str, &str)]) -> String {
     let mut text = String::from(
         "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\n",
     );
     for (name, parameters, result, expression) in functions {
+        let expression = guarded(expression);
         text.push_str(&format!(
             "function {name} using v({parameters}): {result} pure {{ {expression} }}\n"
         ));
@@ -80,6 +109,17 @@ pub(crate) fn application_in(
     function: &str,
     identity: &str,
 ) -> filament_contract_model::CheckedNodeId {
+    find_application_in(package, function, identity)
+        .unwrap_or_else(|| panic!("{function} holds a {identity} node"))
+}
+
+/// [`application_in`] without the panic: `None` when `function` holds no such node. A missing
+/// function declaration still fails loudly, as a different fault.
+pub(crate) fn find_application_in(
+    package: &CheckedPackageV2,
+    function: &str,
+    identity: &str,
+) -> Option<filament_contract_model::CheckedNodeId> {
     use filament_contract_model::CheckedTerm;
     let declaration = package
         .resolved_graph()
@@ -118,14 +158,12 @@ pub(crate) fn application_in(
                         })
                     })
         })
-        .unwrap_or_else(|| panic!("{function} holds a {identity} node"))
-        .node_id
-        .clone()
+        .map(|node| node.node_id.clone())
 }
 
 /// Routes `function` of `package` as one request and returns the generation.
 pub(crate) fn routed(package: &CheckedPackageV2, function: &str, unwind: u32) -> RoutedGeneration {
-    routed_node(package, &body_id(package, function), unwind)
+    routed_node(package, &division_node(package, function), unwind)
 }
 
 pub(crate) fn routed_node(
@@ -898,7 +936,7 @@ fn every_division_claim_of_each_law_generates_one_harness_from_its_own_node() {
     }) {
         let package = catalog_over(profile, parameters);
         for (function, operation) in [("dv", "div"), ("rm", "rem"), ("md", "mod")] {
-            let node = body_id(&package, function);
+            let node = division_node(&package, function);
             let generation = routed_node(&package, &node, 12);
             let (record, harness) = parts(&generation, 0);
             assert!(
@@ -947,7 +985,7 @@ fn the_harness_draws_each_operand_over_its_range_with_one_assertion_and_one_last
             _ => "md",
         };
         let _ = function;
-        let generation = routed_node(&package, &body_id(&package, name), 12);
+        let generation = routed_node(&package, &division_node(&package, name), 12);
         let (_, harness) = parts(&generation, 0);
         let text = &harness.unwrap().rust.contents;
         let kani_module = &text[text.find("#[cfg(kani)]").unwrap()..];
@@ -991,7 +1029,7 @@ fn the_expected_side_is_relational_for_div_and_euclidean_for_rem_and_mod_and_nam
             "rem" => "rm",
             _ => "md",
         };
-        let generation = routed_node(&package, &body_id(&package, name), 12);
+        let generation = routed_node(&package, &division_node(&package, name), 12);
         let (_, harness) = parts(&generation, 0);
         let harness = harness.unwrap();
         let expected = expected_side(harness)
@@ -1235,7 +1273,7 @@ fn the_integer_siblings_of_a_division_claim_generate_as_they_do_alone() {
 #[test]
 fn the_harness_identity_records_node_operation_profile_route_ranges_and_backend_options() {
     let package = catalog(DivisionProfile::Floor);
-    let node = body_id(&package, "dv");
+    let node = division_node(&package, "dv");
     let generation = routed_node(&package, &node, 12);
     let harness = parts(&generation, 0).1.unwrap();
     let identity = &harness.identity;
@@ -1268,7 +1306,7 @@ fn first_harness() -> (
     filament_contract_codegen::Artifact,
 ) {
     let package = catalog(DivisionProfile::Floor);
-    let generation = routed_node(&package, &body_id(&package, "dv"), 12);
+    let generation = routed_node(&package, &division_node(&package, "dv"), 12);
     let (harness, manifest) = harness_of(&generation).expect("a division harness");
     (harness.clone(), manifest)
 }
@@ -1662,7 +1700,7 @@ fn the_shipped_table_holds_the_kernel_native_division_rows_on_the_native_route()
                 "a native row names the kernel record it was copied from: {row:?}"
             );
         }
-        assert_eq!(timed_out.wall_seconds.millis(), 600_000);
+        assert_eq!(timed_out.wall_seconds.unwrap().millis(), 600_000);
         for features_route in [IntegerRoute::Native, IntegerRoute::General] {
             let decide = |bits| {
                 table.decide(&ClauseFeatures::new(
@@ -1712,7 +1750,7 @@ fn a_division_harness_at_or_above_its_row_width_is_refused_before_kani_and_below
     let missing = std::path::Path::new("/nonexistent/crate");
     for (function, operation) in [("dv", "div"), ("rm", "rem"), ("md", "mod")] {
         let package = catalog(DivisionProfile::Floor);
-        let generation = routed_node(&package, &body_id(&package, function), 12);
+        let generation = routed_node(&package, &division_node(&package, function), 12);
         let (harness, _) = harness_of(&generation).expect("a division harness");
         fn request<'a>(
             harness: &'a KaniScalarObligationHarness,
@@ -1793,7 +1831,7 @@ fn the_seeded_mutants_of_each_claim_change_the_routed_source_and_cover_both_grou
             "rem" => "rm",
             _ => "md",
         };
-        let generation = routed_node(&package, &body_id(&package, function), 12);
+        let generation = routed_node(&package, &division_node(&package, function), 12);
         let (harness, _) = harness_of(&generation).expect("a division harness");
         let mutants = kani_mutants(harness, operation, profile);
         for (name, mutated) in &mutants {

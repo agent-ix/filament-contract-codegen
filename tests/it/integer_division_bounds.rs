@@ -10,7 +10,8 @@ use filament_contract_codegen::{
     ExactScalarOperation, ExactScalarRefusal, OperationProvenance, EXACT_DEPENDENCY_SOURCE,
 };
 use filament_contract_model::{
-    CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2, CheckedPackageV2ReadResult,
+    CheckedNodeId, CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
+    CheckedPackageV2ReadResult,
 };
 use filament_exact::{DivisionProfile, IntegerDomain, IntegerInterval};
 use fsl_replay::{
@@ -20,13 +21,6 @@ use fsl_replay::{
 use ix_trace_rs::trace;
 
 use crate::{exact_function_agreement::body_id, scratch_crate};
-
-fn compiled(parameters: &str, result: &str, expression: &str) -> CheckedPackageV2 {
-    let profile = expression
-        .contains("div")
-        .then_some(DivisionProfile::Truncating);
-    compiled_with_profile(parameters, result, expression, profile)
-}
 
 fn compiled_with_profile(
     parameters: &str,
@@ -81,11 +75,47 @@ fn compiled_with_profile(
     }
 }
 
-fn derived(package: &CheckedPackageV2) -> ExactScalarItem {
-    let node = body_id(package, "subject");
-    derive_exact_scalar_items(package, &[node])
+fn derived(package: &CheckedPackageV2, node: &CheckedNodeId) -> ExactScalarItem {
+    derive_exact_scalar_items(package, std::slice::from_ref(node))
         .remove(0)
         .expect("finite operands give an honest derived result interval")
+}
+
+fn operand_range(declaration: &str) -> Option<(i64, i64)> {
+    let inner = declaration.strip_prefix("Int[")?.strip_suffix(']')?;
+    let (lower, upper) = inner.split_once(", ")?;
+    Some((lower.parse().ok()?, upper.parse().ok()?))
+}
+
+/// The package and node of one `x div|mod|rem y` (or `x <op> 3`) over the `x: .., y: ..`
+/// parameters. FSL refuses a source divisor it cannot prove nonzero, so an operand grid whose
+/// divisor range holds zero, or is unbounded, is admitted as the reader-built package FSL's
+/// refusal would otherwise prevent; every provably nonzero divisor stays genuine FSL source.
+fn division_package(
+    parameters: &str,
+    expression: &str,
+    profile: Option<DivisionProfile>,
+) -> (CheckedPackageV2, CheckedNodeId) {
+    let (x, y) = parameters
+        .strip_prefix("x: ")
+        .and_then(|rest| rest.split_once(", y: "))
+        .expect("an `x: .., y: ..` parameter list");
+    let (left, right) = (operand_range(x), operand_range(y));
+    let divisor_is_y = expression.ends_with(" y");
+    let may_be_zero = right.is_none_or(|(lower, upper)| lower <= 0 && upper >= 0);
+    if divisor_is_y && may_be_zero {
+        let operator = expression.split(' ').nth(1).expect("an operator");
+        let identity = format!("filament.op.integer.{operator}");
+        let profile = match operator {
+            "mod" => None,
+            "div" => profile.or(Some(DivisionProfile::Truncating)),
+            _ => profile,
+        };
+        return reader_division_operation(916_000, &identity, profile, left, right, None);
+    }
+    let package = compiled_with_profile(parameters, "Integer", expression, profile);
+    let node = body_id(&package, "subject");
+    (package, node)
 }
 
 fn interval(lower: &str, upper: &str) -> IntegerInterval {
@@ -244,8 +274,8 @@ fn generated_values(modulo_only: bool) {
     for (index, ((parameters, expression, lower, upper, left, right, expected), profile)) in
         selected.iter().copied().enumerate()
     {
-        let package = compiled_with_profile(parameters, "Integer", expression, profile);
-        let item = derived(&package);
+        let (package, node) = division_package(parameters, expression, profile);
+        let item = derived(&package, &node);
         assert_eq!(
             domain(&item),
             &IntegerDomain::Bounded(interval(lower, upper)),
@@ -380,9 +410,11 @@ fn unbounded_operands_still_refuse_and_caller_domains_cannot_replace_inference()
 
 fn unbounded_and_mismatch(expressions: &[&str]) {
     for expression in expressions {
+        let profile = expression
+            .contains("div")
+            .then_some(DivisionProfile::Truncating);
         for parameters in ["x: Integer, y: Int[1, 4]", "x: Int[-9, 9], y: Integer"] {
-            let package = compiled(parameters, "Integer", expression);
-            let node_id = body_id(&package, "subject");
+            let (package, node_id) = division_package(parameters, expression, profile);
             assert!(
                 matches!(
                     derive_exact_scalar_items(&package, std::slice::from_ref(&node_id)).remove(0),
@@ -410,8 +442,8 @@ fn unbounded_and_mismatch(expressions: &[&str]) {
             ));
         }
 
-        let package = compiled("x: Int[-9, 9], y: Int[1, 4]", "Integer", expression);
-        let mut item = derived(&package);
+        let (package, node) = division_package("x: Int[-9, 9], y: Int[1, 4]", expression, profile);
+        let mut item = derived(&package, &node);
         match &mut item.operation {
             ExactScalarOperation::IntegerDivision { domain, .. }
             | ExactScalarOperation::IntegerModulo { domain } => {
@@ -623,8 +655,8 @@ fn remainder_oracle(
     lower: &str,
     upper: &str,
 ) -> (String, String) {
-    let package = compiled_with_profile(parameters, "Integer", "x rem y", Some(profile));
-    let item = derived(&package);
+    let (package, node) = division_package(parameters, "x rem y", Some(profile));
+    let item = derived(&package, &node);
     assert_eq!(
         item.operation,
         ExactScalarOperation::IntegerRemainder {

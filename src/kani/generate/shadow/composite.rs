@@ -15,11 +15,13 @@ use crate::{
         abi::{adapter_options, witness_options, KaniSolver},
         generate::render,
         identity::{
+            leaf_binding::{check_leaf_bindings, LeafBindingRefusal},
             refinement::{DomainBound, ProofSubject},
             shadow::{
                 AbstractionEvidence, AbstractionRecord, BackingState, CompositeIdentity,
-                HelperMark, KaniShadowHarness, LeafKind, LeafRecord, PinnedLeaf, ProductionRead,
-                RefinementObligation, ShadowIdentity, SharedHelperClaim, UnexercisedCoverage,
+                HelperMark, KaniShadowHarness, LeafKind, LeafRecord, OperandSource, PinnedLeaf,
+                ProductionRead, RefinementObligation, ShadowIdentity, SharedHelperClaim,
+                UnexercisedCoverage,
             },
             ProofCeilings,
         },
@@ -149,6 +151,12 @@ pub enum CompositeShadowRefusal {
         expected: usize,
         /// The values given.
         given: usize,
+    },
+    /// The identity's leaf bindings, or the draws of the generated source, do not match the
+    /// shape (FR-025-AC-9).
+    LeafBinding {
+        /// The refusal.
+        refusal: LeafBindingRefusal,
     },
     /// The rendered source fails a parsed-source check.
     SourceCheck {
@@ -944,6 +952,30 @@ pub(crate) fn generate_composite_with(
                 .map(|(leaf, value)| (leaf.name.clone(), *value, leaf.is_bool()))
         })
         .collect();
+    let pinned_records: Vec<PinnedLeaf> = [&left, &right]
+        .into_iter()
+        .enumerate()
+        .filter_map(|(position, operand)| operand.pinned.map(|values| (position, operand, values)))
+        .flat_map(|(position, operand, values)| {
+            operand
+                .leaves
+                .iter()
+                .zip(values)
+                .map(move |(leaf, value)| PinnedLeaf {
+                    name: leaf.name.clone(),
+                    operand: position,
+                    path: leaf.path.trim_start_matches('.').to_owned(),
+                    kind: leaf.kind,
+                    value: *value,
+                })
+        })
+        .collect();
+    let operand_sources = [&left, &right].map(|operand| match operand.node {
+        Some(node) => OperandSource::Parameter {
+            node: node_text(node),
+        },
+        None => OperandSource::Literal,
+    });
 
     let negate = descriptor.operator == EqualityOperatorKind::NotEqual;
     let arguments: Vec<&str> = all.iter().map(|leaf| leaf.name.as_str()).collect();
@@ -1231,17 +1263,13 @@ pub(crate) fn generate_composite_with(
             declarations: claim.declaration_closure.clone(),
             operand_types: claim.operand_types.clone(),
             pair_nodes: count,
-            pinned: pinned
-                .iter()
-                .map(|(name, value, _)| PinnedLeaf {
-                    name: name.clone(),
-                    value: *value,
-                })
-                .collect(),
+            operands: operand_sources,
+            pinned: pinned_records,
             coverage,
             closes_family_row,
         }),
     };
+    check_generated_leaves(&identity, &rust.contents)?;
     let obligation = RefinementObligation {
         subject: item.subject.clone(),
         shadow: format!("{COMPOSITE_SHADOW_MODULE}::shadow"),
@@ -1264,4 +1292,46 @@ fn root_walk_call(root: &Ty) -> String {
 
 fn render_walks_for(model: &Model<'_>, root: &Ty) -> String {
     render_walks(model, root)
+}
+
+/// The checks generation runs before it yields a harness: the identity's leaf bindings, then the
+/// generated source's draws against the identity's leaves (FR-025-AC-9).
+pub(super) fn check_generated_leaves(
+    identity: &ShadowIdentity,
+    source: &str,
+) -> Result<(), CompositeShadowRefusal> {
+    check_leaf_bindings(identity)
+        .map_err(|refusal| CompositeShadowRefusal::LeafBinding { refusal })?;
+    check_leaf_call_order(identity, source)
+        .map_err(|refusal| CompositeShadowRefusal::LeafBinding { refusal })
+}
+
+/// Checks that the generated proof `source` draws exactly the identity's leaves, in the
+/// identity's order, each as its primitive type: the order a counterexample's playback is read in
+/// (FR-025-AC-9).
+///
+/// # Errors
+///
+/// [`LeafBindingRefusal::SourceUnreadable`] when the source does not parse or has no proof
+/// function, and [`LeafBindingRefusal::CallOrder`] naming both sequences as `name:primitive`. An
+/// identity with no drawn leaf (both operands literal) matches only a proof that draws nothing.
+pub fn check_leaf_call_order(
+    identity: &ShadowIdentity,
+    source: &str,
+) -> Result<(), LeafBindingRefusal> {
+    let recorded: Vec<String> = identity
+        .leaves
+        .iter()
+        .map(|leaf| format!("{}:{}", leaf.name, leaf.kind.primitive().source_name()))
+        .collect();
+    let drawn: Vec<String> = source_check::drawn_order(source, PROOF_FUNCTION)
+        .ok_or(LeafBindingRefusal::SourceUnreadable)?
+        .into_iter()
+        .map(|(name, ty)| format!("{name}:{ty}"))
+        .collect();
+    if recorded == drawn {
+        Ok(())
+    } else {
+        Err(LeafBindingRefusal::CallOrder { recorded, drawn })
+    }
 }

@@ -483,6 +483,8 @@ pub fn checked_function_declarations(
             | filament_exact::ValueType::BoundedQuantity(_)
             | filament_exact::ValueType::Text(_)
             | filament_exact::ValueType::String
+            | filament_exact::ValueType::Bytes
+            | filament_exact::ValueType::JsonObject
             | filament_exact::ValueType::Uuid
             | filament_exact::ValueType::Timestamp
             | filament_exact::ValueType::Enum(_)

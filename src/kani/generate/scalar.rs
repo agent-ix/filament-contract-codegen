@@ -1415,6 +1415,7 @@ mod tests {
             declaration: None,
             owner: None,
             owner_model: None,
+            check_mode: None,
             body: term.clone(),
         };
         (node, term)

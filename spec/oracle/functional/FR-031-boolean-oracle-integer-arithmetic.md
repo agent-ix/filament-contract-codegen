@@ -298,7 +298,7 @@ graph now resolves one kernel for this planned rendering.
   sequencing against IR-349).
 - A generated crate that holds a native oracle with an arithmetic node shall depend on
   `filament-exact`, and CG shall depend on `filament-exact` directly, from its own repository
-  `agent-ix/filament-exact`, spelled `branch = "main"` like the other first-party crates, so that
+  `agent-ix/filament-exact`, spelled with the release `tag` like the other first-party crates, so that
   the lock holds one `filament-exact` entry. Contract Runtime stays a dependency of the generated
   crate for the contract identity items the oracle declares.
 - An oracle with no arithmetic node, which returns `bool` and takes no meter, calls no kernel item

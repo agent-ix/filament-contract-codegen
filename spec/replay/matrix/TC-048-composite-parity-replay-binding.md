@@ -19,7 +19,7 @@ relationships:
 Public-converter controls and remaining production scenarios for
 [FR-033](../functional/FR-033-composite-parity-replay-binding.md),
 [FR-025](../../kani/functional/FR-025-generated-subject-abi.md) AC-9 and
-[FR-029](../../kani/functional/FR-029-run-outcome-terminal-record.md) AC-17, AC-21 and AC-22 (implemented: strength projection, closed map), AC-31 (PARTIAL: verified entry only) and AC-19 to AC-28 (AC-20 and AC-28 partly or fully covered; the rest PLANNED under IR-806, no upstream gate). The completed production-route checks remain PLANNED. IR-635's constructor slices exercise the public verified Eq/Ne
+[FR-029](../../kani/functional/FR-029-run-outcome-terminal-record.md) AC-17, AC-21 and AC-22 (implemented: strength projection, closed map), AC-31, AC-19, AC-23 to AC-26 and AC-30 (built by the IR-806 PR-3 production entry), AC-20 and AC-27 (PARTIAL, owner IR-1567) and AC-28 (covered). The production route (`settle_composite_shadow`, IR-806 PR-3) is built and executed by `tests/it/composite_shadow_route.rs` for AC-19, AC-23 to AC-27 and AC-30, and partly for AC-20, FR-033-AC-8, AC-10 and AC-19. IR-635's constructor slices exercise the public verified Eq/Ne
 builder with supplied verified evidence: Eq parameter/parameter, parameter/literal, literal/literal
 and repeated/self graph children, retained source and exact recompiled context, positional O-09,
 changed source, semantic package and retained/recompiled context refusals, absent-node/occurrence
@@ -59,13 +59,18 @@ and never replace positive FSL evaluation with a verdict double.
    `CompositeBuildError::Operands` with no report. The non-integer case (AC-17) is tested with an inline `none` literal of an Option type that IR's reader admits, against a graph-`none` control whose refusal is a different cause; the integer case (AC-16) is verified by Inspection of the shared `Operands` conversion. Record public builder inputs and the FSL request; change source, package, selected node,
    operation and operand declaration individually and require refusal. No hand-built source/package
    replacement or enclosing Boolean function satisfies selection.
-2. Assert FR-025 AC-9's persisted bindings against actual draw order and reconstruct the selected
+2. (Executed for the shadow's families, IR-806 PR-2.) Assert FR-025 AC-9's persisted bindings against actual draw order and reconstruct the selected
    backend playback through them. Swap or remove a leaf, repeat a draw, change a typed path or
    domain, alter primitive width and select another harness. Check that each refuses rather than
    silently binding a different operand, without retained Disagreed. A mismatched persisted
    binding schema refuses the claim; malformed playback values follow same-valid-claim
    disagreement precedence in step 10. Keep absent, null and present slots distinct, including
    nested option controls and parameter/literal inputs; literal-only inputs remain pinned.
+   Executed once against the installed backend: a falsified mutant that leaves one field out of the
+   compared conjunction produced a real playback of six draws, decoded through the identity and
+   rebuilt as two operands that agree on the fields still compared and differ on the omitted one
+   (wall 1 s, cgroup memory peak 313 MiB, verdict Falsified, ignored test
+   `tc_048_installed_kani_playback_of_a_falsified_mutant_decodes_and_rebuilds_both_operands`).
 3. Through the authoritative canonical reader/encoder, round-trip every FR-033 listed scalar and
    composite family. Include ExactInteger leaves beyond i64 inside composites while top-level
    Integer stays i64, exact IEEE NaN/signed-zero bits, rational zero and sign normalization,
@@ -84,7 +89,10 @@ and never replace positive FSL evaluation with a verdict double.
    byte guard before parsing/unescaping. Exhaust checked occurrence and work counters separately.
    Exercise a legal 100,000-link recursive value on a 512 KiB native stack through decode, clone,
    equality, redacted Debug and drop; a one-byte-too-small budget refuses and no depth cap is
-   invented. FR-017 launcher capture alone cannot establish the public guard.
+   invented. FR-017 launcher capture alone cannot establish the public guard. Executed (IR-806
+   PR-2): the byte and value limits of the playback reader and decoder at and one over the limit,
+   and the 100,000-link nested value on a 512 KiB stack through FSL's value type; the recursive
+   declaration and FSL's replay-limit budgets await the production route.
 5. In the named real-Kani lane for each lawful generated family, retain an unmutated verified
    control and actual falsification playback from independent equality-result and pair-count
    mutations, plus an assertion-only mutation leaving the comparison correct. Execute that same
@@ -121,8 +129,8 @@ and never replace positive FSL evaluation with a verdict double.
    domain or limits; separately replace the retained proved artifact; each CG precheck or failed report binding returns no
    report terminal value. Keep FSL refusal codes, executor faults and CG defect causes typed. Assert that `run_terminal_value` has no
    proof-subject or proof-strength input and `TerminalPairError` has no bounded-shadow variant
-   (FR-029-AC-21, tested); the closed six-strength projection (FR-029-AC-17, AC-22) and the terminal value FSL's report carries for each (FR-029-AC-31, verified entry only) are tested in `tests/it/composite_parity_converter.rs`; the routing
-   of a production shadow outcome only to the parity route (FR-029-AC-30) awaits the production invocation. The IR-666 direct report converter already preserves
+   (FR-029-AC-21, tested); the closed six-strength projection (FR-029-AC-17, AC-22) and the terminal value FSL's report carries for each (FR-029-AC-31; the falsified entry is reached from a CG-built request in `tests/it/composite_shadow_route.rs`) are tested in `tests/it/composite_parity_converter.rs`; the routing
+   of a production shadow outcome through the shadow-aware entry (FR-029-AC-30, AC-25) is tested in `tests/it/composite_shadow_route.rs`. The IR-666 direct report converter already preserves
    the disagreement-first Failed/CgDefect rule. IR-806 owns original-artifact setup, prechecks and
    production invocation. Executable
    tests trace the exact criteria they assert; scenario prose is not coverage.
@@ -225,7 +233,7 @@ and never replace positive FSL evaluation with a verdict double.
 | FR-033-AC-8 | FSL derives complete declared-key coverage and literal singleton bounds | Treat empty/omitted/unbounded keys as covered, accept duplicate/unknown key or enum undeclared variant/DeclaredDomain |
 | FR-029-AC-17, AC-22; FR-028-AC-17 | Each of the six strengths projects onto its FSL refinement state; the enumerated set equals FR-028-AC-17's closed set; a non-verified shadow outcome gets no strength | Delete or change a projection row, add a strength without a row, invent a strength for an inconclusive outcome |
 | FR-029-AC-21 | `run_terminal_value` takes no subject or strength; `TerminalPairError` has no shadow variant | Add either input or variant behind a wildcard |
-| FR-029-AC-31 (verified entry) | Every projected strength settles to the terminal value FSL's own report carries | Substitute a CG-chosen terminal value or cause |
+| FR-029-AC-31 | Every projected strength settles to the terminal value FSL's own report carries | Substitute a CG-chosen terminal value or cause |
 | FR-029-AC-19, AC-23 to AC-27; FR-028-AC-24 | Planned: cross-outcome disagreement wins, then verified refinement ceiling, ordinary vacuous record, exhausted+covered, completed Tested; all shadow-inconclusive rows and actual record category preserved | Delete a strength row, let zero defeat disagreement/ceiling, promote Proved0 or label a stopped refinement sampled/Tested |
 | FR-033-AC-11 | Positional O-09 includes repeated/self operands and literal graph nodes with empty Bounds; canonical encoded-key byte ordering and typed encoder refusal; full record extras and independent same-artifact content tie remain separate | Deduplicate self-comparison, omit literal arguments, sort DomainKey Ord, admit duplicate key within an argument, add a top-level operator/native/content member or substitute echo equality for artifact authentication |
 | FR-033-AC-12/13 | CG precheck yields no report value; FSL `prepare` Refused report precedes Disagreed, while later admission refusal follows it; shared Refinement and ordered F rows preserve actual native cause and separate resource stages | Settle another claim as Failed, hide disagreement behind admission/agreement, compare native instead of shadow, collapse limit stages or send backend ceilings through replay |

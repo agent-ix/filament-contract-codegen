@@ -584,3 +584,69 @@ pub fn check_straight_line(source: &str) -> Result<(), String> {
     }
     Ok(())
 }
+
+/// The `kani::any()` draws of the proof function `function`, in statement order, as the drawn
+/// name and its annotated primitive type (FR-025-AC-9). A draw nested in a guarded `let` is read
+/// at the position of that `let`. `None` when the source does not parse or has no such function.
+#[must_use]
+pub fn drawn_order(source: &str, function: &str) -> Option<Vec<(String, String)>> {
+    struct Finder<'a> {
+        function: &'a str,
+        found: Option<Vec<(String, String)>>,
+    }
+    struct HasAny(bool);
+    impl<'ast> Visit<'ast> for HasAny {
+        fn visit_expr_call(&mut self, call: &'ast ExprCall) {
+            if let Expr::Path(path) = &*call.func {
+                let segments: Vec<String> = path
+                    .path
+                    .segments
+                    .iter()
+                    .map(|segment| segment.ident.to_string())
+                    .collect();
+                if segments == ["kani", "any"] {
+                    self.0 = true;
+                }
+            }
+            visit::visit_expr_call(self, call);
+        }
+    }
+    impl<'ast> Visit<'ast> for Finder<'_> {
+        fn visit_item_fn(&mut self, item: &'ast syn::ItemFn) {
+            if item.sig.ident == self.function && self.found.is_none() {
+                let mut draws = Vec::new();
+                for statement in &item.block.stmts {
+                    let syn::Stmt::Local(local) = statement else {
+                        continue;
+                    };
+                    let Some(init) = &local.init else { continue };
+                    let mut any = HasAny(false);
+                    any.visit_expr(&init.expr);
+                    if !any.0 {
+                        continue;
+                    }
+                    let syn::Pat::Type(typed) = &local.pat else {
+                        continue;
+                    };
+                    let (syn::Pat::Ident(name), syn::Type::Path(ty)) = (&*typed.pat, &*typed.ty)
+                    else {
+                        continue;
+                    };
+                    let Some(ty) = ty.path.get_ident() else {
+                        continue;
+                    };
+                    draws.push((name.ident.to_string(), ty.to_string()));
+                }
+                self.found = Some(draws);
+            }
+            visit::visit_item_fn(self, item);
+        }
+    }
+    let file = syn::parse_file(source).ok()?;
+    let mut finder = Finder {
+        function,
+        found: None,
+    };
+    finder.visit_file(&file);
+    finder.found
+}

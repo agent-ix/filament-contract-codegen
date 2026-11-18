@@ -391,3 +391,176 @@ fn tc_025_installed_kani_verifies_a_shadow_with_its_member_order_permuted() {
     let (evidence, _) = prove(&harness, "member-order-permuted");
     assert_eq!(evidence.outcome, KaniRunOutcome::Verified);
 }
+
+/// FR-025-AC-9 and FR-033-AC-2 to FR-033-AC-5 under the installed backend: the genuine playback of
+/// a falsified composite shadow mutant is decoded through the identity's leaf bindings and rebuilt
+/// into the two operands the counterexample drew. The mutant leaves field `b` out of the
+/// comparison, so the rebuilt operands must agree on `a` and `c` and differ on `b`, and be unequal
+/// as values although the mutant's verdict calls them equal.
+#[trace("TC-048", "FR-025-AC-9")]
+#[trace("TC-048", "FR-033-AC-2")]
+#[trace("TC-048", "FR-033-AC-5")]
+#[test]
+#[ignore = "kani lane: run serially through make kani-gate"]
+fn tc_048_installed_kani_playback_of_a_falsified_mutant_decodes_and_rebuilds_both_operands() {
+    use filament_contract_codegen::{
+        parse_assertion_playback, reconstruct_composite_operands, WitnessDecodeLimits,
+    };
+    use fsl_replay::{WitnessSlot, WitnessValue};
+
+    if !selected("playback-field-left-out") {
+        return;
+    }
+    let corpus = corpus();
+    let mut harness = generate(&corpus, FLAGS_EQUAL);
+    let line = line_of(&harness, VERDICT_ASSERT);
+    mutate(&mut harness, "p0.0 && p1.0 && p2.0,", "p0.0 && p2.0,");
+    let (evidence, _) = prove(&harness, "playback-field-left-out");
+    eprintln!("MEMORY {:?}", evidence.memory);
+    assert_eq!(
+        failed_lines(&evidence),
+        [line],
+        "falsified by the verdict check only"
+    );
+    let KaniRunOutcome::Falsified { counterexample } = &evidence.outcome else {
+        panic!("falsified, not {:?}", evidence.outcome);
+    };
+    eprintln!("PLAYBACK\n{counterexample}");
+    let playback = parse_assertion_playback(counterexample, "tc-048", "playback", 1 << 20, 64)
+        .expect("Kani's own playback parses");
+    let [left, right] = reconstruct_composite_operands(
+        &harness.identity,
+        &playback,
+        WitnessDecodeLimits {
+            bytes: 1 << 20,
+            values: 64,
+        },
+    )
+    .expect("the playback decodes through the identity's leaf bindings");
+    eprintln!("LEFT  {left:?}\nRIGHT {right:?}");
+    let WitnessValue::Record { fields: l, .. } = &left else {
+        panic!("a record");
+    };
+    let WitnessValue::Record { fields: r, .. } = &right else {
+        panic!("a record");
+    };
+    let named = |fields: &'_ [fsl_replay::WitnessField], name: &str| -> usize {
+        fields.iter().position(|field| field.name == name).unwrap()
+    };
+    let same = |name: &str| l[named(l, name)].slot == r[named(r, name)].slot;
+    assert!(same("a") && same("c"), "the mutant compares only a and c");
+    assert!(
+        !same("b"),
+        "the left-out field is where the operands differ"
+    );
+    assert!(
+        left != right,
+        "the operands are unequal although the mutant says equal"
+    );
+    assert!(matches!(
+        &l[named(l, "b")].slot,
+        WitnessSlot::Present(WitnessValue::ExactInteger(_))
+    ));
+}
+
+use super::composite_shadow_route::{authenticated, fixture_default, result_of};
+use filament_contract_codegen::{
+    parse_assertion_playback, reconstruct_composite_operands, settle_composite_shadow,
+    DriverFalsification, ShadowRoute, ShadowRun, WitnessDecodeLimits,
+};
+use filament_exact::Outcome;
+use fsl_replay::{CompositeParityResult, EqualityOutcome, NativeParityObservation, TerminalValue};
+
+/// FR-033-AC-10 and FR-029-AC-19/AC-20 under the installed backend: the composite family's real
+/// verified control and a real falsified mutant, each settled through the production route over
+/// the original proving context. The verified shadow ran with no refinement run, so FSL's value
+/// is `Tested`, never `Proved`. The mutant leaves field `b` out of the comparison and says equal;
+/// the operands rebuilt from Kani's own playback differ on `b`, so FSL's exact comparison
+/// diverges from the retained shadow verdict: `Failed`, never `Refuted`.
+#[trace("TC-048", "FR-033-AC-10")]
+#[trace("TC-048", "FR-029-AC-30")]
+#[test]
+#[ignore = "kani lane: run serially through make kani-gate"]
+fn tc_048_installed_kani_runs_settle_through_the_production_route() {
+    if !selected("route") {
+        return;
+    }
+    let fx = fixture_default();
+    let (evidence, _) = prove(&fx.harness, "route-verified");
+    assert_eq!(evidence.outcome, KaniRunOutcome::Verified);
+    eprintln!("TOOLS {:?}", evidence.tool_versions);
+    let settled = settle_composite_shadow(
+        &fx.claim(),
+        &ShadowRun {
+            harness: &fx.harness,
+            evidence: &evidence,
+            refinement: None,
+        },
+        None,
+    )
+    .unwrap();
+    eprintln!("ROUTE verified -> {:?}", settled.terminal);
+    assert_eq!(settled.terminal, TerminalValue::Tested);
+    assert_eq!(settled.route, ShadowRoute::Parity);
+
+    let mut mutant = fx.harness.clone();
+    let line = line_of(&mutant, VERDICT_ASSERT);
+    mutate(&mut mutant, "p0.0 && p1.0 && p2.0,", "p0.0 && p2.0,");
+    let (evidence, _) = prove(&mutant, "route-mutant");
+    assert_eq!(
+        failed_lines(&evidence),
+        [line],
+        "falsified by the verdict check only"
+    );
+    let KaniRunOutcome::Falsified { counterexample } = &evidence.outcome else {
+        panic!("falsified, not {:?}", evidence.outcome);
+    };
+    let parsed = parse_assertion_playback(counterexample, "t", "ctx", 1 << 20, 1024).unwrap();
+    let operands = reconstruct_composite_operands(
+        &mutant.identity,
+        &parsed,
+        WitnessDecodeLimits {
+            bytes: 1 << 20,
+            values: 1024,
+        },
+    )
+    .unwrap();
+    assert_ne!(
+        operands[0], operands[1],
+        "the omitted field is where they differ"
+    );
+    let artifact = authenticated(&fx, operands, Outcome::Completed(false));
+    let run = ShadowRun {
+        harness: &mutant,
+        evidence: &evidence,
+        refinement: None,
+    };
+    let driver = |pair_count| DriverFalsification {
+        artifact: &artifact,
+        shadow: EqualityOutcome {
+            equal: true,
+            pair_count,
+        },
+        native: Some(NativeParityObservation::Completed(EqualityOutcome {
+            equal: false,
+            pair_count,
+        })),
+    };
+    let probe = settle_composite_shadow(&fx.claim(), &run, Some(&driver(0))).unwrap();
+    let CompositeParityResult::Diverged { exact, shadow, .. } = result_of(&probe) else {
+        panic!("diverged, not {:?}", result_of(&probe));
+    };
+    eprintln!(
+        "ROUTE mutant -> {:?} exact={exact:?} shadow={shadow:?}",
+        probe.terminal
+    );
+    assert!(!exact.equal && shadow.equal);
+    assert_eq!(probe.terminal, TerminalValue::Failed);
+    let exact = *exact;
+    let counted =
+        settle_composite_shadow(&fx.claim(), &run, Some(&driver(exact.pair_count))).unwrap();
+    assert!(matches!(
+        result_of(&counted),
+        CompositeParityResult::Diverged { .. }
+    ));
+}

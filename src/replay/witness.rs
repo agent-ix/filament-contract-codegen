@@ -301,13 +301,7 @@ pub(crate) fn decode_playback(
     playback: &Playback<'_>,
     limits: WitnessDecodeLimits,
 ) -> Result<DecodedPlayback, DecodeFailure> {
-    if playback.source_len > limits.bytes {
-        return Err(DecodeFailure::new(
-            "cg_witness_decode_bytes_limit",
-            harness_symbol,
-            &format!("{module_symbol};bytes={}", limits.bytes),
-        ));
-    }
+    check_bytes(harness_symbol, module_symbol, playback, limits)?;
     let schema = argument_types(arguments).map_err(|error| match error {
         WitnessSchemaError::NonArgumentBinding { identifier } => DecodeFailure::new(
             "cg_witness_schema_non_argument_binding",
@@ -327,6 +321,37 @@ pub(crate) fn decode_playback(
             identifier,
         ));
     }
+    check_values_and_harness(harness_symbol, module_symbol, playback, limits)?;
+    Ok(DecodedPlayback {
+        check_text: playback.check_text.to_owned(),
+        values: decode_values(playback, &schema)?,
+    })
+}
+
+/// Refuses a playback larger than the decode limit before anything is read from it.
+pub(crate) fn check_bytes(
+    harness_symbol: &str,
+    module_symbol: &str,
+    playback: &Playback<'_>,
+    limits: WitnessDecodeLimits,
+) -> Result<(), DecodeFailure> {
+    if playback.source_len > limits.bytes {
+        return Err(DecodeFailure::new(
+            "cg_witness_decode_bytes_limit",
+            harness_symbol,
+            &format!("{module_symbol};bytes={}", limits.bytes),
+        ));
+    }
+    Ok(())
+}
+
+/// Refuses a playback with more values than the decode limit, or one headed for another harness.
+pub(crate) fn check_values_and_harness(
+    harness_symbol: &str,
+    module_symbol: &str,
+    playback: &Playback<'_>,
+    limits: WitnessDecodeLimits,
+) -> Result<(), DecodeFailure> {
     if playback.entries.len() > limits.values {
         return Err(DecodeFailure::new(
             "cg_witness_decode_values_limit",
@@ -346,10 +371,44 @@ pub(crate) fn decode_playback(
             playback.harness,
         ));
     }
-    Ok(DecodedPlayback {
-        check_text: playback.check_text.to_owned(),
-        values: decode_values(playback, &schema)?,
-    })
+    Ok(())
+}
+
+/// One entry read as its primitive type, cross-checked against Kani's own decoded-value comment.
+pub(crate) fn read_entry(
+    source: &str,
+    identifier: &str,
+    primitive: KaniPrimitiveType,
+    comment: &crate::kani::output::playback::RenderedValue,
+    bytes: &[u8],
+) -> Result<WitnessValue, DecodeFailure> {
+    let failure = |code| DecodeFailure::new(code, source, identifier);
+    if bytes.len() != byte_width(primitive) {
+        return Err(failure("kani_witness_width_mismatch"));
+    }
+    let (value, comment_agrees) = match (primitive, bytes) {
+        (KaniPrimitiveType::Boolean, [byte @ (0 | 1)]) => {
+            let value = *byte == 1;
+            (WitnessValue::Boolean(value), comment.boolean == Some(value))
+        }
+        (KaniPrimitiveType::Boolean, _) => {
+            return Err(failure("kani_witness_boolean_byte_invalid"))
+        }
+        (KaniPrimitiveType::I64, _) => {
+            let mut buffer = [0u8; 8];
+            buffer.copy_from_slice(bytes);
+            let value = i64::from_le_bytes(buffer);
+            (
+                WitnessValue::Integer(i128::from(value)),
+                comment.integer == Some(value),
+            )
+        }
+    };
+    if comment_agrees {
+        Ok(value)
+    } else {
+        Err(failure("kani_witness_comment_mismatch"))
+    }
 }
 
 /// Joins the untyped entries with the schema, cross-checking every value against Kani's own
@@ -371,32 +430,8 @@ fn decode_values(
         .iter()
         .zip(&playback.entries)
         .map(|(&(identifier, primitive), (comment, bytes))| {
-            let failure = |code| DecodeFailure::new(code, source, identifier);
-            if bytes.len() != byte_width(primitive) {
-                return Err(failure("kani_witness_width_mismatch"));
-            }
-            let (value, comment_agrees) = match (primitive, bytes.as_slice()) {
-                (KaniPrimitiveType::Boolean, [byte @ (0 | 1)]) => {
-                    let value = *byte == 1;
-                    (WitnessValue::Boolean(value), comment.boolean == Some(value))
-                }
-                (KaniPrimitiveType::Boolean, _) => {
-                    return Err(failure("kani_witness_boolean_byte_invalid"))
-                }
-                (KaniPrimitiveType::I64, _) => {
-                    let mut buffer = [0u8; 8];
-                    buffer.copy_from_slice(bytes);
-                    let value = i64::from_le_bytes(buffer);
-                    (
-                        WitnessValue::Integer(i128::from(value)),
-                        comment.integer == Some(value),
-                    )
-                }
-            };
-            if !comment_agrees {
-                return Err(failure("kani_witness_comment_mismatch"));
-            }
-            Ok((identifier.to_owned(), value))
+            read_entry(source, identifier, primitive, comment, bytes)
+                .map(|value| (identifier.to_owned(), value))
         })
         .collect()
 }

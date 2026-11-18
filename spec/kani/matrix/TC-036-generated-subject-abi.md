@@ -34,7 +34,7 @@ yield no harness.
 8. Generate a harness over a state-reading obligation and read the subject call and the pre-state
    copy with `syn`.
 
-9. For planned composite leaf bindings, use
+9. For composite leaf bindings (PARTIAL, IR-806 PR-2), use
    [TC-048](../../replay/matrix/TC-048-composite-parity-replay-binding.md)
    to check original-node/path/domain/draw ordering and missing/duplicate/conflicting leaf refusals
    with no harness (FR-025-AC-9).
