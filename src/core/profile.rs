@@ -34,9 +34,10 @@ pub const EVAL_DEPENDENCY_SOURCE: &str =
 pub const TRACE_DEPENDENCY_SOURCE: &str =
     "git = \"https://github.com/agent-ix/ix-trace-rs\", tag = \"v0.1.2\"";
 
-/// Source of the admitted-context facade (`fsl-replay`): current FSL main, pinned while no fsl-*
-/// release tag carries the v0.1.6 evaluator and v0.1.5 contract-model dependencies.
-pub const FSL_REPLAY_DEPENDENCY_SOURCE: &str = "git = \"https://github.com/agent-ix/filament-spec-language\", rev = \"0dc2d4a6d52cf58b3a82347f2e9eb5af686e6999\"";
+/// Source of FSL's admitted-context facade, pinned to current FSL main.
+pub const FSL_REPLAY_DEPENDENCY_SOURCE: &str = "git = \"https://github.com/agent-ix/filament-spec-language\", rev = \"bd9d21928db880134718210ee392527faf14542c\"";
+/// Source of FSL's structural obligation identity types.
+pub const FSL_PACKAGE_DEPENDENCY_SOURCE: &str = "git = \"https://github.com/agent-ix/filament-spec-language\", rev = \"bd9d21928db880134718210ee392527faf14542c\"";
 
 /// The `[package.metadata.kani]` table every generated oracle crate's manifest carries. CBMC
 /// tracks heap objects field by field only up to 64 bytes by default; RT's `Value` and `ValueType`
@@ -58,16 +59,16 @@ pub(crate) fn oracle_crate_manifest(crate_name: &str) -> String {
 /// dependency on the checkout under test, so no emitted crate resolves CG main at test time.
 pub(crate) fn function_oracle_crate_manifest(crate_name: &str) -> String {
     format!(
-        "[package]\nname = \"{crate_name}\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[lib]\npath = \"src/lib.rs\"\n\n[dependencies]\nfilament-contract-codegen = {{ git = \"https://github.com/agent-ix/filament-contract-codegen\", branch = \"main\" }}\nfilament-contract-model = {{ {MODEL_DEPENDENCY_SOURCE} }}\nfsl-replay = {{ {FSL_REPLAY_DEPENDENCY_SOURCE} }}\nfilament-eval = {{ {EVAL_DEPENDENCY_SOURCE} }}\nfilament-exact = {{ {EXACT_DEPENDENCY_SOURCE} }}\nfilament-semantic-value = {{ {SEMANTIC_VALUE_DEPENDENCY_SOURCE} }}\n\n[lints.rust]\nunsafe_code = \"forbid\"\n\n{ORACLE_KANI_METADATA}[workspace]\n"
+        "[package]\nname = \"{crate_name}\"\nversion = \"0.0.0\"\nedition = \"2021\"\npublish = false\n\n[lib]\npath = \"src/lib.rs\"\n\n[dependencies]\nfilament-contract-codegen = {{ git = \"https://github.com/agent-ix/filament-contract-codegen\", branch = \"main\" }}\nfilament-contract-model = {{ {MODEL_DEPENDENCY_SOURCE} }}\nfsl-replay = {{ {FSL_REPLAY_DEPENDENCY_SOURCE} }}\nfsl-package = {{ {FSL_PACKAGE_DEPENDENCY_SOURCE} }}\nfilament-eval = {{ {EVAL_DEPENDENCY_SOURCE} }}\nfilament-exact = {{ {EXACT_DEPENDENCY_SOURCE} }}\nfilament-semantic-value = {{ {SEMANTIC_VALUE_DEPENDENCY_SOURCE} }}\n\n[lints.rust]\nunsafe_code = \"forbid\"\n\n{ORACLE_KANI_METADATA}[workspace]\n"
     )
 }
 
-/// The equality ABI alone needs the public admitted-context facade.
+/// The equality ABI needs the public admitted-context facade and FSL identity types.
 pub(crate) fn equality_oracle_crate_manifest(crate_name: &str) -> String {
     let manifest = oracle_crate_manifest(crate_name);
     manifest.replacen(
         "[dependencies]\n",
-        &format!("[dependencies]\nfilament-contract-model = {{ {MODEL_DEPENDENCY_SOURCE} }}\nfsl-replay = {{ {FSL_REPLAY_DEPENDENCY_SOURCE} }}\n"),
+        &format!("[dependencies]\nfilament-contract-model = {{ {MODEL_DEPENDENCY_SOURCE} }}\nfsl-replay = {{ {FSL_REPLAY_DEPENDENCY_SOURCE} }}\nfsl-package = {{ {FSL_PACKAGE_DEPENDENCY_SOURCE} }}\n"),
         1,
     )
 }
@@ -84,8 +85,8 @@ mod tests {
     use super::{
         equality_oracle_crate_manifest, function_oracle_crate_manifest, oracle_crate_manifest,
         scalar_observer_manifest, EVAL_DEPENDENCY_SOURCE, EXACT_DEPENDENCY_SOURCE,
-        FSL_REPLAY_DEPENDENCY_SOURCE, MODEL_DEPENDENCY_SOURCE, RUNTIME_DEPENDENCY_SOURCE,
-        SEMANTIC_VALUE_DEPENDENCY_SOURCE, TRACE_DEPENDENCY_SOURCE,
+        FSL_PACKAGE_DEPENDENCY_SOURCE, FSL_REPLAY_DEPENDENCY_SOURCE, MODEL_DEPENDENCY_SOURCE,
+        RUNTIME_DEPENDENCY_SOURCE, SEMANTIC_VALUE_DEPENDENCY_SOURCE, TRACE_DEPENDENCY_SOURCE,
     };
     use ix_trace_rs::trace;
 
@@ -143,6 +144,9 @@ mod tests {
         assert!(equality.contains(&format!(
             "fsl-replay = {{ {FSL_REPLAY_DEPENDENCY_SOURCE} }}"
         )));
+        assert!(equality.contains(&format!(
+            "fsl-package = {{ {FSL_PACKAGE_DEPENDENCY_SOURCE} }}"
+        )));
         assert!(!equality.contains("branch ="));
         assert!(!equality.contains("test-support"));
         assert!(!oracle_crate_manifest("scalar-probe").contains("fsl-replay"));
@@ -157,6 +161,7 @@ mod tests {
             "filament-contract-codegen",
             "filament-contract-model",
             "fsl-replay",
+            "fsl-package",
             "filament-eval",
             "filament-exact",
             "filament-semantic-value",
@@ -197,6 +202,7 @@ mod tests {
             ("filament-eval", EVAL_DEPENDENCY_SOURCE),
             ("ix-trace-rs", TRACE_DEPENDENCY_SOURCE),
             ("fsl-replay", FSL_REPLAY_DEPENDENCY_SOURCE),
+            ("fsl-package", FSL_PACKAGE_DEPENDENCY_SOURCE),
         ] {
             for line in lines(name) {
                 assert!(
