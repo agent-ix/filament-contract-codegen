@@ -91,7 +91,7 @@ wall time of the whole `cargo kani` invocation (Kani's own verification time is 
 
 Float, 44 rows (one per operation, width and rounding class of TC-953): 32 are VERIFIED with their
 covers reached. 12 are timeouts that hang in the solver and return no verdict, so nothing is claimed
-for them. They are measured not-tractable rows owned by IR-1551. Their `verus_proof` field records the kernel's Verus proof of the numeric path (FR-405-AC-17 and AC-18, TC-953, filament-exact #181) and what it leaves unproved; the Kani verdict stays not tractable. Seven are at the
+for them. They are measured not-tractable rows. Their `verus_proof` field records the kernel's Verus proof of the numeric path (FR-405-AC-17 and AC-18, TC-953, filament-exact #181) and what it leaves unproved; the Kani verdict stays not tractable. Seven are at the
 600 s probe, not extended: Divide, SquareRoot and FusedMultiplyAdd `NearestEven` at Binary32; Multiply,
 Divide, SquareRoot and FusedMultiplyAdd `NearestEven` at Binary64. Five are at the 1800 s cap after a
 600 s probe that also timed out: Divide `Exact` at both widths, Divide directed at Binary64,
@@ -109,7 +109,7 @@ subtract, subtract with carriers from `from_i64_parts`, and the two composed add
 with `max_operand_bits` 8 because the formed magnitudes are below 256. Six full-`i64` rows are TIMED OUT at
 900 s with no verdict: admission from `i64` parts, equality, ordering, add, subtract and multiply
 (`max_operand_bits` 64). They are number theory (two gcd algorithms against each other, a coprimality
-fact) or a 128-bit product against a reference product, owned by IR-1544, and add, subtract and
+fact) or a 128-bit product against a reference product (the Verus proof of the kernel's record, recorded on the rows, states part of it), and add, subtract and
 multiply sit at 14.3 to 14.5 GiB, below the 16 GiB ceiling. The tier-lemma and charge-denial harnesses
 of TC-956 are not operations and have no row; their record is TC-956. The admission row's id
 `filament.native.rational.from_i64_parts` names the harness subject and is not a catalog operation.

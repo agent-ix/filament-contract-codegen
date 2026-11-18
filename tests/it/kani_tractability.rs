@@ -1672,10 +1672,12 @@ fn tc_070_the_shipped_table_holds_the_kernel_native_float_and_rational_rows() {
         );
         if !tractable {
             assert!(
-                provenance.contains(&format!("owner {owner}"))
-                    && provenance.contains("claims no proof"),
+                provenance.contains("claims no Kani proof")
+                    && !provenance.contains("deductive lane")
+                    && !provenance.contains("owner IR-"),
                 "{context}"
             );
+            assert!(!owner.is_empty(), "{context}");
         }
     }
     let float = &NATIVE_FLOAT_AND_RATIONAL_ROWS[..44];
@@ -1818,6 +1820,7 @@ const DECIMAL_ROWS: [(usize, &[&str]); 3] = [
 ];
 
 fn assert_proof(
+    index: usize,
     row: &TractabilityRow,
     context: &str,
     records: &[&str],
@@ -1831,14 +1834,17 @@ fn assert_proof(
     assert_eq!(proof.records, records, "{context}");
     assert_eq!(proof.changes, changes, "{context}");
     assert_eq!(proof.theorems, theorems, "{context}");
-    for (name, text) in [
-        ("proved", &proof.proved),
-        ("not_proved", &proof.not_proved),
-        ("assumes", &proof.assumes),
-        ("run", &proof.run),
-    ] {
-        assert!(text.len() > 40, "{context}: {name} is stated");
-    }
+    let (_, proved, not_proved, assumes, run) = super::kani_verus_record::EXPECTED
+        .iter()
+        .copied()
+        .find(|expected| expected.0 == index)
+        .unwrap_or_else(|| panic!("{context}: the record transcription has the row"));
+    let upstream =
+        format!("{context} (upstream records {records:?}; re-transcribe per TC-070 step 16)");
+    assert_eq!(proof.proved, proved, "{upstream}");
+    assert_eq!(proof.not_proved, not_proved, "{upstream}");
+    assert_eq!(proof.assumes, assumes, "{upstream}");
+    assert_eq!(proof.run, run, "{upstream}");
     // A record, never a tool version or a pin.
     for text in [&proof.proved, &proof.not_proved, &proof.assumes, &proof.run] {
         assert!(
@@ -1852,12 +1858,12 @@ fn assert_proof(
     );
 }
 
-/// FR-056-AC-15 (IR-1562): the Verus verdicts of the kernel's record (filament-exact FR-405,
+/// FR-056-AC-16 (IR-1562): the Verus verdicts of the kernel's record (filament-exact FR-405,
 /// FR-408, FR-409 with TC-953, TC-956, TC-957) are recorded on exactly the rows they cover: the
 /// twelve float, six full-`i64` rational and three native division rows, each keeping its Kani
 /// `not_tractable` verdict, every other measured row carrying none. A row that cites an id, change
 /// or theorem the record does not hold, drops what is unproved, or loses its Kani verdict fails.
-#[trace("TC-070", "FR-056-AC-15")]
+#[trace("TC-070", "FR-056-AC-16")]
 #[test]
 fn tc_070_the_verus_verdicts_sit_on_exactly_the_rows_the_kernel_proves() {
     use filament_contract_codegen::RowVerdict;
@@ -1899,6 +1905,7 @@ fn tc_070_the_verus_verdicts_sit_on_exactly_the_rows_the_kernel_proves() {
             ],
         };
         assert_proof(
+            index,
             row,
             &context,
             &["FR-405-AC-17", "FR-405-AC-18", "TC-953"],
@@ -1936,6 +1943,7 @@ fn tc_070_the_verus_verdicts_sit_on_exactly_the_rows_the_kernel_proves() {
         );
         assert_eq!(row.verdict, RowVerdict::NotTractable, "{context}");
         assert_proof(
+            index,
             row,
             &context,
             &["FR-409-AC-11", "FR-409-AC-12", "TC-957"],
@@ -1993,7 +2001,14 @@ fn tc_070_the_verus_verdicts_sit_on_exactly_the_rows_the_kernel_proves() {
         } else {
             &["FR-408-AC-13", "FR-408-AC-14", "TC-956"]
         };
-        assert_proof(row, &context, records, &["filament-exact#175"], theorems);
+        assert_proof(
+            index,
+            row,
+            &context,
+            records,
+            &["filament-exact#175"],
+            theorems,
+        );
         let proof = row.verus_proof.as_ref().unwrap();
         assert!(proof.assumes.contains("Meter::charge_units"), "{context}");
         if matches!(index, 70..=73) {
@@ -2013,10 +2028,10 @@ fn tc_070_the_verus_verdicts_sit_on_exactly_the_rows_the_kernel_proves() {
     }
 }
 
-/// FR-056-AC-15 (IR-1562): the decimal rows carry the Verus verdict and no Kani measurement, state
+/// FR-056-AC-16 (IR-1562): the decimal rows carry the Verus verdict and no Kani measurement, state
 /// the `POWERS_OF_TEN` assumption, and say the operation proof is a mathematical statement and not
 /// equality with the executable owner route. They never refuse a clause.
-#[trace("TC-070", "FR-056-AC-15")]
+#[trace("TC-070", "FR-056-AC-16")]
 #[test]
 fn tc_070_the_decimal_rows_state_the_proof_scope_and_never_refuse() {
     use filament_contract_codegen::RowVerdict;
@@ -2032,11 +2047,23 @@ fn tc_070_the_decimal_rows_state_the_proof_scope_and_never_refuse() {
         assert_eq!(row.max_operand_bits, 128, "{context}");
         assert_eq!(row.wall_seconds, None, "{context}");
         assert_eq!(row.peak_bytes, None, "{context}");
+        let provenance = row.provenance.as_deref().expect("the record");
+        for stated in [
+            "never returned",
+            "19 GiB or more",
+            "16 GiB ceiling",
+            "never refuses a clause",
+            "needs its own not_tractable row",
+            "IR-259",
+        ] {
+            assert!(provenance.contains(stated), "{context}: {stated}");
+        }
         let proof = row.verus_proof.as_ref().expect("the proof");
         assert!(proof.assumes.contains("POWERS_OF_TEN"), "{context}");
         assert!(proof.assumes.contains("10^38"), "{context}");
         if index == 74 {
             assert_proof(
+                index,
                 row,
                 &context,
                 &["FR-402-AC-13", "FR-402-AC-14", "FR-402-AC-15", "TC-950"],
@@ -2079,6 +2106,7 @@ fn tc_070_the_decimal_rows_state_the_proof_scope_and_never_refuse() {
                 ]
             };
             assert_proof(
+                index,
                 row,
                 &context,
                 &["FR-403-AC-15", "FR-403-AC-16", "TC-951"],
@@ -2105,10 +2133,10 @@ fn tc_070_the_decimal_rows_state_the_proof_scope_and_never_refuse() {
     }
 }
 
-/// FR-056-AC-15 (IR-1562): the loader rejects a row that contradicts its verdict (a Verus verdict
+/// FR-056-AC-17 (IR-1562): the loader rejects a row that contradicts its verdict (a Verus verdict
 /// without its proof or with a Kani measurement, a Kani verdict without a wall time) and a proof
 /// with an unknown field.
-#[trace("TC-070", "FR-056-AC-15")]
+#[trace("TC-070", "FR-056-AC-17")]
 #[test]
 fn tc_070_the_loader_rejects_rows_that_contradict_their_verdict() {
     let directory = TemporaryDirectory::new("ir1562-verdict-rows");
@@ -2127,6 +2155,19 @@ fn tc_070_the_loader_rejects_rows_that_contradict_their_verdict() {
     proved["verus_proof"] = proof.clone();
     let ok = write_table(&directory, "ok.json", &[proved.clone()]);
     assert_eq!(TractabilityTable::load(&ok).unwrap().rows().len(), 1);
+    let features = ClauseFeatures::new(
+        IntegerRoute::Native,
+        vec![op_width(ADD, 128)],
+        Vec::new(),
+        None,
+    );
+    let mut native_proved = proved.clone();
+    native_proved["route"] = json!("native");
+    assert_eq!(
+        table_of(&[native_proved]).decide(&features),
+        Decision::Run,
+        "a verus_proved row never refuses"
+    );
 
     let mut without_proof = proved.clone();
     without_proof.as_object_mut().unwrap().remove("verus_proof");
@@ -2136,6 +2177,8 @@ fn tc_070_the_loader_rejects_rows_that_contradict_their_verdict() {
     with_peak["peak_bytes"] = json!(1);
     let mut kani_without_wall = row_json(&[ADD], 8, "not_tractable");
     kani_without_wall["wall_seconds"] = json!(null);
+    let mut tractable_without_wall = row_json(&[ADD], 8, "tractable");
+    tractable_without_wall["wall_seconds"] = json!(null);
     let mut extra_field = proved.clone();
     extra_field["verus_proof"]["tool"] = json!("x");
     for (name, bad) in [
@@ -2143,6 +2186,7 @@ fn tc_070_the_loader_rejects_rows_that_contradict_their_verdict() {
         ("with-wall", with_wall),
         ("with-peak", with_peak),
         ("kani-without-wall", kani_without_wall),
+        ("tractable-without-wall", tractable_without_wall),
         ("extra-field", extra_field),
     ] {
         let path = write_table(&directory, &format!("{name}.json"), &[bad]);
