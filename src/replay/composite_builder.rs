@@ -24,9 +24,9 @@ use fsl_replay::{
     CompositeIdentity, CompositeParityClaim, DependencyInput, Domain, DomainKey, EnvelopeSource,
     EqualityOperator, FalsifiedParity, Identifier, IdentityEncodeError, NoPayload, OccurrenceKey,
     OperandIdentity, Origin, ParityArgument, ParityPreimage, ProofBound, QualifiedName,
-    ReplayRequest,
-    ReplayRequestRefusal, ReplayRequestWire, ReplayTarget, ReplayTargetMembers, RequestTargetWire,
-    Role, VerifiedShadow, VerifiedShadowReport, WitnessEnvelope, WitnessPacket, WitnessRefusal,
+    ReplayRequest, ReplayRequestRefusal, ReplayRequestWire, ReplayTarget, ReplayTargetMembers,
+    RequestTargetWire, Role, VerifiedShadow, VerifiedShadowReport, WitnessEnvelope, WitnessPacket,
+    WitnessRefusal,
 };
 use fsl_replay::{replay_composite_parity, CompositeParityReport};
 

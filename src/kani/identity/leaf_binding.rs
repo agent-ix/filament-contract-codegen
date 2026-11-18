@@ -273,7 +273,9 @@ fn positions(
                 .find(|declaration| &declaration.key == key)
                 .ok_or_else(|| shape(format!("{path}: declaration {key} is not recorded")))?;
             if stack.contains(key) || declaration.form == RecordedForm::Union {
-                return Err(shape(format!("{path}: declaration {key} has no drawn leaves")));
+                return Err(shape(format!(
+                    "{path}: declaration {key} has no drawn leaves"
+                )));
             }
             stack.push(key.clone());
             for (index, member) in declaration.members.iter().enumerate() {

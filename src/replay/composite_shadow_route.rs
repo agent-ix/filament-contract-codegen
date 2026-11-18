@@ -148,9 +148,9 @@ pub enum ShadowRoute {
 #[derive(Debug)]
 pub enum ParityReport {
     /// The verified-shadow facade settled the claim.
-    Verified(OriginalCompositeEqReport),
+    Verified(Box<OriginalCompositeEqReport>),
     /// The falsified-parity facade settled the claim.
-    Falsified(OriginalCompositeFalsifiedReport),
+    Falsified(Box<OriginalCompositeFalsifiedReport>),
 }
 
 /// A settled composite shadow run.
@@ -385,9 +385,7 @@ pub fn settle_composite_shadow(
         }
         KaniRunOutcome::CoverUnsatisfied { .. }
         | KaniRunOutcome::Inconclusive { .. }
-        | KaniRunOutcome::Cancelled { .. } => {
-            ordinary(evidence, None, ShadowRoute::Ordinary, None)
-        }
+        | KaniRunOutcome::Cancelled { .. } => ordinary(evidence, None, ShadowRoute::Ordinary, None),
     }
 }
 
@@ -430,7 +428,7 @@ fn verified_entry(
     Ok(CompositeShadowSettlement {
         terminal,
         route: ShadowRoute::Parity,
-        report: Some(ParityReport::Verified(report)),
+        report: Some(ParityReport::Verified(Box::new(report))),
         defect: None,
     })
 }
@@ -481,7 +479,7 @@ fn falsified_entry(
     Ok(CompositeShadowSettlement {
         terminal,
         route: ShadowRoute::Parity,
-        report: Some(ParityReport::Falsified(report)),
+        report: Some(ParityReport::Falsified(Box::new(report))),
         defect: None,
     })
 }

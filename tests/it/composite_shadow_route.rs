@@ -9,15 +9,14 @@ use super::composite_playback_decode::{flags, harness_path, transcript_for};
 use super::composite_shadow::{entry, item_of, parameter_nodes, FLAGS_EQUAL};
 use super::terminal_map::synthetic_evidence;
 use filament_contract_codegen::{
-    generate_composite_shadow, parse_assertion_playback, proof_strength, reconstruct_composite_operands,
-    refinement_state, settle_composite_shadow, shadow_harness_bounds, CompositeDriverObservation,
-    CompositeShadowError, CompositeShadowSettlement, DriverFalsification, KaniInconclusiveReason,
-    KaniRunOutcome, KaniShadowHarness, LockedSource, ParityReport, ProofSubject, RefinementClass,
+    generate_composite_shadow, parse_assertion_playback, proof_strength,
+    reconstruct_composite_operands, refinement_state, settle_composite_shadow,
+    shadow_harness_bounds, CompositeDriverObservation, CompositeShadowError,
+    CompositeShadowSettlement, DriverFalsification, KaniInconclusiveReason, KaniRunOutcome,
+    KaniShadowHarness, LockedSource, ParityReport, ProofSubject, RefinementClass,
     RefinementSummary, ReplayInputs, ShadowClaim, ShadowOperand, ShadowRoute, WitnessDecodeLimits,
 };
-use filament_contract_model::{
-    CheckedNodeId, CheckedOccurrence, CheckedPackageReadLimits,
-};
+use filament_contract_model::{CheckedNodeId, CheckedOccurrence, CheckedPackageReadLimits};
 use filament_exact::Outcome;
 use fsl_replay::{
     Certification, CompositeParityResult, EqualityOperator, EqualityOutcome, IncompleteCause,
@@ -132,7 +131,13 @@ impl Fixture {
     pub(super) fn bounds(&self, harness: &KaniShadowHarness) -> Vec<fsl_replay::ProofBound> {
         let packet = self
             .context
-            .parity_packet(&self.node, &self.occurrence, EqualityOperator::Equal, &[], 100_000)
+            .parity_packet(
+                &self.node,
+                &self.occurrence,
+                EqualityOperator::Equal,
+                &[],
+                100_000,
+            )
             .unwrap();
         let request = self
             .context
@@ -179,7 +184,8 @@ fn settle(
 
 const EXHAUSTIVE: Option<RefinementSummary> =
     Some(RefinementSummary::Agreed(RefinementClass::Exhaustive));
-const SAMPLED: Option<RefinementSummary> = Some(RefinementSummary::Agreed(RefinementClass::Sampled));
+const SAMPLED: Option<RefinementSummary> =
+    Some(RefinementSummary::Agreed(RefinementClass::Sampled));
 
 fn proved(count: u32) -> TerminalValue {
     TerminalValue::Proved {
@@ -242,7 +248,11 @@ fn tc_048_a_tightened_drawn_range_does_not_cover_the_declared_one() {
         .find(|leaf| leaf.kind == filament_contract_codegen::LeafKind::Integer)
         .unwrap();
     leaf.drawn = (leaf.drawn.0, leaf.drawn.1 - 1);
-    assert_ne!(fx.bounds(&tight), exact, "the bound follows the drawn range");
+    assert_ne!(
+        fx.bounds(&tight),
+        exact,
+        "the bound follows the drawn range"
+    );
     let settled =
         settle_with(&fx, &tight, KaniRunOutcome::Verified, 5, EXHAUSTIVE).expect("settles");
     assert_eq!(settled.terminal, TerminalValue::Tested);
@@ -351,7 +361,12 @@ fn tc_048_a_shadow_inconclusive_outcome_maps_through_the_ordinary_rows() {
             TerminalValue::Failed,
         ),
     ];
-    for refinement in [None, EXHAUSTIVE, SAMPLED, Some(RefinementSummary::ReachedCeiling)] {
+    for refinement in [
+        None,
+        EXHAUSTIVE,
+        SAMPLED,
+        Some(RefinementSummary::ReachedCeiling),
+    ] {
         for (outcome, expected) in &cases {
             let settled = settle(&fx, outcome.clone(), 3, refinement);
             assert_eq!(settled.terminal, *expected, "{outcome:?} {refinement:?}");
@@ -401,7 +416,13 @@ fn tc_048_a_harness_of_another_claim_refuses_with_no_value() {
     let mut other_operator = fx.harness.clone();
     other_operator.identity.composite.as_mut().unwrap().operator = "equality.not_equal".to_owned();
     assert!(matches!(
-        settle_with(&fx, &other_operator, KaniRunOutcome::Verified, 5, EXHAUSTIVE),
+        settle_with(
+            &fx,
+            &other_operator,
+            KaniRunOutcome::Verified,
+            5,
+            EXHAUSTIVE
+        ),
         Err(CompositeShadowError::OperatorMismatch)
     ));
     let mut other_operand = fx.harness.clone();
@@ -436,7 +457,11 @@ fn tc_048_a_harness_of_another_claim_refuses_with_no_value() {
 }
 
 /// The playback of the two parameters, the lower node's entries first.
-fn playback(fx: &Fixture, low: Vec<super::composite_playback_decode::E>, high: Vec<super::composite_playback_decode::E>) -> String {
+fn playback(
+    fx: &Fixture,
+    low: Vec<super::composite_playback_decode::E>,
+    high: Vec<super::composite_playback_decode::E>,
+) -> String {
     transcript_for(&harness_path(&fx.harness.identity), &[low, high].concat())
 }
 
@@ -492,7 +517,12 @@ fn falsified_outcome(fx: &Fixture) -> (KaniRunOutcome, [WitnessValue; 2]) {
     // The lower parameter has b = 1, the other b = 2: the operands differ on the field b.
     let text = playback(fx, flags(true, 1, 1, 0), flags(true, 2, 1, 0));
     let operands = decoded(fx, &text);
-    (KaniRunOutcome::Falsified { counterexample: text }, operands)
+    (
+        KaniRunOutcome::Falsified {
+            counterexample: text,
+        },
+        operands,
+    )
 }
 
 fn falsify(
@@ -550,7 +580,13 @@ fn tc_048_a_falsified_shadow_replays_through_fsl_from_a_cg_built_request() {
         equal: true,
         pair_count: 0,
     };
-    let probe = falsify(&fx, &outcome, None, Some(&driver(lying, completed(false, 0)))).unwrap();
+    let probe = falsify(
+        &fx,
+        &outcome,
+        None,
+        Some(&driver(lying, completed(false, 0))),
+    )
+    .unwrap();
     assert_eq!(probe.terminal, TerminalValue::Failed);
     let CompositeParityResult::Diverged { exact, .. } = result_of(&probe) else {
         panic!("diverged, not {:?}", result_of(&probe));
@@ -575,7 +611,13 @@ fn tc_048_a_falsified_shadow_replays_through_fsl_from_a_cg_built_request() {
         pair_count: exact.pair_count - 1,
         ..exact
     };
-    let counted = falsify(&fx, &outcome, None, Some(&driver(short, completed(false, 1)))).unwrap();
+    let counted = falsify(
+        &fx,
+        &outcome,
+        None,
+        Some(&driver(short, completed(false, 1))),
+    )
+    .unwrap();
     assert!(matches!(
         result_of(&counted),
         CompositeParityResult::Diverged { .. }
@@ -713,14 +755,24 @@ fn tc_048_the_native_observation_is_tied_to_the_authenticated_artifact() {
         pair_count: 3,
     }));
     assert!(matches!(
-        falsify(&fx, &outcome, EXHAUSTIVE, Some(&with(&artifact, contradicting))),
+        falsify(
+            &fx,
+            &outcome,
+            EXHAUSTIVE,
+            Some(&with(&artifact, contradicting))
+        ),
         Err(CompositeShadowError::NativeContradictsArtifact)
     ));
     // An artifact authenticated at other operands is another run's.
     let swapped = [operands[1].clone(), operands[0].clone()];
     let other = authenticated(&fx, swapped, Outcome::Completed(false));
     assert!(matches!(
-        falsify(&fx, &outcome, EXHAUSTIVE, Some(&with(&other, observed.clone()))),
+        falsify(
+            &fx,
+            &outcome,
+            EXHAUSTIVE,
+            Some(&with(&other, observed.clone()))
+        ),
         Err(CompositeShadowError::ArtifactMismatch)
     ));
     // The same checks do not run ahead of a retained disagreement.
@@ -742,9 +794,12 @@ fn tc_048_the_route_refinement_state_agrees_with_the_strength_projection() {
         Some(RefinementSummary::ReachedCeiling),
         Some(RefinementSummary::Disagreed),
     ] {
-        let strength =
-            proof_strength(ProofSubject::BoundedShadow, &KaniRunOutcome::Verified, summary)
-                .unwrap();
+        let strength = proof_strength(
+            ProofSubject::BoundedShadow,
+            &KaniRunOutcome::Verified,
+            summary,
+        )
+        .unwrap();
         assert_eq!(
             strength.parity_refinement(),
             Some(refinement_state(summary)),
@@ -792,7 +847,11 @@ fn tc_048_installed_kani_runs_settle_through_the_production_route() {
     let line = line_of(&mutant, VERDICT_ASSERT);
     mutate(&mut mutant, "p0.0 && p1.0 && p2.0,", "p0.0 && p2.0,");
     let (evidence, _) = prove(&mutant, "route-mutant");
-    assert_eq!(failed_lines(&evidence), [line], "falsified by the verdict check only");
+    assert_eq!(
+        failed_lines(&evidence),
+        [line],
+        "falsified by the verdict check only"
+    );
     let KaniRunOutcome::Falsified { counterexample } = &evidence.outcome else {
         panic!("falsified, not {:?}", evidence.outcome);
     };
@@ -806,7 +865,10 @@ fn tc_048_installed_kani_runs_settle_through_the_production_route() {
         },
     )
     .unwrap();
-    assert_ne!(operands[0], operands[1], "the omitted field is where they differ");
+    assert_ne!(
+        operands[0], operands[1],
+        "the omitted field is where they differ"
+    );
     let artifact = authenticated(&fx, operands, Outcome::Completed(false));
     let run = filament_contract_codegen::ShadowRun {
         harness: &mutant,
@@ -828,12 +890,15 @@ fn tc_048_installed_kani_runs_settle_through_the_production_route() {
     let CompositeParityResult::Diverged { exact, shadow, .. } = result_of(&probe) else {
         panic!("diverged, not {:?}", result_of(&probe));
     };
-    eprintln!("ROUTE mutant -> {:?} exact={exact:?} shadow={shadow:?}", probe.terminal);
+    eprintln!(
+        "ROUTE mutant -> {:?} exact={exact:?} shadow={shadow:?}",
+        probe.terminal
+    );
     assert!(!exact.equal && shadow.equal);
     assert_eq!(probe.terminal, TerminalValue::Failed);
     let exact = *exact;
-    let counted = settle_composite_shadow(&fx.claim(), &run, Some(&driver(exact.pair_count)))
-        .unwrap();
+    let counted =
+        settle_composite_shadow(&fx.claim(), &run, Some(&driver(exact.pair_count))).unwrap();
     assert!(matches!(
         result_of(&counted),
         CompositeParityResult::Diverged { .. }
