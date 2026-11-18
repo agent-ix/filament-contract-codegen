@@ -142,3 +142,5 @@ pub const E_TREE_CYCLE: u32 = 183;
 pub const T_FSPEC_BOOLEAN: u32 = 190;
 pub const E_FSPEC_LIST: u32 = 191;
 pub const E_FSPEC_TREE: u32 = 192;
+/// An equality over two top-level `float64` operands: the FR-148 `numericEqual` pair.
+pub const E_TOP_LEVEL_IEEE: u32 = 193;

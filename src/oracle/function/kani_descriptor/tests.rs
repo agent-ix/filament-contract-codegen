@@ -92,6 +92,8 @@ fn every_variant() -> Vec<ValueType> {
         ValueType::Text(TextType::new(0, 16, TextProfile::Nfc).expect("text")),
         ValueType::Text(TextType::new(2, 2, TextProfile::BinaryUtf8).expect("text")),
         ValueType::String,
+        ValueType::Bytes,
+        ValueType::JsonObject,
         ValueType::Uuid,
         ValueType::Timestamp,
         ValueType::Enum(EnumShape::new(
@@ -154,6 +156,8 @@ fn variant_name(value: &ValueType) -> &'static str {
         ValueType::CarriedQuantity(_) => "CarriedQuantity",
         ValueType::Text(_) => "Text",
         ValueType::String => "String",
+        ValueType::Bytes => "Bytes",
+        ValueType::JsonObject => "JsonObject",
         ValueType::Uuid => "Uuid",
         ValueType::Timestamp => "Timestamp",
         ValueType::Enum(_) => "Enum",
@@ -231,7 +235,7 @@ fn rebuilt_debug(name: &str, expressions: &[String]) -> String {
 fn every_value_type_variant_rebuilds_from_its_rendered_descriptor() {
     let values = every_variant();
     let covered: std::collections::BTreeSet<_> = values.iter().map(variant_name).collect();
-    assert_eq!(covered.len(), 20, "every variant has a case: {covered:?}");
+    assert_eq!(covered.len(), 22, "every variant has a case: {covered:?}");
     let expressions = values
         .iter()
         .map(|value| value_type(value).expect("every variant renders"))

@@ -21,8 +21,9 @@ Author bounded source-backed models with unread Boolean/integer fields and compl
 operation binders. Check exact constraint selection refusals, initial snapshot
 membership, complete census/binding refusal, deterministic generation and distinct
 method identities. Check safety before both initial and successor boundary cutoffs,
-separate ordinary/boundary covers, original owner Undefined/Refused/Incomplete and
-CallFailure payloads, and same-method replay pairing. Check unknown boundary and
+separate ordinary/boundary covers, original owner Refused/Incomplete and
+CallFailure payloads, the Undefined conversion on a directly constructed `Undefined` evaluation
+(no FSL-compiled clause produces one) beside the typed compile refusal of an unproved-nonzero divisor, and same-method replay pairing. Check unknown boundary and
 resource/cancellation evidence without promoting them into success. Retain the
 standalone collection constraint unsupported control.
 

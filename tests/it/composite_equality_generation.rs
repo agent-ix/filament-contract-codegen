@@ -46,6 +46,77 @@ mod package;
 
 use package::*;
 
+/// A top-level `float64` pair is the FR-148 `numericEqual` schedule. Contract IR refuses such an
+/// equality node, so none reaches generation; the owner's own selection for the pair is still
+/// recorded as `float`, and every owner schedule maps to its own record.
+#[trace("FR-018-AC-50", "TC-029")]
+#[test]
+fn tc_029_ac50_a_top_level_float_pair_is_reader_ineligible_and_records_the_float_schedule() {
+    use filament_semantic_value::declaration::{
+        EqualityOperand, EqualityOperator, EqualitySchedule,
+    };
+    use filament_semantic_value::enumeration::EnumMemberIndex;
+
+    let (result, wire, ids) = top_level_ieee_package().read_resolved();
+    let node_id = ids.resolve(&code_id(E_TOP_LEVEL_IEEE));
+    let position = wire["semantic_graph"]["nodes"]
+        .as_array()
+        .expect("nodes")
+        .iter()
+        .position(|node| {
+            node["node_id"] == serde_json::to_value(&node_id).expect("structural node id")
+        })
+        .expect("top-level IEEE equality");
+    let CheckedPackageV2ReadResult::Refused(refusal) = result else {
+        panic!("top-level IEEE equality unexpectedly admitted: {result:?}");
+    };
+    assert_eq!(refusal.code, CheckedPackageRefusalCode::IllTyped);
+    assert_eq!(
+        refusal.cause,
+        Some(CheckedPackageRefusalCause::OperatorIneligible)
+    );
+    assert_eq!(
+        refusal.loci[0]
+            .path
+            .as_ref()
+            .map(|path| path.as_str().to_owned()),
+        Some(format!(
+            "/semantic_graph/nodes/{position}/body/operation/leaves"
+        ))
+    );
+
+    let float = || ValueType::Float(filament_exact::FloatType::exact(IeeeWidth::Binary64));
+    let environment =
+        TypeEnvironment::new(Vec::new(), core::iter::empty::<ObjectTypeDeclaration>()).unwrap();
+    let checked = environment
+        .check_equality(
+            EqualityOperator::Equal,
+            EqualityOperand::typed(float()),
+            EqualityOperand::typed(float()),
+            &EnumMemberIndex::default(),
+        )
+        .expect("the owner admits a same-width float pair");
+    assert_eq!(checked.schedule(), EqualitySchedule::Float);
+    assert_eq!(
+        RecordedSchedule::try_from(checked.schedule()),
+        Ok(RecordedSchedule::Float)
+    );
+    for (owner, recorded, name) in [
+        (EqualitySchedule::Float, RecordedSchedule::Float, "float"),
+        (EqualitySchedule::Text, RecordedSchedule::Text, "text"),
+        (EqualitySchedule::Enum, RecordedSchedule::Enum, "enum"),
+        (
+            EqualitySchedule::Quantity,
+            RecordedSchedule::Quantity,
+            "quantity",
+        ),
+        (EqualitySchedule::Plan, RecordedSchedule::Plan, "plan"),
+    ] {
+        assert_eq!(RecordedSchedule::try_from(owner), Ok(recorded));
+        assert_eq!(serde_json::to_value(recorded).unwrap(), json!(name));
+    }
+}
+
 /// Structural equality reaching IEEE is reader-ineligible.
 #[trace("FR-018-AC-6", "TC-029")]
 #[test]
@@ -1693,7 +1764,18 @@ fn tc_029_ac12_manifest_is_unpublished_and_charge_free() {
     assert!(manifest.contains(&format!("name = \"{COMPOSITE_EQUALITY_CRATE_NAME}\"")));
     assert!(manifest.contains("publish = false"));
     assert!(manifest.contains(&runtime_dependency(&["exact"])));
-    assert!(!manifest.contains("rev ="));
+    // No first-party crate resolves from a branch: each names the release tag CG's own manifest
+    // names, and only `fsl-replay` (no release tag yet) names a revision.
+    assert!(!manifest.contains("branch ="), "{manifest}");
+    for line in manifest
+        .lines()
+        .filter(|line| line.contains("github.com/agent-ix/"))
+    {
+        assert!(
+            line.contains("tag = \"") || line.starts_with("fsl-replay = "),
+            "{line}"
+        );
+    }
 
     let lib = contents(&oracles, "src/lib.rs");
     for forbidden in [

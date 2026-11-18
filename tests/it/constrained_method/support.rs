@@ -40,6 +40,25 @@ pub(super) fn document() -> Value {
     ],"populations":[{"identity":format!("ix://{MODEL}/nodes"),"displayName":"nodes","kind":{"module":MODEL,"name":"population"},"members":[OBJECT],"extent":"closed","origin":origin()}]})
 }
 
+pub(super) const POSITIVE: &str = "ix://cg/constrained/Positive";
+
+/// The document with `aux` typed `Int[1, 3]`, so FSL proves `aux` nonzero and accepts it as a
+/// divisor. A zero `aux` is outside that type, so it is not a state of this document: the owner
+/// evaluator refuses it as an invalid runtime input and `emit_method` refuses it as an invalid
+/// initial state (`InitialState`). Use [`initial_positive_aux`] for a valid initial state.
+pub(super) fn nonzero_aux_document() -> Value {
+    let mut doc = document();
+    let mut positive = doc["types"][0].clone();
+    positive["identity"] = json!(POSITIVE);
+    positive["displayName"] = json!("Positive");
+    positive["constraints"][0]["identity"] = json!(format!("{POSITIVE}/min"));
+    positive["constraints"][0]["operands"]["value"] = json!("1");
+    positive["constraints"][1]["identity"] = json!(format!("{POSITIVE}/max"));
+    doc["types"][1]["fields"][2]["typeRef"] = json!(POSITIVE);
+    doc["types"].as_array_mut().unwrap().push(positive);
+    doc
+}
+
 pub(super) struct Fixture {
     pub(super) source: String,
     pub(super) document: Vec<u8>,
@@ -49,15 +68,39 @@ pub(super) struct Fixture {
     pub(super) safety: CheckedNodeId,
     pub(super) constraints: Vec<CheckedNodeId>,
 }
-pub(super) fn fixture(doc: &Value, name: &str, safety: &str, constraints: &[&str]) -> Fixture {
-    let bytes = quire_canonical::to_vec(doc, quire_canonical::Limits::new(1 << 20)).unwrap();
+fn clause_source(safety: &str, constraints: &[&str]) -> String {
     let mut source=format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.model.complete/v1\";\nmodel M = \"{MODEL}\";\ninvariant Safe using v on M::Node at current {{ {safety} }}\n");
     for (index, body) in constraints.iter().enumerate() {
         source.push_str(&format!(
             "constraint Limit{index} using v on M::Node at current {{ {body} }}\n"
         ));
     }
-    fixture_source(bytes, name, source)
+    source
+}
+pub(super) fn fixture(doc: &Value, name: &str, safety: &str, constraints: &[&str]) -> Fixture {
+    let bytes = quire_canonical::to_vec(doc, quire_canonical::Limits::new(1 << 20)).unwrap();
+    fixture_source(bytes, name, clause_source(safety, constraints))
+}
+/// The typed refusal FSL gives when it compiles the same clause source. Only the lib test uses it.
+#[allow(dead_code)]
+pub(super) fn compile_refusal(
+    doc: &Value,
+    name: &str,
+    safety: &str,
+    constraints: &[&str],
+) -> Box<fsl_replay::CallSiteRefusal> {
+    let bytes = quire_canonical::to_vec(doc, quire_canonical::Limits::new(1 << 20)).unwrap();
+    let source = clause_source(safety, constraints);
+    call_site(
+        SourceIdentity::new("agent-ix", format!("{name}.native")),
+        name.to_owned(),
+        "constrained.native",
+        source.as_bytes(),
+        [bytes.as_slice()],
+        &DependencyInput::default(),
+        &ClauseName(Identifier::new("Safe").unwrap()),
+    )
+    .expect_err("FSL refuses the clause source")
 }
 pub(super) fn fixture_source(bytes: Vec<u8>, name: &str, source: String) -> Fixture {
     let site = call_site(
@@ -115,6 +158,12 @@ pub(super) fn initial(n: i64) -> BTreeMap<String, SnapshotValue> {
         ("flag".into(), SnapshotValue::boolean(false)),
         ("aux".into(), SnapshotValue::integer("0")),
     ])
+}
+/// An initial state whose `aux` lies inside the `Positive` type of [`nonzero_aux_document`].
+pub(super) fn initial_positive_aux(n: i64) -> BTreeMap<String, SnapshotValue> {
+    let mut state = initial(n);
+    state.insert("aux".into(), SnapshotValue::integer("1"));
+    state
 }
 pub(super) fn bindings(f: &Fixture) -> Vec<ConstrainedOperationBinding<'_>> {
     vec![

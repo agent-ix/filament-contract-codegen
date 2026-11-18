@@ -2812,7 +2812,13 @@ fn tc_031_ac14_manifest_and_source_shape() {
         );
     }
     assert!(!manifest.contains("filament-contract-runtime"));
-    assert!(!manifest.contains("rev ="));
+    assert!(
+        !manifest.contains("branch =")
+            || manifest
+                .lines()
+                .filter(|line| line.contains("branch ="))
+                .all(|line| line.starts_with("filament-contract-codegen = "))
+    );
     assert!(manifest.contains("unsafe_code = \"forbid\""));
 
     let lib = contents(&oracles, "src/lib.rs");
