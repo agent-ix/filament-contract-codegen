@@ -132,7 +132,7 @@ fn evaluated(outcome: Outcome<Value>, location: &sv::location::ExpressionLocatio
         Outcome::Completed(_) => None,
         Outcome::Undefined(_) | Outcome::Refused(_) | Outcome::Incomplete(_) => Some(location.clone()),
     };
-    eval::Evaluation { outcome: FamilyOutcome::Evaluated(outcome), location, losses: Vec::new() }
+    eval::Evaluation { outcome: FamilyOutcome::Evaluated(outcome), location, losses: Vec::new(), frame_depth: 0 }
 }
 #[cfg(kani)]
 fn rebuilt<T, E>(result: Result<T, E>) -> T {
@@ -246,6 +246,7 @@ impl PreparedFunction {
                     })),
                     location: Some(sv::location::ExpressionLocation::root(sv::location::ExpressionOwner::TypeDeclaration { name: invalid.declaration.clone() })),
                     losses: Vec::new(),
+                    frame_depth: 0,
                 };
                 Ok(Some(evaluation))
             }

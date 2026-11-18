@@ -9,6 +9,7 @@ use std::{fmt::Write as _, fs, process::Command};
 
 use filament_contract_codegen::{
     generate_v2_clause_oracle, EXACT_DEPENDENCY_SOURCE, SEMANTIC_VALUE_DEPENDENCY_SOURCE,
+    TRACE_DEPENDENCY_SOURCE,
 };
 use ix_trace_rs::trace;
 
@@ -222,7 +223,7 @@ fn case_{index}() {{
 "#, reference = case.reference, label = case.source, expected = case.expected, skipped = case.skipped_arithmetic).unwrap();
     }
     let manifest = format!(
-        "[package]\nname = \"v2-literal-native-agreement\"\nversion = \"0.0.0\"\nedition = \"2021\"\n\n[dependencies]\nfilament-exact = {{ {EXACT_DEPENDENCY_SOURCE}, features = [\"test-support\"] }}\nfilament-semantic-value = {{ {SEMANTIC_VALUE_DEPENDENCY_SOURCE} }}\n{}\nix-trace-rs = {{ git = \"https://github.com/agent-ix/ix-trace-rs\", branch = \"main\" }}\n[workspace]\n",
+        "[package]\nname = \"v2-literal-native-agreement\"\nversion = \"0.0.0\"\nedition = \"2021\"\n\n[dependencies]\nfilament-exact = {{ {EXACT_DEPENDENCY_SOURCE}, features = [\"test-support\"] }}\nfilament-semantic-value = {{ {SEMANTIC_VALUE_DEPENDENCY_SOURCE} }}\n{}\nix-trace-rs = {{ {TRACE_DEPENDENCY_SOURCE} }}\n[workspace]\n",
         scratch_crate::runtime_dependency(&["exact"]),
     );
     scratch_crate::write_manifest(&scratch.path, &manifest);
@@ -425,6 +426,7 @@ fn set_limit(limits: &mut rt::ScalarLimits, kind: rt::LimitKind, value: u64) {
         rt::LimitKind::ValueOccurrences => limits.value_occurrences = value,
         rt::LimitKind::WorkUnits => limits.work_units = value,
         rt::LimitKind::ResultUnits => limits.result_units = value,
+        rt::LimitKind::LiveOccurrences => unreachable!("a session limit outside ScalarLimits and LimitKind::ALL"),
     }
 }
 fn agree(label: &str, expression: &Expr, x: u64, generated: &impl Fn(u64, &mut rt::Meter) -> Observation,

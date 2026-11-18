@@ -436,7 +436,7 @@ fn tc_070_a_measured_bad_row_refuses_the_clause_before_generation() {
     let (division, division_clause) = package(
         1 << 20,
         1 << 20,
-        "other * offset > 0 and other mod offset > 0",
+        "other * offset > 0 and offset > 0 and other mod offset > 0",
     );
     let division_claim = crate::common::v2_claim::claim_for(&division, &division_clause);
     let items = [
