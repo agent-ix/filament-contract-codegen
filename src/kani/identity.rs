@@ -12,7 +12,7 @@ use filament_contract_model::{
 use quire_canonical::FixedShape;
 use serde::{Deserialize, Serialize};
 
-use fsl_replay::ObligationIdentity;
+use fsl_package::ObligationIdentity;
 
 use crate::{
     core::artifact::Artifact,

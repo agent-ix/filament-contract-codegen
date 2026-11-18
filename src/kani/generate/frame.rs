@@ -34,7 +34,7 @@ use filament_contract_model::{
     CheckedNodeKind, CheckedNodeTag, CheckedPackageV2, CheckedTerm, CompleteLoweringProfileV2,
     CompleteLoweringRecordV2, LiteralKind, StateForm, ValueForm,
 };
-use fsl_replay::ObligationIdentity;
+use fsl_package::ObligationIdentity;
 use serde::Serialize;
 
 use crate::oracle::operator_catalog::{FrameSymbol, Operator as CatalogOperator};

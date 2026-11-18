@@ -31,7 +31,7 @@ struct ConditionBindings<'a> {
 
 pub(super) struct LoweredOperation {
     pub(super) spec: CollectionOperationSpec,
-    pub(super) obligation: fsl_replay::ObligationIdentity,
+    pub(super) obligation: fsl_package::ObligationIdentity,
 }
 
 fn refused(reason: CollectionUnsupportedReason) -> CollectionDomainRefusal {

@@ -18,7 +18,7 @@ use quote::ToTokens;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
 
-use fsl_replay::ObligationIdentity;
+use fsl_package::ObligationIdentity;
 
 use crate::kani::tractability::{
     ClauseFeatures, Decision, InputBound, IntegerRoute, OperationWidth, TractabilityDecider,

@@ -36,7 +36,7 @@ pub const TRACE_DEPENDENCY_SOURCE: &str =
 
 /// Source of the admitted-context facade (`fsl-replay`): current FSL main, pinned while no fsl-*
 /// release tag carries the v0.1.6 evaluator and v0.1.5 contract-model dependencies.
-pub const FSL_REPLAY_DEPENDENCY_SOURCE: &str = "git = \"https://github.com/agent-ix/filament-spec-language\", rev = \"c590f12d5d722974e3578958c83ac4e5e0ebae2b\"";
+pub const FSL_REPLAY_DEPENDENCY_SOURCE: &str = "git = \"https://github.com/agent-ix/filament-spec-language\", rev = \"0dc2d4a6d52cf58b3a82347f2e9eb5af686e6999\"";
 
 /// The `[package.metadata.kani]` table every generated oracle crate's manifest carries. CBMC
 /// tracks heap objects field by field only up to 64 bytes by default; RT's `Value` and `ValueType`
