@@ -55,3 +55,5 @@ Ticket: IR-1562. Code review with the rust-review lane. The PR adds an optional 
 | FND-004 | fixed | A tractable-without-wall case was added. The mutant that drops the Tractable arm is killed. |
 | FND-005 | fixed | Clause (b) now reads "Inexact under the exact spelling (no rounded coefficient is retained)". A mutant of that text is killed. |
 | FND-006 | fixed | The 18 provenances, FR-056 and the ir260 doc now say "the remainder is not scheduled" and name no Done owner. The leftover in tests.md and in the test data is FND-007. |
+| FND-007 | fixed | Round 2 (6468a5bc). The tests.md FR-053 row now says "the part of them the Verus proof does not state is not scheduled", and the dead `owner` field and its constant check are removed from all 58 `NativeRow` entries. No IR-1551/IR-1544 text is left. |
+| FND-008 | fixed | Round 2 (6468a5bc). The kani_verus_record.rs header and the TC-070 step 16 "Re-check procedure" now describe the file as a drift pin over CG's own text, generated from the table JSON and checked against filament-exact be9359f. |
