@@ -371,10 +371,6 @@ pub use replay::composite_shadow_route::{
     CompositeShadowSettlement, DriverFalsification, ParityReport, ShadowClaim, ShadowRoute,
     ShadowRun,
 };
-pub use replay::composite_leaves::{
-    decode_composite_falsification, rebuild_composite_operands, reconstruct_composite_operands,
-    DecodedCompositeLeaves,
-};
 pub use replay::frame::{
     FrameClaimMember, FrameReplay, FrameReplayError, FrameReplayInputs, PreStateFault, ScopeMember,
     SelectedFrameItem, SelectedFrameTarget, SelectedTargetMember,
