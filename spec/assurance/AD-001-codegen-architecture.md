@@ -239,8 +239,10 @@ success fallback, and no requirement converts one into another.
   `fsl-package`, so CG's direct dependency on it adds no crate to CG's graph.
 - CG owns minimization lineage as immutable records referring to exact FSL envelopes, parent
   revisions and opaque obligation identities. The FSL envelope and packet are unchanged.
-- CG builds FSL's `ObligationIdentity` as the ADR-013 O-09 digest of the subject node id,
-  occurrence key, obligation kind and arguments, with no `source_span` (AD-003 E-1), and builds its envelopes as FSL's `WitnessEnvelope` (FR-024).
+- CG builds `fsl_package::ObligationIdentity` with `new(node key, model, ordinal)` or
+  `from_claim_occurrence(&OccurrenceKey)`, from FSL-supplied keys (`NodeKey` comes from FSL
+  accessors; CG computes no digest) (AD-003 E-1). Obligation kind and arguments are not part of
+  FSL's identity; CG keeps them in its own records. CG builds its envelopes as FSL's `WitnessEnvelope` (FR-024).
 - CG replays only through `fsl_replay::replay`, the layer-6 facade (FSL ADR-013 TK-01), and frame
   counterexamples only through `fsl_replay::replay_frame` (FSL FR-116). No replay path takes a
   caller-supplied executor (FSL ADR-011 FB-07).
