@@ -462,3 +462,105 @@ fn tc_048_installed_kani_playback_of_a_falsified_mutant_decodes_and_rebuilds_bot
         WitnessSlot::Present(WitnessValue::ExactInteger(_))
     ));
 }
+
+use super::composite_shadow_route::{authenticated, fixture_default, result_of};
+use filament_contract_codegen::{
+    parse_assertion_playback, reconstruct_composite_operands, settle_composite_shadow,
+    DriverFalsification, ShadowRoute, ShadowRun, WitnessDecodeLimits,
+};
+use filament_exact::Outcome;
+use fsl_replay::{CompositeParityResult, EqualityOutcome, NativeParityObservation, TerminalValue};
+
+/// FR-033-AC-10 and FR-029-AC-19/AC-20 under the installed backend: the composite family's real
+/// verified control and a real falsified mutant, each settled through the production route over
+/// the original proving context. The verified shadow ran with no refinement run, so FSL's value
+/// is `Tested`, never `Proved`. The mutant leaves field `b` out of the comparison and says equal;
+/// the operands rebuilt from Kani's own playback differ on `b`, so FSL's exact comparison
+/// diverges from the retained shadow verdict: `Failed`, never `Refuted`.
+#[trace("TC-048", "FR-033-AC-10")]
+#[trace("TC-048", "FR-029-AC-30")]
+#[test]
+#[ignore = "kani lane: run serially through make kani-gate"]
+fn tc_048_installed_kani_runs_settle_through_the_production_route() {
+    if !selected("route") {
+        return;
+    }
+    let fx = fixture_default();
+    let (evidence, _) = prove(&fx.harness, "route-verified");
+    assert_eq!(evidence.outcome, KaniRunOutcome::Verified);
+    eprintln!("TOOLS {:?}", evidence.tool_versions);
+    let settled = settle_composite_shadow(
+        &fx.claim(),
+        &ShadowRun {
+            harness: &fx.harness,
+            evidence: &evidence,
+            refinement: None,
+        },
+        None,
+    )
+    .unwrap();
+    eprintln!("ROUTE verified -> {:?}", settled.terminal);
+    assert_eq!(settled.terminal, TerminalValue::Tested);
+    assert_eq!(settled.route, ShadowRoute::Parity);
+
+    let mut mutant = fx.harness.clone();
+    let line = line_of(&mutant, VERDICT_ASSERT);
+    mutate(&mut mutant, "p0.0 && p1.0 && p2.0,", "p0.0 && p2.0,");
+    let (evidence, _) = prove(&mutant, "route-mutant");
+    assert_eq!(
+        failed_lines(&evidence),
+        [line],
+        "falsified by the verdict check only"
+    );
+    let KaniRunOutcome::Falsified { counterexample } = &evidence.outcome else {
+        panic!("falsified, not {:?}", evidence.outcome);
+    };
+    let parsed = parse_assertion_playback(counterexample, "t", "ctx", 1 << 20, 1024).unwrap();
+    let operands = reconstruct_composite_operands(
+        &mutant.identity,
+        &parsed,
+        WitnessDecodeLimits {
+            bytes: 1 << 20,
+            values: 1024,
+        },
+    )
+    .unwrap();
+    assert_ne!(
+        operands[0], operands[1],
+        "the omitted field is where they differ"
+    );
+    let artifact = authenticated(&fx, operands, Outcome::Completed(false));
+    let run = ShadowRun {
+        harness: &mutant,
+        evidence: &evidence,
+        refinement: None,
+    };
+    let driver = |pair_count| DriverFalsification {
+        artifact: &artifact,
+        shadow: EqualityOutcome {
+            equal: true,
+            pair_count,
+        },
+        native: Some(NativeParityObservation::Completed(EqualityOutcome {
+            equal: false,
+            pair_count,
+        })),
+    };
+    let probe = settle_composite_shadow(&fx.claim(), &run, Some(&driver(0))).unwrap();
+    let CompositeParityResult::Diverged { exact, shadow, .. } = result_of(&probe) else {
+        panic!("diverged, not {:?}", result_of(&probe));
+    };
+    eprintln!(
+        "ROUTE mutant -> {:?} exact={exact:?} shadow={shadow:?}",
+        probe.terminal
+    );
+    assert!(!exact.equal && shadow.equal);
+    assert_eq!(probe.terminal, TerminalValue::Failed);
+    let exact = *exact;
+    let counted =
+        settle_composite_shadow(&fx.claim(), &run, Some(&driver(exact.pair_count))).unwrap();
+    assert!(matches!(
+        result_of(&counted),
+        CompositeParityResult::Diverged { .. }
+    ));
+}

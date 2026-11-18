@@ -240,6 +240,88 @@ fn walk(
     }
 }
 
+fn positions(
+    composite: &CompositeIdentity,
+    ty: &RecordedType,
+    path: &str,
+    indexes: &[u32],
+    stack: &mut Vec<String>,
+    out: &mut Vec<(String, Vec<u32>)>,
+) -> Result<(), LeafBindingRefusal> {
+    match ty {
+        RecordedType::Boolean => Ok(()),
+        RecordedType::Int { .. } => {
+            out.push((path.trim_start_matches('.').to_owned(), indexes.to_vec()));
+            Ok(())
+        }
+        RecordedType::Option { payload } => {
+            let mut inner = indexes.to_vec();
+            inner.push(0);
+            positions(
+                composite,
+                payload,
+                &format!("{path}.value"),
+                &inner,
+                stack,
+                out,
+            )
+        }
+        RecordedType::Composite { key } => {
+            let declaration = composite
+                .declarations
+                .iter()
+                .find(|declaration| &declaration.key == key)
+                .ok_or_else(|| shape(format!("{path}: declaration {key} is not recorded")))?;
+            if stack.contains(key) || declaration.form == RecordedForm::Union {
+                return Err(shape(format!(
+                    "{path}: declaration {key} has no drawn leaves"
+                )));
+            }
+            stack.push(key.clone());
+            for (index, member) in declaration.members.iter().enumerate() {
+                let index = u32::try_from(index)
+                    .map_err(|_| shape(format!("{path}: more members than a child index holds")))?;
+                let mut inner = indexes.to_vec();
+                inner.push(index);
+                positions(
+                    composite,
+                    &member.value_type,
+                    &format!("{path}.{}", member.name),
+                    &inner,
+                    stack,
+                    out,
+                )?;
+            }
+            stack.pop();
+            Ok(())
+        }
+        RecordedType::Integer | RecordedType::Payload { .. } | RecordedType::Other { .. } => {
+            Err(shape(format!("{path}: a family no shadow draws")))
+        }
+    }
+}
+
+/// The bounded-integer leaves of one operand of the identity's shape, each with the leaf path the
+/// identity records and the child-index path FSL keys the integer's declared position by: an
+/// option's payload is child 0, a record or tuple member is its declaration index.
+pub(crate) fn integer_positions(
+    composite: &CompositeIdentity,
+) -> Result<Vec<(String, Vec<u32>)>, LeafBindingRefusal> {
+    if composite.operand_types.left != composite.operand_types.right {
+        return Err(shape("the operands compare different types"));
+    }
+    let mut out = Vec::new();
+    positions(
+        composite,
+        &composite.operand_types.left,
+        "",
+        &[],
+        &mut Vec::new(),
+        &mut out,
+    )?;
+    Ok(out)
+}
+
 /// The leaves one operand of the identity's shape has, in symbolic call order.
 pub(crate) fn expected_leaves(
     composite: &CompositeIdentity,

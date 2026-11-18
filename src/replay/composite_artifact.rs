@@ -173,6 +173,7 @@ impl OriginalCompositeArtifactBinding {
         }
         Ok(AuthenticatedCompositeArtifact {
             request: self.request,
+            operands: self.operands,
             outcome: observed.outcome,
             replay_limits: self.inputs.replay_limits,
         })
@@ -183,10 +184,15 @@ impl OriginalCompositeArtifactBinding {
 #[derive(Debug)]
 pub struct AuthenticatedCompositeArtifact {
     request: OriginalCompositeEqRequest,
+    operands: [WitnessValue; 2],
     outcome: filament_exact::Outcome<bool>,
     replay_limits: ReplayLimits,
 }
 impl AuthenticatedCompositeArtifact {
+    /// The two operands the authenticated native run was executed on, in source position order.
+    pub fn operands(&self) -> &[WitnessValue; 2] {
+        &self.operands
+    }
     /// Actual native outcome without an invented pair count.
     pub fn native_outcome(&self) -> &filament_exact::Outcome<bool> {
         &self.outcome

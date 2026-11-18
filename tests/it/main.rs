@@ -73,6 +73,7 @@ mod composite_shadow;
 mod composite_shadow_families;
 mod composite_shadow_kani;
 mod composite_shadow_native;
+mod composite_shadow_route;
 mod cover_last;
 mod enum_scalar_harness;
 mod exact_function_agreement;
