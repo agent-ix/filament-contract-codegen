@@ -1693,7 +1693,15 @@ fn tc_029_ac12_manifest_is_unpublished_and_charge_free() {
     assert!(manifest.contains(&format!("name = \"{COMPOSITE_EQUALITY_CRATE_NAME}\"")));
     assert!(manifest.contains("publish = false"));
     assert!(manifest.contains(&runtime_dependency(&["exact"])));
-    assert!(!manifest.contains("rev ="));
+    // No first-party crate resolves from a branch: each names the release tag CG's own manifest
+    // names, and only `fsl-replay` (no release tag yet) names a revision.
+    assert!(!manifest.contains("branch ="), "{manifest}");
+    for line in manifest.lines().filter(|line| line.contains("github.com/agent-ix/")) {
+        assert!(
+            line.contains("tag = \"") || line.starts_with("fsl-replay = "),
+            "{line}"
+        );
+    }
 
     let lib = contents(&oracles, "src/lib.rs");
     for forbidden in [
