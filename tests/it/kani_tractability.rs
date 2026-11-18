@@ -290,7 +290,7 @@ fn tc_070_the_table_loads_from_data_and_a_bad_row_fails_the_load() {
     fractional["wall_seconds"] = json!(44.625);
     let fractional = write_table(&directory, "fractional.json", &[fractional]);
     let loaded = TractabilityTable::load(&fractional).unwrap();
-    assert_eq!(loaded.rows()[0].wall_seconds.millis(), 44_625);
+    assert_eq!(loaded.rows()[0].wall_seconds.unwrap().millis(), 44_625);
     let empty = write_table(&directory, "empty.json", &[]);
     assert!(TractabilityTable::load(&empty).unwrap().rows().is_empty());
 
@@ -1080,7 +1080,7 @@ fn tc_070_the_embedded_general_route_table_is_the_docs_file() {
         TractabilityTable::load(&Path::new(env!("CARGO_MANIFEST_DIR")).join(GENERAL_SCALAR_TABLE))
             .expect("the docs file loads");
     assert_eq!(general_scalar_table(), from_file);
-    assert_eq!(from_file.rows().len(), 74);
+    assert_eq!(from_file.rows().len(), 77);
 }
 
 /// One expected native float or rational row of the kernel's records (filament-exact TC-953 and
@@ -1634,7 +1634,7 @@ fn tc_070_the_shipped_table_holds_the_kernel_native_float_and_rational_rows() {
     use filament_contract_codegen::{IntegerRoute, RowVerdict};
     let table = general_scalar_table();
     let rows = table.rows();
-    assert_eq!(rows.len(), 16 + NATIVE_FLOAT_AND_RATIONAL_ROWS.len());
+    assert_eq!(rows.len(), 16 + NATIVE_FLOAT_AND_RATIONAL_ROWS.len() + 3);
     for (index, expected) in NATIVE_FLOAT_AND_RATIONAL_ROWS.iter().enumerate() {
         let (ids, bits, tractable, wall_millis, peak, harness, owner) = *expected;
         let row = &rows[16 + index];
@@ -1652,7 +1652,11 @@ fn tc_070_the_shipped_table_holds_the_kernel_native_float_and_rational_rows() {
             },
             "{context}"
         );
-        assert_eq!(row.wall_seconds.millis(), wall_millis, "{context}");
+        assert_eq!(
+            row.wall_seconds.expect("measured").millis(),
+            wall_millis,
+            "{context}"
+        );
         assert_eq!(row.peak_bytes, Some(peak), "{context}");
         let provenance = row
             .provenance
@@ -1684,6 +1688,472 @@ fn tc_070_the_shipped_table_holds_the_kernel_native_float_and_rational_rows() {
         .all(|row| !row.0[0].starts_with("filament.op.ieee.")));
     let tractable = |rows: &[NativeRow]| rows.iter().filter(|row| row.2).count();
     assert_eq!((tractable(float), tractable(rational)), (32, 8));
+}
+
+/// The theorems of the kernel's TC-953 record, transcribed; a float row that cites one the record
+/// does not hold fails.
+const FLOAT_RECORD: [&str; 2] = ["lemma_decode_rounded", "lemma_grid_round"];
+const FLOAT_ROUND: &str = "lemma_round";
+
+const DIVIDE_THEOREMS: [&str; 5] = [
+    "row_divide",
+    "lemma_plan_divide",
+    FLOAT_ROUND,
+    FLOAT_RECORD[0],
+    FLOAT_RECORD[1],
+];
+const SQRT_THEOREMS: [&str; 6] = [
+    "row_square_root",
+    "lemma_plan_square_root",
+    "integer_square_root loop invariant",
+    FLOAT_ROUND,
+    FLOAT_RECORD[0],
+    FLOAT_RECORD[1],
+];
+const FMA_THEOREMS: [&str; 5] = [
+    "row_fused_multiply_add",
+    "lemma_sum",
+    FLOAT_ROUND,
+    FLOAT_RECORD[0],
+    FLOAT_RECORD[1],
+];
+
+const FLOAT_ROWS: [(usize, &str, &str, &str); 12] = [
+    (
+        26,
+        "filament.op.ieee.float32.div",
+        "Divide Binary32 NearestEven",
+        "div",
+    ),
+    (
+        27,
+        "filament.op.ieee.float32.div",
+        "Divide Binary32 Exact",
+        "div",
+    ),
+    (
+        29,
+        "filament.op.ieee.float32.sqrt",
+        "SquareRoot Binary32 NearestEven",
+        "sqrt",
+    ),
+    (
+        32,
+        "filament.op.ieee.float32.fma",
+        "FusedMultiplyAdd Binary32 NearestEven",
+        "fma",
+    ),
+    (
+        45,
+        "filament.op.ieee.float64.mul",
+        "Multiply Binary64 NearestEven",
+        "mul",
+    ),
+    (
+        48,
+        "filament.op.ieee.float64.div",
+        "Divide Binary64 NearestEven",
+        "div",
+    ),
+    (
+        49,
+        "filament.op.ieee.float64.div",
+        "Divide Binary64 Exact",
+        "div",
+    ),
+    (
+        50,
+        "filament.op.ieee.float64.div",
+        "Divide Binary64 directed",
+        "div",
+    ),
+    (
+        51,
+        "filament.op.ieee.float64.sqrt",
+        "SquareRoot Binary64 NearestEven",
+        "sqrt",
+    ),
+    (
+        52,
+        "filament.op.ieee.float64.sqrt",
+        "SquareRoot Binary64 Exact",
+        "sqrt",
+    ),
+    (
+        54,
+        "filament.op.ieee.float64.fma",
+        "FusedMultiplyAdd Binary64 NearestEven",
+        "fma",
+    ),
+    (
+        55,
+        "filament.op.ieee.float64.fma",
+        "FusedMultiplyAdd Binary64 Exact",
+        "fma",
+    ),
+];
+
+const DECIMAL_ROWS: [(usize, &[&str]); 3] = [
+    (74, &["filament.native.decimal.from_bindings"]),
+    (
+        75,
+        &[
+            "filament.op.decimal.add",
+            "filament.op.decimal.sub",
+            "filament.op.decimal.mul",
+            "filament.op.decimal.div",
+            "filament.op.decimal.negate",
+            "filament.native.decimal.round",
+        ],
+    ),
+    (
+        76,
+        &[
+            "filament.op.decimal.lt",
+            "filament.op.decimal.le",
+            "filament.op.decimal.gt",
+            "filament.op.decimal.ge",
+        ],
+    ),
+];
+
+fn assert_proof(
+    row: &TractabilityRow,
+    context: &str,
+    records: &[&str],
+    changes: &[&str],
+    theorems: &[&str],
+) {
+    let proof = row
+        .verus_proof
+        .as_ref()
+        .unwrap_or_else(|| panic!("{context}: the Verus verdict is recorded"));
+    assert_eq!(proof.records, records, "{context}");
+    assert_eq!(proof.changes, changes, "{context}");
+    assert_eq!(proof.theorems, theorems, "{context}");
+    for (name, text) in [
+        ("proved", &proof.proved),
+        ("not_proved", &proof.not_proved),
+        ("assumes", &proof.assumes),
+        ("run", &proof.run),
+    ] {
+        assert!(text.len() > 40, "{context}: {name} is stated");
+    }
+    // A record, never a tool version or a pin.
+    for text in [&proof.proved, &proof.not_proved, &proof.assumes, &proof.run] {
+        assert!(
+            !text.contains(" version") && !text.contains("Kani 0") && !text.contains("Verus 0"),
+            "{context}: {text}"
+        );
+    }
+    assert!(
+        row.kani_version.is_none() && row.cbmc_version.is_none() && row.solver_version.is_none(),
+        "{context}"
+    );
+}
+
+/// FR-056-AC-15 (IR-1562): the Verus verdicts of the kernel's record (filament-exact FR-405,
+/// FR-408, FR-409 with TC-953, TC-956, TC-957) are recorded on exactly the rows they cover: the
+/// twelve float, six full-`i64` rational and three native division rows, each keeping its Kani
+/// `not_tractable` verdict, every other measured row carrying none. A row that cites an id, change
+/// or theorem the record does not hold, drops what is unproved, or loses its Kani verdict fails.
+#[trace("TC-070", "FR-056-AC-15")]
+#[test]
+fn tc_070_the_verus_verdicts_sit_on_exactly_the_rows_the_kernel_proves() {
+    use filament_contract_codegen::RowVerdict;
+    let table = general_scalar_table();
+    let rows = table.rows();
+    let proved: Vec<usize> = rows
+        .iter()
+        .enumerate()
+        .filter(|(_, row)| row.verus_proof.is_some())
+        .map(|(index, _)| index)
+        .collect();
+    let mut expected: Vec<usize> = [11, 13, 15, 60, 69, 70, 71, 72, 73].to_vec();
+    expected.extend(FLOAT_ROWS.iter().map(|row| row.0));
+    expected.extend(DECIMAL_ROWS.iter().map(|row| row.0));
+    expected.sort_unstable();
+    assert_eq!(proved, expected, "the rows that carry a Verus verdict");
+
+    for (index, id, label, shape) in FLOAT_ROWS {
+        let row = &rows[index];
+        let context = format!("float row {index}: {label}");
+        assert_eq!(row.operation_ids, [id], "{context}");
+        assert_eq!(row.verdict, RowVerdict::NotTractable, "{context}");
+        assert!(
+            row.provenance
+                .as_deref()
+                .is_some_and(|text| text.contains(label)),
+            "{context}"
+        );
+        let theorems: &[&str] = match shape {
+            "div" => &DIVIDE_THEOREMS,
+            "sqrt" => &SQRT_THEOREMS,
+            "fma" => &FMA_THEOREMS,
+            _ => &[
+                "row_multiply",
+                "lemma_plan_multiply",
+                FLOAT_ROUND,
+                FLOAT_RECORD[0],
+                FLOAT_RECORD[1],
+            ],
+        };
+        assert_proof(
+            row,
+            &context,
+            &["FR-405-AC-17", "FR-405-AC-18", "TC-953"],
+            &["filament-exact#181"],
+            theorems,
+        );
+        let proof = row.verus_proof.as_ref().unwrap();
+        for unproved in [
+            "NaN result",
+            "invalid flag",
+            "the order of charges",
+            "composition inside arithmetic",
+        ] {
+            assert!(proof.not_proved.contains(unproved), "{context}: {unproved}");
+        }
+        assert_eq!(
+            proof.not_proved.contains("strict Exact refusal"),
+            label.ends_with("Exact"),
+            "{context}: only the Exact rows add the strict refusal"
+        );
+        assert_eq!(
+            proof.proved.contains("Exact is rounded as nearest-even"),
+            label.ends_with("Exact"),
+            "{context}"
+        );
+    }
+
+    for (index, id) in [(11, "div"), (13, "rem"), (15, "mod")] {
+        let row = &rows[index];
+        let context = format!("division row {index}");
+        assert_eq!(
+            row.operation_ids,
+            [format!("filament.op.integer.{id}")],
+            "{context}"
+        );
+        assert_eq!(row.verdict, RowVerdict::NotTractable, "{context}");
+        assert_proof(
+            row,
+            &context,
+            &["FR-409-AC-11", "FR-409-AC-12", "TC-957"],
+            &["filament-exact#179"],
+            &["div_rem_post", "lemma_truncating"],
+        );
+        let proof = row.verus_proof.as_ref().unwrap();
+        assert!(proof.not_proved.contains("IR-1561"), "{context}");
+        assert!(proof.proved.contains("i128::MIN / -1"), "{context}");
+    }
+
+    let rational: [(usize, &[&str], &[&str]); 6] = [
+        (
+            60,
+            &["filament.native.rational.from_i64_parts"],
+            &[
+                "row_from_i64_parts",
+                "lemma_is_canonical_pair",
+                "lemma_coprime",
+            ],
+        ),
+        (
+            69,
+            &["filament.op.rational.eq"],
+            &["row_equal_structural_is_cross_product"],
+        ),
+        (
+            70,
+            &["filament.op.rational.lt", "filament.op.rational.le"],
+            &["row_order"],
+        ),
+        (
+            71,
+            &["filament.op.rational.add"],
+            &["row_add", "lemma_form_i64", "lemma_reduce"],
+        ),
+        (
+            72,
+            &["filament.op.rational.sub"],
+            &["row_subtract", "lemma_form_i64", "lemma_reduce"],
+        ),
+        (
+            73,
+            &["filament.op.rational.mul"],
+            &["row_multiply", "lemma_form_i64", "lemma_reduce"],
+        ),
+    ];
+    for (index, ids, theorems) in rational {
+        let row = &rows[index];
+        let context = format!("rational row {index}");
+        assert_eq!(row.operation_ids, ids, "{context}");
+        assert_eq!(row.verdict, RowVerdict::NotTractable, "{context}");
+        let records: &[&str] = if index == 69 {
+            &["FR-408-AC-13", "FR-408-AC-14", "TC-956", "FR-408-AC-15"]
+        } else {
+            &["FR-408-AC-13", "FR-408-AC-14", "TC-956"]
+        };
+        assert_proof(row, &context, records, &["filament-exact#175"], theorems);
+        let proof = row.verus_proof.as_ref().unwrap();
+        assert!(proof.assumes.contains("Meter::charge_units"), "{context}");
+        if matches!(index, 70..=73) {
+            assert!(
+                proof
+                    .not_proved
+                    .contains("Which requests a given Meter admits"),
+                "{context}"
+            );
+        }
+        // Equality: the production function is not proved in Verus; the Kani harness completes it.
+        assert_eq!(
+            proof.proved.contains("NOT proved in Verus"),
+            index == 69,
+            "{context}"
+        );
+    }
+}
+
+/// FR-056-AC-15 (IR-1562): the decimal rows carry the Verus verdict and no Kani measurement, state
+/// the `POWERS_OF_TEN` assumption, and say the operation proof is a mathematical statement and not
+/// equality with the executable owner route. They never refuse a clause.
+#[trace("TC-070", "FR-056-AC-15")]
+#[test]
+fn tc_070_the_decimal_rows_state_the_proof_scope_and_never_refuse() {
+    use filament_contract_codegen::RowVerdict;
+    let table = general_scalar_table();
+    let rows = table.rows();
+    assert_eq!(rows.len(), 77);
+    for (index, ids) in DECIMAL_ROWS {
+        let row = &rows[index];
+        let context = format!("decimal row {index}");
+        assert_eq!(row.operation_ids, ids, "{context}");
+        assert_eq!(row.route, IntegerRoute::Native, "{context}");
+        assert_eq!(row.verdict, RowVerdict::VerusProved, "{context}");
+        assert_eq!(row.max_operand_bits, 128, "{context}");
+        assert_eq!(row.wall_seconds, None, "{context}");
+        assert_eq!(row.peak_bytes, None, "{context}");
+        let proof = row.verus_proof.as_ref().expect("the proof");
+        assert!(proof.assumes.contains("POWERS_OF_TEN"), "{context}");
+        assert!(proof.assumes.contains("10^38"), "{context}");
+        if index == 74 {
+            assert_proof(
+                row,
+                &context,
+                &["FR-402-AC-13", "FR-402-AC-14", "FR-402-AC-15", "TC-950"],
+                &["filament-exact#186"],
+                &[
+                    "lemma_normalized",
+                    "row_normalized",
+                    "lemma_admits_normalized",
+                    "row_from_bindings",
+                ],
+            );
+            assert!(proof.not_proved.contains("read-out"), "{context}");
+        } else {
+            let theorems: &[&str] = if index == 75 {
+                &[
+                    "lemma_quotient_parts",
+                    "lemma_divide_parts",
+                    "lemma_late_refusals",
+                    "lemma_round_units",
+                    "lemma_rounds_unique",
+                    "lemma_proxy_rounds",
+                    "lemma_rounds_scale",
+                    "lemma_scaled_means",
+                    "lemma_quotient_means",
+                    "lemma_admitted",
+                    "lemma_strip_twos",
+                    "lemma_strip_fives",
+                    "lemma_loss_record",
+                    "lemma_bits_of",
+                    "lemma_digits_of",
+                ]
+            } else {
+                &[
+                    "lemma_compare_shifted",
+                    "lemma_widening_mul",
+                    "lemma_compare_magnitudes",
+                    "lemma_order_values",
+                    "lemma_bits_of",
+                    "lemma_digits_of",
+                ]
+            };
+            assert_proof(
+                row,
+                &context,
+                &["FR-403-AC-15", "FR-403-AC-16", "TC-951"],
+                &["filament-exact#188"],
+                theorems,
+            );
+            assert!(
+                proof
+                    .not_proved
+                    .contains("NOT equality with evaluate_decimal and order_numbers"),
+                "{context}"
+            );
+            assert!(proof.not_proved.contains("FR-403-AC-11"), "{context}");
+        }
+        for id in ids.iter().filter(|id| id.starts_with("filament.op.")) {
+            let features = ClauseFeatures::new(
+                IntegerRoute::Native,
+                vec![op_width(id, 128)],
+                Vec::new(),
+                None,
+            );
+            assert_eq!(table.decide(&features), Decision::Run, "{context}: {id}");
+        }
+    }
+}
+
+/// FR-056-AC-15 (IR-1562): the loader rejects a row that contradicts its verdict (a Verus verdict
+/// without its proof or with a Kani measurement, a Kani verdict without a wall time) and a proof
+/// with an unknown field.
+#[trace("TC-070", "FR-056-AC-15")]
+#[test]
+fn tc_070_the_loader_rejects_rows_that_contradict_their_verdict() {
+    let directory = TemporaryDirectory::new("ir1562-verdict-rows");
+    let proof = json!({
+        "records": ["FR-403-AC-15"],
+        "changes": ["filament-exact#188"],
+        "theorems": ["lemma_order_values"],
+        "proved": "p",
+        "not_proved": "n",
+        "assumes": "a",
+        "run": "r",
+    });
+    let mut proved = row_json(&[ADD], 128, "verus_proved");
+    proved["wall_seconds"] = json!(null);
+    proved["peak_bytes"] = json!(null);
+    proved["verus_proof"] = proof.clone();
+    let ok = write_table(&directory, "ok.json", &[proved.clone()]);
+    assert_eq!(TractabilityTable::load(&ok).unwrap().rows().len(), 1);
+
+    let mut without_proof = proved.clone();
+    without_proof.as_object_mut().unwrap().remove("verus_proof");
+    let mut with_wall = proved.clone();
+    with_wall["wall_seconds"] = json!(1);
+    let mut with_peak = proved.clone();
+    with_peak["peak_bytes"] = json!(1);
+    let mut kani_without_wall = row_json(&[ADD], 8, "not_tractable");
+    kani_without_wall["wall_seconds"] = json!(null);
+    let mut extra_field = proved.clone();
+    extra_field["verus_proof"]["tool"] = json!("x");
+    for (name, bad) in [
+        ("without-proof", without_proof),
+        ("with-wall", with_wall),
+        ("with-peak", with_peak),
+        ("kani-without-wall", kani_without_wall),
+        ("extra-field", extra_field),
+    ] {
+        let path = write_table(&directory, &format!("{name}.json"), &[bad]);
+        assert!(
+            matches!(
+                TractabilityTable::load(&path),
+                Err(TractabilityLoadError::MalformedRow { row: 0, .. })
+            ),
+            "{name}"
+        );
+    }
 }
 
 /// A request whose launcher and crate do not exist: any attempt to run it would be a different

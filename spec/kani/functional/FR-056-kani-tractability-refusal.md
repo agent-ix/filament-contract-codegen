@@ -54,16 +54,16 @@ a `not_tractable` row at 16 bits per operation (FR-057).
 
 The kernel's native float and rational rows (filament-exact #172, merged as 85034c5c; FR-405 and
 TC-953, FR-408 and TC-956) are in the table too, one row per harness of the records with `route`
-`native`, so the table holds 74 rows: 16 general-route and integer rows, 44 float rows and 14
-rational rows. A float row is one operation, width and rounding class (`NearestEven`, `Exact`, or
+`native`, so the table holds 77 rows: 16 general-route and integer rows, 44 float rows, 14
+rational rows and 3 decimal rows (a `verus_proved` row is described below). A float row is one operation, width and rounding class (`NearestEven`, `Exact`, or
 directed and nearest-away together), its `max_operand_bits` the float width (32 or 64); the class and
 the kernel harness id are in its `provenance`, which the decider never reads. Of the 44, 32 are
 `tractable` (VERIFIED, covers reached) and 12 are `not_tractable` solver hangs (seven at the 600 s
 probe, not extended; five at the 1800 s cap after a 600 s probe that timed out), each with no
-verdict and no proof claimed, owner IR-1551 (named in `provenance`, since a row has no owner field).
+verdict and no Kani proof claimed, owner IR-1551 (named in `provenance`, since a row has no owner field); the Verus proof of the kernel's record for these twelve is recorded on the rows (below).
 A rational row is one CG-domain operation (`max_operand_bits` 8, magnitudes below 256: 8
 `tractable`) or one full-`i64` operation (`max_operand_bits` 64: from-parts admission, equality,
-ordering, add, subtract and multiply, six `not_tractable` rows at 900 s, no verdict, owner IR-1544).
+ordering, add, subtract and multiply, six `not_tractable` rows at 900 s, no Kani verdict, owner IR-1544; the Verus proof of the kernel's record for them is recorded on the rows, below).
 The from-parts row's id `filament.native.rational.from_i64_parts` names the subject of the harness
 and is not a catalog operation. The tier lemma harnesses and the charge-denial harnesses of TC-956
 are not operations and have no row; their record stays in TC-956. The rows keep the kernel's
@@ -74,6 +74,35 @@ carries no integer operand width, so no float row selects a clause. Rows of one 
 that differ only in rounding class share a key, so a `not_tractable` row would also refuse a verified
 class of the same operation and width if a width were ever supplied; the table has no rounding feature
 (the same limitation as the division rows).
+
+The Verus verdicts of the kernel's record (IR-1562) are data on the table, never a mechanism. A row
+may carry an optional `verus_proof` (`records`, `changes`, `theorems`, `proved`, `not_proved`,
+`assumes`, `run`), which names the filament-exact requirement and test-case ids, the merged
+filament-exact changes and the theorems of the record, states exactly what the proof states for the
+row and what it does not, what it assumes, and the recorded run; it names no tool version. The decider
+never reads it, and it never changes the row's Kani `verdict`. Recorded this way: the twelve float
+`not_tractable` rows (filament-exact FR-405-AC-17 and AC-18, TC-953, #181: the numeric path of the
+planners and `round`; not the NaN result, the special operands, the charges or the composition inside
+`arithmetic`, and for the four `Exact` rows not the strict refusal), the six full-`i64` rational rows
+(FR-408-AC-13 to AC-15, TC-956, #175; the equality row is a statement over the cross products, with the
+production function completed by a Kani harness the row does not carry), and the three native `div`,
+`rem` and `mod` rows at 16 bits (FR-409-AC-11 and AC-12, TC-957, #179: the relation of
+`native_div_rem` over all of `i128`; the divisor-shape split of those rows is IR-1561). A new verdict,
+`verus_proved`, is for a row with no Kani probe: it requires a `verus_proof`, carries `null`
+`wall_seconds` and `peak_bytes` (a Kani verdict row requires `wall_seconds`), and never refuses.
+Three such decimal rows (`max_operand_bits` 128, the width of the proved coefficient domain) record the
+constructor and normalized view (`filament.native.decimal.from_bindings`; FR-402-AC-13 to AC-15,
+TC-950, #186), the six operations (add, sub, mul, div, negate and the subject id
+`filament.native.decimal.round`, which has no catalog id; FR-403-AC-15 and AC-16, TC-951, #188) and the
+ordering (lt, le, gt, ge). The constructor row assumes that the 39-entry `POWERS_OF_TEN` table holds
+`10^0` through `10^38` (a constant-initializer loop that Verus cannot check, covered by a host test in
+filament-exact). The operation and ordering proof is a mathematical statement (admission grounds in
+order, the exact or rounded coefficient, the loss record, the order by value) for all `i128`
+coefficients and `u32` scales; it is not equality with `evaluate_decimal` or `order_numbers`, whose
+agreement stays on the filament-exact host differential (FR-403-AC-11 and AC-12). The proofs assume
+`Meter::charge_units` appends an admitted request; admission stays with FR-359 and the CG-domain Kani
+rows. No row claims the CG measurement of the decimal carrier (filament-exact FR-402-AC-11,
+FR-403-AC-13, IR-259).
 
 The generation-time decider runs AFTER the operator check of FR-015-AC-42: it sees only operations the V2 clause
 path accepts today (connectives, the six integer comparisons, integer add, subtract, multiply and
@@ -195,9 +224,12 @@ run-level refusal of the general-route scalar harness, `src/kani/terminal/tracta
 implemented and host-tested. The host test `tc_070_the_ac13_multiply_fixtures_split_on_the_row_bound`
 negotiates on both routes: the general-route row refuses the general clause and not the native one.
 FR-056-AC-15 also covers the shipped native float and rational rows (IR-260, IR-258, IR-854): the table
-loads 74 rows, and `tc_070_the_shipped_table_holds_the_kernel_native_float_and_rational_rows` checks
+loads 77 rows, and `tc_070_the_shipped_table_holds_the_kernel_native_float_and_rational_rows` checks
 the counts, the verdicts, the limits and that every row names its record, its harness and (for
-`not_tractable`) its owner. The rows are copied, not re-measured; no Kani run is part of this change.
+`not_tractable`) its owner. The rows are copied, not re-measured; no Kani run is part of this change. The Verus verdicts and the
+three decimal rows (IR-1562) are checked by `tc_070_the_verus_verdicts_sit_on_exactly_the_rows_the_kernel_proves`,
+`tc_070_the_decimal_rows_state_the_proof_scope_and_never_refuse` and
+`tc_070_the_loader_rejects_rows_that_contradict_their_verdict`.
 FR-056-AC-1 to AC-9 and AC-11 to AC-12 are implemented and test-backed on the host
 (`tests/it/kani_tractability.rs`; corpus and baseline in `tests/fixtures/tractability/`).
 FR-056-AC-10 is partial: the shipped corpus holds twenty-six measured rows. Ten are `verified` or

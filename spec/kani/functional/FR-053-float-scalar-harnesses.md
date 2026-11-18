@@ -481,7 +481,8 @@ Delivered for the comparisons, tagged and passing (`tests/it/float_scalar_harnes
 
 Measured native record (IR-260, IR-1446): filament-exact #172 (85034c5c) records, per operation, width
 and rounding class, 32 VERIFIED harnesses and 12 solver-hang timeout rows (owner IR-1551), and CG's
-shipped table holds them as native-route rows (FR-056; they are a record, not a mechanism: the
+shipped table holds them as native-route rows, the twelve timeout rows with the Verus verdict of the
+kernel's record (FR-405-AC-17 and AC-18, TC-953; the numeric path only, FR-056) (FR-056; they are a record, not a mechanism: the
 decider does not select a float clause). They do not change the dispositions below. The revisit condition below is now met for Add and
 Subtract at both widths and Multiply at Binary32, whose every spelling group is VERIFIED in the record;
 revisiting the refusal ruling for them is open work for IR-260. AC-13's arithmetic half has a CG host

@@ -91,7 +91,7 @@ wall time of the whole `cargo kani` invocation (Kani's own verification time is 
 
 Float, 44 rows (one per operation, width and rounding class of TC-953): 32 are VERIFIED with their
 covers reached. 12 are timeouts that hang in the solver and return no verdict, so nothing is claimed
-for them. They are measured not-tractable rows owned by IR-1551 and wait on the deductive lane. Seven are at the
+for them. They are measured not-tractable rows owned by IR-1551. Their `verus_proof` field records the kernel's Verus proof of the numeric path (FR-405-AC-17 and AC-18, TC-953, filament-exact #181) and what it leaves unproved; the Kani verdict stays not tractable. Seven are at the
 600 s probe, not extended: Divide, SquareRoot and FusedMultiplyAdd `NearestEven` at Binary32; Multiply,
 Divide, SquareRoot and FusedMultiplyAdd `NearestEven` at Binary64. Five are at the 1800 s cap after a
 600 s probe that also timed out: Divide `Exact` at both widths, Divide directed at Binary64,
