@@ -426,6 +426,7 @@ fn set_limit(limits: &mut rt::ScalarLimits, kind: rt::LimitKind, value: u64) {
         rt::LimitKind::ValueOccurrences => limits.value_occurrences = value,
         rt::LimitKind::WorkUnits => limits.work_units = value,
         rt::LimitKind::ResultUnits => limits.result_units = value,
+        rt::LimitKind::LiveOccurrences => unreachable!("a session limit outside ScalarLimits and LimitKind::ALL"),
     }
 }
 fn agree(label: &str, expression: &Expr, x: u64, generated: &impl Fn(u64, &mut rt::Meter) -> Observation,
