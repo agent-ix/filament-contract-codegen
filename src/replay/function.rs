@@ -11,15 +11,16 @@
 use std::{collections::BTreeMap, fmt};
 
 use filament_semantic_value::{catalog::Category, supplied_stop::SuppliedLimits};
+use fsl_package::ObligationIdentity;
 use fsl_replay::{
     call_site, replay, witness_entry_name, BackendId, CallSite, CallSiteRefusal,
     CanonicalAssignment, DeclaredDomain, DependencyEntryWire, DependencyInput,
     DependencyInputRefusal, DisagreementCause, EnvelopeSource, FunctionSite, Identifier,
-    MalformedTranscript, NoPayload, NodeKey, NodeWireError, ObligationIdentity, OccurrenceKey,
-    QualifiedName, ReplayLimits, ReplayRefusal, ReplayRequestWire, ReplayResult, ReplaySource,
-    ReplayTarget, RequestTargetWire, ScalarLimits, SourceIdentity, StateEnvironment,
-    SuppliedLibrary, ValueParitySite, Witness, WitnessArmResult, WitnessEnvelope, WitnessPacket,
-    WitnessRefusal, WitnessSettlement, WitnessValue,
+    MalformedTranscript, NoPayload, NodeKey, NodeWireError, OccurrenceKey, QualifiedName,
+    ReplayLimits, ReplayRefusal, ReplayRequestWire, ReplayResult, ReplaySource, ReplayTarget,
+    RequestTargetWire, ScalarLimits, SourceIdentity, StateEnvironment, SuppliedLibrary,
+    ValueParitySite, Witness, WitnessArmResult, WitnessEnvelope, WitnessPacket, WitnessRefusal,
+    WitnessSettlement, WitnessValue,
 };
 
 use crate::{

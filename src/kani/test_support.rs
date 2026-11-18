@@ -324,21 +324,21 @@ fn legacy_fixture_never_invents_scalar_authority() {
 pub(crate) fn clause_obligation(
     package: &filament_contract_model::CheckedPackageV2,
     clause: &filament_contract_model::CheckedNodeId,
-) -> fsl_replay::ObligationIdentity {
+) -> fsl_package::ObligationIdentity {
     let node = package
         .structural_key(clause)
         .and_then(crate::core::ir::node_key::checked_node_key)
         .expect("admitted clause node has a structural key");
-    fsl_replay::ObligationIdentity::new(node, None, 0)
+    fsl_package::ObligationIdentity::new(node, None, 0)
 }
 
 /// A producer identity for fixtures that do not exercise FR-015-AC-48.
-pub(crate) fn fixture_obligation() -> fsl_replay::ObligationIdentity {
+pub(crate) fn fixture_obligation() -> fsl_package::ObligationIdentity {
     let node = fsl_replay::NodeKey::new(
         "fixture",
         vec![filament_exact::PathSegment::Text("clause".to_owned())],
         0,
     )
     .expect("fixture node");
-    fsl_replay::ObligationIdentity::new(node, None, 0)
+    fsl_package::ObligationIdentity::new(node, None, 0)
 }

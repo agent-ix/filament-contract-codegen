@@ -206,7 +206,7 @@ pub struct OriginalCompositeEqContext {
 struct SelectedParityClaim {
     operands: CheckedCompositeOperands,
     preimage: ParityPreimage,
-    obligation: fsl_replay::ObligationIdentity,
+    obligation: fsl_package::ObligationIdentity,
     claim: CompositeParityClaim,
 }
 
