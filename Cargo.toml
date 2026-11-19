@@ -41,8 +41,8 @@ filament-contract-runtime = { version = "0.1.1", git = "https://github.com/agent
 # re-exports and goes through its `replay` entry. Cargo.lock records the selected public source.
 # QSL-2166 interim rev pin: this current FSL main commit carries the existing v0.1.6 eval/checked
 # pins and contract-model v0.1.5. Replace it with the FSL release tag once one is cut.
-fsl-replay = { version = "0.3.0", git = "https://github.com/agent-ix/filament-spec-language", rev = "a2f4ae873c6f0eb8628bb1e79541f6af46ddfa17" }
-fsl-package = { version = "0.3.0", git = "https://github.com/agent-ix/filament-spec-language", rev = "a2f4ae873c6f0eb8628bb1e79541f6af46ddfa17" }
+fsl-replay = { version = "0.3.0", git = "https://github.com/agent-ix/filament-spec-language", rev = "13b0b11e7b00e7412976d7a4b55cc93aed528c38" }
+fsl-package = { version = "0.3.0", git = "https://github.com/agent-ix/filament-spec-language", rev = "13b0b11e7b00e7412976d7a4b55cc93aed528c38" }
 filament-eval = { version = "0.1.6", git = "https://github.com/agent-ix/filament-eval", tag = "v0.1.6" }
 # RFC 8785 encoding for CG artifact JSON, document content hashes, and fixed-shape records.
 quire-canonical = { version = "0.3.1", git = "https://github.com/agent-ix/quire-canonical", tag = "v0.3.1", features = ["serde_json"] }
