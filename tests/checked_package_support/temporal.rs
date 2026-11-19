@@ -124,6 +124,16 @@ pub(super) fn bind_clause(wire: &mut Value, declaration: CheckedNodeId) {
 /// Keep clock rows aligned with the graph nodes retained by a focused fixture.
 pub(super) fn retain_for_nodes(wire: &mut Value, keep: impl Fn(&CheckedNodeId) -> bool) {
     let root = wire.as_object_mut().expect("fixture package object");
+    if let Some(Value::Array(mut rows)) = root.remove("claim_names") {
+        rows.retain(|row| {
+            let declaration: CheckedNodeId = serde_json::from_value(row["declaration"].clone())
+                .expect("fixture claim name declaration");
+            keep(&declaration)
+        });
+        if !rows.is_empty() {
+            root.insert("claim_names".into(), Value::Array(rows));
+        }
+    }
     if let Some(names) = root.remove("temporal_clause_names") {
         let mut names: Vec<TemporalClauseName> =
             serde_json::from_value(names).expect("fixture temporal clause names");
