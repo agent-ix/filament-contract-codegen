@@ -197,7 +197,7 @@ fn conversion_preserves_original_causes_and_rejects_malformed_or_cross_method_ev
     assert!(
         matches!(
             &*compile,
-            fsl_replay::CallSiteRefusal::Compile { code, message }
+            fsl_replay::CallSiteRefusal::Compile { code, message, .. }
                 if *code == fsl_replay::Code::UndefinedExpression
                     && message.contains("unproved-nonzero")
         ),

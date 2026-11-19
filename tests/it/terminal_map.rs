@@ -634,6 +634,7 @@ fn for_each_setup_refusal(check: impl Fn(Code, ReplaySettlement<'_>)) {
             CallSiteRefusal::Compile {
                 code: Code::InvalidIdentifier,
                 message: "does not compile".to_owned(),
+                region: None,
             },
             CallSiteRefusal::ModelIntake {
                 alias: "m".to_owned(),

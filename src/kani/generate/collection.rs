@@ -1694,6 +1694,7 @@ pub(crate) mod tests {
                 definition_selections: Vec::new(),
                 required_features: Vec::new(),
                 dependency_selections: Vec::new(),
+                dependency_clock_selections: None,
                 refinement_internals: None,
             },
         }

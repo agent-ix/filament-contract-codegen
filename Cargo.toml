@@ -26,23 +26,25 @@ name = "cg_gates"
 path = "scripts/cg_gates.rs"
 
 [dependencies]
-# Shared public crates use the revisions selected by FSL; other first-party crates keep release tags.
+# Interim rev pin (QSL-2499 / QSL-2359): first-party crates pin merged main revs; swap to tags at the end-of-program tag set.
+# filament-contract-ir/-model stay at a461f0a1 (the rev FSL main a172890 pins) so the lock keeps ONE contract-ir source;
+# move to contract-ir main c9e52417 together with an FSL pin that selects it.
 ix-trace-rs = { version = "0.1.2", git = "https://github.com/agent-ix/ix-trace-rs", tag = "v0.1.2" }
-filament-exact = { version = "0.3.0", git = "https://github.com/agent-ix/filament-exact", rev = "b25ff96fee8ab80418e7f7aaf8e9441c60745ab1" }
-filament-semantic-value = { version = "0.1.5", git = "https://github.com/agent-ix/filament-semantic-value", rev = "3fd65564216ad917db391caf03ead4cd90316d39" }
-filament-contract-ir = { version = "0.1.5", git = "https://github.com/agent-ix/filament-contract-ir", rev = "88a53d17f2f06a5e0a1e3a81380c3b7896608387" }
+filament-exact = { version = "0.3.0", git = "https://github.com/agent-ix/filament-exact", rev = "b26a8e4c592503fccdc4a0e3d2cce23dd8487616" }
+filament-semantic-value = { version = "0.1.5", git = "https://github.com/agent-ix/filament-semantic-value", rev = "1df71c27e6db56c8118cf017689aa7fab6156cde" }
+filament-contract-ir = { version = "0.1.5", git = "https://github.com/agent-ix/filament-contract-ir", rev = "a461f0a1b18542b0a47e1e1676ef9015af48e8f4" }
 # The model items (`CheckedPackageV2`, `RequirementRef`, ...) come from filament-contract-model, a crate in
 # the same repository and the same lock entry as filament-contract-ir; the IR root crate is named only
 # for its `kani` module (IR AD-006 R3-C2).
-filament-contract-model = { version = "0.1.2", git = "https://github.com/agent-ix/filament-contract-ir", rev = "88a53d17f2f06a5e0a1e3a81380c3b7896608387" }
-filament-contract-runtime = { version = "0.1.1", git = "https://github.com/agent-ix/filament-contract-runtime", tag = "v0.1.1" }
+filament-contract-model = { version = "0.1.2", git = "https://github.com/agent-ix/filament-contract-ir", rev = "a461f0a1b18542b0a47e1e1676ef9015af48e8f4" }
+filament-contract-runtime = { version = "0.1.1", git = "https://github.com/agent-ix/filament-contract-runtime", rev = "69522c23fb81375d9f88b07d833338394891bd18" }
 # fsl-replay is the admitted-context facade; fsl-package supplies its structural identities.
 # replay adapter in src/replay/function.rs builds its requests from `call_site` and the crate's own
 # re-exports and goes through its `replay` entry. Cargo.lock records the selected public source.
 # QSL-2184 paired pin: keep FSL at the same merged revision in contract-codegen and the driver.
-fsl-replay = { version = "0.3.0", git = "https://github.com/agent-ix/filament-spec-language", rev = "aab16cf821f46727006cc6407e3d6c25deee9f14" }
-fsl-package = { version = "0.3.0", git = "https://github.com/agent-ix/filament-spec-language", rev = "aab16cf821f46727006cc6407e3d6c25deee9f14" }
-filament-eval = { version = "0.1.6", git = "https://github.com/agent-ix/filament-eval", rev = "ee1d9a3c0bc8f51e96246e5a33c69ff9a2db8db2" }
+fsl-replay = { version = "0.3.0", git = "https://github.com/agent-ix/filament-spec-language", rev = "a172890d7be1952f41184adf4a13c176c05cc15d" }
+fsl-package = { version = "0.3.0", git = "https://github.com/agent-ix/filament-spec-language", rev = "a172890d7be1952f41184adf4a13c176c05cc15d" }
+filament-eval = { version = "0.1.6", git = "https://github.com/agent-ix/filament-eval", rev = "6689fa06123ed46793734b6b5059c8cdef85027d" }
 # RFC 8785 encoding for CG artifact JSON, document content hashes, and fixed-shape records.
 quire-canonical = { version = "0.3.1", git = "https://github.com/agent-ix/quire-canonical", tag = "v0.3.1", features = ["serde_json"] }
 libc = "0.2"
@@ -57,12 +59,12 @@ syn = { version = "2.0.119", features = ["full", "visit"] }
 
 [dev-dependencies]
 filament-specification = { package = "filament-specification-qualification", version = "0.1.1", git = "https://github.com/agent-ix/filament-specification", tag = "v0.1.1" }
-filament-contract-model = { version = "0.1.2", git = "https://github.com/agent-ix/filament-contract-ir", rev = "88a53d17f2f06a5e0a1e3a81380c3b7896608387", features = ["test-support"] }
+filament-contract-model = { version = "0.1.2", git = "https://github.com/agent-ix/filament-contract-ir", rev = "a461f0a1b18542b0a47e1e1676ef9015af48e8f4", features = ["test-support"] }
 proc-macro2 = { version = "1.0.107", features = ["span-locations"] }
 jsonschema = { version = "0.17.1", default-features = false, features = ["draft202012"] }
 proptest = { version = "1.5.0", default-features = false, features = ["std"] }
 sha2 = "0.10.9"
-filament-contract-runtime = { version = "0.1.1", git = "https://github.com/agent-ix/filament-contract-runtime", tag = "v0.1.1", features = ["proptest", "exact"] }
+filament-contract-runtime = { version = "0.1.1", git = "https://github.com/agent-ix/filament-contract-runtime", rev = "69522c23fb81375d9f88b07d833338394891bd18", features = ["proptest", "exact"] }
 # The home of the checked-operation catalog Contract IR validates against; tests select law
 # definitions from it instead of copying them.
 filament-verification-contracts = { version = "0.2.1", git = "https://github.com/agent-ix/filament-verification-contracts", tag = "v0.2.1" }
