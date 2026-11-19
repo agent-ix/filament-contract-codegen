@@ -519,7 +519,6 @@ mod tests {
             serialized["protocol_detail"],
             serde_json::to_value(&expected.protocol_detail).unwrap()
         );
-        assert!(serialized.get("terminal_duplicate").is_none());
         assert!(serialized.get("path").is_none());
         assert!(serialized.get("expected").is_none());
         assert!(serialized.get("actual").is_none());

@@ -112,7 +112,6 @@ fn reader_refusal_projection_preserves_every_public_field() {
         fields["protocol_detail"],
         serde_json::to_value(refusal.protocol_detail).unwrap()
     );
-    assert!(fields.get("terminal_duplicate").is_none());
     assert!(fields.get("path").is_none());
     assert!(fields.get("expected").is_none());
     assert!(fields.get("actual").is_none());

@@ -442,8 +442,9 @@ from the respective reader outcomes. The refusal projection SHALL have fields
 `contract_version: Option<String>`, `document_pointer: Option<String>`,
 `extension_detail: Option<CheckedExtensionRefusalDetail>`,
 `protocol_detail: Option<CheckedProtocolRefusalDetail>`.
-The projection has no terminal-duplicate member: Contract IR admits several
-terminal nodes per model node and no longer refuses a duplicate.
+Contract IR admits several terminal nodes per model node, so the reader's
+refusal carries no terminal-duplicate detail and the projection has no
+member for one.
 The incomplete projection SHALL have fields `limit_kind: CheckedPackageLimit`,
 `limit: u64`, `consumed: u64` and `path: Option<String>`. These are the stable
 wire member names inside the existing `EnvelopeRefusal` adjacent-tag shape
