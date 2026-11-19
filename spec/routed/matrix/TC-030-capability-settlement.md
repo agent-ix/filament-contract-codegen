@@ -70,7 +70,7 @@ source-backed Kani `V2FunctionApplication`. Use an admitted checked source
 whose lowered function package selects a dependency: the internal reader's
 empty dependency set produces `Refused(MissingImport)`. Compare the returned
 `ContractPackageReadRefused` projection with a direct call to that reader on the
-same bytes and limits, including `code`, nonempty ordered typed `loci` with exact paths and source regions, `cause`, `locus`, `contract_version`, `document_pointer`, `extension_detail`, `protocol_detail` and `terminal_duplicate`, with every present and absent optional field. Assert obsolete `path`, `expected` and `actual` are not projection members. Exercise distinct extension, protocol and terminal detail refusals.
+same bytes and limits, including `code`, nonempty ordered typed `loci` with exact paths and source regions, `cause`, `locus`, `contract_version`, `document_pointer`, `extension_detail` and `protocol_detail`, with every present and absent optional field. Assert obsolete `path`, `expected` and `actual` are not projection members. Exercise distinct extension and protocol detail refusals.
 Assert no settlements or artifact and no `KaniFormRefused` or
 `OperationNotRendered`. Repeat with a source-backed package larger than the
 internal reader's bounded byte limit so that it returns `Incomplete`; compare

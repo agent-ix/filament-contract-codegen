@@ -19,7 +19,7 @@ use filament_contract_model::{ApplicationOperator, CheckedTerm};
 use filament_contract_model::{
     CheckedExtensionRefusalDetail, CheckedNodeId, CheckedPackageIncomplete, CheckedPackageLimit,
     CheckedPackageRefusal, CheckedPackageRefusalCause, CheckedPackageRefusalCode,
-    CheckedPackageRefusalLocation, CheckedProtocolRefusalDetail, CheckedTerminalDuplicate,
+    CheckedPackageRefusalLocation, CheckedProtocolRefusalDetail,
     ContractPackageV1,
 };
 use serde::Serialize;
@@ -846,8 +846,6 @@ pub struct ContractPackageRefusalProjection {
     pub extension_detail: Option<Box<CheckedExtensionRefusalDetail>>,
     /// Protocol event, type or interval context retained by the reader.
     pub protocol_detail: Option<Box<CheckedProtocolRefusalDetail>>,
-    /// Both parties to a duplicate terminal declaration.
-    pub terminal_duplicate: Option<CheckedTerminalDuplicate>,
 }
 
 /// Copy the reader's public refusal fields into CG's wire projection.
@@ -867,7 +865,6 @@ pub fn project_contract_package_refusal(
             .map(|path| path.as_str().to_owned()),
         extension_detail: refusal.extension_detail.clone(),
         protocol_detail: refusal.protocol_detail.clone(),
-        terminal_duplicate: refusal.terminal_duplicate.clone(),
     }
 }
 
