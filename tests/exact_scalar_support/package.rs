@@ -675,6 +675,7 @@ impl PackageBuilder {
         }
         let map = self.value["source_map"].as_array_mut().expect("source map");
         let start = map.len();
+        let source_for_names = source.clone();
         map.push(json!({
             "node_id": node_ref(digest),
             "role": role,
@@ -685,6 +686,20 @@ impl PackageBuilder {
                 "end": start + 1,
             }],
         }));
+        // The reader requires one `claim_names` row per named occurrence of a claim-bearing node.
+        if matches!((tag, form), ("claim", _) | ("state", "state_clause")) {
+            let rows = self.value["claim_names"].take();
+            let mut rows = rows.as_array().cloned().unwrap_or_default();
+            let name = format!("Claim{}", rows.len());
+            rows.push(json!({
+                "declaration": node_ref(digest),
+                "occurrence": {"role": role, "ordinal": 0},
+                "name": name,
+                "qualified_name": [name],
+                "declaration_region": {"source": source_for_names, "start": start, "end": start + 1},
+            }));
+            self.value["claim_names"] = Value::Array(rows);
+        }
         self
     }
 

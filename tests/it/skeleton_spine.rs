@@ -119,7 +119,8 @@ fn request_of(package: &ReplayPackage, source: ReplaySource) -> fsl_replay::Repl
         }
         ReplaySource::ObservedTemporal(_)
         | ReplaySource::ModelGraph(_)
-        | ReplaySource::ProtocolAnalysis(_) => {
+        | ReplaySource::ProtocolAnalysis(_)
+        | ReplaySource::Hybrid(_) => {
             panic!("the fixture requires a function replay source")
         }
     };

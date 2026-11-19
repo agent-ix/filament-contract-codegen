@@ -10,7 +10,52 @@ use filament_contract_model::CheckedPackageReadLimits;
 use filament_exact::{Integer, IntegerInterval};
 use fsl_replay::{NativeOutcome, OperatorParityResult, ReplayLimits};
 use ix_trace_rs::trace;
-use std::{collections::BTreeMap, fs, path::PathBuf, process::Command};
+use std::{
+    collections::BTreeMap,
+    fs,
+    path::PathBuf,
+    process::{Command, Output, Stdio},
+    thread,
+    time::{Duration, Instant},
+};
+
+/// Run `command` to completion, killing it when `limit` expires (portable replacement for `timeout`).
+fn output_with_deadline(command: &mut Command, limit: Duration) -> Output {
+    let mut child = command
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let mut stdout = child.stdout.take().unwrap();
+    let mut stderr = child.stderr.take().unwrap();
+    let out = thread::spawn(move || {
+        let mut buffer = Vec::new();
+        std::io::Read::read_to_end(&mut stdout, &mut buffer).unwrap();
+        buffer
+    });
+    let err = thread::spawn(move || {
+        let mut buffer = Vec::new();
+        std::io::Read::read_to_end(&mut stderr, &mut buffer).unwrap();
+        buffer
+    });
+    let deadline = Instant::now() + limit;
+    let status = loop {
+        if let Some(status) = child.try_wait().unwrap() {
+            break status;
+        }
+        if Instant::now() >= deadline {
+            child.kill().unwrap();
+            child.wait().unwrap();
+            panic!("command exceeded its {limit:?} deadline");
+        }
+        thread::sleep(Duration::from_millis(20));
+    };
+    Output {
+        status,
+        stdout: out.join().unwrap(),
+        stderr: err.join().unwrap(),
+    }
+}
 
 fn source(fixture: &ReplayFixture) -> LockedSource {
     LockedSource {
@@ -114,29 +159,24 @@ pub(super) fn observe(
     let main = format!("#[path=\"src/lib.rs\"] mod generated;\nuse filament_exact as rt;\nuse rt::ScalarLimits;\nfn main() {{ let mut meter = rt::Meter::new({:?});\n let outcome = generated::{}({arguments}, &mut meter).expect(\"actual generated oracle\");\n match outcome {{ rt::Outcome::Completed(value) => println!(\"completed:{{value}}\"), rt::Outcome::Refused(rt::Refusal::IntegerOutOfDomain {{..}}) => println!(\"out_of_range\"), rt::Outcome::Undefined(_) => println!(\"undefined\"), rt::Outcome::Incomplete(_) => println!(\"incomplete\"), other => panic!(\"unexpected native outcome: {{other:?}}\") }} }}", plan.scalar_limits(), fixture.harness.identity.oracle_symbol);
     fs::write(scratch.0.join("driver.rs"), main).unwrap();
     let binary = scratch.0.join("driver");
-    let mut compiler = Command::new("timeout");
+    let mut compiler = Command::new("rustc");
     super::native_driver_artifacts::compiler(&mut compiler);
     let compile = compiler
-        .args(["120", "rustc", "--edition=2021", "--cap-lints=allow"])
+        .args(["--edition=2021", "--cap-lints=allow"])
         .arg(scratch.0.join("driver.rs"))
         .arg("--extern")
         .arg(format!("filament_exact={}", exact.display()))
         .arg("-L")
         .arg(format!("dependency={}", deps.display()))
         .arg("-o")
-        .arg(&binary)
-        .output()
-        .unwrap();
+        .arg(&binary);
+    let compile = output_with_deadline(compile, Duration::from_secs(120));
     assert!(
         compile.status.success(),
         "compile the original staged artifact: {}",
         String::from_utf8_lossy(&compile.stderr)
     );
-    let execution = Command::new("timeout")
-        .arg("30")
-        .arg(&binary)
-        .output()
-        .unwrap();
+    let execution = output_with_deadline(&mut Command::new(&binary), Duration::from_secs(30));
     assert!(
         execution.status.success(),
         "native execution: {}",

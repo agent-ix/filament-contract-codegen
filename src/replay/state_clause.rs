@@ -472,7 +472,8 @@ impl<'a> From<&'a StateClauseReplayResult> for ReplaySettlement<'a> {
             ReplayResult::Input(_)
             | ReplayResult::ObservedTemporal(_)
             | ReplayResult::ModelGraph(_)
-            | ReplayResult::ProtocolAnalysis(_) => Self::CgDefect,
+            | ReplayResult::ProtocolAnalysis(_)
+            | ReplayResult::Hybrid(_) => Self::CgDefect,
         }
     }
 }
