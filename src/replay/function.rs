@@ -304,7 +304,8 @@ fn replay_falsification_through(
             ReplayResult::Input(_)
             | ReplayResult::ObservedTemporal(_)
             | ReplayResult::ModelGraph(_)
-            | ReplayResult::ProtocolAnalysis(_),
+            | ReplayResult::ProtocolAnalysis(_)
+            | ReplayResult::Hybrid(_),
         ) => Err(SpineReplayError::WrongArm),
         Err(refusal) => Err(refusal),
     }
@@ -849,7 +850,8 @@ impl ReplayPackage {
             ReplayResult::Witness(_)
             | ReplayResult::ObservedTemporal(_)
             | ReplayResult::ModelGraph(_)
-            | ReplayResult::ProtocolAnalysis(_) => Err(SpineReplayError::WrongArm),
+            | ReplayResult::ProtocolAnalysis(_)
+            | ReplayResult::Hybrid(_) => Err(SpineReplayError::WrongArm),
         }
     }
 
@@ -905,7 +907,8 @@ impl ReplayPackage {
             ReplayResult::Witness(_)
             | ReplayResult::ObservedTemporal(_)
             | ReplayResult::ModelGraph(_)
-            | ReplayResult::ProtocolAnalysis(_) => Err(SpineReplayError::WrongArm),
+            | ReplayResult::ProtocolAnalysis(_)
+            | ReplayResult::Hybrid(_) => Err(SpineReplayError::WrongArm),
         }
     }
 

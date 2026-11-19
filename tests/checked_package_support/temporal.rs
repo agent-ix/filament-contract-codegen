@@ -81,6 +81,7 @@ pub(super) fn bind_clause(wire: &mut Value, declaration: CheckedNodeId) {
         occurrence,
         clock_name: clock_name.into(),
         clock,
+        trace: None,
     };
     let root = wire.as_object_mut().expect("fixture package object");
     let mut rows: Vec<TemporalBinding> = serde_json::from_value(
