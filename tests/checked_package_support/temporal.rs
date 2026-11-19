@@ -2,7 +2,7 @@
 //! Clock bindings authored beside synthetic temporal clauses.
 
 use filament_contract_model::{
-    CheckedNodeId, ClockConfiguration, TemporalBinding, TemporalClauseName,
+    CheckedNodeId, CheckedSourceRegion, ClockConfiguration, TemporalBinding, TemporalClauseName,
 };
 use serde_json::{json, Value};
 
@@ -28,6 +28,22 @@ pub(super) fn bind_clause(wire: &mut Value, declaration: CheckedNodeId) {
     let occurrence = occurrence["ordinal"]
         .as_u64()
         .expect("fixture claim occurrence ordinal");
+    let declaration_region = wire["source_map"]
+        .as_array()
+        .expect("fixture source map")
+        .iter()
+        .find(|entry| {
+            entry["node_id"] == node_id
+                && entry["role"] == "claim"
+                && entry["ordinal"] == occurrence
+        })
+        .and_then(|entry| entry["regions"].as_array())
+        .and_then(|regions| regions.first())
+        .cloned()
+        .map(serde_json::from_value::<CheckedSourceRegion>)
+        .transpose()
+        .expect("fixture claim source region")
+        .expect("fixture claim source region exists");
     let laws = clause["body"]["operation"]["laws"]
         .as_array()
         .expect("temporal clause laws");
@@ -88,6 +104,7 @@ pub(super) fn bind_clause(wire: &mut Value, declaration: CheckedNodeId) {
         declaration,
         occurrence,
         name: "Clause0".into(),
+        declaration_region,
     };
     let mut names: Vec<TemporalClauseName> = serde_json::from_value(
         root.remove("temporal_clause_names")

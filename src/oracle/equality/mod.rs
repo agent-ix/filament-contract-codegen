@@ -788,6 +788,7 @@ pub(crate) fn encode_original_package(
         },
         CheckedPackageSidecarsRef {
             checked_term_data: original.checked_term_data(),
+            claim_names: original.claim_names(),
             temporal_bindings: original.temporal_bindings(),
             temporal_clause_names: original.temporal_clause_names(),
             schedulability_claims: original.schedulability_claim_rows(),
@@ -4025,6 +4026,7 @@ mod tests {
             },
             CheckedPackageSidecarsRef {
                 checked_term_data: original.checked_term_data(),
+                claim_names: original.claim_names(),
                 temporal_bindings: original.temporal_bindings(),
                 temporal_clause_names: original.temporal_clause_names(),
                 schedulability_claims: original.schedulability_claim_rows(),
