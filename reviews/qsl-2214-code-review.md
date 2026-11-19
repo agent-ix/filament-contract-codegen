@@ -42,3 +42,9 @@ The FSL dependency update is limited to `Cargo.toml` and `Cargo.lock`; no CI wor
 ## Findings Context
 
 The code review includes the Rust lane. No API, safety, concurrency, or wire behavior was changed in the diff. The dependency source mismatch is concrete and independently covered by an existing focused test, which fails on this head.
+
+## Dispositions
+
+| FND | Outcome | Reason |
+| --- | --- | --- |
+| FND-001 | fixed | Both generated-manifest FSL source constants now pin `13b0b11e7b00e7412976d7a4b55cc93aed528c38`; the focused consistency test passes on `9038a2137d8cabeecf2a1753dbef87141b7e075a`. |
