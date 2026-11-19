@@ -486,7 +486,6 @@ mod tests {
         );
         assert_eq!(refusal.extension_detail, expected.extension_detail);
         assert_eq!(refusal.protocol_detail, expected.protocol_detail);
-        assert_eq!(refusal.terminal_duplicate, expected.terminal_duplicate);
         let serialized = serde_json::to_value(&refusal).expect("serialize reader projection");
         assert_eq!(
             serialized["code"],
@@ -520,10 +519,7 @@ mod tests {
             serialized["protocol_detail"],
             serde_json::to_value(&expected.protocol_detail).unwrap()
         );
-        assert_eq!(
-            serialized["terminal_duplicate"],
-            serde_json::to_value(&expected.terminal_duplicate).unwrap()
-        );
+        assert!(serialized.get("terminal_duplicate").is_none());
         assert!(serialized.get("path").is_none());
         assert!(serialized.get("expected").is_none());
         assert!(serialized.get("actual").is_none());

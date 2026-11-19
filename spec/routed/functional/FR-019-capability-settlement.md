@@ -423,8 +423,8 @@ IR-892 adds `EnvelopeRefusal::ContractPackageReadRefused` and
 `EnvelopeRefusal::ContractPackageReadIncomplete` to that same public enum without
 changing `negotiate_backend_provider`'s result type. The locked Contract IR
 reader's `CheckedPackageRefusal` has public `code`, nonempty ordered typed `loci`,
-`cause`, `locus`, `contract_version`, `document_pointer`, `extension_detail`,
-`protocol_detail` and `terminal_duplicate` fields. Each locus retains its
+`cause`, `locus`, `contract_version`, `document_pointer`,
+`extension_detail` and `protocol_detail` fields. Each locus retains its
 optional RFC 6901 path and optional admitted source region; the first locus is
 primary. `CheckedPackageIncomplete` has public `limit_kind`, `limit`,
 `consumed` and `path` fields. Neither reader outcome struct implements
@@ -441,8 +441,9 @@ from the respective reader outcomes. The refusal projection SHALL have fields
 `cause: Option<CheckedPackageRefusalCause>`, `locus: Option<CheckedNodeId>`,
 `contract_version: Option<String>`, `document_pointer: Option<String>`,
 `extension_detail: Option<CheckedExtensionRefusalDetail>`,
-`protocol_detail: Option<CheckedProtocolRefusalDetail>` and
-`terminal_duplicate: Option<CheckedTerminalDuplicate>`.
+`protocol_detail: Option<CheckedProtocolRefusalDetail>`.
+The projection has no terminal-duplicate member: Contract IR admits several
+terminal nodes per model node and no longer refuses a duplicate.
 The incomplete projection SHALL have fields `limit_kind: CheckedPackageLimit`,
 `limit: u64`, `consumed: u64` and `path: Option<String>`. These are the stable
 wire member names inside the existing `EnvelopeRefusal` adjacent-tag shape
@@ -533,7 +534,7 @@ requires its exhaustive arms to compile. FR-019-AC-14 is a property of the retur
 | FR-019-AC-51 | Among several request items with non-`Admitted` preflight outcomes, the first failing item in manifest/item request order determines the whole-request `ContractPackageReadRefused` or `ContractPackageReadIncomplete` variant and projection, irrespective of outcome kind. Earlier successful items contribute no returned settlement or artifact. | Test (TC-030) |
 | FR-019-AC-52 | An `Admitted` Kani function-application read whose exact generator emits no claim, and a structural preflight rejection before any read, each retain item-level `KaniFormRefused { OperationNotRendered }` without a reader envelope refusal. | Test (TC-030) |
 | FR-019-AC-53 | Given an admitted package with bound driver items at driver indexes 0 and 2 around an excluded accounting-only position at index 1 whose accounting is `lowered` with a Kani-supported form, an FR-331 envelope with exactly two items settles the bound items without an `EnvelopeItemCount` refusal. Both `ContractItemSettlement.request_index` and its nested `ItemSettlement.request_index` equal 0 and 2 respectively, not envelope indexes 0 and 1. The excluded position produces no settlement or claim, and its own classifier-call and Kani-preflight-read counts are both zero. An envelope with fewer or more than two items returns the typed `EnvelopeItemCount` refusal. A context-only root changes neither count nor driver indexes. | Test (TC-030) |
-| FR-019-AC-54 | A `Refused(refusal)` outcome from the Kani oracle-function preflight reader produces `Err(EnvelopeRefusal::ContractPackageReadRefused { refusal: ContractPackageRefusalProjection })` for the whole request, copying the reader's `code`, nonempty ordered typed `loci` including paths and source regions, `cause`, `locus`, `contract_version`, `document_pointer`, `extension_detail`, `protocol_detail` and `terminal_duplicate` without loss or reinterpretation. The obsolete `path`, `expected` and `actual` projection members are absent. No item settlement or artifact is returned. Distinct extension, protocol and terminal refusals retain their exact detail payloads. | Test (TC-030) |
+| FR-019-AC-54 | A `Refused(refusal)` outcome from the Kani oracle-function preflight reader produces `Err(EnvelopeRefusal::ContractPackageReadRefused { refusal: ContractPackageRefusalProjection })` for the whole request, copying the reader's `code`, nonempty ordered typed `loci` including paths and source regions, `cause`, `locus`, `contract_version`, `document_pointer`, `extension_detail` and `protocol_detail` without loss or reinterpretation. The obsolete `path`, `expected` and `actual` projection members are absent. No item settlement or artifact is returned. Distinct extension and protocol refusals retain their exact detail payloads. | Test (TC-030) |
 | FR-019-AC-7 | An envelope whose `capability_vocabulary` is not exactly `filament.capability-kind/v1`, or is absent, is refused as `invalid_capability`/`unsupported-version` with none of its kinds read. | Test (TC-030) |
 | FR-019-AC-8 | An item with an absent extent classification settles `invalid-request` with `invalid_capability`/`absent-extent`, and an absent or unknown kind settles before the candidate table is consulted. | Test (TC-030) |
 | FR-019-AC-9 | A backend kind added without a negotiation arm does not compile: the dispatch is an exhaustive `match` over the closed kind with no catch-all arm. | Analysis |
