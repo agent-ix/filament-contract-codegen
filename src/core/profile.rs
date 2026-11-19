@@ -2,10 +2,10 @@
 //!
 //! The emitted oracle crate's `Cargo.toml` is written here once and called by the three oracle
 //! emitters. Every first-party dependency it names uses the source this crate's own `Cargo.toml`
-//! uses: git URL and release tag (an interim revision of FSL main for FSL until an fsl-* tag is
-//! cut). The sources are the same ones, so a scratch crate seeded with this crate's `Cargo.lock` resolves each
-//! first-party crate once and at the locked commit, with no branch resolved at generation or
-//! test time. `manifest_sources_match_this_crates_manifest` keeps the two spellings equal.
+//! uses: a Git URL with a release tag or commit revision. The FSL crates use a pinned main commit.
+//! A scratch crate seeded with this crate's `Cargo.lock` resolves each first-party crate once and
+//! at the locked commit, with no branch resolved at generation or test time.
+//! `manifest_sources_match_this_crates_manifest` keeps the two spellings equal.
 
 /// The runtime source every emitted manifest depends on, spelled as in this crate's `Cargo.toml`:
 /// the `git` and `rev` keys of the dependency table. Public so a scratch crate that compiles
