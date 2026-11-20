@@ -1198,7 +1198,7 @@ fn tc_031_independent_fr485_session_runs_all_four_functions_without_registration
             Value::Integer(Integer::from(right)),
         ];
         let evaluation = registry
-            .begin_call(&selection, arguments, &environment, &mut meter)
+            .begin_call_default(&selection, arguments, &environment, &mut meter)
             .expect("FSL accepts a direct call")
             .run()
             .expect("FSL interpreter completes");

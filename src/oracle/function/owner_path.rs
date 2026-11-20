@@ -625,7 +625,7 @@ where
     }
     let environment = ApplicationEnvironment::new(objects);
     let session = registry
-        .begin_call(&selection, arguments, &environment, meter)
+        .begin_call_default(&selection, arguments, &environment, meter)
         .map_err(CheckedFunctionError::ApplicationBeginRefused)?;
     Ok(session.run())
 }
