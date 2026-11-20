@@ -35,3 +35,18 @@ Code review with the rust-review lane, scoped to `git diff origin/main...HEAD`. 
 | --- | --- | --- | --- |
 | FND-001 | medium | The `Derivation` fall-through `map_or(Self::CgDefect, ..)` is reachable. `DerivationRefusal::Refused(SeparationRefusal)` carries the evaluation refusal's `CatalogCode` spelling, and kernel codes such as `integer_out_of_domain`, `division_out_of_domain`, `decimal_out_of_domain` and `rational_out_of_domain` are in FSL's catalog (`CATALOG_CATEGORIES`) but not in `fsl_foundation::Code::all()`. A state clause whose evaluation refuses with one of them therefore settles `CgDefect`, which is `Failed` with the code dropped. That violates the ticket's "never Failed without a code" and FR-029-AC-16's "any other FSL refusal as `Inconclusive(ReplayRefused)` with its catalog code", and it contradicts `CgDefect`'s doc ("carries no FSL catalog code"). | src/replay/state_clause.rs:457-465 |
 | FND-002 | low | `Code::all().iter().copied().find(\|c\| c.as_str() == other.code())` re-implements `fsl_foundation::Code::from_code`, which FSL already exports and round-trip tests. | src/replay/state_clause.rs:461-464 |
+
+## New findings (disposition pass 1)
+
+Re-reviewed at head 0734e1f8 (fix commit 4a256a10, then a merge of origin/main). PR-only diff against main: 10 files. Pins now equal main's exactly: FSL cc1c4d22, the same in `Cargo.toml`, `Cargo.lock` and `src/core/profile.rs`, so the driver/#872 mismatch is resolved by #872 landing.
+
+| ID | Severity | Summary | Refs |
+| --- | --- | --- | --- |
+| FND-003 | low | The `carry_derived_witness` doc says a refused, undefined or exhausted evaluation is "settled by the replay itself, which carries its own catalog code and cause in its result". FSL at cc1c4d22 does not do that. `execute/state_clause.rs:240-244` discards the refusal (`CallOutcome::Refused(_) => (Category::Refusal, None)`, `Incomplete(_) => Incomplete`, `Undefined { .. } => Inconclusive`), and the result settles `inconclusive` with `DisagreementCause::NoValue { proved: violation, replayed: <category> }`. Only the category reaches CG; no code and no cause. The behaviour is FSL's own settlement and is acceptable, but the comment states a property that does not hold. | src/replay/state_clause.rs:813-818 |
+
+## Dispositions
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-001 | fixed | The fall-through to `CgDefect` is gone. `Refused`, `Undefined` and `Exhausted` now keep `witness` absent and the replay settles them as FSL's `inconclusive` (`NoValue`), never `Failed`. Only `Replay` (to `Refused`) and `Fault` (to `DerivationFault`, settled `Fault`) end the replay. |
+| FND-002 | fixed | The `Code::all()` scan was removed together with the `Derivation` variant. |

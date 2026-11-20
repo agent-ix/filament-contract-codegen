@@ -813,8 +813,8 @@ impl StateClauseReplay {
 /// Stores the record FSL derived (FR-269) in the packet's payload. No record is a closed scope and
 /// leaves the payload as it is. A post state out of range, a clause that holds, and an evaluation
 /// FSL refused, left undefined or ran out of meter on are settled by the replay itself, which
-/// carries its own catalog code and cause in its result (FR-122, FR-029-AC-16), so each leaves it
-/// too. A refusal of the request ends the replay as the replay's own refusal, and an internal fault
+/// reports them as an inconclusive `NoValue` disagreement with the replayed category (FR-122,
+/// FR-029-AC-16), not by a catalog code, so each leaves it too. A refusal of the request ends the replay as the replay's own refusal, and an internal fault
 /// as a fault.
 fn carry_derived_witness(
     packet: &mut WitnessPacket<StateClauseCounterexample>,
@@ -1468,9 +1468,8 @@ mod tests {
     }
 
     /// FR-024-AC-77: no record (a closed scope), a post state out of range, a clause that holds and
-    /// an evaluation FSL refused (a kernel catalog code that is no foundation `Code`), left
-    /// undefined or ran out of meter on each leave the payload's witness absent and the replay
-    /// running, so the replay's own result carries the code.
+    /// an evaluation FSL refused, left undefined or ran out of meter on each leave the payload's
+    /// witness absent and the replay running, so the replay's own settlement stands.
     #[trace("FR-024-AC-77", "TC-035")]
     #[test]
     fn tc_035_a_closed_scope_and_every_evaluation_outcome_carry_no_record() {

@@ -30,3 +30,16 @@ This is a spec review of the PR's four spec edits. Ticket: QSL-2612, with the co
 | --- | --- | --- | --- |
 | FND-001 | medium | Older FR-024 text now contradicts FR-024-AC-76. FR-024-AC-63 and the two Behavior bullets at lines 389-396 and 448-451 still say the generator "shall set the payload's `witness` record to none" and that a decisive basis makes the result "`inconclusive` with cause `Witness`, which the generator returns as it is". After this PR the envelope sent to FSL carries the derived record, and FSL FR-269-AC-9 settles an absent record as agreement anyway. None of these was amended, and no Behavior SHALL states the new derivation step. | spec/replay/functional/FR-024-counterexample-envelope-intake.md:389-396, :448-451, :604 |
 | FND-002 | low | The FR-024-AC-77 evidence list puts `(src/replay/state_clause.rs)` after the two unit tests but gives no path for `tc_035_a_clause_that_holds_carries_no_witness_record`, which is in `tests/it/state_clause_derived_witness.rs`. | spec/replay/functional/FR-024-counterexample-envelope-intake.md:616 |
+
+## New findings (disposition pass 1)
+
+| ID | Severity | Summary | Refs |
+| --- | --- | --- | --- |
+| FND-003 | medium | Amended FR-024-AC-77 says the replay of a `Refused`, `Undefined` or `Exhausted` derivation "settles its own result, which carries FSL's catalog code, including kernel codes such as `integer_out_of_domain`". FSL cc1c4d22 `fsl-replay/src/execute/state_clause.rs:240-244` drops the evaluation's refusal record and keeps only the category. The result is `inconclusive` with `DisagreementCause::NoValue { proved: violation, replayed: refusal\|incomplete\|inconclusive }`, so CG reads `Inconclusive(ReplayParity(NoValue))` with no code or cause. The AC asserts a property no test checks and the system does not have. It also departs from the ticket correction ("map every other refusal by its code()/cause()") without saying so. The new settlement is FSL's own FR-122 reading and is the same as before this PR, so the fix is to state it truthfully, not to change the code. | spec/replay/functional/FR-024-counterexample-envelope-intake.md:616 |
+
+## Dispositions
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-001 | fixed | FR-024-AC-63 now reads "built as none; `StateClauseReplay::replay_through` then fills it with the record FSL derives (FR-024-AC-76)". Both Behavior bullets now state the derive-and-store step as a SHALL, and the stale `inconclusive` `Witness` sentence was removed. |
+| FND-002 | fixed | The FR-024-AC-77 evidence now gives `(tests/it/state_clause_derived_witness.rs)` for `tc_035_a_clause_that_holds_carries_no_witness_record`. |

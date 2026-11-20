@@ -29,3 +29,9 @@ This is a planless gap analysis of the PR's criteria against their tagged tests 
 | ID | Severity | Summary | Refs |
 | --- | --- | --- | --- |
 | FND-001 | medium | FR-024-AC-77's "`Replay` as the wrapped `ReplayRefusal`" arm has no test. Replacing `DerivationRefusal::Replay(refusal) => Self::Refused(refusal)` with `=> Self::CgDefect` and re-running the lib `replay::state_clause` tests plus the `it` tests `terminal_map`, `state_clause*` and `kani_obligations_state_clause_replay` leaves everything green: lib 8 pass, it 68 pass. The `Refused` and `Undefined` arms and the unmatched-code fall-through (code-review FND-001) are also unasserted. TC-035 step 50's mutation control "losing the code fails the mapping case" holds only for `Exhausted`. | src/replay/state_clause.rs:457-465; src/replay/state_clause.rs:1484-1502 |
+
+## Dispositions
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-001 | fixed | `tc_035_a_request_refusal_and_a_fault_end_the_replay` now feeds `DerivationRefusal::Replay(WrongModelGraphEntry)` through `carry_derived_witness` and asserts `StateClauseReplayError::Refused` and `ReplaySettlement::Refused(WrongModelGraphEntry)`, so the Replay-to-defect mutant is killed. `Fault` is asserted as `DerivationFault`, settled `Fault`. `tc_035_a_closed_scope_and_every_evaluation_outcome_carry_no_record` covers `Refused` (code `integer_out_of_domain`), `Undefined` and `Exhausted`. At 0734e1f8, lib `replay::state_clause` and `core::profile` pass 14, and `it` `terminal_map`, `state_clause*` and `kani_obligations_state_clause_replay` pass 68 with 3 ignored, `tc_040_the_state_clause_replay_reads_as_fr029_ac16` included. |
