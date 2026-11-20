@@ -124,6 +124,7 @@ mod scalar_replay_residuals;
 mod scalar_settlement;
 pub(crate) mod scratch_crate;
 mod skeleton_spine;
+mod state_clause_derived_witness;
 mod state_clause_invariant_replay;
 mod state_frame_obligation_identity;
 mod strategy_generation;

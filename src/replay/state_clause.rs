@@ -27,14 +27,15 @@ pub mod invariant;
 use std::{collections::BTreeMap, fmt};
 
 use filament_contract_model::{CheckedModelFieldsError, CheckedNodeId, CheckedPackageV2};
-use filament_semantic_value::catalog::Category;
+use filament_semantic_value::catalog::{Category, InternalFault};
 use fsl_replay::{
-    call_site, replay_state_clause, CallSiteRefusal, ClauseName, ClauseSelectionInput,
-    DeclaredDomain, DocumentRef, DomainKey, DomainKind, EmptyQualifiedName, EnvelopeSource,
-    FiniteBound, Integer, MalformedTranscript, OperationName, ProofBound, ProofBoundRefusal,
-    QualifiedName, ReplayRefusal, ReplayRequestWire, ReplayResult, ReplaySource,
-    ReplayTargetMembers, RequestTargetWire, StateClauseCounterexample, StateClauseReplayResult,
-    WitnessEnvelope, WitnessPacket, WitnessRefusal, WitnessSettlement, WitnessValue,
+    call_site, derive_state_clause_witness, replay_state_clause, CallSiteRefusal, ClauseName,
+    ClauseSelectionInput, DeclaredDomain, DerivationRefusal, DocumentRef, DomainKey, DomainKind,
+    EmptyQualifiedName, EnvelopeSource, FiniteBound, Integer, MalformedTranscript, OperationName,
+    ProofBound, ProofBoundRefusal, QualifiedName, ReplayRefusal, ReplayRequestWire, ReplayResult,
+    ReplaySource, ReplayTargetMembers, RequestTargetWire, SeparatingWitnessRecord,
+    StateClauseCounterexample, StateClauseReplayResult, WitnessEnvelope, WitnessPacket,
+    WitnessRefusal, WitnessSettlement, WitnessValue,
 };
 use quire_canonical::{Encode, FixedShape, ReadError};
 use serde::{Deserialize, Serialize};
@@ -338,6 +339,8 @@ pub enum StateClauseReplayError {
     GraphStartIsNotTarget,
     /// FSL refused the request or the envelope before settling a result.
     Refused(Box<ReplayRefusal>),
+    /// FSL's derivation of the separating witness (FR-269) hit an internal fault.
+    DerivationFault(InternalFault),
 }
 
 impl fmt::Display for StateClauseReplayError {
@@ -407,6 +410,9 @@ impl fmt::Display for StateClauseReplayError {
                 f.write_str("the graph playback starts from one object and targets another")
             }
             Self::Refused(refusal) => write!(f, "the state-clause replay was refused: {refusal}"),
+            Self::DerivationFault(fault) => {
+                write!(f, "the separating witness derivation faulted: {fault:?}")
+            }
         }
     }
 }
@@ -447,6 +453,7 @@ impl<'a> From<&'a StateClauseReplayError> for ReplaySettlement<'a> {
             | StateClauseReplayError::GraphStartIsNotTarget
             | StateClauseReplayError::UnsupportedOperationShape { .. } => Self::CgDefect,
             StateClauseReplayError::Refused(refusal) => Self::Refused(refusal),
+            StateClauseReplayError::DerivationFault(_) => Self::Fault,
         }
     }
 }
@@ -791,10 +798,47 @@ impl StateClauseReplay {
             &WitnessEnvelope<StateClauseCounterexample>,
         ) -> Result<StateClauseReplayResult, ReplayRefusal>,
     ) -> Result<StateClauseReplayResult, StateClauseReplayError> {
-        let envelope = WitnessEnvelope::reconstruct(self.packet, self.replay_limits)
+        let mut packet = self.packet;
+        let envelope = WitnessEnvelope::reconstruct(packet.clone(), self.replay_limits)
+            .map_err(StateClauseReplayError::Envelope)?;
+        let derived = derive_state_clause_witness(self.wire.clone(), &envelope, self.replay_limits);
+        carry_derived_witness(&mut packet, derived)?;
+        let envelope = WitnessEnvelope::reconstruct(packet, self.replay_limits)
             .map_err(StateClauseReplayError::Envelope)?;
         executor(self.wire, &envelope)
             .map_err(|refusal| StateClauseReplayError::Refused(Box::new(refusal)))
+    }
+}
+
+/// Stores the record FSL derived (FR-269) in the packet's payload. No record is a closed scope and
+/// leaves the payload as it is. A post state out of range, a clause that holds, and an evaluation
+/// FSL refused, left undefined or ran out of meter on are settled by the replay itself, which
+/// reports them as an inconclusive `NoValue` disagreement with the replayed category (FR-122,
+/// FR-029-AC-16), not by a catalog code, so each leaves it too. A refusal of the request ends the
+/// replay as the replay's own refusal, and an internal fault as a fault.
+fn carry_derived_witness(
+    packet: &mut WitnessPacket<StateClauseCounterexample>,
+    derived: Result<Option<SeparatingWitnessRecord>, DerivationRefusal>,
+) -> Result<(), StateClauseReplayError> {
+    match derived {
+        Ok(Some(record)) => {
+            if let Some(payload) = packet.family_payload.as_mut() {
+                payload.witness = Some(record);
+            }
+            Ok(())
+        }
+        Ok(None)
+        | Err(
+            DerivationRefusal::RangeViolation(_)
+            | DerivationRefusal::NotRefuted
+            | DerivationRefusal::Refused(_)
+            | DerivationRefusal::Undefined { .. }
+            | DerivationRefusal::Exhausted,
+        ) => Ok(()),
+        Err(DerivationRefusal::Replay(refusal)) => {
+            Err(StateClauseReplayError::Refused(Box::new(refusal)))
+        }
+        Err(DerivationRefusal::Fault(fault)) => Err(StateClauseReplayError::DerivationFault(fault)),
     }
 }
 
@@ -1250,6 +1294,8 @@ fn operation_declaration(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use filament_semantic_value::location::{ExpressionLocation, ExpressionOwner};
+    use fsl_replay::SeparationRefusal;
     use ix_trace_rs::trace;
 
     /// A document whose members are in non-sorted source order, whose text holds characters JSON
@@ -1395,5 +1441,97 @@ mod tests {
             .expect("the manifest has a dependencies table");
         assert!(!dependencies.contains("sha2 ="));
         assert!(!dependencies.contains("sha2="));
+    }
+
+    fn packet() -> WitnessPacket<StateClauseCounterexample> {
+        WitnessPacket {
+            obligation_identity: None,
+            occurrence_key: None,
+            clause_node: None,
+            replay_target: ReplayTargetMembers::default(),
+            profile_selections: None,
+            run_limits: None,
+            declared_domains: None,
+            backend: None,
+            trace_position: None,
+            source: None,
+            family_payload: Some(StateClauseCounterexample {
+                observation: ClauseSelectionInput::Invocation {
+                    invocation: DocumentRef {
+                        authority: "test".to_owned(),
+                        identity: "invocation".to_owned(),
+                    },
+                },
+                witness: None,
+            }),
+        }
+    }
+
+    /// FR-024-AC-77: no record (a closed scope), a post state out of range, a clause that holds and
+    /// an evaluation FSL refused, left undefined or ran out of meter on each leave the payload's
+    /// witness absent and the replay running, so the replay's own settlement stands.
+    #[trace("FR-024-AC-77", "TC-035")]
+    #[test]
+    fn tc_035_a_closed_scope_and_every_evaluation_outcome_carry_no_record() {
+        let refused = SeparationRefusal {
+            code: "integer_out_of_domain".to_owned(),
+            cause: "outside-domain".to_owned(),
+            fields: BTreeMap::new(),
+        };
+        let location = ExpressionLocation::root(ExpressionOwner::Body {
+            function: "f".to_owned(),
+            index: 0,
+        });
+        for derived in [
+            Ok(None),
+            Err(DerivationRefusal::RangeViolation(Vec::new())),
+            Err(DerivationRefusal::NotRefuted),
+            Err(DerivationRefusal::Refused(refused)),
+            Err(DerivationRefusal::Undefined {
+                expression: location,
+                cause: "division-by-zero",
+            }),
+            Err(DerivationRefusal::Exhausted),
+        ] {
+            let mut packet = packet();
+            carry_derived_witness(&mut packet, derived).expect("the replay goes on");
+            assert_eq!(packet.family_payload.expect("payload").witness, None);
+        }
+    }
+
+    /// FR-024-AC-77: a refusal of the request ends the replay as the replay's own refusal, read as
+    /// every FSL refusal is, and an internal fault as a fault.
+    #[trace("FR-024-AC-77", "FR-029-AC-16", "TC-035")]
+    #[test]
+    fn tc_035_a_request_refusal_and_a_fault_end_the_replay() {
+        let mut packet = packet();
+        let error = carry_derived_witness(
+            &mut packet,
+            Err(DerivationRefusal::Replay(
+                ReplayRefusal::WrongModelGraphEntry,
+            )),
+        )
+        .expect_err("a refusal ends the replay");
+        assert!(matches!(
+            &error,
+            StateClauseReplayError::Refused(refusal)
+                if matches!(**refusal, ReplayRefusal::WrongModelGraphEntry)
+        ));
+        assert!(matches!(
+            ReplaySettlement::from(&error),
+            ReplaySettlement::Refused(ReplayRefusal::WrongModelGraphEntry)
+        ));
+        let fault = carry_derived_witness(
+            &mut packet,
+            Err(DerivationRefusal::Fault(InternalFault::new(
+                "replay", "broken",
+            ))),
+        )
+        .expect_err("a fault ends the replay");
+        assert!(matches!(fault, StateClauseReplayError::DerivationFault(_)));
+        assert!(matches!(
+            ReplaySettlement::from(&fault),
+            ReplaySettlement::Fault
+        ));
     }
 }
