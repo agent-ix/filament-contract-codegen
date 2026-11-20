@@ -22,7 +22,7 @@ fn reader<'a, 'view>(
     }
 }
 
-/// The `case` applications are in source order: `pick`, `words`, `area`.
+/// The `case` applications are in node order: `pick`, `area`, `words`.
 fn case_arguments(package: &CheckedPackageV2, position: usize) -> &[CheckedTerm] {
     applications(package, CONTROL_CASE)[position]
 }
@@ -46,7 +46,7 @@ fn union_members_lists_each_member_with_its_payload_arity_in_declaration_order()
         ])
     );
     let shape = view
-        .node(read_node(&case_arguments(&package, 2)[0]))
+        .node(read_node(&case_arguments(&package, 1)[0]))
         .unwrap()
         .semantic_type
         .clone();
@@ -99,7 +99,7 @@ fn a_case_is_refused_for_a_payload_a_duplicate_arm_a_wrong_side_or_a_foreign_scr
     let parameter = read_node(&pick[0]);
     let current = ClauseInputSide::Current;
     // A payload-carrying member.
-    let area = case_arguments(&package, 2);
+    let area = case_arguments(&package, 1);
     let mut payload = reader(&package, &view, &[read_node(&area[0])], Vec::new());
     assert!(payload.case_term(area, current).is_none());
     // A duplicate arm: three arms, one member twice.

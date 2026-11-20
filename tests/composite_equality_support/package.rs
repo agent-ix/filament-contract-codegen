@@ -587,7 +587,24 @@ impl PackageBuilder {
     pub fn model_owned_object_type(&mut self, code: u32, identity: &str, node: &str) -> &mut Self {
         let path = key(code);
         let node_id = self.node_ref(&path);
-        let source = self.value["lock"]["sources"][0].clone();
+        // A model declaration node carries the one generated occurrence of its model root, with the
+        // root's regions.
+        let root_regions = self.value["semantic_graph"]["nodes"]
+            .as_array()
+            .expect("nodes")
+            .iter()
+            .find(|node| {
+                node["owner"]["kind"] == "model_root" && node["owner"]["identity"] == identity
+            })
+            .map(|root| root["node_id"].clone())
+            .and_then(|root| {
+                self.value["source_map"]
+                    .as_array()?
+                    .iter()
+                    .find(|entry| entry["node_id"] == root)
+                    .map(|entry| entry["regions"].clone())
+            })
+            .expect("the model root has a source-map entry");
         self.value["semantic_graph"]["nodes"]
             .as_array_mut()
             .expect("nodes")
@@ -598,17 +615,16 @@ impl PackageBuilder {
                 "semantic_form": "object_type",
                 "semantic_type": node_id,
                 "dependencies": [],
-                "occurrences": [{"role": "type", "ordinal": 0}],
+                "occurrences": [{"role": "generated", "ordinal": 0}],
                 "body": aggregate(vec![]),
                 "owner": {"kind": "model", "identity": identity, "node": node},
             }));
         let source_map = self.value["source_map"].as_array_mut().expect("source map");
-        let position = source_map.len();
         source_map.push(json!({
             "node_id": node_id,
-            "role": "type",
+            "role": "generated",
             "ordinal": 0,
-            "regions": [{"source": source, "start": position, "end": position + 1}],
+            "regions": root_regions,
         }));
         self
     }

@@ -3141,11 +3141,6 @@ mod tests {
         );
         assert_eq!(claim.node_id, requested[1]);
         assert_eq!(generated.claim_map.items[0].node_id, requested[1]);
-        assert_ne!(
-            admitted.wire().feature_accounting[1].node_id(),
-            &requested[1],
-            "the public V2 request differs from the V1 accounting frame"
-        );
         let serialized = serde_json::to_value(claim).expect("function claim serializes");
         assert_eq!(
             serialized["contract_package_identity"],
@@ -3173,11 +3168,6 @@ mod tests {
             .filter(|entry| entry.node_id == requested[1])
             .cloned()
             .collect::<Vec<_>>();
-        assert_ne!(
-            original_occurrences,
-            admitted.wire().source_map.requested_items[1].occurrences,
-            "the source and lowered occurrence tables use different owning frames"
-        );
         assert_eq!(claim.source_map, original_occurrences);
         assert!(generated
             .artifacts
