@@ -3729,7 +3729,7 @@ mod control_shape_tests {
     #[test]
     fn a_case_over_a_union_with_a_payload_member_is_refused_for_the_payload() {
         assert_eq!(
-            shape(CONTROL_CASE, 2, true),
+            shape(CONTROL_CASE, 1, true),
             Err(V2ClauseControlReason::CaseUnionPayloadNotSupported)
         );
     }
@@ -3738,7 +3738,7 @@ mod control_shape_tests {
     #[test]
     fn a_case_with_a_non_native_arm_body_is_refused_for_the_arm() {
         assert_eq!(
-            shape(CONTROL_CASE, 1, true),
+            shape(CONTROL_CASE, 2, true),
             Err(V2ClauseControlReason::CaseArmNotNativeScalar)
         );
     }

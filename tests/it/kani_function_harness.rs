@@ -282,7 +282,7 @@ fn kani_probe() {
         work_units: large, result_units: large,
     });
     let transition = factory.begin()
-        .resume(Resume::Start(vec![Value::Integer(Integer::from(0_i64)), Value::Integer(Integer::from(0_i64))]), &mut meter)
+        .resume(Resume::Start(vec![Value::Integer(Integer::from(0_i64)), Value::Integer(Integer::from(0_i64))]), &mut eval::LiveContext::new(u64::from(u32::MAX)), &mut meter)
         .expect("the rebuilt body runs");
     let Transition::Done(evaluation) = transition else { panic!("one step") };
     assert!(matches!(evaluation.outcome, FamilyOutcome::Evaluated(Outcome::Completed(Value::Boolean(true)))));

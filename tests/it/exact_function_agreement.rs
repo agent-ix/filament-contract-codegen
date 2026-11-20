@@ -1724,7 +1724,7 @@ pub(super) fn invoke_native_body(
     let prepared = PreparedFunction::new(declaring_package, acquired, selection, &Default::default(),
         sv::location::ExpressionLocation::root(sv::location::ExpressionOwner::Expression)).expect("same checked owner");
     let factory = body_{boolean_body_symbol}::Factory(std::sync::Arc::new(prepared));
-    factory.begin().resume(Resume::Start(arguments), meter)
+    factory.begin().resume(Resume::Start(arguments), &mut eval::LiveContext::new(u64::from(u32::MAX)), meter)
 }}
 "#));
         contents.push_str(&aliases);

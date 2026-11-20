@@ -857,6 +857,7 @@ mod tests {
         fn resume(
             &mut self,
             input: Resume,
+            _context: &mut filament_eval::LiveContext,
             _meter: &mut Meter,
         ) -> Result<Transition, filament_eval::BodyFailure> {
             match input {
@@ -891,6 +892,7 @@ mod tests {
         fn resume(
             &mut self,
             input: Resume,
+            _context: &mut filament_eval::LiveContext,
             _meter: &mut Meter,
         ) -> Result<Transition, filament_eval::BodyFailure> {
             match input {
