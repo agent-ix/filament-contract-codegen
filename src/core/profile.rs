@@ -11,7 +11,7 @@
 /// the `git` and `rev` keys of the dependency table. Public so a scratch crate that compiles
 /// generated code names the runtime the same way and cannot drift from the emitter.
 pub const RUNTIME_DEPENDENCY_SOURCE: &str =
-    "git = \"https://github.com/agent-ix/filament-contract-runtime\", rev = \"69522c23fb81375d9f88b07d833338394891bd18\"";
+    "git = \"https://github.com/agent-ix/filament-contract-runtime\", rev = \"93e3681ad772971e48c5d2804969e5940b1a131d\"";
 
 /// The authoritative exact-kernel source used by generated scalar, equality and function
 /// oracles.
