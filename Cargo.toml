@@ -65,7 +65,7 @@ sha2 = "0.10.9"
 filament-contract-runtime = { version = "0.1.1", git = "https://github.com/agent-ix/filament-contract-runtime", rev = "69522c23fb81375d9f88b07d833338394891bd18", features = ["proptest", "exact"] }
 # The home of the checked-operation catalog Contract IR validates against; tests select law
 # definitions from it instead of copying them.
-filament-verification-contracts = { version = "0.2.1", git = "https://github.com/agent-ix/filament-verification-contracts", tag = "v0.2.1" }
+filament-verification-contracts = { version = "0.2.1", git = "https://github.com/agent-ix/filament-verification-contracts", rev = "2714219621cfbfabdd8d411c39d9109d956b85dd" }
 
 
 
