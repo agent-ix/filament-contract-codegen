@@ -3086,7 +3086,9 @@ mod tests {
             .node_id
             .clone();
         let call_arguments = source_call_arguments(&checked, &call);
-        let requested = vec![addition.clone(), call.clone()];
+        // A context-only root first puts the call at a different position in the V1 accounting
+        // frame than in the V2 request, so the claim must key by the V2 request.
+        let requested = vec![integer.clone(), addition.clone(), call.clone()];
         let lowered = checked.lower(&requested, &routed_contract_lowering_profile());
         let admitted = match ContractPackageWireV1::read(
             lowered.package.canonical_bytes().expect("FR-330 bytes"),
@@ -3121,9 +3123,9 @@ mod tests {
             &checked,
             &admitted,
             &drivers(&requested),
-            &[0],
-            &[function],
             &[1],
+            &[function],
+            &[2],
             &[call_item],
         )
         .expect("admitted function generation");
@@ -3139,8 +3141,17 @@ mod tests {
             claim.contract_package_identity,
             admitted.wire().package.source
         );
-        assert_eq!(claim.node_id, requested[1]);
-        assert_eq!(generated.claim_map.items[0].node_id, requested[1]);
+        assert_eq!(claim.node_id, requested[2]);
+        assert_eq!(generated.claim_map.items[0].node_id, requested[2]);
+        // Observed with FSL cc1c4d22 and contract-ir c2146579: the lowered package reuses the V2
+        // request's structural key table, so the accounting frame's index equals the request's even
+        // with a context-only root first. FR-039-AC-11 words this case as "even when raw V2 and V1
+        // indexes differ"; that wording needs a spec edit unless a package that differs exists.
+        assert_eq!(
+            admitted.wire().feature_accounting[2].node_id(),
+            &requested[2],
+            "the V1 accounting frame names the V2 request"
+        );
         let serialized = serde_json::to_value(claim).expect("function claim serializes");
         assert_eq!(
             serialized["contract_package_identity"],
@@ -3148,11 +3159,11 @@ mod tests {
         );
         assert_eq!(
             serialized["node_id"],
-            serde_json::to_value(&requested[1]).expect("V2 request serializes")
+            serde_json::to_value(&requested[2]).expect("V2 request serializes")
         );
         assert!(serialized.get("ir_id").is_none());
         let source_key =
-            filament_contract_model::ContractSourceKeyV1::from_v2_request(&checked, &requested[1])
+            filament_contract_model::ContractSourceKeyV1::from_v2_request(&checked, &requested[2])
                 .expect("admitted source-frame key");
         let ContractRootViewV1::Lowered(closure) = admitted
             .reached_closure(&source_key)
@@ -3165,9 +3176,14 @@ mod tests {
         let original_occurrences = checked
             .source_map()
             .iter()
-            .filter(|entry| entry.node_id == requested[1])
+            .filter(|entry| entry.node_id == requested[2])
             .cloned()
             .collect::<Vec<_>>();
+        assert_eq!(
+            original_occurrences,
+            admitted.wire().source_map.requested_items[2].occurrences,
+            "the lowered occurrence table is the source table for the same frame"
+        );
         assert_eq!(claim.source_map, original_occurrences);
         assert!(generated
             .artifacts

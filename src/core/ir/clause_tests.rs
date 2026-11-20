@@ -1,4 +1,4 @@
-use super::control_fixture::{applications, package, read_node, scalar_type_node};
+use super::control_fixture::{function_application, package, read_node, scalar_type_node};
 use super::*;
 use ix_trace_rs::trace;
 
@@ -22,9 +22,9 @@ fn reader<'a, 'view>(
     }
 }
 
-/// The `case` applications are in node order: `pick`, `area`, `words`.
-fn case_arguments(package: &CheckedPackageV2, position: usize) -> &[CheckedTerm] {
-    applications(package, CONTROL_CASE)[position]
+/// The `case` application that is the body of the source function `function`.
+fn case_arguments<'a>(package: &'a CheckedPackageV2, function: &str) -> &'a [CheckedTerm] {
+    function_application(package, function, CONTROL_CASE)
 }
 
 #[trace("FR-015-AC-154", "TC-025")]
@@ -33,7 +33,7 @@ fn union_members_lists_each_member_with_its_payload_arity_in_declaration_order()
     let package = package();
     let view = ClauseGraphView::new(&package);
     let kind = view
-        .node(read_node(&case_arguments(&package, 0)[0]))
+        .node(read_node(&case_arguments(&package, "pick")[0]))
         .unwrap()
         .semantic_type
         .clone();
@@ -46,7 +46,7 @@ fn union_members_lists_each_member_with_its_payload_arity_in_declaration_order()
         ])
     );
     let shape = view
-        .node(read_node(&case_arguments(&package, 1)[0]))
+        .node(read_node(&case_arguments(&package, "area")[0]))
         .unwrap()
         .semantic_type
         .clone();
@@ -64,7 +64,7 @@ fn union_members_lists_each_member_with_its_payload_arity_in_declaration_order()
 fn a_case_reads_one_arm_per_member_in_declaration_order_whatever_the_source_order() {
     let package = package();
     let view = ClauseGraphView::new(&package);
-    let arguments = case_arguments(&package, 0);
+    let arguments = case_arguments(&package, "pick");
     let parameter = read_node(&arguments[0]);
     let mut reader = reader(&package, &view, &[parameter], Vec::new());
     // The source writes the arms `C`, `A`, `B`.
@@ -95,11 +95,11 @@ fn a_case_reads_one_arm_per_member_in_declaration_order_whatever_the_source_orde
 fn a_case_is_refused_for_a_payload_a_duplicate_arm_a_wrong_side_or_a_foreign_scrutinee() {
     let package = package();
     let view = ClauseGraphView::new(&package);
-    let pick = case_arguments(&package, 0);
+    let pick = case_arguments(&package, "pick");
     let parameter = read_node(&pick[0]);
     let current = ClauseInputSide::Current;
     // A payload-carrying member.
-    let area = case_arguments(&package, 1);
+    let area = case_arguments(&package, "area");
     let mut payload = reader(&package, &view, &[read_node(&area[0])], Vec::new());
     assert!(payload.case_term(area, current).is_none());
     // A duplicate arm: three arms, one member twice.
@@ -124,7 +124,7 @@ fn a_case_is_refused_for_a_payload_a_duplicate_arm_a_wrong_side_or_a_foreign_scr
 fn a_parameter_read_resolves_to_the_innermost_binder_of_its_declared_name() {
     let package = package();
     let view = ClauseGraphView::new(&package);
-    let pick = case_arguments(&package, 0);
+    let pick = case_arguments(&package, "pick");
     let parameter = read_node(&pick[0]);
     let resolve = |scopes: Vec<(String, usize)>| {
         reader(&package, &view, &[parameter], scopes).binder(parameter)
