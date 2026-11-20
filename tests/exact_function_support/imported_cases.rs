@@ -7,10 +7,6 @@ mod generated {
     include!(concat!(env!("CARGO_MANIFEST_DIR"), "/names.rs"));
 }
 
-use fsl_replay::{
-    acquire_checked_closure, ApplicationEnvironment, CompileUnit, DependencyInput, LibraryName,
-    ReplayLimits, SourceIdentity, StageLimits, SuppliedLibrary,
-};
 use filament_contract_codegen::{checked_function_key, CheckedFunctionSource};
 use filament_contract_model::{
     CheckedNodeId, CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
@@ -19,6 +15,10 @@ use filament_contract_model::{
 use filament_eval::FamilyOutcome;
 use filament_exact::{Integer, LimitKind, Meter, Outcome, ScalarLimits, Value};
 use filament_semantic_value::object_closure::ObjectClosure;
+use fsl_replay::{
+    acquire_checked_closure, ApplicationEnvironment, CompileUnit, DependencyInput, LibraryName,
+    ReplayLimits, SourceIdentity, StageLimits, SuppliedLibrary,
+};
 use std::sync::Arc;
 
 fn library_identity() -> SourceIdentity {
@@ -171,7 +171,7 @@ fn generated_library_body_matches_importer_facade_application() {
     let environment = ApplicationEnvironment::new(ObjectClosure::default());
     let mut direct_meter = meter();
     let expected = registry
-        .begin_call(&selection, arguments, &environment, &mut direct_meter)
+        .begin_call_default(&selection, arguments, &environment, &mut direct_meter)
         .expect("FSL begins without generated registration")
         .run()
         .expect("FSL interpreter completes");

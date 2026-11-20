@@ -8,11 +8,9 @@ mod generated {
     include!(concat!(env!("CARGO_MANIFEST_DIR"), "/names.rs"));
 }
 
-use fsl_replay::{
-    acquire_checked_closure, ApplicationEnvironment, CompileUnit, DependencyInput, LibraryName,
-    ReplayLimits, SourceIdentity, StageLimits,
+use filament_contract_codegen::{
+    checked_function_key, CheckedFunctionError, CheckedFunctionSource,
 };
-use filament_contract_codegen::{checked_function_key, CheckedFunctionError, CheckedFunctionSource};
 use filament_contract_model::{
     CheckedNodeId, CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageV2,
     CheckedPackageV2ReadResult,
@@ -22,6 +20,10 @@ use filament_exact::{
     ChargePoint, InjectedDenial, Integer, LimitKind, Meter, Outcome, ScalarLimits, Value,
 };
 use filament_semantic_value::object_closure::ObjectClosure;
+use fsl_replay::{
+    acquire_checked_closure, ApplicationEnvironment, CompileUnit, DependencyInput, LibraryName,
+    ReplayLimits, SourceIdentity, StageLimits,
+};
 use std::num::NonZeroU64;
 
 fn source_identity() -> SourceIdentity {
@@ -175,7 +177,7 @@ fn direct(
     let mut registry = handle.registry();
     let environment = ApplicationEnvironment::new(ObjectClosure::default());
     registry
-        .begin_call(&selection, arguments, &environment, meter)
+        .begin_call_default(&selection, arguments, &environment, meter)
         .expect("direct FSL Begin")
         .run()
         .expect("interpreted body completes")
@@ -358,7 +360,7 @@ fn direct_begin_refusal(
         .expect("FSL selects add");
     let mut registry = handle.registry();
     let environment = ApplicationEnvironment::new(ObjectClosure::default());
-    match registry.begin_call(&selection, arguments, &environment, meter) {
+    match registry.begin_call_default(&selection, arguments, &environment, meter) {
         Ok(_) => panic!("malformed input unexpectedly began"),
         Err(refusal) => refusal,
     }
