@@ -222,6 +222,7 @@ fn public_composite_fixture() -> PublicCompositeFixture {
             OccurrenceKey::new(preimage.node.clone(), preimage.occurrence.clone()),
         ),
         source: ReplaySource::Input(Vec::new()),
+        certificate: None,
         obligation_identity: obligation,
         backend: "test-backend".to_owned(),
         state_environment: StateEnvironment::new(Vec::new()),

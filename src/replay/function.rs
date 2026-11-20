@@ -502,6 +502,7 @@ impl ReplayInputs {
             dependencies,
             replay_target,
             source,
+            certificate: None,
             obligation_identity,
             backend: BACKEND_IDENTITY.to_owned(),
             state_environment: StateEnvironment::new(Vec::new()),
