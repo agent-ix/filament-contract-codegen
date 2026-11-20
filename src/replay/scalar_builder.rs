@@ -484,6 +484,7 @@ pub(crate) fn same_wire(left: &ReplayRequestWire, right: &ReplayRequestWire) -> 
         dependencies,
         replay_target,
         source,
+        certificate,
         obligation_identity,
         backend,
         state_environment,
@@ -500,6 +501,7 @@ pub(crate) fn same_wire(left: &ReplayRequestWire, right: &ReplayRequestWire) -> 
         && dependencies == &right.dependencies
         && replay_target == &right.replay_target
         && source == &right.source
+        && certificate == &right.certificate
         && obligation_identity == &right.obligation_identity
         && backend == &right.backend
         && state_environment == &right.state_environment

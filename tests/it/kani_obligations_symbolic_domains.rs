@@ -698,6 +698,7 @@ fn replay_collection_function(
             parameter: site.site.parameters[0].1.clone(),
             value: reference,
         }]),
+        certificate: None,
         obligation_identity: ObligationIdentity::new(site.site.function.clone(), None, 0),
         backend: "kani-backend-1".to_owned(),
         state_environment: StateEnvironment::new(Vec::new()),
