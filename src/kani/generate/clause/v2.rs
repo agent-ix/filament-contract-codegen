@@ -3686,19 +3686,19 @@ mod control_expectation_tests {
 #[cfg(test)]
 mod control_shape_tests {
     use super::*;
-    use crate::core::ir::clause::control_fixture::{applications, package, read_node};
+    use crate::core::ir::clause::control_fixture::{function_application, package, read_node};
     use ix_trace_rs::trace;
 
-    /// `control_operands` over the `n`th application of `identity` in the fixture package, with the
+    /// `control_operands` over the application of `identity` that is the body of `function`, with the
     /// scrutinee's parameter declared unless `declared` is false.
     fn shape(
         identity: &str,
-        position: usize,
+        function: &str,
         declared: bool,
     ) -> Result<usize, V2ClauseControlReason> {
         let package = package();
         let view = ClauseGraphView::new(&package);
-        let arguments = applications(&package, identity)[position];
+        let arguments = function_application(&package, function, identity);
         let parameters = if declared {
             vec![read_node(&arguments[0]).clone()]
         } else {
@@ -3710,14 +3710,14 @@ mod control_shape_tests {
     #[trace("FR-015-AC-154", "TC-025")]
     #[test]
     fn a_case_over_an_arity_0_union_with_native_arms_contributes_its_arm_bodies() {
-        assert_eq!(shape(CONTROL_CASE, 0, true), Ok(3));
+        assert_eq!(shape(CONTROL_CASE, "pick", true), Ok(3));
     }
 
     #[trace("FR-015-AC-161", "TC-025")]
     #[test]
     fn an_if_with_a_non_native_branch_is_refused_and_native_branches_contribute_all_operands() {
-        // The two `if` functions are `texts` (Text branches) and `plain` (Integer branches).
-        let mut outcomes = [shape(CONTROL_IF, 0, true), shape(CONTROL_IF, 1, true)];
+        // `texts` has Text branches and `plain` has Integer branches.
+        let mut outcomes = [shape(CONTROL_IF, "texts", true), shape(CONTROL_IF, "plain", true)];
         outcomes.sort_by_key(Result::is_ok);
         assert_eq!(
             outcomes,
@@ -3729,7 +3729,7 @@ mod control_shape_tests {
     #[test]
     fn a_case_over_a_union_with_a_payload_member_is_refused_for_the_payload() {
         assert_eq!(
-            shape(CONTROL_CASE, 1, true),
+            shape(CONTROL_CASE, "area", true),
             Err(V2ClauseControlReason::CaseUnionPayloadNotSupported)
         );
     }
@@ -3738,7 +3738,7 @@ mod control_shape_tests {
     #[test]
     fn a_case_with_a_non_native_arm_body_is_refused_for_the_arm() {
         assert_eq!(
-            shape(CONTROL_CASE, 2, true),
+            shape(CONTROL_CASE, "words", true),
             Err(V2ClauseControlReason::CaseArmNotNativeScalar)
         );
     }
@@ -3747,7 +3747,7 @@ mod control_shape_tests {
     #[test]
     fn a_case_whose_scrutinee_is_not_a_declared_operation_parameter_is_refused() {
         assert_eq!(
-            shape(CONTROL_CASE, 0, false),
+            shape(CONTROL_CASE, "pick", false),
             Err(V2ClauseControlReason::CaseScrutineeNotParameter)
         );
     }

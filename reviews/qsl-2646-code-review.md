@@ -28,3 +28,37 @@ CHANGES REQUIRED — the emitted-crate pin constants in src/core/profile.rs stil
 ## Coverage
 
 Plan completion: not assessed. Gap-analysis was skipped: there are no production behavior changes beyond dependency pins, and the only Rust edit is in a test module. Tests were not run (review only); the coder's focused run is pending.
+
+## New findings (disposition pass 1)
+
+Reviewed head 6fdb9c4de4ea0513d26d0188efaa286aa168c76f (fix commits 81d8fc0b and 6fdb9c4d over deb30044).
+
+| ID | Severity | Summary | Refs |
+| --- | --- | --- | --- |
+| FND-006 | medium | The removed `assert_ne!(feature_accounting[1].node_id(), &requested[1])` was the non-vacuity premise for FR-039-AC-11 ("node_id equal to the original requested V2 CheckedNodeId ... even when raw V2 and V1 indexes differ"). With it gone, no test can fail if CG emits the V1 accounting id. If equality is now structural by design, replace it with `assert_eq!` and a comment naming the cause, and reword AC-11. Otherwise add a fixture where they differ (for example a preceding context-only root). | src/routed/contract_package_tests.rs:3143 |
+| FND-007 | medium | The removed `assert_ne!(original_occurrences, requested_items[1].occurrences)` was the premise that made `claim.source_map == original_occurrences` discriminate the source table from the lowered one. Now a CG that copies the lowered occurrences passes. Do the same as FND-006: assert the new equality with its cause, or keep a fixture where the tables differ. | src/routed/contract_package_tests.rs:3170 |
+| FND-008 | low | The clause control tests select `case` applications by position in canonical node order, which FSL #3115 (case binder names) reshuffled to pick, area, words. Select each case by its enclosing function (pick/area/words) instead, so the next id change does not silently retarget the assertions. | src/core/ir/clause_tests.rs:25; src/kani/generate/clause/v2.rs:3732,3741 |
+
+## Dispositions
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-001 | fixed | profile.rs MODEL c2146579, EVAL fa2b7220, FSL_REPLAY/FSL_PACKAGE cc1c4d22 |
+| FND-002 | fixed | both rendered Body::resume templates take `_context: &mut eval::LiveContext` |
+| FND-003 | fixed | QSL-2633 removed from PR title and body |
+| FND-004 | fixed | extra blank line removed |
+| FND-005 | fixed | filament-specification dev-dep at rev f32bca6c; lock updated |
+
+## New findings (disposition pass 2)
+
+Reviewed head 8e4b3d837d0ee5ba1b6707d76d1c5b9707219896 (PR #874, fix commit 8e4b3d83 over a0dd0783).
+
+| ID | Severity | Summary | Refs |
+| --- | --- | --- | --- |
+| FND-009 | low | The new fixture comment says the leading root is context-only and moves the call to a different V1 accounting position. Both claims are false: `integer` is a requested, lowered root, and `feature_accounting` has one record per request in request order, so the call is at index 2 in both by construction. The 3146 comment's cause ("reuses the V2 request's structural key table") is also wrong: V1 ids are remapped into the `source_keys` table frame and are equal only when that remap is the identity. Reword both comments. | src/routed/contract_package_tests.rs:3089,3146 |
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-006 | still-open | Equality is not structural. At contract-ir c2146579, `source_frame_wire` remaps every `Index` path segment of an accounting/source-map id into `source_keys` table positions, and `CheckedNodeId` equality compares those segments. The ids match only when no source graph position below an indexed operand is missing from the table. The new `assert_eq` pins a coincidence of this fixture, and requesting `integer` adds it to the table, which makes a gap less likely. FR-039-AC-11 is still achievable. Needs a fixture with an unreferenced source node before an indexed operand of the requested key, plus a restored `assert_ne` guarded by a check that the key has an `Index` segment. |
+| FND-007 | still-open | Same mechanism: `requested_items[i].occurrences` is `NodeSourceMaps::of(request)`, the checked source-map rows, and its `node_id` fields are remapped by `source_frame_wire` as well. They equal `checked.source_map()` rows only when the remap is the identity. Fix it with the same fixture as FND-006 and restore the `assert_ne`. |
+| FND-008 | fixed | `function_application(package, function, identity)` finds the source function's declaration and follows its `body` binding to the root application. clause_tests.rs and v2.rs select `pick`, `area`, `words`, `texts` and `plain` by name. No positional `applications` caller remains. |

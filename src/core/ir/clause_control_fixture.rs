@@ -44,25 +44,45 @@ pub(crate) fn package() -> CheckedPackageV2 {
     *package
 }
 
-/// The arguments of every application of `identity`, in node order.
-pub(crate) fn applications<'a>(
+/// The arguments of the application of `identity` that is the body of the source function
+/// `function`.
+pub(crate) fn function_application<'a>(
     package: &'a CheckedPackageV2,
+    function: &str,
     identity: &str,
-) -> Vec<&'a [CheckedTerm]> {
-    package
-        .resolved_graph()
+) -> &'a [CheckedTerm] {
+    let graph = package.resolved_graph();
+    let declaration = graph
         .nodes
         .iter()
-        .filter_map(|node| package.term(&node.node_id))
-        .filter_map(|term| match term {
-            CheckedTerm::Application {
-                operation,
-                arguments,
-                ..
-            } if operation.identity() == Some(identity) => Some(arguments.as_slice()),
+        .find(|node| {
+            node.declaration
+                .as_ref()
+                .is_some_and(|found| found.qualified_name == [Box::<str>::from(function)])
+        })
+        .unwrap_or_else(|| panic!("source function {function}"));
+    let CheckedTerm::Aggregate { members } = &declaration.body else {
+        panic!("{function} has no function body binding");
+    };
+    let root = members
+        .iter()
+        .find_map(|member| match member {
+            CheckedTerm::Binding { name, value } if name.as_ref() == "body" => match value.as_ref()
+            {
+                CheckedTerm::Reference { target } => Some(target),
+                _ => None,
+            },
             _ => None,
         })
-        .collect()
+        .unwrap_or_else(|| panic!("{function} has no checked body root"));
+    match package.term(root) {
+        Some(CheckedTerm::Application {
+            operation,
+            arguments,
+            ..
+        }) if operation.identity() == Some(identity) => arguments.as_slice(),
+        other => panic!("{function} body is not an application of {identity}: {other:?}"),
+    }
 }
 
 /// The parameter node a control's scrutinee or condition reads.
