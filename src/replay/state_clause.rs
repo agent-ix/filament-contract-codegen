@@ -29,12 +29,13 @@ use std::{collections::BTreeMap, fmt};
 use filament_contract_model::{CheckedModelFieldsError, CheckedNodeId, CheckedPackageV2};
 use filament_semantic_value::catalog::Category;
 use fsl_replay::{
-    call_site, replay_state_clause, CallSiteRefusal, ClauseName, ClauseSelectionInput,
-    DeclaredDomain, DocumentRef, DomainKey, DomainKind, EmptyQualifiedName, EnvelopeSource,
-    FiniteBound, Integer, MalformedTranscript, OperationName, ProofBound, ProofBoundRefusal,
-    QualifiedName, ReplayRefusal, ReplayRequestWire, ReplayResult, ReplaySource,
-    ReplayTargetMembers, RequestTargetWire, StateClauseCounterexample, StateClauseReplayResult,
-    WitnessEnvelope, WitnessPacket, WitnessRefusal, WitnessSettlement, WitnessValue,
+    call_site, derive_state_clause_witness, replay_state_clause, CallSiteRefusal, ClauseName,
+    ClauseSelectionInput, Code, DeclaredDomain, DerivationRefusal, DocumentRef, DomainKey,
+    DomainKind, EmptyQualifiedName, EnvelopeSource, FiniteBound, Integer, MalformedTranscript,
+    OperationName, ProofBound, ProofBoundRefusal, QualifiedName, ReplayRefusal, ReplayRequestWire,
+    ReplayResult, ReplaySource, ReplayTargetMembers, RequestTargetWire, SeparatingWitnessRecord,
+    StateClauseCounterexample, StateClauseReplayResult, WitnessEnvelope, WitnessPacket,
+    WitnessRefusal, WitnessSettlement, WitnessValue,
 };
 use quire_canonical::{Encode, FixedShape, ReadError};
 use serde::{Deserialize, Serialize};
@@ -338,6 +339,9 @@ pub enum StateClauseReplayError {
     GraphStartIsNotTarget,
     /// FSL refused the request or the envelope before settling a result.
     Refused(Box<ReplayRefusal>),
+    /// FSL's derivation of the separating witness (FR-269) refused. A post state outside its
+    /// field's range is not carried here: the replay reproduces it through FR-122's range path.
+    Derivation(Box<DerivationRefusal>),
 }
 
 impl fmt::Display for StateClauseReplayError {
@@ -407,6 +411,9 @@ impl fmt::Display for StateClauseReplayError {
                 f.write_str("the graph playback starts from one object and targets another")
             }
             Self::Refused(refusal) => write!(f, "the state-clause replay was refused: {refusal}"),
+            Self::Derivation(refusal) => {
+                write!(f, "the separating witness was not derived: {refusal}")
+            }
         }
     }
 }
@@ -447,6 +454,15 @@ impl<'a> From<&'a StateClauseReplayError> for ReplaySettlement<'a> {
             | StateClauseReplayError::GraphStartIsNotTarget
             | StateClauseReplayError::UnsupportedOperationShape { .. } => Self::CgDefect,
             StateClauseReplayError::Refused(refusal) => Self::Refused(refusal),
+            StateClauseReplayError::Derivation(refusal) => match refusal.as_ref() {
+                DerivationRefusal::Replay(refusal) => Self::Refused(refusal),
+                DerivationRefusal::Fault(_) => Self::Fault,
+                other => Code::all()
+                    .iter()
+                    .copied()
+                    .find(|code| code.as_str() == other.code())
+                    .map_or(Self::CgDefect, Self::SetupRefused),
+            },
         }
     }
 }
@@ -791,10 +807,37 @@ impl StateClauseReplay {
             &WitnessEnvelope<StateClauseCounterexample>,
         ) -> Result<StateClauseReplayResult, ReplayRefusal>,
     ) -> Result<StateClauseReplayResult, StateClauseReplayError> {
-        let envelope = WitnessEnvelope::reconstruct(self.packet, self.replay_limits)
+        let mut packet = self.packet;
+        let envelope = WitnessEnvelope::reconstruct(packet.clone(), self.replay_limits)
+            .map_err(StateClauseReplayError::Envelope)?;
+        let derived = derive_state_clause_witness(self.wire.clone(), &envelope, self.replay_limits);
+        carry_derived_witness(&mut packet, derived)?;
+        let envelope = WitnessEnvelope::reconstruct(packet, self.replay_limits)
             .map_err(StateClauseReplayError::Envelope)?;
         executor(self.wire, &envelope)
             .map_err(|refusal| StateClauseReplayError::Refused(Box::new(refusal)))
+    }
+}
+
+/// Stores the record FSL derived (FR-269) in the packet's payload. No record is a closed scope and
+/// leaves the payload as it is. A post state out of range is reproduced by the replay's own range
+/// path (FR-122), and a clause that holds is settled by the replay as a disagreement of verdicts
+/// (FR-029-AC-16), so those two refusals leave it too; any other refusal ends the replay.
+fn carry_derived_witness(
+    packet: &mut WitnessPacket<StateClauseCounterexample>,
+    derived: Result<Option<SeparatingWitnessRecord>, DerivationRefusal>,
+) -> Result<(), StateClauseReplayError> {
+    match derived {
+        Ok(Some(record)) => {
+            if let Some(payload) = packet.family_payload.as_mut() {
+                payload.witness = Some(record);
+            }
+            Ok(())
+        }
+        Ok(None) | Err(DerivationRefusal::RangeViolation(_) | DerivationRefusal::NotRefuted) => {
+            Ok(())
+        }
+        Err(refusal) => Err(StateClauseReplayError::Derivation(Box::new(refusal))),
     }
 }
 
@@ -1395,5 +1438,67 @@ mod tests {
             .expect("the manifest has a dependencies table");
         assert!(!dependencies.contains("sha2 ="));
         assert!(!dependencies.contains("sha2="));
+    }
+
+    fn packet() -> WitnessPacket<StateClauseCounterexample> {
+        WitnessPacket {
+            obligation_identity: None,
+            occurrence_key: None,
+            clause_node: None,
+            replay_target: ReplayTargetMembers::default(),
+            profile_selections: None,
+            run_limits: None,
+            declared_domains: None,
+            backend: None,
+            trace_position: None,
+            source: None,
+            family_payload: Some(StateClauseCounterexample {
+                observation: ClauseSelectionInput::Invocation {
+                    invocation: DocumentRef {
+                        authority: "test".to_owned(),
+                        identity: "invocation".to_owned(),
+                    },
+                },
+                witness: None,
+            }),
+        }
+    }
+
+    /// FR-024-AC-77: no record (a closed scope), a post state out of range and a clause that holds
+    /// each leave the payload's witness absent and the replay running.
+    #[trace("FR-024-AC-77", "TC-035")]
+    #[test]
+    fn tc_035_a_closed_scope_a_range_violation_and_a_held_clause_carry_no_record() {
+        for derived in [
+            Ok(None),
+            Err(DerivationRefusal::RangeViolation(Vec::new())),
+            Err(DerivationRefusal::NotRefuted),
+        ] {
+            let mut packet = packet();
+            carry_derived_witness(&mut packet, derived).expect("the replay goes on");
+            assert_eq!(packet.family_payload.expect("payload").witness, None);
+        }
+    }
+
+    /// FR-024-AC-77: every other refusal ends the replay as `Derivation`, read by its own catalog
+    /// code (an internal fault as a fault), never as a failure without a code.
+    #[trace("FR-024-AC-77", "FR-029-AC-16", "TC-035")]
+    #[test]
+    fn tc_035_any_other_derivation_refusal_ends_the_replay_with_its_code() {
+        let mut packet = packet();
+        let error = carry_derived_witness(&mut packet, Err(DerivationRefusal::Exhausted))
+            .expect_err("a refusal ends the replay");
+        assert!(matches!(error, StateClauseReplayError::Derivation(_)));
+        assert!(matches!(
+            ReplaySettlement::from(&error),
+            ReplaySettlement::SetupRefused(Code::ResourceExhausted)
+        ));
+        let fault = StateClauseReplayError::Derivation(Box::new(DerivationRefusal::Fault(
+            filament_semantic_value::catalog::InternalFault::new("replay", "broken"),
+        )));
+        assert!(matches!(
+            ReplaySettlement::from(&fault),
+            ReplaySettlement::Fault
+        ));
     }
 }
