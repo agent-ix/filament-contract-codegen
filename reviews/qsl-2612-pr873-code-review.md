@@ -44,9 +44,18 @@ Re-reviewed at head 0734e1f8 (fix commit 4a256a10, then a merge of origin/main).
 | --- | --- | --- | --- |
 | FND-003 | low | The `carry_derived_witness` doc says a refused, undefined or exhausted evaluation is "settled by the replay itself, which carries its own catalog code and cause in its result". FSL at cc1c4d22 does not do that. `execute/state_clause.rs:240-244` discards the refusal (`CallOutcome::Refused(_) => (Category::Refusal, None)`, `Incomplete(_) => Incomplete`, `Undefined { .. } => Inconclusive`), and the result settles `inconclusive` with `DisagreementCause::NoValue { proved: violation, replayed: <category> }`. Only the category reaches CG; no code and no cause. The behaviour is FSL's own settlement and is acceptable, but the comment states a property that does not hold. | src/replay/state_clause.rs:813-818 |
 
+## New findings (disposition pass 2)
+
+Re-checked at head da02e2ca (wording-only commit; `rustfmt --check` and `quire validate` clean).
+
+| ID | Severity | Summary | Refs |
+| --- | --- | --- | --- |
+| FND-004 | low | The FND-003 rewrap left one 156-character doc line, "FR-029-AC-16), not by a catalog code, so each leaves it too. A refusal of the request ends the replay as the replay's own refusal, and an internal fault". The repo's width is 100 (`rustfmt.toml` `max_width = 100`, CLAUDE.md). rustfmt does not wrap comments, so no gate catches it. The only other over-width line in the file, now line 1346, predates this PR. | src/replay/state_clause.rs:817 |
+
 ## Dispositions
 
 | FND | outcome | reason |
 | --- | --- | --- |
 | FND-001 | fixed | The fall-through to `CgDefect` is gone. `Refused`, `Undefined` and `Exhausted` now keep `witness` absent and the replay settles them as FSL's `inconclusive` (`NoValue`), never `Failed`. Only `Replay` (to `Refused`) and `Fault` (to `DerivationFault`, settled `Fault`) end the replay. |
 | FND-002 | fixed | The `Code::all()` scan was removed together with the `Derivation` variant. |
+| FND-003 | fixed | Doc now reads "reports them as an inconclusive `NoValue` disagreement with the replayed category (FR-122, FR-029-AC-16), not by a catalog code". That matches FSL cc1c4d22 execute/state_clause.rs:240-244. |

@@ -43,3 +43,4 @@ This is a spec review of the PR's four spec edits. Ticket: QSL-2612, with the co
 | --- | --- | --- |
 | FND-001 | fixed | FR-024-AC-63 now reads "built as none; `StateClauseReplay::replay_through` then fills it with the record FSL derives (FR-024-AC-76)". Both Behavior bullets now state the derive-and-store step as a SHALL, and the stale `inconclusive` `Witness` sentence was removed. |
 | FND-002 | fixed | The FR-024-AC-77 evidence now gives `(tests/it/state_clause_derived_witness.rs)` for `tc_035_a_clause_that_holds_carries_no_witness_record`. |
+| FND-003 | fixed | FR-024-AC-77 now reads "the replay settles its own result as `inconclusive` `NoValue` with the replayed category; no catalog code reaches CG, so none is mapped". That matches FSL cc1c4d22 and states the departure from the ticket's map-by-code wording openly. |

@@ -814,8 +814,8 @@ impl StateClauseReplay {
 /// leaves the payload as it is. A post state out of range, a clause that holds, and an evaluation
 /// FSL refused, left undefined or ran out of meter on are settled by the replay itself, which
 /// reports them as an inconclusive `NoValue` disagreement with the replayed category (FR-122,
-/// FR-029-AC-16), not by a catalog code, so each leaves it too. A refusal of the request ends the replay as the replay's own refusal, and an internal fault
-/// as a fault.
+/// FR-029-AC-16), not by a catalog code, so each leaves it too. A refusal of the request ends the
+/// replay as the replay's own refusal, and an internal fault as a fault.
 fn carry_derived_witness(
     packet: &mut WitnessPacket<StateClauseCounterexample>,
     derived: Result<Option<SeparatingWitnessRecord>, DerivationRefusal>,
