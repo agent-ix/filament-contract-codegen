@@ -2450,6 +2450,7 @@ fn authenticated_direct_temporal_refusal(
     package: &ContractPackageV1,
     accounting_index: usize,
     item: &PackageItem<'_>,
+    accounting: &PackageItems<'_>,
 ) -> Option<ExactFunctionRefusal> {
     if !matches!(
         package.unsupported_source_kind_at(accounting_index),
@@ -2472,7 +2473,10 @@ fn authenticated_direct_temporal_refusal(
         return None;
     };
     Some(ExactFunctionRefusal::Unsupported {
-        unsupported_node_id: unsupported_node_id.clone(),
+        unsupported_node_id: accounting
+            .original_node(unsupported_node_id)
+            .unwrap_or(unsupported_node_id)
+            .clone(),
         node_tag: CheckedNodeTag::from_wire(node_tag.as_ref())
             .map_or("unknown", CheckedNodeTag::as_wire),
     })
@@ -2507,9 +2511,14 @@ fn item_reaches_temporal_body(admitted: &PackageItem<'_>, graph: &Graph<'_>) -> 
         && closure.root.semantic_form.as_ref() == "call"
 }
 
+/// An admitted call item's body closure, or the refusal that names its cause by the V2 key.
+///
+/// A refused item's record is keyed in FR-330's accounting frame and a lowered closure in the
+/// represented output-graph frame; each is translated into the authenticated V2 frame here.
 fn admitted_binary_body<'a>(
     item: PackageItem<'a>,
     graph: &Graph<'_>,
+    accounting: &PackageItems<'_>,
 ) -> Result<(ContractReachedClosureV1<'a>, &'a [CheckedSourceMapEntry]), ExactFunctionRefusal> {
     let (closure, occurrences) = match item {
         PackageItem::Refused {
@@ -2533,7 +2542,10 @@ fn admitted_binary_body<'a>(
                     return Err(unsupported_family(unsupported_node_id, tag));
                 }
                 return Err(ExactFunctionRefusal::Unsupported {
-                    unsupported_node_id: unsupported_node_id.clone(),
+                    unsupported_node_id: accounting
+                        .original_node(unsupported_node_id)
+                        .unwrap_or(unsupported_node_id)
+                        .clone(),
                     node_tag: CheckedNodeTag::from_wire(node_tag.as_ref())
                         .map_or("unknown", CheckedNodeTag::as_wire),
                 });
@@ -2549,7 +2561,18 @@ fn admitted_binary_body<'a>(
             ..
         } => (closure, occurrences),
     };
-    check_lowered_binary_body(&closure, graph)?;
+    check_lowered_binary_body(&closure, graph).map_err(|mut refusal| {
+        if let ExactFunctionRefusal::Unsupported {
+            unsupported_node_id,
+            ..
+        } = &mut refusal
+        {
+            if let Some(original) = accounting.original_represented_node(unsupported_node_id) {
+                *unsupported_node_id = original.clone();
+            }
+        }
+        refusal
+    })?;
     Ok((closure, occurrences))
 }
 
@@ -2976,12 +2999,15 @@ pub fn generate_exact_function_oracles(
                     capability: capability.clone(),
                 });
             }
-            if let Some(refusal) =
-                authenticated_direct_temporal_refusal(package, accounting_index, &admitted)
-            {
+            if let Some(refusal) = authenticated_direct_temporal_refusal(
+                package,
+                accounting_index,
+                &admitted,
+                accounting,
+            ) {
                 return Err(refusal);
             }
-            let (closure, _) = admitted_binary_body(admitted, graph)?;
+            let (closure, _) = admitted_binary_body(admitted, graph, accounting)?;
             // Refuse a body outside the selected lowering form before reading
             // its signature types. Unsupported scalar operators retain their
             // existing signature/operation refusal precedence.
@@ -3233,7 +3259,7 @@ pub fn generate_exact_function_oracles(
         let duplicate_node = names.duplicate_node_refusal(&item.function);
         // An item naming a refused duplicate-node function carries that
         // refusal even when it was also requested more than once (AC-22).
-        let mut result = if let Some(refusal) = duplicate_node {
+        let result = if let Some(refusal) = duplicate_node {
             ClaimDisposition::Refused { refusal }
         } else if duplicate {
             ClaimDisposition::Refused {
@@ -3286,9 +3312,12 @@ pub fn generate_exact_function_oracles(
                     unauthenticated_root = Some(candidate);
                 }
             }
-            if let Some(refusal) =
-                authenticated_direct_temporal_refusal(package, accounting_index, &admitted)
-            {
+            if let Some(refusal) = authenticated_direct_temporal_refusal(
+                package,
+                accounting_index,
+                &admitted,
+                accounting,
+            ) {
                 ClaimDisposition::Refused { refusal }
             } else {
                 match item_disposition(
@@ -3308,21 +3337,6 @@ pub fn generate_exact_function_oracles(
                 }
             }
         };
-        if let ClaimDisposition::Refused {
-            refusal:
-                ExactFunctionRefusal::Unsupported {
-                    unsupported_node_id,
-                    ..
-                },
-        } = &mut result
-        {
-            // This cause is retained in FR-330's source-accounting frame.
-            if direct_tag.is_none() {
-                if let Some(original) = accounting.original_node(unsupported_node_id) {
-                    *unsupported_node_id = original.clone();
-                }
-            }
-        }
         claims.push(ExactFunctionClaim {
             node_id: item.call_node_id.clone(),
             result,
@@ -3547,7 +3561,7 @@ fn item_disposition<'a>(
 > {
     let (package, source_index) = source;
     let graph = &source_index.graph;
-    let (closure, occurrences) = admitted_binary_body(admitted, graph)?;
+    let (closure, occurrences) = admitted_binary_body(admitted, graph, accounting)?;
     let node = closure.root;
     if &*node.semantic_form != "call" {
         return Err(ExactFunctionRefusal::FormMismatch {
@@ -3905,7 +3919,7 @@ mod tests {
         let graph = super::Graph::new(&admitted);
         assert!(!item_reaches_temporal_body(&item, &graph));
         assert!(matches!(
-            admitted_binary_body(item, &graph),
+            admitted_binary_body(item, &graph, &accounting),
             Err(ExactFunctionRefusal::SelectedDependencyUnsupported { .. })
         ));
         Ok(())
