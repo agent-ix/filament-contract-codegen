@@ -3003,11 +3003,11 @@ pub fn generate_exact_function_oracles(
                 package,
                 accounting_index,
                 &admitted,
-                accounting,
+                &accounting,
             ) {
                 return Err(refusal);
             }
-            let (closure, _) = admitted_binary_body(admitted, graph, accounting)?;
+            let (closure, _) = admitted_binary_body(admitted, graph, &accounting)?;
             // Refuse a body outside the selected lowering form before reading
             // its signature types. Unsupported scalar operators retain their
             // existing signature/operation refusal precedence.
@@ -3316,7 +3316,7 @@ pub fn generate_exact_function_oracles(
                 package,
                 accounting_index,
                 &admitted,
-                accounting,
+                &accounting,
             ) {
                 ClaimDisposition::Refused { refusal }
             } else {
