@@ -489,12 +489,14 @@ failure-preserving envelopes, and that the generator holds no copy of FSL's repl
     `(5, 0)` to `(4, 0)` through `StateClauseReplay::replay_through` with an executor that records the
     payload's `witness` and then calls `replay_state_clause`: the recorded record is present and equals
     `arm.record()` of the result (FR-024-AC-76). A crediting run `(5, 0)` to `(6, 0)` carries no record
-    and the result holds none (FR-024-AC-77). `carry_derived_witness` over `Ok(None)`,
-    `RangeViolation` and `NotRefuted` leaves `witness` absent; over `Exhausted` it returns
-    `Derivation`, settled as `SetupRefused(ResourceExhausted)`, and over `Fault` as `Fault`.
-    Mutation controls: dropping the store of the record fails the first case; refusing on `Ok(None)`,
-    `RangeViolation` or `NotRefuted` fails the second and the unit case; swallowing any other
-    refusal, mapping `Fault` to a defect or losing the code fails the mapping case.
+    and the result holds none (FR-024-AC-77). `carry_derived_witness` over `Ok(None)`, `RangeViolation`, `NotRefuted`, `Refused` (code
+    `integer_out_of_domain`), `Undefined` and `Exhausted` leaves `witness` absent; over `Replay` it
+    returns `Refused`, settled as `ReplaySettlement::Refused`, and over `Fault` it returns
+    `DerivationFault`, settled as `Fault`.
+    Mutation controls: dropping the store of the record fails the first case; refusing on any of
+    the six no-record inputs fails the second and the unit case; mapping `Replay` to a defect or
+    to another settlement, swallowing it, or mapping `Fault` to a defect fails the request-refusal
+    case.
 
 ## Status
 
