@@ -48,3 +48,17 @@ Reviewed head 6fdb9c4de4ea0513d26d0188efaa286aa168c76f (fix commits 81d8fc0b and
 | FND-003 | fixed | QSL-2633 removed from PR title and body |
 | FND-004 | fixed | extra blank line removed |
 | FND-005 | fixed | filament-specification dev-dep at rev f32bca6c; lock updated |
+
+## New findings (disposition pass 2)
+
+Reviewed head 8e4b3d837d0ee5ba1b6707d76d1c5b9707219896 (PR #874, fix commit 8e4b3d83 over a0dd0783).
+
+| ID | Severity | Summary | Refs |
+| --- | --- | --- | --- |
+| FND-009 | low | The new fixture comment says the leading root is context-only and moves the call to a different V1 accounting position. Both claims are false: `integer` is a requested, lowered root, and `feature_accounting` has one record per request in request order, so the call is at index 2 in both by construction. The 3146 comment's cause ("reuses the V2 request's structural key table") is also wrong: V1 ids are remapped into the `source_keys` table frame and are equal only when that remap is the identity. Reword both comments. | src/routed/contract_package_tests.rs:3089,3146 |
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-006 | still-open | Equality is not structural. At contract-ir c2146579, `source_frame_wire` remaps every `Index` path segment of an accounting/source-map id into `source_keys` table positions, and `CheckedNodeId` equality compares those segments. The ids match only when no source graph position below an indexed operand is missing from the table. The new `assert_eq` pins a coincidence of this fixture, and requesting `integer` adds it to the table, which makes a gap less likely. FR-039-AC-11 is still achievable. Needs a fixture with an unreferenced source node before an indexed operand of the requested key, plus a restored `assert_ne` guarded by a check that the key has an `Index` segment. |
+| FND-007 | still-open | Same mechanism: `requested_items[i].occurrences` is `NodeSourceMaps::of(request)`, the checked source-map rows, and its `node_id` fields are remapped by `source_frame_wire` as well. They equal `checked.source_map()` rows only when the remap is the identity. Fix it with the same fixture as FND-006 and restore the `assert_ne`. |
+| FND-008 | fixed | `function_application(package, function, identity)` finds the source function's declaration and follows its `body` binding to the root application. clause_tests.rs and v2.rs select `pick`, `area`, `words`, `texts` and `plain` by name. No positional `applications` caller remains. |
