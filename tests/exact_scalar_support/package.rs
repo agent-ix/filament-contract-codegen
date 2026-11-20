@@ -618,6 +618,8 @@ impl PackageBuilder {
         let role = match (tag, form) {
             ("scalar_type", "integer") if digest == key(T_INTEGER) => "generated",
             ("model", "model_root") => "generated",
+            // A model declaration node has the one generated occurrence of its model root.
+            ("relation", "relationship") => "generated",
             ("value", "parameter") => "expression",
             ("state", "frame") => "generated",
             ("state", "operation_anchor") => "anchor",
@@ -673,6 +675,14 @@ impl PackageBuilder {
             );
             rows.push(json!([]));
         }
+        let root_regions = ((tag, form) == ("relation", "relationship")).then(|| {
+            let root = node_ref(&key(SELECTED_MODEL_ROOT));
+            self.value["source_map"]
+                .as_array()
+                .and_then(|map| map.iter().find(|entry| entry["node_id"] == root))
+                .map(|entry| entry["regions"].clone())
+                .expect("the selected model root has a source-map entry")
+        });
         let map = self.value["source_map"].as_array_mut().expect("source map");
         let start = map.len();
         let source_for_names = source.clone();
@@ -680,11 +690,9 @@ impl PackageBuilder {
             "node_id": node_ref(digest),
             "role": role,
             "ordinal": 0,
-            "regions": [{
-                "source": source,
-                "start": start,
-                "end": start + 1,
-            }],
+            "regions": root_regions.unwrap_or_else(|| {
+                json!([{"source": source, "start": start, "end": start + 1}])
+            }),
         }));
         // The reader requires one `claim_names` row per named occurrence of a claim-bearing node.
         if matches!((tag, form), ("claim", _) | ("state", "state_clause")) {

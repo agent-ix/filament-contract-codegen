@@ -132,7 +132,7 @@ fn evaluated(outcome: Outcome<Value>, location: &sv::location::ExpressionLocatio
         Outcome::Completed(_) => None,
         Outcome::Undefined(_) | Outcome::Refused(_) | Outcome::Incomplete(_) => Some(location.clone()),
     };
-    eval::Evaluation { outcome: FamilyOutcome::Evaluated(outcome), location, losses: Vec::new(), frame_depth: 0 }
+    eval::Evaluation { outcome: FamilyOutcome::Evaluated(outcome), location, losses: Vec::new(), frame_depth: 0, peak_live_occurrences: 0 }
 }
 #[cfg(kani)]
 fn rebuilt<T, E>(result: Result<T, E>) -> T {
@@ -247,6 +247,7 @@ impl PreparedFunction {
                     location: Some(sv::location::ExpressionLocation::root(sv::location::ExpressionOwner::TypeDeclaration { name: invalid.declaration.clone() })),
                     losses: Vec::new(),
                     frame_depth: 0,
+                    peak_live_occurrences: 0,
                 };
                 Ok(Some(evaluation))
             }
@@ -359,7 +360,7 @@ pub(crate) mod body_{symbol} {{
     }}
     struct Invocation(std::sync::Arc<PreparedFunction>);
     impl Body for Invocation {{
-        fn resume(&mut self, input: Resume, meter: &mut Meter)
+        fn resume(&mut self, input: Resume, _context: &mut eval::LiveContext, meter: &mut Meter)
             -> Result<Transition, eval::BodyFailure>
         {{
             match input {{
@@ -438,7 +439,7 @@ pub(crate) mod body_{symbol} {{
         site: sv::location::ExpressionLocation,
     }}
     impl Body for Invocation {{
-        fn resume(&mut self, input: Resume, _meter: &mut Meter)
+        fn resume(&mut self, input: Resume, _context: &mut eval::LiveContext, _meter: &mut Meter)
             -> Result<Transition, eval::BodyFailure>
         {{
             match input {{
