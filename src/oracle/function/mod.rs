@@ -1979,7 +1979,27 @@ mod ir988_admitted_generation_tests {
                 }),
             );
         }
-        let (checked, ids) = builder.admit_resolved();
+        let mut wire = builder.raw_wire();
+        let locations = wire["checked_term_data"]["body_locations"]
+            .as_array_mut()
+            .expect("the source fixture authors body locations");
+        // Every additional declaration above shares the one SOURCE_BODY application.
+        for offset in 0..(function_count - 2) {
+            let code = 40_000 + u32::try_from(offset).expect("bounded function count");
+            locations.insert(
+                offset + 1,
+                json!({
+                    "application": code_id(SOURCE_BODY),
+                    "occurrence": {"role": "declaration", "ordinal": 0},
+                    "term_ordinal": offset + 1,
+                    "location": {"origin": {
+                        "kind": "function_body", "function": code_id(code),
+                        "name": format!("n{}", key(code)), "index": offset + 2
+                    }, "path": []}
+                }),
+            );
+        }
+        let (checked, ids) = PackageBuilder::from_wire(wire).admit_resolved();
         let name = format!("n{}", key(SOURCE_FUNCTION));
         let other_name = format!("n{}", key(SOURCE_OTHER_FUNCTION));
         let functions = vec![

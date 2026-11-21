@@ -1782,7 +1782,7 @@ fn tc_031_ac12_form_mismatch_refuses_only_its_own_item() {
 }
 
 /// A directly requested case call-node settles to Unsupported, retains its request identity, and does not alter a healthy function sibling.
-#[trace("FR-021-AC-33", "FR-021-AC-41", "TC-031")]
+#[trace("FR-021-AC-33", "TC-031")]
 #[test]
 fn tc_031_ac33_direct_case_call_node_is_unsupported() {
     let (package, combined, healthy_only, case_id, area_call_id, healthy_call_id) =
