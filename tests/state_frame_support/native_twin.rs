@@ -1894,6 +1894,31 @@ impl Twin {
         self.emitted_package_with_model(clause, Some(document.to_string().into_bytes()))
     }
 
+    /// Admit the balance clause against a selected model whose unread audit names a clock.
+    pub fn emitted_package_with_unread_clock_reference_audit(
+        &self,
+        clause: &str,
+    ) -> (CheckedPackageV2, CheckedNodeId) {
+        let mut document: Value = serde_json::from_slice(&self.domain).expect("domain document");
+        let audit = document["types"]
+            .as_array_mut()
+            .expect("types")
+            .iter_mut()
+            .find(|ty| ty["identity"] == range_type("audit"))
+            .expect("audit value type");
+        *audit = json!({
+            "identity": range_type("audit"),
+            "kind": "reference",
+            "target": "ix://filament/native/Clock",
+        });
+        self.admit_emitted_package(
+            clause,
+            &self.unit,
+            &self.domain,
+            document.to_string().into_bytes(),
+        )
+    }
+
     /// Admit FSL's emitted graph with an unread field declared as a selected model variant.
     pub fn emitted_package_with_unread_variant_audit(
         &self,

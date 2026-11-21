@@ -969,6 +969,7 @@ pub(crate) fn field_range(
             | CheckedMemberType::Uuid
             | CheckedMemberType::Timestamp
             | CheckedMemberType::Clock
+            | CheckedMemberType::ClockReference
             | CheckedMemberType::Quantity(_)
             | CheckedMemberType::RationalRange { .. }
             | CheckedMemberType::CarriedRational { .. }
