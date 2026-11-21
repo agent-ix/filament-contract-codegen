@@ -472,7 +472,33 @@ pub fn source_bound_call_package() -> PackageBuilder {
             "arguments": [source_reference(SOURCE_FUNCTION), source_reference(SOURCE_PARAM_A), source_reference(SOURCE_PARAM_B)]
         }),
     );
-    builder
+    // Each of these two authored bodies has exactly one application and no expression children.
+    let mut wire = builder.raw_wire();
+    wire["checked_term_data"] = serde_json::json!({
+        "equality_decisions": [], "protocol_locations": [],
+        "dispatch_tables": [], "probabilistic_claims": [],
+        "body_locations": [
+            {
+                "application": code_id(SOURCE_BODY),
+                "occurrence": {"role": "declaration", "ordinal": 0},
+                "term_ordinal": 0,
+                "location": {"origin": {
+                    "kind": "function_body", "function": code_id(SOURCE_FUNCTION),
+                    "name": format!("n{}", key(SOURCE_FUNCTION)), "index": 0
+                }, "path": []}
+            },
+            {
+                "application": code_id(SOURCE_OTHER_BODY),
+                "occurrence": {"role": "declaration", "ordinal": 0},
+                "term_ordinal": 0,
+                "location": {"origin": {
+                    "kind": "function_body", "function": code_id(SOURCE_OTHER_FUNCTION),
+                    "name": format!("n{}", key(SOURCE_OTHER_FUNCTION)), "index": 1
+                }, "path": []}
+            }
+        ]
+    });
+    PackageBuilder::from_wire(wire)
 }
 
 /// A V2-admitted source function whose lowered FR-330 package exceeds the
