@@ -1432,6 +1432,7 @@ mod tests {
 
     fn bound_member(name: &str, value: CheckedTerm) -> CheckedTerm {
         CheckedTerm::Binding {
+            binder: None,
             name: name.into(),
             value: Box::new(value),
         }

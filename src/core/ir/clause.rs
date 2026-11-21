@@ -184,7 +184,7 @@ fn payload_leaves(
             };
             for (position, member) in members.iter().enumerate() {
                 let (leaf_path, leaf_type) = match (form, member) {
-                    (CompositeTypeForm::Record, CheckedTerm::Binding { name, value }) => {
+                    (CompositeTypeForm::Record, CheckedTerm::Binding { name, value, .. }) => {
                         (name.to_string(), reference(value).ok_or_else(family)?)
                     }
                     (CompositeTypeForm::Tuple, other) => {
@@ -210,6 +210,7 @@ fn integer_bound(package: &CheckedPackageV2, id: &CheckedNodeId) -> Option<(i128
             CheckedTerm::Binding {
                 name: actual,
                 value,
+                ..
             } if actual.as_ref() == name => Some(value.as_ref()),
             _ => None,
         })?;
@@ -575,7 +576,7 @@ impl Reader<'_, '_> {
     }
 
     fn let_term(&mut self, args: &[CheckedTerm], side: ClauseInputSide) -> Option<ClauseTerm> {
-        let [CheckedTerm::Binding { name, value }, body] = args else {
+        let [CheckedTerm::Binding { name, value, .. }, body] = args else {
             return None;
         };
         // The value is outside the binder's scope; the body is inside it.
@@ -619,7 +620,7 @@ impl Reader<'_, '_> {
         };
         let mut ordered = vec![None; members.len()];
         for arm in arms {
-            let CheckedTerm::Binding { name, value } = arm else {
+            let CheckedTerm::Binding { name, value, .. } = arm else {
                 return None;
             };
             let position = members
@@ -719,7 +720,7 @@ pub(crate) fn union_members(
     members
         .iter()
         .map(|member| {
-            let CheckedTerm::Binding { name, value } = member else {
+            let CheckedTerm::Binding { name, value, .. } = member else {
                 return None;
             };
             let CheckedTerm::Aggregate { members: payload } = value.as_ref() else {

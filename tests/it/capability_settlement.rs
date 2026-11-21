@@ -44,7 +44,8 @@ fn function_body_target(body: &CheckedTerm) -> Option<&CheckedNodeId> {
         return None;
     };
     members.iter().find_map(|member| match member {
-        CheckedTerm::Binding { name, value } if name.as_ref() == "body" => match value.as_ref() {
+        CheckedTerm::Binding { name, value, .. } if name.as_ref() == "body" => match value.as_ref()
+        {
             CheckedTerm::Reference { target } => Some(target),
             _ => None,
         },

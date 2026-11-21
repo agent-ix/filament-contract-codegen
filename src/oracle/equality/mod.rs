@@ -1662,7 +1662,7 @@ fn read_reference(term: &CheckedTerm) -> Option<CheckedNodeId> {
 }
 
 fn read_binding(term: &CheckedTerm) -> Option<(String, CheckedNodeId)> {
-    let CheckedTerm::Binding { name, value } = term else {
+    let CheckedTerm::Binding { name, value, .. } = term else {
         return None;
     };
     Some((name.to_string(), read_reference(value)?))
@@ -1670,7 +1670,7 @@ fn read_binding(term: &CheckedTerm) -> Option<(String, CheckedNodeId)> {
 
 /// A record field has either a direct type reference or the checked optional wrapper.
 fn read_record_field(term: &CheckedTerm) -> Option<(String, CheckedNodeId, bool)> {
-    let CheckedTerm::Binding { name, value } = term else {
+    let CheckedTerm::Binding { name, value, .. } = term else {
         return None;
     };
     if let Some(target) = read_reference(value) {
@@ -4535,6 +4535,7 @@ fn deep_matches_shallow() {
 
     fn member(name: &str, value: &str) -> CheckedTerm {
         CheckedTerm::Binding {
+            binder: None,
             name: (name).into(),
             value: Box::new(CheckedTerm::Literal {
                 type_id: node_id('1'),
@@ -4549,6 +4550,7 @@ fn deep_matches_shallow() {
 
     fn text_member(name: &str, value: &str) -> CheckedTerm {
         CheckedTerm::Binding {
+            binder: None,
             name: (name).into(),
             value: Box::new(CheckedTerm::Literal {
                 type_id: node_id('0'),

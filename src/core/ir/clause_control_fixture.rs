@@ -67,11 +67,12 @@ pub(crate) fn function_application<'a>(
     let root = members
         .iter()
         .find_map(|member| match member {
-            CheckedTerm::Binding { name, value } if name.as_ref() == "body" => match value.as_ref()
-            {
-                CheckedTerm::Reference { target } => Some(target),
-                _ => None,
-            },
+            CheckedTerm::Binding { name, value, .. } if name.as_ref() == "body" => {
+                match value.as_ref() {
+                    CheckedTerm::Reference { target } => Some(target),
+                    _ => None,
+                }
+            }
             _ => None,
         })
         .unwrap_or_else(|| panic!("{function} has no checked body root"));

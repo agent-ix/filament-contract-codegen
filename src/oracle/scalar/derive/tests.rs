@@ -589,6 +589,7 @@ fn tc_024_the_refused_catalogue_identities_have_no_family() {
 fn carried_conversion_private_mismatches_preserve_valid_sibling() {
     fn binding(name: &str, value: CheckedTerm) -> CheckedTerm {
         CheckedTerm::Binding {
+            binder: None,
             name: name.into(),
             value: Box::new(value),
         }
@@ -713,6 +714,7 @@ fn carried_conversion_private_mismatches_preserve_valid_sibling() {
 fn tc_024_sqrt_and_fma_refuse_mode_and_bound_defects_like_add() {
     fn binding(name: &str, value: &str) -> CheckedTerm {
         CheckedTerm::Binding {
+            binder: None,
             name: name.into(),
             value: Box::new(CheckedTerm::Literal {
                 type_id: node_id('1'),

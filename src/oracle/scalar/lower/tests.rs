@@ -244,6 +244,7 @@ fn tc_024_nested_inference_accepts_inline_canonical_integer_literals() {
         CheckedTerm::Aggregate {
             members: vec![
                 CheckedTerm::Binding {
+                    binder: None,
                     name: ("min").into(),
                     value: Box::new(CheckedTerm::Literal {
                         type_id: node_id('0'),
@@ -255,6 +256,7 @@ fn tc_024_nested_inference_accepts_inline_canonical_integer_literals() {
                     }),
                 },
                 CheckedTerm::Binding {
+                    binder: None,
                     name: ("max").into(),
                     value: Box::new(CheckedTerm::Literal {
                         type_id: node_id('0'),
@@ -317,6 +319,7 @@ fn tc_024_nested_inference_enforces_depth_before_reusing_memoized_nodes() {
         CheckedTerm::Aggregate {
             members: vec![
                 CheckedTerm::Binding {
+                    binder: None,
                     name: ("min").into(),
                     value: Box::new(CheckedTerm::Literal {
                         type_id: node_id('0'),
@@ -328,6 +331,7 @@ fn tc_024_nested_inference_enforces_depth_before_reusing_memoized_nodes() {
                     }),
                 },
                 CheckedTerm::Binding {
+                    binder: None,
                     name: ("max").into(),
                     value: Box::new(CheckedTerm::Literal {
                         type_id: node_id('0'),
@@ -546,6 +550,7 @@ pub(in crate::oracle::scalar) fn v2_node(
 /// the literal carries `type` as FR-322 requires.
 fn binding_member(name: &str, value: &str) -> CheckedTerm {
     CheckedTerm::Binding {
+        binder: None,
         name: (name).into(),
         value: Box::new(CheckedTerm::Literal {
             type_id: node_id('1'),
@@ -561,6 +566,7 @@ fn binding_member(name: &str, value: &str) -> CheckedTerm {
 /// A `text`-kind binding member.
 fn text_member(name: &str, value: &str) -> CheckedTerm {
     CheckedTerm::Binding {
+        binder: None,
         name: (name).into(),
         value: Box::new(CheckedTerm::Literal {
             type_id: node_id('1'),

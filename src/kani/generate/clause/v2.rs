@@ -883,6 +883,7 @@ fn binder_matches_scalar(
                     CheckedTerm::Binding {
                         name: actual,
                         value,
+                        ..
                     } if actual.as_ref() == name => {
                         literal(value, LiteralKind::Integer)?.parse::<i64>().ok()
                     }
@@ -3717,7 +3718,10 @@ mod control_shape_tests {
     #[test]
     fn an_if_with_a_non_native_branch_is_refused_and_native_branches_contribute_all_operands() {
         // `texts` has Text branches and `plain` has Integer branches.
-        let mut outcomes = [shape(CONTROL_IF, "texts", true), shape(CONTROL_IF, "plain", true)];
+        let mut outcomes = [
+            shape(CONTROL_IF, "texts", true),
+            shape(CONTROL_IF, "plain", true),
+        ];
         outcomes.sort_by_key(Result::is_ok);
         assert_eq!(
             outcomes,

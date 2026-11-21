@@ -469,7 +469,7 @@ fn parameter_member<'a>(term: &'a CheckedTerm, member: &str) -> Option<&'a str> 
         return None;
     };
     members.iter().find_map(|candidate| match candidate {
-        CheckedTerm::Binding { name, value } if name.as_ref() == member => match &**value {
+        CheckedTerm::Binding { name, value, .. } if name.as_ref() == member => match &**value {
             CheckedTerm::Literal { value, .. } => value.as_str(),
             _ => None,
         },
@@ -559,7 +559,7 @@ impl Shape<'_> {
         depth: usize,
     ) -> Result<Claim, GraphRefusal> {
         let unsupported = || GraphRefusal::from(Reason::UnsupportedClaimShape);
-        let [CheckedTerm::Reference { target: collection }, CheckedTerm::Binding { name, value }] =
+        let [CheckedTerm::Reference { target: collection }, CheckedTerm::Binding { name, value, .. }] =
             arguments
         else {
             return Err(unsupported());
