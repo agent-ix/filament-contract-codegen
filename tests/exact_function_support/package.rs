@@ -485,7 +485,7 @@ pub fn source_bound_call_package() -> PackageBuilder {
                 "location": {"origin": {
                     "kind": "function_body", "function": code_id(SOURCE_FUNCTION),
                     "name": format!("n{}", key(SOURCE_FUNCTION)), "index": 0
-                }, "path": []}
+                }, "up": 0, "down": []}
             },
             {
                 "application": code_id(SOURCE_OTHER_BODY),
@@ -494,7 +494,7 @@ pub fn source_bound_call_package() -> PackageBuilder {
                 "location": {"origin": {
                     "kind": "function_body", "function": code_id(SOURCE_OTHER_FUNCTION),
                     "name": format!("n{}", key(SOURCE_OTHER_FUNCTION)), "index": 1
-                }, "path": []}
+                }, "up": 0, "down": []}
             }
         ]
     });

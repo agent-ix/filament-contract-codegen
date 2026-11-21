@@ -1996,7 +1996,7 @@ mod ir988_admitted_generation_tests {
                     "location": {"origin": {
                         "kind": "function_body", "function": code_id(code),
                         "name": format!("n{}", key(code)), "index": offset + 2
-                    }, "path": []}
+                    }, "up": 0, "down": []}
                 }),
             );
         }
