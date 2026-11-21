@@ -76,11 +76,21 @@ pub(super) fn bind_clause(wire: &mut Value, declaration: CheckedNodeId) {
         }
         other => panic!("fixture needs explicit clock parameters for profile {other}"),
     };
+    let source_unit = serde_json::to_value(&declaration_region.source)
+        .expect("fixture declaring source serializes");
+    assert!(
+        wire["lock"]["sources"]
+            .as_array()
+            .expect("fixture locked sources")
+            .contains(&source_unit),
+        "the clause's declaring source must be locked"
+    );
     let binding = TemporalBinding {
         declaration: declaration.clone(),
         occurrence,
         clock_name: clock_name.into(),
         clock,
+        source_unit: Some(declaration_region.source.clone()),
         trace: None,
     };
     let root = wire.as_object_mut().expect("fixture package object");
