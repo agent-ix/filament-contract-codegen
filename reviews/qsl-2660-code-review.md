@@ -62,3 +62,21 @@ Examined scope (verbatim excerpts, truncated to 600 characters where needed):
 Examined: FR-021-AC-33, FR-021-AC-41; context: FR-021-AC-11 and the FR-021 Description. Binding checked: direct-case test to AC-33 correct, to AC-41 wrong. All three changed files inspected. No applicable AssuranceProfile exists under spec. No Tokio surface. Rust implementation, testing, safety and boundary references applied. Required external gate policy is superseded by the owner's explicit no-gate instruction.
 
 Focused validation for the lead: `cargo test --locked -p filament-contract-codegen -j4 --lib -- oracle::function ir_988 --test-threads=2`; `cargo test --locked -p filament-contract-codegen -j4 --test it -- tc_031_ac33 tc_031_ac41 --test-threads=2`. For the fixture changes, select the existing `exact_function` cases that consume the shared support; known environment-dependent scratch-crate/FSPEC_DIR failures must be reported separately. Run every cargo command through qsl-slot with the assigned worktree target and requested debug/incremental environment. Test execution remains pending, not claimed green here.
+
+## Dispositions
+
+Round 1 reviewed fix head 24675fac96d9f54b787f0d310c9743ba21555e7a against the frozen review head e9f9ae314360dad753ec2345dca40fd16f3171a6. Original findings above are unchanged.
+
+| FND | Outcome | Reason |
+| --- | --- | --- |
+| FND-001 | fixed | The full generic body reconstruction algorithm and its call were deleted. The two fixed fixture bodies now carry explicit application/location rows; the IR-988 fixture adds one explicit root row per additional known declaration sharing SOURCE_BODY, without discovering or interpreting arbitrary expressions. |
+| FND-002 | fixed | The direct-case test now binds only FR-021-AC-33 and TC-031. The unrelated AC-41 tag was removed. |
+
+After excerpts:
+
+- FND-001, tests/exact_function_support/package.rs: `// Each of these two authored bodies has exactly one application and no expression children.` followed by explicit `body_locations` data whose location is `"path": []`. The former author_body_locations, body_target, expression_references and WALKED_THROUGH no longer exist in the shared fixture reader.
+- FND-002: `#[trace("FR-021-AC-33", "TC-031")]` immediately precedes the direct-case regression.
+
+## Disposition round 1 verdict
+
+**MERGEABLE** for this PR's scoped fix: both findings are fixed and no new defect was found in the fix commits. The lead reports 54 filtered library tests and 70 filtered integration tests passing at the fix head. Three generated scratch-crate agreement cases are blocked before generated code executes: their metadata brings filament-contract-model from IR 4c91eff6 while the root lock uses af45a983. The scratch resolver, root manifest/lock, and src/core/profile.rs, which supplies the emitted IR source literal, are unchanged from merge base 556f47c3. This establishes an independent pre-existing pin mismatch, not a regression caused by explicit body fixture rows or the refusal remap. The reviewer did not rerun cargo and does not claim those three agreement cases passed. Full diagnostic text is retained at /private/tmp/qsl-2660-scratch-failures.txt. No new review, aggregate gate, worktree or source edit was performed for this disposition.

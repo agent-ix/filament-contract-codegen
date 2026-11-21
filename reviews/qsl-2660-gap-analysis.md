@@ -57,3 +57,17 @@ Plan completion: not assessed
 Reverse inventory: 726 public function/type/trait declarations observed across src, with subsystem ownership organized by core, oracle, kani, replay, evidence, routing and publication specification trees. Detailed new-surface inventory: no production public API added, two modified refusal helpers and one new fixture authoring entry point with its helpers. New production untraced behavior: 0. Source stubs introduced: 0. Test stubs introduced: 0. The reenabled regression uses real FSL producer admission and asserts cause identity and sibling output equality. The fixture reconstruction duplicates upstream behavior, recorded once in the code-review artifact rather than repeated here.
 
 Examined units: FR-021-AC-33 and FR-021-AC-41. Context: FR-021-AC-11 and FR-021 Description. Semantic review opt-in was not requested; no standalone semantic review was run. Matrix emitted existing trace-grammar warnings for source commentary and old bare requirement/test-case tags; the requested AC binders were present in the engine output. No baseline warning was represented as a new PR defect. No aggregate or cargo test run was performed by this review.
+
+## Dispositions
+
+Round 1 at 24675fac96d9f54b787f0d310c9743ba21555e7a. Original finding remains unchanged above.
+
+| FND | Outcome | Reason |
+| --- | --- | --- |
+| FND-001 | fixed | The direct-case regression now has `#[trace("FR-021-AC-33", "TC-031")]`; the unsupported AC-41 coverage claim was removed. |
+
+After excerpt: `#[trace("FR-021-AC-33", "TC-031")]` on tc_031_ac33_direct_case_call_node_is_unsupported. The AC-33 binding remains correct; this test no longer claims AC-41.
+
+## Disposition round 1 verdict
+
+**MERGEABLE** for the PR-local changes: no unresolved PR finding remains. The original repository-wide assurance FAIL and its baseline matrix totals remain outside the owner-assigned scope; this disposition is not a whole-repository assurance PASS. No plan completion or new semantic audit was assessed. The lead's 54 library and 70 integration passes support the changed surface. Three independent scratch dependency-source mismatches remain explicitly blocked, as recorded in the companion code-review disposition; they are not reported as passing and were not introduced by this PR.
