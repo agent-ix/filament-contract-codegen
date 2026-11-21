@@ -19,8 +19,7 @@ use filament_contract_model::{ApplicationOperator, CheckedTerm};
 use filament_contract_model::{
     CheckedExtensionRefusalDetail, CheckedNodeId, CheckedPackageIncomplete, CheckedPackageLimit,
     CheckedPackageRefusal, CheckedPackageRefusalCause, CheckedPackageRefusalCode,
-    CheckedPackageRefusalLocation, CheckedProtocolRefusalDetail,
-    ContractPackageV1,
+    CheckedPackageRefusalLocation, CheckedProtocolRefusalDetail, ContractPackageV1,
 };
 use serde::Serialize;
 
@@ -407,6 +406,7 @@ fn checked_function_call_matches(
             CheckedTerm::Binding {
                 name: actual,
                 value,
+                ..
             } if actual.as_ref() == name => Some(value.as_ref()),
             _ => None,
         })

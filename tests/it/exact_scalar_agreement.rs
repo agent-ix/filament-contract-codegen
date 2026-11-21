@@ -887,6 +887,7 @@ fn carried_quantity_vectors_compile_and_agree_with_owner() {
                         filament_contract_model::CheckedTerm::Binding {
                             name: actual,
                             value,
+                            ..
                         } if actual.as_ref() == name => match value.as_ref() {
                             filament_contract_model::CheckedTerm::Reference { target } => {
                                 Some(target)

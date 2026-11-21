@@ -1851,7 +1851,7 @@ fn fsl_function_application(package: &CheckedPackageV2, function: &str) -> Check
     let body_id = members
         .iter()
         .find_map(|member| match member {
-            CheckedTerm::Binding { name, value } if name.as_ref() == "body" => {
+            CheckedTerm::Binding { name, value, .. } if name.as_ref() == "body" => {
                 reference_target(value)
             }
             _ => None,

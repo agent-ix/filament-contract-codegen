@@ -54,7 +54,7 @@ fn bound_member<'a>(term: &'a CheckedTerm, expected: &str) -> &'a CheckedTerm {
     members
         .iter()
         .find_map(|member| match member {
-            CheckedTerm::Binding { name, value } if name.as_ref() == expected => {
+            CheckedTerm::Binding { name, value, .. } if name.as_ref() == expected => {
                 Some(value.as_ref())
             }
             _ => None,

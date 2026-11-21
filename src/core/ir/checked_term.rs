@@ -51,7 +51,7 @@ pub(crate) fn bound_members<'a, const N: usize>(
     }
     let mut found = [None; N];
     for member in members {
-        let CheckedTerm::Binding { name, value } = member else {
+        let CheckedTerm::Binding { name, value, .. } = member else {
             return None;
         };
         let slot = &mut found[names

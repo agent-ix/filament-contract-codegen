@@ -90,6 +90,7 @@ fn named_member<'a>(node: &'a CheckedSemanticNodeV2, name: &str) -> Option<&'a C
         CheckedTerm::Binding {
             name: member_name,
             value,
+            ..
         } if member_name.as_ref() == name => Some(value.as_ref()),
         _ => None,
     })

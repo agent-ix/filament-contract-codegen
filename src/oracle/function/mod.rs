@@ -1855,6 +1855,7 @@ mod ir988_source_function_tests {
             metadata,
             Some(CheckedTerm::Aggregate {
                 members: vec![CheckedTerm::Binding {
+                    binder: None,
                     name: "body".into(),
                     value: Box::new(CheckedTerm::Reference {
                         target: body.clone(),
@@ -1995,7 +1996,7 @@ mod ir988_admitted_generation_tests {
                     "location": {"origin": {
                         "kind": "function_body", "function": code_id(code),
                         "name": format!("n{}", key(code)), "index": offset + 2
-                    }, "path": []}
+                    }, "up": 0, "down": []}
                 }),
             );
         }
@@ -2143,9 +2144,9 @@ pub(crate) fn binding_value<'a>(body: &'a CheckedTerm, name: &str) -> Option<&'a
     aggregate_members(body)?
         .iter()
         .find_map(|member| match member {
-            CheckedTerm::Binding { name: found, value } if found.as_ref() == name => {
-                Some(value.as_ref())
-            }
+            CheckedTerm::Binding {
+                name: found, value, ..
+            } if found.as_ref() == name => Some(value.as_ref()),
             _ => None,
         })
 }
@@ -4191,6 +4192,7 @@ mod tests {
             target: target.clone(),
         };
         let binding = |value: CheckedTerm| CheckedTerm::Binding {
+            binder: None,
             name: "body".into(),
             value: Box::new(value),
         };

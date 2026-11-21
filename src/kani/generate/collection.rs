@@ -832,7 +832,7 @@ fn claim_parameters<'a>(
             .and_then(aggregate_members)
             .and_then(|members| members.first())
             .and_then(|member| match member {
-                CheckedTerm::Binding { name, value } if name.as_ref() == "parameters" => {
+                CheckedTerm::Binding { name, value, .. } if name.as_ref() == "parameters" => {
                     aggregate_members(value)
                 }
                 _ => None,
@@ -968,6 +968,7 @@ fn resolve_collection_field(
     let Some(CheckedTerm::Binding {
         name: binder_name,
         value: predicate_value,
+        ..
     }) = arguments.get(1)
     else {
         return Err(CollectionDomainRefusal::UnsupportedShape);
@@ -1364,6 +1365,7 @@ fn binding<'a>(members: &'a [CheckedTerm], name: &str) -> Option<&'a CheckedTerm
         CheckedTerm::Binding {
             name: actual,
             value,
+            ..
         } if actual.as_ref() == name => Some(value.as_ref()),
         _ => None,
     })

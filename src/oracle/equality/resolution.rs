@@ -299,7 +299,7 @@ pub(super) fn resolve_type<Body: GraphBody>(
                             }
                             let mut children = Vec::new();
                             for (wire, member) in wire_members.iter().zip(&members) {
-                                let CheckedTerm::Binding { name, value } = wire else {
+                                let CheckedTerm::Binding { name, value, .. } = wire else {
                                     return Err(mismatch().into());
                                 };
                                 if name.as_ref() != member.identifier() {

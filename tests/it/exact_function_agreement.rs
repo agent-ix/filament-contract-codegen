@@ -141,6 +141,7 @@ pub(super) fn body_id(package: &CheckedPackageV2, name: &str) -> CheckedNodeId {
             CheckedTerm::Binding {
                 name: binding,
                 value,
+                ..
             } if binding.as_ref() == "body" => match value.as_ref() {
                 CheckedTerm::Reference { target } => Some(target.clone()),
                 _ => None,

@@ -6479,7 +6479,7 @@ fn tc_035_the_node_ids_of_the_package_fsl_emits_are_the_ids_call_site_names() {
     let bound_frame = match &anchor.body {
         CheckedTerm::OperationAnchorBody(body) => {
             body.members.iter().find_map(|member| match member {
-                CheckedTerm::Binding { name, value } if name.as_ref() == "frame" => {
+                CheckedTerm::Binding { name, value, .. } if name.as_ref() == "frame" => {
                     match value.as_ref() {
                         CheckedTerm::Reference { target } => Some(target),
                         _ => None,
