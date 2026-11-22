@@ -11,33 +11,33 @@
 /// the `git` and `rev` keys of the dependency table. Public so a scratch crate that compiles
 /// generated code names the runtime the same way and cannot drift from the emitter.
 pub const RUNTIME_DEPENDENCY_SOURCE: &str =
-    "git = \"https://github.com/agent-ix/filament-contract-runtime\", rev = \"284cb6df9e2c917deba987d952e47e5ffc384ca1\"";
+    "git = \"https://github.com/agent-ix/filament-contract-runtime\", rev = \"3d293e4aaaafe764712141cf5a4ad35693244adb\"";
 
 /// The authoritative exact-kernel source used by generated scalar, equality and function
 /// oracles.
 pub const EXACT_DEPENDENCY_SOURCE: &str =
-    "git = \"https://github.com/agent-ix/filament-exact\", rev = \"b26a8e4c592503fccdc4a0e3d2cce23dd8487616\"";
+    "git = \"https://github.com/agent-ix/filament-exact\", rev = \"a58474cc105a86f3307a11def3fc001e2459679f\"";
 
 /// Source of declaration admission and structural equality in generated oracles.
 pub const SEMANTIC_VALUE_DEPENDENCY_SOURCE: &str =
-    "git = \"https://github.com/agent-ix/filament-semantic-value\", rev = \"fa5e78aa71fcea5418492b67f13a33124af84459\"";
+    "git = \"https://github.com/agent-ix/filament-semantic-value\", rev = \"31d807ccb8ffd5a88beb0b1a570b80acb099f5e9\"";
 
 /// Source of the checked-package model the function and equality oracles read.
 pub const MODEL_DEPENDENCY_SOURCE: &str =
-    "git = \"https://github.com/agent-ix/filament-contract-ir\", rev = \"a03c86b3bcb639c0f029bfc5d983803ef66124c3\"";
+    "git = \"https://github.com/agent-ix/filament-contract-ir\", rev = \"c46c29a5ccd8d4079b092e37662817bf8cd95c0b\"";
 
 /// Source of the checked-closure evaluator the function oracle names.
 pub const EVAL_DEPENDENCY_SOURCE: &str =
-    "git = \"https://github.com/agent-ix/filament-eval\", rev = \"a0e8e1254827de71738cbf87646e09ef68531692\"";
+    "git = \"https://github.com/agent-ix/filament-eval\", rev = \"79b8c42b60f43c936e8e50a7fc6519da030c978d\"";
 
 /// Source of the criterion-binding attribute macro scratch crates use.
 pub const TRACE_DEPENDENCY_SOURCE: &str =
     "git = \"https://github.com/agent-ix/ix-trace-rs\", tag = \"v0.1.2\"";
 
 /// Source of FSL's admitted-context facade, pinned to current FSL main.
-pub const FSL_REPLAY_DEPENDENCY_SOURCE: &str = "git = \"https://github.com/agent-ix/filament-spec-language\", rev = \"bf74ebb2cd9fda495aaff52a75db8ea23309eba0\"";
+pub const FSL_REPLAY_DEPENDENCY_SOURCE: &str = "git = \"https://github.com/agent-ix/filament-spec-language\", rev = \"b68f04c445396b1e66fa71063337d001f3717dcd\"";
 /// Source of FSL's structural obligation identity types.
-pub const FSL_PACKAGE_DEPENDENCY_SOURCE: &str = "git = \"https://github.com/agent-ix/filament-spec-language\", rev = \"bf74ebb2cd9fda495aaff52a75db8ea23309eba0\"";
+pub const FSL_PACKAGE_DEPENDENCY_SOURCE: &str = "git = \"https://github.com/agent-ix/filament-spec-language\", rev = \"b68f04c445396b1e66fa71063337d001f3717dcd\"";
 
 /// The `[package.metadata.kani]` table every generated oracle crate's manifest carries. CBMC
 /// tracks heap objects field by field only up to 64 bytes by default; RT's `Value` and `ValueType`

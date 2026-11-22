@@ -90,10 +90,11 @@ use crate::oracle::checked_graph::{CheckedGraph as Graph, GraphBody};
 use crate::oracle::claim::{ClaimDisposition, ClaimMap, OracleGenerationError, UpstreamBlocker};
 use crate::oracle::direct_unsupported_form;
 use filament_contract_model::{
-    encode_checked_package_v2, ApplicationOperator, CheckedNodeId, CheckedNodeTag,
-    CheckedPackageSidecarsRef, CheckedPackageSourceCorrespondenceRef, CheckedPackageV2,
-    CheckedSemanticNodeV2, CheckedSourceMapEntry, CheckedTerm, ContractFeatureRecordV1,
-    ContractPackageV1, ContractSourceV1,
+    encode_checked_package_v2_with_protocol_correlation_occurrences, ApplicationOperator,
+    CheckedNodeId, CheckedNodeTag, CheckedPackageSidecarsRef,
+    CheckedPackageSourceCorrespondenceRef, CheckedPackageV2, CheckedSemanticNodeV2,
+    CheckedSourceMapEntry, CheckedTerm, ContractFeatureRecordV1, ContractPackageV1,
+    ContractSourceV1, ProtocolCorrelationProvenance,
 };
 use filament_exact::{
     self as exact, CardinalityBound, CollectionKind, CollectionType, DecimalType, IllTypedCause,
@@ -778,7 +779,16 @@ impl CompositeReplayAuthority for CompositeEqualityOracles {
 pub(crate) fn encode_original_package(
     original: &CheckedPackageV2,
 ) -> Result<String, OracleGenerationError> {
-    let bytes = encode_checked_package_v2(
+    let correlation_rows = match original.protocol_correlation_provenance() {
+        ProtocolCorrelationProvenance::Unavailable(_) => None,
+        ProtocolCorrelationProvenance::Complete(table) => Some(
+            table
+                .groups()
+                .flat_map(|group| group.clauses().iter().cloned())
+                .collect::<Vec<_>>(),
+        ),
+    };
+    let bytes = encode_checked_package_v2_with_protocol_correlation_occurrences(
         original.name(),
         original.lock(),
         original.graph(),
@@ -795,6 +805,8 @@ pub(crate) fn encode_original_package(
             operation_effects: original.operation_effect_rows(),
             operation_bodies: original.operation_body_rows(),
         },
+        None,
+        correlation_rows.as_deref(),
         original.capability_report(),
         original.diagnostics(),
         quire_canonical::Limits::new(u64::MAX),
@@ -2844,6 +2856,25 @@ mod tests {
         (*package, compiled.into_parts().1)
     }
 
+    #[trace("FR-018-AC-37", "TC-029")]
+    #[test]
+    fn original_encoding_preserves_final_owner_correlation_provenance() {
+        let (package, context) = recursive_fixture();
+        let ProtocolCorrelationProvenance::Complete(table) =
+            package.protocol_correlation_provenance()
+        else {
+            panic!("the final owner emission carries correlation provenance");
+        };
+        assert!(table.is_empty(), "this source has no protocol controls");
+        assert_eq!(
+            encode_original_package(package)
+                .expect("the admitted package encodes")
+                .as_bytes(),
+            context.package_bytes(),
+            "the complete final emission remains the context authority"
+        );
+    }
+
     fn recursive_owner_key(name: &str) -> NodeKey {
         fsl_recursive_admission()
             .1
@@ -4016,31 +4047,9 @@ mod tests {
     fn deep_acyclic_closure_generates_flat_compilable_source_on_a_small_stack() {
         const RECORDS: usize = 50_000;
         let (original_source, original, context, ids, leaf) = admitted_record_chain(RECORDS, true);
-        let original_bytes = encode_checked_package_v2(
-            original.name(),
-            original.lock(),
-            original.graph(),
-            CheckedPackageSourceCorrespondenceRef {
-                source_map: original.source_map(),
-                refinement_step_rows: original.refinement_step_rows(),
-            },
-            CheckedPackageSidecarsRef {
-                checked_term_data: original.checked_term_data(),
-                claim_names: original.claim_names(),
-                temporal_bindings: original.temporal_bindings(),
-                temporal_clause_names: original.temporal_clause_names(),
-                schedulability_claims: original.schedulability_claim_rows(),
-                operation_effects: original.operation_effect_rows(),
-                operation_bodies: original.operation_body_rows(),
-            },
-            original.capability_report(),
-            original.diagnostics(),
-            quire_canonical::Limits::new(u64::MAX),
-        )
-        .expect("the original checked package encodes");
-        assert_eq!(original_bytes, context.package_bytes());
         let original_bytes =
-            String::from_utf8(original_bytes).expect("the canonical checked package is UTF-8 JSON");
+            encode_original_package(&original).expect("the original checked package encodes");
+        assert_eq!(original_bytes.as_bytes(), context.package_bytes());
         let root = ids[0].clone();
         let (artifacts, _root, original_bytes) = std::thread::Builder::new()
             .stack_size(512 * 1024)
