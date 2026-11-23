@@ -1,0 +1,62 @@
+{
+  "figures": [
+    {
+      "id": "hero",
+      "width": 980, "height": 350,
+      "label": "One checked contract package goes into filament-contract-codegen and fans out into four generated outputs: Rust oracles, property tests, Kani proofs and evidence records. A counterexample from a Kani run is replayed natively through FSL, and the result is either a reproduced violation or an evidence failure.",
+      "items": [
+        {"k":"box","at":[0,126,200,56],"role":"model","title":"checked package","subs":["from filament-contract-ir"]},
+        {"k":"box","at":[220,126,190,56],"role":"logic","title":"filament-contract-codegen","subs":["deterministic"]},
+        {"k":"line","points":[[200,154],[217,154]],"role":"model"},
+        {"k":"line","points":[[410,154],[425,154]],"role":"logic","arrow":false},
+        {"k":"line","points":[[425,28],[425,280]],"role":"logic","arrow":false},
+        {"k":"line","points":[[425,28],[437,28]],"role":"logic"},
+        {"k":"box","at":[440,0,210,56],"role":"model","title":"Rust oracles","subs":["the contract as plain code"]},
+        {"k":"line","points":[[425,112],[437,112]],"role":"logic"},
+        {"k":"box","at":[440,84,210,56],"role":"model","title":"property tests","subs":["proptest strategies"]},
+        {"k":"line","points":[[425,196],[437,196]],"role":"logic"},
+        {"k":"box","at":[440,168,210,56],"role":"model","title":"Kani proofs","subs":["bounded obligations"]},
+        {"k":"line","points":[[425,280],[437,280]],"role":"logic"},
+        {"k":"box","at":[440,252,210,56],"role":"evidence","title":"evidence","subs":["claim map · proof graph"]},
+        {"k":"line","points":[[650,196],[682,196]],"role":"model"},
+        {"k":"box","at":[685,168,130,56],"role":"ink","title":"Kani run","subs":["finds a witness"]},
+        {"k":"line","points":[[815,196],[842,196]]},
+        {"k":"box","at":[845,168,135,56],"role":"logic","title":"fsl-replay","subs":["same witness"]},
+        {"k":"line","points":[[912,224],[912,249]],"role":"logic"},
+        {"k":"box","at":[800,252,180,56],"role":"evidence","title":"reproduced","subs":["or evidence failure"]},
+        {"k":"legend","at":[0,344],"entries":[["model","checked package / IR","box"],["logic","compiler stage","box"],["evidence","outcome","box"],["ink","input","box"]]}
+      ]
+    },
+    {
+      "id": "outcomes",
+      "width": 980, "height": 350,
+      "label": "A Kani run ends as verified, falsified, cover unsatisfied, cancelled or inconclusive. Only a falsified run returns a counterexample, which codegen replays through FSL: the result is a reproduced violation, or an evidence failure when the counterexample is not valid evidence.",
+      "items": [
+        {"k":"box","at":[0,124,150,56],"role":"ink","title":"a Kani run","subs":["one harness"]},
+        {"k":"line","points":[[150,152],[190,152]],"arrow":false},
+        {"k":"line","points":[[190,25],[190,265]],"arrow":false},
+        {"k":"line","points":[[190,25],[217,25]],"role":"logic"},
+        {"k":"box","at":[220,0,330,50],"role":"logic","title":"verified","subs":["every property held"]},
+        {"k":"line","points":[[190,85],[217,85]],"role":"evidence"},
+        {"k":"box","at":[220,60,330,50],"role":"evidence","title":"falsified","subs":["a property failed; witness returned"]},
+        {"k":"line","points":[[190,145],[217,145]],"role":"evidence"},
+        {"k":"box","at":[220,120,330,50],"role":"evidence","title":"cover unsatisfied","subs":["vacuous: a cover was never reached"]},
+        {"k":"line","points":[[190,205],[217,205]],"role":"evidence"},
+        {"k":"box","at":[220,180,330,50],"role":"evidence","title":"cancelled","subs":["the caller stopped the run"]},
+        {"k":"line","points":[[190,265],[217,265]],"role":"evidence"},
+        {"k":"box","at":[220,240,330,50],"role":"evidence","title":"inconclusive","subs":["the run established nothing"]},
+        {"k":"line","points":[[550,85],[597,85]],"role":"evidence","weight":2.4},
+        {"k":"box","at":[600,60,150,50],"role":"logic","title":"fsl-replay","subs":["native, in FSL"]},
+        {"k":"line","points":[[750,85],[765,85]],"role":"logic","arrow":false},
+        {"k":"line","points":[[765,55],[765,115]],"role":"logic","arrow":false},
+        {"k":"line","points":[[765,55],[777,55]],"role":"logic"},
+        {"k":"line","points":[[765,115],[777,115]],"role":"logic"},
+        {"k":"box","at":[780,30,200,50],"role":"evidence","title":"reproduced","subs":["the violation is real"]},
+        {"k":"box","at":[780,90,200,50],"role":"evidence","title":"evidence failure","subs":["not valid evidence"]},
+        {"k":"legend","at":[0,344],"entries":[["logic","compiler stage","box"],["evidence","outcome","box"],["ink","input","box"]]}
+      ]
+    },
+    {"id":"ecosystem","construct":{"name":"ecosystem","here":"filament-contract-codegen"}}
+  ]
+}
+
