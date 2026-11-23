@@ -1817,9 +1817,9 @@ fn work_fsl_package() -> CheckedPackageV2 {
         },
         [],
         &DependencyInput::default(),
-        // One value_validity record per application (4097 here) takes this fixture past FSL's
-        // default 16 MiB emit output limit (16777217 bytes against 16777216). Only this oversized
-        // fixture raises it.
+        // One value_validity record per application (4097 here) takes this fixture to 20,578,692
+        // bytes, past FSL's default 16 MiB emit output limit (16,777,216). 32 MiB is a ceiling with
+        // headroom, not the measured size. Only this oversized fixture raises it.
         StageLimits::default()
             .with_named("emit.output_bytes", WORK_PACKAGE_BYTES)
             .expect("emit.output_bytes is a stage limit"),
