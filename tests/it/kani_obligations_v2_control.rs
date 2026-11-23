@@ -150,15 +150,7 @@ pub(crate) fn rewrite_nodes(
     ) -> bool,
 ) -> (CheckedPackageV2, CheckedNodeId) {
     let (package, clause) = twin.emitted_package(clause_name);
-    let mut wire = json!({
-        "contract_version": "filament.checked-package/v2",
-        "name": package.name(),
-        "lock": package.lock(),
-        "semantic_graph": package.graph(),
-        "source_map": package.source_map(),
-        "capability_report": package.capability_report(),
-        "diagnostics": package.diagnostics(),
-    });
+    let mut wire = twin.emitted_wire(clause_name);
     let frame = fsl_replay::WireGraph::of_package_value(&wire).expect("original holding rows");
     let nodes = wire["semantic_graph"]["nodes"].as_array().unwrap().clone();
     let package_name = wire["name"].as_str().unwrap().to_owned();

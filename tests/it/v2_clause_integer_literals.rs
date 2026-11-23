@@ -98,15 +98,7 @@ fn reader_variant(
 ) -> (CheckedPackageV2ReadResult, CheckedNodeId) {
     let twin = Twin::with_balance_condition(condition);
     let (package, clause) = twin.emitted_package("BalanceNeverDrops");
-    let mut wire = json!({
-        "contract_version": "filament.checked-package/v2",
-        "name": package.name(),
-        "lock": package.lock(),
-        "semantic_graph": package.graph(),
-        "source_map": package.source_map(),
-        "capability_report": package.capability_report(),
-        "diagnostics": package.diagnostics(),
-    });
+    let mut wire = twin.emitted_wire("BalanceNeverDrops");
     edit(&mut wire);
     let inputs = twin.state_clause_inputs(&package, &clause, "BalanceNeverDrops", (0, 0), (0, 0));
     let [document] = inputs.packages.as_slice() else {

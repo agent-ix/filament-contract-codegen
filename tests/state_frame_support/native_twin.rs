@@ -1773,6 +1773,24 @@ impl Twin {
         self.emitted_package_with_model(clause, None)
     }
 
+    /// The wire document FSL emitted for the one located clause, whole: every sidecar the reader
+    /// requires (`claim_names`, `checked_term_data`, temporal rows, ...) is carried exactly as FSL
+    /// wrote it, so a test that rewrites nodes starts from a document the reader admits.
+    pub fn emitted_wire(&self, clause: &str) -> Value {
+        let name = ClauseName(Identifier::new(clause).expect("identifier"));
+        let located = call_site(
+            SourceIdentity::new(AUTHORITY, self.identity),
+            self.identity.to_owned(),
+            self.identity,
+            &self.unit,
+            [self.domain.as_slice()],
+            &DependencyInput::default(),
+            &name,
+        )
+        .expect("the clause is located");
+        serde_json::from_slice(&located.package).expect("FSL emits a JSON package")
+    }
+
     /// Compile one package with FSL-accepted points and locate each authored clause by its
     /// admitted claim source region. A point changes the clause node's identity, so an unpointed
     /// `call_site` node id cannot be reused for this package.
