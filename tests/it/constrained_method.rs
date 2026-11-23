@@ -714,7 +714,9 @@ fn same_named_general_clause_bodies_and_preconditions_cannot_reuse_a_method() {
             value
         };
         // Clause node ids carry graph row positions, so a changed body that shifts rows also
-        // changes the bare id preimage; only the precondition body keeps it equal.
+        // changes the bare id preimage; only the precondition body keeps it equal. The preimage is the
+        // method identity serialized as the generator defines it, which holds the raw node ids (not
+        // the structural keys), so this assertion cannot be made position-independent.
         assert_eq!(
             legacy(method_a.identity()) == legacy(method_b.identity()),
             changed == "precondition",

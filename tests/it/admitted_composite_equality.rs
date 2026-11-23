@@ -585,7 +585,7 @@ fn genuine_union_capability_refusals_preserve_the_healthy_sibling() {
 
 #[trace("FR-018-AC-39", "FR-018-AC-42", "TC-029")]
 #[test]
-fn source_context_comparison_distinguishes_checked_term_sidecar_presence() {
+fn reader_refuses_a_package_without_its_checked_term_sidecar() {
     use filament_contract_model::{
         encode_checked_package_v2, CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageRefusalCause,
         CheckedPackageRefusalCode, CheckedPackageSidecarsRef, CheckedPackageSourceCorrespondenceRef, CheckedPackageV2,
