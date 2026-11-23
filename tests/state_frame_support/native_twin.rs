@@ -2235,6 +2235,7 @@ impl Twin {
     /// The proving run's lock: the unit, no dependency, and the limits the twin replays under.
     fn run(&self) -> ReplayInputs {
         ReplayInputs {
+            clocks: Default::default(),
             decode_limits: unbounded_decode_limits(),
             package_name: self.identity.to_owned(),
             source: LockedSource {

@@ -83,6 +83,7 @@ same-identity source substitution. The unchanged request passes the guard
 (FR-016-AC-30).
 Build a replay
 package from a lock that selects one library identity twice and has no other defect (AC-24).
+Build a replay package for a library whose clause uses the clock `lib-ms` with `ReplayInputs.clocks` empty, then with a `dependencies` row for `lib-ms`; do the same for a program clause on `prog-ms` with a `program` row and with the same row filed under `dependencies`; then give each namespace a row whose configuration is malformed (FR-016-AC-31).
 
 ## Expected Results
 
@@ -122,6 +123,7 @@ unchanged request passes the guard (FR-016-AC-30).
 A lock whose only defect is a repeated dependency identity is refused with
 `DependencyLockError::Input`, code `invalid_package`, cause `conflicting-definition`, and the
 error has no `Duplicate` variant (AC-24, planned).
+The empty selection leaves the library clock unselected and is refused as a call-site refusal; the `dependencies` row replays it. The program clause replays under a `program` row and is refused when the row is filed as a dependency row. A malformed row in either namespace is refused as `DependencyLockError::Clock` before any FSL call (FR-016-AC-31).
 
 ## Status
 

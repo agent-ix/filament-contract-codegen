@@ -759,6 +759,7 @@ fn repeated_identity_refusal() -> ReplayPackageError {
         source: locked(source),
     };
     let inputs = ReplayInputs {
+        clocks: Default::default(),
         decode_limits: crate::unbounded_decode_limits(),
         package_name: "terminal-map".to_owned(),
         source: locked("unit"),

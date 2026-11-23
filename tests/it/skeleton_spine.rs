@@ -87,6 +87,7 @@ fn locked(identity: &str, bytes: &[u8]) -> LockedSource {
 /// because this direct identity fixture has no installed proving run.
 fn inputs(source: &str, dependencies: Vec<DependencyLock>) -> ReplayInputs {
     ReplayInputs {
+        clocks: Default::default(),
         decode_limits: FUNCTION_PLAYBACK_LIMITS,
         package_name: "skeleton-spine".to_owned(),
         source: locked(IDENTITY, source.as_bytes()),

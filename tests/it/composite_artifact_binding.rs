@@ -45,6 +45,7 @@ fn context(
         raw_package,
         &source(),
         ReplayInputs {
+            clocks: Default::default(),
             decode_limits: WitnessDecodeLimits {
                 bytes: 8 * 1024 * 1024,
                 values: 2,

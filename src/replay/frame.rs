@@ -763,7 +763,7 @@ impl FrameReplay {
             values: requested_decode_limits.values.min(run.decode_limits.values),
         };
         let (check_text, values) = decoded_state(&harness, &playback, limits)?;
-        let (run, dependencies) = run.admit().map_err(FrameReplayError::Dependencies)?;
+        let (run, dependencies, clocks) = run.admit().map_err(FrameReplayError::Dependencies)?;
         let replay_limits = run.replay_limits;
         let located = call_site(
             run.source.source_identity(),
@@ -772,7 +772,7 @@ impl FrameReplay {
             &run.source.bytes,
             packages.iter().map(|package| package.bytes.as_slice()),
             &dependencies,
-            &fsl_replay::RequestClocks::default(),
+            &clocks,
             &operation,
         )
         .map_err(FrameReplayError::CallSite)?;

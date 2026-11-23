@@ -244,6 +244,7 @@ fn a_real_falsified_native_mutant_plans_observes_and_settles_diverged_failed() {
         healthy.raw_package.clone(),
         &source,
         ReplayInputs {
+            clocks: Default::default(),
             decode_limits: WitnessDecodeLimits {
                 bytes: SCALAR_PLAYBACK_BYTES,
                 values: 2,

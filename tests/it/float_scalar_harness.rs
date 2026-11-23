@@ -633,6 +633,7 @@ fn owner_package(function: &str) -> filament_contract_codegen::ReplayPackage {
     };
     filament_contract_codegen::ReplayPackage::new(
         filament_contract_codegen::ReplayInputs {
+            clocks: Default::default(),
             decode_limits: filament_contract_codegen::WitnessDecodeLimits {
                 bytes: 1 << 20,
                 values: 16,

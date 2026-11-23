@@ -11,7 +11,7 @@
 use std::{collections::BTreeMap, fmt};
 
 use filament_semantic_value::{catalog::Category, supplied_stop::SuppliedLimits};
-use fsl_package::ObligationIdentity;
+use fsl_package::{ClockConfiguration, ObligationIdentity};
 use fsl_replay::{
     call_site, replay, witness_entry_name, BackendId, CallSite, CallSiteRefusal,
     CanonicalAssignment, DeclaredDomain, DependencyEntryWire, DependencyInput,
@@ -379,6 +379,36 @@ pub struct ReplayInputs {
     pub declared_domains: Vec<DeclaredDomain>,
     /// The configured reader bound for the replay request and envelopes.
     pub replay_limits: ReplayLimits,
+    /// The clock selections the proving package recorded; FSL replays under these, never an empty
+    /// selection (FR-016-AC-31).
+    pub clocks: ReplayClocks,
+}
+
+/// The clock selections a proving package recorded, in FSL's two namespaces. The program rows serve
+/// the proved unit's own source ([`ReplayInputs::source`]); the dependency rows serve library
+/// sources. An empty value is the selection of a package with no clocked unit.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct ReplayClocks {
+    /// The package's `temporal_bindings` rows, by clock name.
+    pub program: BTreeMap<String, ClockConfiguration>,
+    /// The lock's `dependency_clock_selections` rows, by clock name.
+    pub dependencies: BTreeMap<String, ClockConfiguration>,
+}
+
+impl ReplayClocks {
+    /// The one place a replay request's clock selection is built: FSL's `RequestClocks::for_replay`
+    /// with `program_source` as the proved unit's source.
+    pub(crate) fn request(
+        &self,
+        program_source: (String, String),
+    ) -> Result<fsl_replay::RequestClocks, DependencyLockError> {
+        fsl_replay::RequestClocks::for_replay(
+            program_source,
+            self.program.clone(),
+            self.dependencies.clone(),
+        )
+        .map_err(DependencyLockError::Clock)
+    }
 }
 
 /// Why a lock's dependency selections are not a dependency input FSL admits.
@@ -389,6 +419,8 @@ pub enum DependencyLockError {
     /// A library sharing the unit's owner is refused later, by the call site, as
     /// [`ReplayPackageError::CallSite`].
     Input(DependencyInputRefusal),
+    /// A clock row the proving package recorded is no well-formed clock configuration (FR-016-AC-31).
+    Clock(fsl_replay::InvalidClock),
 }
 
 impl fmt::Display for DependencyLockError {
@@ -400,6 +432,7 @@ impl fmt::Display for DependencyLockError {
                     "the lock's dependencies are no dependency input: {refusal}"
                 )
             }
+            Self::Clock(cause) => write!(f, "the lock's clock selection is not admitted: {cause}"),
         }
     }
 }
@@ -444,7 +477,9 @@ impl ReplayInputs {
     /// The lock with its dependencies in the ascending identity order the request carries, and the
     /// dependency input the same selections make. FSL's `DependencyInput::new` refuses an empty,
     /// repeated or shared-owner selection; this adapter checks none of those itself.
-    pub(crate) fn admit(mut self) -> Result<(Self, DependencyInput), DependencyLockError> {
+    pub(crate) fn admit(
+        mut self,
+    ) -> Result<(Self, DependencyInput, fsl_replay::RequestClocks), DependencyLockError> {
         self.dependencies
             .sort_by(|left, right| left.identity.cmp(&right.identity));
         let libraries = self
@@ -458,7 +493,8 @@ impl ReplayInputs {
             })
             .collect::<Vec<_>>();
         let input = DependencyInput::new(libraries).map_err(DependencyLockError::Input)?;
-        Ok((self, input))
+        let clocks = self.clocks.request(self.source.wire())?;
+        Ok((self, input, clocks))
     }
 
     /// The request FSL replays: this lock's structural package reference, selecting
@@ -646,7 +682,7 @@ impl ReplayPackage {
     /// repeats, the dependencies are no dependency input, or FSL does not compile the unit or
     /// find the function.
     pub fn new(inputs: ReplayInputs, function: &str) -> Result<Self, ReplayPackageError> {
-        let (inputs, dependency_input) =
+        let (inputs, dependency_input, clocks) =
             inputs.admit().map_err(ReplayPackageError::Dependencies)?;
         let invalid = || ReplayPackageError::InvalidFunction {
             function: function.to_owned(),
@@ -661,7 +697,7 @@ impl ReplayPackage {
             &source.bytes,
             [],
             &dependency_input,
-            &fsl_replay::RequestClocks::default(),
+            &clocks,
             &selection,
         )
         .map_err(ReplayPackageError::CallSite)?;
@@ -1359,6 +1395,7 @@ fn compile_corpus_fsl_package(
     let function = "corpus_case";
     ReplayPackage::new(
         ReplayInputs {
+            clocks: Default::default(),
             decode_limits,
             package_name: PACKAGE_NAME.to_owned(),
             source: LockedSource {
@@ -1456,6 +1493,7 @@ impl<'a> From<&'a DependencyLockError> for ReplaySettlement<'a> {
     fn from(error: &'a DependencyLockError) -> Self {
         match error {
             DependencyLockError::Input(refusal) => Self::SetupRefused(refusal.code()),
+            DependencyLockError::Clock(_) => Self::CgDefect,
         }
     }
 }
@@ -1872,6 +1910,7 @@ mod tests {
     fn package_named(package_name: &str, source: &str, function: &str) -> ReplayPackage {
         let limits = unlimited();
         let inputs = ReplayInputs {
+            clocks: Default::default(),
             decode_limits: WitnessDecodeLimits {
                 bytes: 1_048_576,
                 values: 1024,

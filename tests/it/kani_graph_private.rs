@@ -363,6 +363,7 @@ fn graph_inputs_for<'a>(
 ) -> GraphReplayInputs<'a> {
     GraphReplayInputs::new(
         ReplayInputs {
+            clocks: Default::default(),
             decode_limits: UNBOUNDED,
             package_name: "graph".to_owned(),
             source: LockedSource {

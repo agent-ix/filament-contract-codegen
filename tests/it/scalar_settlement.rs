@@ -634,6 +634,7 @@ fn small_input_context(fixture: &ReplayFixture) -> OriginalScalarContext {
         fixture.raw_package.clone(),
         &source,
         ReplayInputs {
+            clocks: Default::default(),
             decode_limits: WitnessDecodeLimits {
                 bytes: SCALAR_PLAYBACK_BYTES,
                 values: 2,
@@ -783,6 +784,7 @@ fn step_13_each_reachable_setup_error_is_classified_and_pairs_as_specified() {
         fixture.raw_package.clone(),
         &source,
         ReplayInputs {
+            clocks: Default::default(),
             decode_limits: WitnessDecodeLimits {
                 bytes: SCALAR_PLAYBACK_BYTES,
                 values: 2,
