@@ -75,13 +75,14 @@ fn tc_029_ac50_a_top_level_float_pair_is_reader_ineligible_and_records_the_float
         refusal.cause,
         Some(CheckedPackageRefusalCause::OperatorIneligible)
     );
+    // FR-018-AC-50 fixes the code and cause, not the locus; the reader names the float operand.
     assert_eq!(
         refusal.loci[0]
             .path
             .as_ref()
             .map(|path| path.as_str().to_owned()),
         Some(format!(
-            "/semantic_graph/nodes/{position}/body/operation/leaves"
+            "/semantic_graph/nodes/{position}/body/arguments/0"
         ))
     );
 

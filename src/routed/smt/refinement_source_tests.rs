@@ -450,6 +450,7 @@ fn production_refinement_preserves_encoding_refusal_and_cancellation() {
 /// Real cvc5 proofs cross the public request adapter without a copied certificate.
 #[trace("TC-059", "FR-045-AC-4", "FR-045-AC-5")]
 #[test]
+#[ignore = "needs FILAMENT_CVC5_BIN (cvc5)"]
 fn production_refinement_live_solver_handoff_reaches_fsl_checker() {
     use crate::routed::smt::refinement_driver::prepare_refinement;
     let executable = std::env::var_os("FILAMENT_CVC5_BIN")

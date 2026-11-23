@@ -1699,6 +1699,15 @@ pub fn nested_ieee_package() -> PackageBuilder {
 pub fn top_level_ieee_package() -> PackageBuilder {
     let mut builder = corpus_package_with_nested_ieee();
     builder.omit_code(E_NESTED_IEEE);
+    // The corpus declares a parameter node for each operand type it compares; the top-level float
+    // operands need their own, which the new equality's dependency join names.
+    builder.code(
+        parameter_code(T_FLOAT64),
+        "value",
+        "parameter",
+        T_FLOAT64,
+        parameter_body("p4"),
+    );
     builder.application_code(
         E_TOP_LEVEL_IEEE,
         "binary",

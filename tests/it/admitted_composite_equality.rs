@@ -585,10 +585,10 @@ fn genuine_union_capability_refusals_preserve_the_healthy_sibling() {
 
 #[trace("FR-018-AC-39", "FR-018-AC-42", "TC-029")]
 #[test]
-fn source_context_comparison_distinguishes_checked_term_sidecar_presence() {
+fn reader_refuses_a_package_without_its_checked_term_sidecar() {
     use filament_contract_model::{
-        encode_checked_package_v2, CheckedPackageEvidence, CheckedPackageReadLimits,
-        CheckedPackageSidecarsRef, CheckedPackageSourceCorrespondenceRef, CheckedPackageV2,
+        encode_checked_package_v2, CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageRefusalCause,
+        CheckedPackageRefusalCode, CheckedPackageSidecarsRef, CheckedPackageSourceCorrespondenceRef, CheckedPackageV2,
         CheckedPackageV2ReadResult,
     };
     let compiled = fixture::compile(fixture::UNION_SOURCE, &Default::default());
@@ -626,15 +626,19 @@ fn source_context_comparison_distinguishes_checked_term_sidecar_presence() {
     .expect("encode a package without its checked-term sidecar");
     let mut evidence = CheckedPackageEvidence::new();
     evidence.support_feature("filament.value.complete/v1");
-    let without_data =
-        match CheckedPackageV2::read(&bytes, CheckedPackageReadLimits::bounded(), &evidence) {
-            CheckedPackageV2ReadResult::Admitted(package) => package,
-            other => panic!("absent checked-term sidecar must admit: {other:?}"),
-        };
-    assert_eq!(without_data.checked_term_data(), None);
+    // The reader refuses a package with function bodies and no checked-term sidecar, so the
+    // absence never reaches the context comparison. FR-018-AC-39 and FR-018-AC-42 are silent on the
+    // absent-sidecar case (spec gap noted on the PR).
+    let CheckedPackageV2ReadResult::Refused(refusal) =
+        CheckedPackageV2::read(&bytes, CheckedPackageReadLimits::bounded(), &evidence)
+    else {
+        panic!("a package without its checked-term sidecar must be refused by the reader");
+    };
+    assert_eq!(refusal.code, CheckedPackageRefusalCode::InvalidPackage);
+    assert_eq!(refusal.cause, Some(CheckedPackageRefusalCause::InvalidValue));
     assert_eq!(
-        generate_items(&without_data, Some(compiled.context()), &[item], &[]),
-        Err(OracleGenerationError::ContextPackageContentMismatch)
+        refusal.loci[0].path.as_ref().map(ToString::to_string).as_deref(),
+        Some("/checked_term_data/body_locations")
     );
 }
 

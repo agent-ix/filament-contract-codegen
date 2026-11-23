@@ -17,6 +17,7 @@ help:
 	@echo "Available targets:"
 	@echo "  make figures          - Regenerate docs/images from docs/images/figures.json (ixd build)"
 	@echo "  make figures-check    - Fail when docs/images are stale; writes nothing"
+	@echo "  make live-solver-test - Opt-in: real-cvc5 refinement test (needs FILAMENT_CVC5_BIN)"
 	@echo "  make fmt              - Format with rustfmt"
 	@echo "  make fmt-check        - Verify formatting (CI gate)"
 	@echo "  make lint             - Clippy with -D warnings"
@@ -119,6 +120,15 @@ KANI_LOCK ?= /tmp/agent-e-heavy-build.lock
 # docs/qualification/ir854-general-route-division-measurements.md).
 KANI_FILTERS := kani_obligations kani_obligations_symbolic_domains skeleton_spine kani_stdout_capture bounded_kani_corpus kani_generation kani_batching enum_scalar_harness float_scalar_harness shadow_kani native_constant_divisor_8_bit native_div_floor_mutants
 KANI_TEST := $(CARGO) +$(MSRV) test $(LOCKED) -j 4 --test it --target-dir target-codex-backends -- --ignored --test-threads=1 $(KANI_FILTERS)
+
+# Opt-in live-solver lane (TC-059, FR-045-AC-4/5): real cvc5 proofs through the refinement
+# adapter. The test is #[ignore]d because it needs a cvc5 binary; run it with
+#   make live-solver-test FILAMENT_CVC5_BIN=/path/to/cvc5
+# It is not part of `make test` or `make ci`.
+.PHONY: live-solver-test
+live-solver-test:
+	@test -n "$(FILAMENT_CVC5_BIN)" || { echo 'FILAMENT_CVC5_BIN must name a cvc5 binary' >&2; exit 2; }
+	FILAMENT_CVC5_BIN="$(FILAMENT_CVC5_BIN)" $(CARGO) test $(LOCKED) --lib -- --ignored --test-threads=1 production_refinement_live_solver_handoff_reaches_fsl_checker
 
 .PHONY: kani kani-scope kani-gate
 kani:
