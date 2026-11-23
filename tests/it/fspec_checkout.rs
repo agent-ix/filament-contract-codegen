@@ -50,6 +50,7 @@ fn the_fspec_dir_checkout_is_at_the_pinned_revision() {
     let pinned = pinned_revision();
     assert_eq!(
         actual, pinned,
-        "FSPEC_DIR is at {actual}; check out the revision Cargo.lock pins ({pinned})"
+        "FSPEC_DIR is at {actual}, not the revision Cargo.lock pins; run `git -C {} checkout {pinned}`",
+        directory.display()
     );
 }

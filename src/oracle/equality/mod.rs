@@ -2686,6 +2686,46 @@ mod tests {
     use ix_trace_rs::trace;
     use serde_json::json;
 
+    /// The owner context carries the package's `requirement_items`, so the re-encoding that the
+    /// context comparison reads must carry them too (QSL-2938).
+    #[test]
+    fn original_package_encoding_equals_the_admitted_context_with_requirement_items() {
+        let compiled = fsl_replay::compile_admitted(
+            fsl_replay::CompileUnit {
+                source: fsl_replay::SourceIdentity::new("test", "one-scalar.native"),
+                package_name: "one-scalar".to_owned(),
+                path: "one-scalar.native",
+                bytes: b"language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nfunction t using v(x: Int[0, 9]): Int[0, 10] pure { x + 1 }\n",
+            },
+            [],
+            &fsl_replay::DependencyInput::default(),
+            fsl_replay::StageLimits::default(),
+            fsl_replay::ReplayLimits::default(),
+        )
+        .expect("the one-operation package compiles");
+        let mut evidence = filament_contract_model::CheckedPackageEvidence::new();
+        evidence.support_feature("filament.value.complete/v1");
+        let filament_contract_model::CheckedPackageV2ReadResult::Admitted(package) =
+            CheckedPackageV2::read(
+                compiled.package().bytes(),
+                filament_contract_model::CheckedPackageReadLimits::bounded(),
+                &evidence,
+            )
+        else {
+            panic!("the one-operation package is admitted");
+        };
+        assert!(
+            !package.requirement_items().is_empty(),
+            "FSL emits a requirement item for the scalar operation"
+        );
+        let encoded = encode_original_package(&package).expect("the original package encodes");
+        assert_eq!(
+            compiled.context().package_bytes(),
+            encoded.as_bytes(),
+            "the re-encoding is the owner's context bytes"
+        );
+    }
+
     #[trace("FR-018-AC-1")]
     #[test]
     fn hybrid_family_is_unsupported_and_preserves_node_identity() {
