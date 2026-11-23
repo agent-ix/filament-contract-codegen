@@ -134,8 +134,7 @@ is the domain typing the node's result when the node's `semantic_type` is a
 `bounded_domain`; when it is a scalar type and only narrowing conversions consume
 the node, the result bound is the one `bounded_domain` they narrow it to, and a
 node that a narrowing conversion and any other node both consume has no result
-bound, since the narrow's bound does not bound the other use; a `claim` node that
-references the node states a property of it and is not such a use. FSL emits an
+bound, since the narrow's bound does not bound the other use; the `value_validity` requirement record for the application is not such a use (FR-014-AC-82). FSL emits an
 expression in a bounded context this way: the arithmetic node's own type is the
 plain scalar type, and the declared bound types a `conversion` node whose body
 is a `convert` application with identity `filament.op.numeric.narrow` and exactly
@@ -511,8 +510,8 @@ otherwise.
   the result bound, record it first among the checked bounds, and compare the
   descriptor with it.
 - If the narrowing conversions consuming a node narrow it to two or more
-  distinct bounds, or a narrowing conversion and a node that is neither one nor a
-  `claim` both consume it, then the generator shall refuse the item as `AmbiguousBound`; if
+  distinct bounds, or a narrowing conversion and a node that is neither one nor the application's `value_validity` requirement record
+  both consume it, then the generator shall refuse the item as `AmbiguousBound`; if
   they narrow it to one bound of another form, or of the form over another
   scalar type, then as `MissingBound`.
 - Where a `reference` operand's target is typed by a `bounded_domain` node, the
@@ -738,6 +737,7 @@ otherwise.
 | FR-014-AC-79 | A descriptor for a `sqrt` or `fma` operation presented against a node of a different shape (wrong semantic form such as `add`'s `binary` node, wrong body operator, wrong operand count, a different float width or a non-float operand, or a wrong result type) is refused at CG's defensive seam as `FormMismatch`, `BodyMismatch`, `OperandTypeMismatch` or `ResultTypeMismatch`, with no oracle; the Contract IR strict reader refuses wrong arity, a cross-width or non-float operand and a wrong `fma` result family as `ill_typed` or `operator-ineligible` before CG receives the package, and that refusal is tested at the Contract IR boundary and not claimed by CG. | Test (TC-024) |
 | FR-014-AC-80 | `filament.op.ieee.from_exact`, `filament.op.ieee.to_rational`, `filament.op.ieee.float32.negate` and `filament.op.ieee.float64.negate` keep the `OperationNotDerivable` refusal. | Test (TC-024) |
 | FR-014-AC-81 | Implemented (IR-854). `filament.op.integer.rem` is derivable like `filament.op.integer.mod`, with one difference: it carries exactly one `integer_division` law selecting its `DivisionProfile` (read as for `div`). Derivation of an admitted `rem` node returns a remainder descriptor carrying that profile and the node's integer domain, and the generated oracle calls `rt::divide(rt::DivisionProfile::<profile>, rt::DivisionMember::Remainder, left, right, &domain, meter)`. A zero divisor is `Undefined(DivisionByZero)`; a remainder outside the domain is `Refused(DivisionOutOfDomain { member: Remainder })`. An unnarrowed plain Integer result with finite operand bounds infers `[0, max(B - 1, 0)]` (Euclidean) or `[-max(B - 1, 0), max(B - 1, 0)]` (truncating, floor), under AC-21's rules and refusals. A missing law or two laws refuse `LawNotDerivable` naming the identity. `rem` leaves the refused-identity list (`tc_024_the_refused_catalogue_identities_have_no_family` drops it), and the descriptor and identity round-trip covers the new descriptor. Over a grid that includes `-7 rem 2` (`-1` truncating, `1` floor, `1` Euclidean), `-7 rem -2` (`-1`, `-1`, `1`), `i64::MIN rem -1` (`0`) and a zero divisor, the generated oracle's outcomes equal direct filament-exact `divide(.., Remainder, ..)` evaluation. Mutants: rendering `rem` as `modulo`, or with `DivisionMember::Quotient`, fail the grid. The underivable-sibling fixtures that use `rem` today (TC-024's refused-identity list, TC-033's FR-022-AC-11 sibling) move to an identity that is still refused. | Test (TC-024) |
+| FR-014-AC-82 | The `value_validity` requirement record FSL emits for an application (a `claim` node of form `value_validity` whose `application` binding is that node and whose `result_bound` names a bound) is a statement about the node and not a use of its value. Where only that record and the narrowing conversions consume `x + 1` over `x: Int[0, 9]` narrowed to `Int[0, 10]`, the item derives and generates with the narrow's bound. A record naming a bound the narrowing conversions do not narrow to, and every other claim (a `verification_claim`, an invariant or a guard) that references the node, is a use the narrow does not bound: the item is refused as `AmbiguousBound`. This is the scalar path's own reading of the record; the routed path's `ResultBoundMismatch` agreement check (FR-022-AC-26) applies to the record a routed item carries and is unchanged. | Test (TC-024) |
 
 ## Dependencies
 

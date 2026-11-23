@@ -40,7 +40,7 @@ use crate::core::contract_package::{
     ContractDriverResultSelection, ContractRequestPosition, PackageItem, PackageItems,
     PackageRequestError,
 };
-use crate::core::ir::checked_term::{aggregate_members, literal_integer};
+use crate::core::ir::checked_term::{aggregate_members, bound_members, literal_integer};
 use crate::core::ir::scalar as scalar_ir;
 use crate::core::ir::scalar_bounds::{
     read_decimal_range, read_float_rounding, read_integer_range, read_rational_range,
@@ -572,14 +572,13 @@ pub(super) fn narrowing<'g, Body: GraphBody>(
 ) -> Narrowing<'g, Body> {
     let mut bounds = BTreeMap::new();
     let (mut narrowed, mut other) = (false, false);
+    let mut record_bounds = Vec::new();
     for consumer in graph.nodes() {
         if &consumer.node_id == id || !references(graph.term(&consumer.node_id), id) {
             continue;
         }
-        // A claim states a property of the node (FSL emits a `value_validity` claim naming the
-        // application, its result bound and its narrowing conversion); it does not use the
-        // node's value, so the narrow's bound still bounds every use.
-        if &*consumer.node_tag == CheckedNodeTag::Claim.as_wire() {
+        if let Some(record_bound) = value_validity_record_bound(graph, consumer, id) {
+            record_bounds.push(record_bound);
             continue;
         }
         if !narrows(graph, consumer, id) {
@@ -594,11 +593,65 @@ pub(super) fn narrowing<'g, Body: GraphBody>(
             bounds.insert(&bound.node_id, bound);
         }
     }
+    // A value-validity record agrees with the narrowing only when it names the bound the
+    // narrowing conversions narrow to; any other record is a use the narrow does not bound.
+    if narrowed
+        && record_bounds
+            .iter()
+            .any(|record| !bounds.contains_key(record))
+    {
+        other = true;
+    }
     match (narrowed, other) {
         (false, _) => Narrowing::Unnarrowed,
         (true, true) => Narrowing::Mixed,
         (true, false) => Narrowing::To(bounds.into_values().collect()),
     }
+}
+
+/// The result bound named by `consumer` when it is the `value_validity` requirement record FSL
+/// emits for the application `id`: a `claim` node of form `value_validity` whose `application`
+/// binding is `id` and whose other bindings do not use `id`. Such a record states a property of
+/// the application and does not use its value (FR-014-AC-82). Any other claim, invariant or guard
+/// that references the node is a use.
+fn value_validity_record_bound<Body: GraphBody>(
+    graph: &Graph<'_, Body>,
+    consumer: &CheckedSemanticNodeV2<Body>,
+    id: &CheckedNodeId,
+) -> Option<CheckedNodeId> {
+    if &*consumer.node_tag != CheckedNodeTag::Claim.as_wire()
+        || &*consumer.semantic_form != "value_validity"
+    {
+        return None;
+    }
+    let members = aggregate_members(graph.term(&consumer.node_id))?;
+    let [owner, application, occurrence, result_bound, conversion, path_condition, extent_roots, objects] =
+        bound_members(
+            members,
+            [
+                "owner",
+                "application",
+                "occurrence",
+                "result_bound",
+                "conversion",
+                "path_condition",
+                "extent_roots",
+                "objects",
+            ],
+        )?;
+    (reference_target(application).as_ref() == Some(id)
+        && [
+            owner,
+            occurrence,
+            conversion,
+            path_condition,
+            extent_roots,
+            objects,
+        ]
+        .into_iter()
+        .all(|binding| !references(Some(binding), id)))
+    .then(|| reference_target(result_bound))
+    .flatten()
 }
 
 /// The node a `reference` term names.

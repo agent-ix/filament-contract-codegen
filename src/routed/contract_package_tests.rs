@@ -1828,7 +1828,7 @@ mod tests {
             result_selection: ContractDriverResultSelection::NotApplicable,
         };
         swapped[1] = ContractRequestPosition::ContextRoot {
-            node_id: requested[1].clone(),
+            node_id: requested[2].clone(),
         };
         assert!(matches!(
             PackageItems::new(&source, &admitted, &swapped),
