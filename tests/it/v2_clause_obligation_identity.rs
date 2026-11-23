@@ -443,6 +443,7 @@ fn twin_key(path: Vec<PathSegment>) -> NodeKey {
     key(TWIN, path, 0)
 }
 
+/// An application node names its result type twice: as its result type and as its semantic type.
 /// The hand-written key of the precondition `name` on operation `operation`, whose condition is
 /// `self.<field> >= literal` over a field declared `minimum..=maximum`.
 fn clause_key(
@@ -486,6 +487,7 @@ fn clause_key(
         text("filament.op.model.deref"),
         text("deref"),
         node(account.clone()),
+        node(account.clone()),
     ]);
     let domain = twin_key(vec![
         text("bounded_domain"),
@@ -503,6 +505,7 @@ fn clause_key(
         text("filament.op.record.project"),
         text("false"),
         text("query"),
+        node(domain.clone()),
         node(domain),
     ]);
     let literal = twin_key(vec![
@@ -511,6 +514,7 @@ fn clause_key(
         node(integer),
         text(literal),
     ]);
+    let boolean = twin_key(vec![text("scalar_type"), text("boolean")]);
     let condition = twin_key(vec![
         text("expression"),
         text("binary"),
@@ -518,7 +522,8 @@ fn clause_key(
         node(literal),
         text("filament.op.integer.ge"),
         text("binary"),
-        node(twin_key(vec![text("scalar_type"), text("boolean")])),
+        node(boolean.clone()),
+        node(boolean),
     ]);
     let anchor = twin_key(vec![
         text("state"),
