@@ -625,3 +625,10 @@ refused-list controls of `src/oracle/scalar/derive/tests.rs`.
    `DivisionMember::Quotient`; each must fail step 3. Assert that
    `filament.op.integer.rem` is no longer in the refused-identity list and that
    every other refused identity keeps its refusal.
+
+## FR-014-AC-82 value_validity record is not a use (QSL-2868)
+
+This extension verifies FR-014-AC-82.
+
+1. Generate and derive `x + 1` over `x: Int[0, 9]` into `Int[0, 10]` as FSL emits it, with the `value_validity` record and the narrowing conversion as the only consumers. The item derives and generates with the narrow's bound.
+2. Relabel that record as a `verification_claim` over the same application. Derivation refuses `AmbiguousBound`.

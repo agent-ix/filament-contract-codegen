@@ -102,6 +102,15 @@ fn direct_increment_record_equals_the_committed_golden() {
 }
 
 fn fsl_package(name: &str, source: &str) -> CheckedPackageV2 {
+    fsl_package_with(name, source, |_| {})
+}
+
+/// [`fsl_package`] with the compiled wire document rewritten by `rewrite` before the IR reads it.
+fn fsl_package_with(
+    name: &str,
+    source: &str,
+    rewrite: impl FnOnce(&mut serde_json::Value),
+) -> CheckedPackageV2 {
     let path = format!("{name}.native");
     let compiled = compile_package(
         fsl_replay::CompileUnit {
@@ -116,13 +125,13 @@ fn fsl_package(name: &str, source: &str) -> CheckedPackageV2 {
         ReplayLimits::default(),
     )
     .expect("FSL compiles the source");
+    let mut wire: serde_json::Value =
+        serde_json::from_slice(compiled.bytes()).expect("FSL emits JSON");
+    rewrite(&mut wire);
+    let bytes = serde_json::to_vec(&wire).expect("canonical bytes");
     let mut evidence = CheckedPackageEvidence::new();
     evidence.support_feature("filament.value.complete/v1");
-    match CheckedPackageV2::read(
-        compiled.bytes(),
-        CheckedPackageReadLimits::bounded(),
-        &evidence,
-    ) {
+    match CheckedPackageV2::read(&bytes, CheckedPackageReadLimits::bounded(), &evidence) {
         CheckedPackageV2ReadResult::Admitted(package) => *package,
         other => panic!("IR admits FSL output: {other:?}"),
     }
@@ -1947,4 +1956,60 @@ fn the_guarded_native_harness_is_thin_and_ends_with_its_cover() {
         );
         assert_eq!(proof.matches("kani::cover!(").count(), 1);
     }
+}
+
+/// FR-014-AC-82: the `value_validity` requirement record FSL emits for an application is not a
+/// use of its value. Only the record and the narrowing conversion consume `x + 1`, so the item
+/// derives and generates with the narrow's bound.
+#[trace("FR-014-AC-82", "TC-024")]
+#[test]
+fn a_value_validity_record_beside_the_narrow_does_not_make_the_node_ambiguous() {
+    let checked = fsl_package("fr014-ac82-record", &guard_fn("x: Int[0, 9]", "x + 1"));
+    let node_id = find_node(&checked, &is_plus("1"));
+    assert!(
+        checked.resolved_graph().nodes.iter().any(|node| {
+            &*node.semantic_form == "value_validity"
+                && format!("{:?}", node.body).contains(&format!("{:?}", node_id))
+        }),
+        "FSL emits the value_validity record for the application"
+    );
+    let item = derive_exact_scalar_items(&checked, std::slice::from_ref(&node_id))
+        .into_iter()
+        .next()
+        .expect("one requested node is derived")
+        .expect("the narrow's bound is the result bound");
+    generate_exact_scalar_oracles(&checked, &[item]).expect("the increment renders");
+}
+
+/// FR-014-AC-82: a claim that is not the `value_validity` record and uses the application beside
+/// the narrow keeps the node `AmbiguousBound`: a user claim's use is not bounded by the narrow.
+/// The FSL record is re-labelled as a `verification_claim` over the same application.
+#[trace("FR-014-AC-82", "TC-024")]
+#[test]
+fn a_user_claim_using_the_application_beside_the_narrow_stays_ambiguous() {
+    let checked = fsl_package_with(
+        "fr014-ac82-use",
+        &guard_fn("x: Int[0, 9]", "x + 1"),
+        |wire| {
+            let mut relabelled = 0;
+            for node in wire["semantic_graph"]["nodes"].as_array_mut().unwrap() {
+                if node["semantic_form"] == "value_validity" {
+                    node["semantic_form"] = "verification_claim".into();
+                    relabelled += 1;
+                }
+            }
+            assert_eq!(relabelled, 1, "one value_validity record is relabelled");
+            wire.as_object_mut().unwrap().remove("requirement_items");
+        },
+    );
+    let node_id = find_node(&checked, &is_plus("1"));
+    let refusal = derive_exact_scalar_items(&checked, std::slice::from_ref(&node_id))
+        .into_iter()
+        .next()
+        .expect("one requested node is derived")
+        .expect_err("a claim that is not the record is a use the narrow does not bound");
+    assert!(
+        format!("{refusal:?}").contains("AmbiguousBound"),
+        "{refusal:?}"
+    );
 }
