@@ -6579,7 +6579,7 @@ fn tc_025_the_generator_uses_model_fields_of_the_package_fsl_emits() {
         .expect("the package holds the object type");
     assert_eq!(
         match &object.body {
-            CheckedTerm::Aggregate { members } => Some(members.len()),
+            CheckedTerm::Aggregate { members, .. } => Some(members.len()),
             _ => None,
         },
         Some(0),

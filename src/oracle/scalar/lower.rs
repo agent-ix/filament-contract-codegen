@@ -540,7 +540,7 @@ pub(super) fn references(term: Option<&CheckedTerm>, id: &CheckedNodeId) -> bool
         Some(CheckedTerm::Application { arguments, .. }) => {
             arguments.iter().any(|term| references(Some(term), id))
         }
-        Some(CheckedTerm::Aggregate { members }) => {
+        Some(CheckedTerm::Aggregate { members, .. }) => {
             members.iter().any(|term| references(Some(term), id))
         }
         Some(CheckedTerm::Binding { value, .. }) => references(Some(value), id),

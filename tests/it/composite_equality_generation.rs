@@ -1119,7 +1119,7 @@ fn tc_029_admitted_one_reference_sequence_resolves_its_separate_bound() {
     assert_eq!(sequence_node.semantic_form.as_ref(), "sequence");
     assert_eq!(
         match &sequence_node.body {
-            filament_contract_model::CheckedTerm::Aggregate { members } => members.len(),
+            filament_contract_model::CheckedTerm::Aggregate { members, .. } => members.len(),
             _ => panic!("reader-admitted sequence is an aggregate"),
         },
         1,

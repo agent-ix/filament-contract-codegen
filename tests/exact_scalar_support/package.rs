@@ -4673,7 +4673,12 @@ pub fn conversion_operand_package() -> PackageBuilder {
     // FR-322): the adder body is the one addition, the converting body its one conversion.
     // Rows ascend by application id, whichever function owns them.
     let rows = [
-        (CONVERTING_FUNCTION, node_ref(&converting_body), 1, json!([])),
+        (
+            CONVERTING_FUNCTION,
+            node_ref(&converting_body),
+            1,
+            json!([]),
+        ),
         (ADDER_FUNCTION, node_ref(&adder_body), 0, json!([])),
     ]
     .map(|(function, application, index, down)| {
@@ -5070,7 +5075,7 @@ mod bound_tests {
             .find(|node| node.node_id == range)
             .expect("admitted integer range");
         assert_eq!(checked_range.semantic_type, anonymous);
-        let filament_contract_model::CheckedTerm::Aggregate { members } = &checked_range.body
+        let filament_contract_model::CheckedTerm::Aggregate { members, .. } = &checked_range.body
         else {
             panic!("admitted bounds are an aggregate");
         };

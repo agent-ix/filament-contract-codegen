@@ -2,42 +2,16 @@
 //!
 //! The emitted oracle crate's `Cargo.toml` is written here once and called by the three oracle
 //! emitters. Every first-party dependency it names uses the source this crate's own `Cargo.toml`
-//! uses: a Git URL with a release tag or commit revision. The FSL crates use a pinned main commit.
-//! A scratch crate seeded with this crate's `Cargo.lock` resolves each first-party crate once and
-//! at the locked commit, with no branch resolved at generation or test time.
-//! `manifest_sources_match_this_crates_manifest` keeps the two spellings equal.
+//! uses: a Git URL with a release tag or commit revision. `build.rs` reads those sources from
+//! `Cargo.toml` at build time (QSL-2939), so no revision is spelled outside Cargo. A scratch crate
+//! seeded with this crate's `Cargo.lock` resolves each first-party crate once and at the locked
+//! commit, with no branch resolved at generation or test time.
 
-/// The runtime source every emitted manifest depends on, spelled as in this crate's `Cargo.toml`:
-/// the `git` and `rev` keys of the dependency table. Public so a scratch crate that compiles
-/// generated code names the runtime the same way and cannot drift from the emitter.
-pub const RUNTIME_DEPENDENCY_SOURCE: &str =
-    "git = \"https://github.com/agent-ix/filament-contract-runtime\", rev = \"3d293e4aaaafe764712141cf5a4ad35693244adb\"";
-
-/// The authoritative exact-kernel source used by generated scalar, equality and function
-/// oracles.
-pub const EXACT_DEPENDENCY_SOURCE: &str =
-    "git = \"https://github.com/agent-ix/filament-exact\", rev = \"a58474cc105a86f3307a11def3fc001e2459679f\"";
-
-/// Source of declaration admission and structural equality in generated oracles.
-pub const SEMANTIC_VALUE_DEPENDENCY_SOURCE: &str =
-    "git = \"https://github.com/agent-ix/filament-semantic-value\", rev = \"31d807ccb8ffd5a88beb0b1a570b80acb099f5e9\"";
-
-/// Source of the checked-package model the function and equality oracles read.
-pub const MODEL_DEPENDENCY_SOURCE: &str =
-    "git = \"https://github.com/agent-ix/filament-contract-ir\", rev = \"14c06b047b6a3b23a4da53723574ad7ce49ba246\"";
-
-/// Source of the checked-closure evaluator the function oracle names.
-pub const EVAL_DEPENDENCY_SOURCE: &str =
-    "git = \"https://github.com/agent-ix/filament-eval\", rev = \"79b8c42b60f43c936e8e50a7fc6519da030c978d\"";
-
-/// Source of the criterion-binding attribute macro scratch crates use.
-pub const TRACE_DEPENDENCY_SOURCE: &str =
-    "git = \"https://github.com/agent-ix/ix-trace-rs\", tag = \"v0.1.2\"";
-
-/// Source of FSL's admitted-context facade, pinned to current FSL main.
-pub const FSL_REPLAY_DEPENDENCY_SOURCE: &str = "git = \"https://github.com/agent-ix/filament-spec-language\", rev = \"5275e5086fec403c4d1a6bce25ab7c3660ea5716\"";
-/// Source of FSL's structural obligation identity types.
-pub const FSL_PACKAGE_DEPENDENCY_SOURCE: &str = "git = \"https://github.com/agent-ix/filament-spec-language\", rev = \"5275e5086fec403c4d1a6bce25ab7c3660ea5716\"";
+// `RUNTIME_`, `EXACT_`, `SEMANTIC_VALUE_`, `MODEL_`, `EVAL_`, `TRACE_`, `FSL_REPLAY_` and
+// `FSL_PACKAGE_DEPENDENCY_SOURCE`: the `git` and `rev` (or `tag`) keys of each dependency table.
+// Public so a scratch crate that compiles generated code names each crate the same way and cannot
+// drift from the emitter.
+include!(concat!(env!("OUT_DIR"), "/dependency_sources.rs"));
 
 /// The `[package.metadata.kani]` table every generated oracle crate's manifest carries. CBMC
 /// tracks heap objects field by field only up to 64 bytes by default; RT's `Value` and `ValueType`
@@ -84,9 +58,8 @@ pub(crate) fn scalar_observer_manifest() -> String {
 mod tests {
     use super::{
         equality_oracle_crate_manifest, function_oracle_crate_manifest, oracle_crate_manifest,
-        scalar_observer_manifest, EVAL_DEPENDENCY_SOURCE, EXACT_DEPENDENCY_SOURCE,
-        FSL_PACKAGE_DEPENDENCY_SOURCE, FSL_REPLAY_DEPENDENCY_SOURCE, MODEL_DEPENDENCY_SOURCE,
-        RUNTIME_DEPENDENCY_SOURCE, SEMANTIC_VALUE_DEPENDENCY_SOURCE, TRACE_DEPENDENCY_SOURCE,
+        scalar_observer_manifest, EXACT_DEPENDENCY_SOURCE, FSL_PACKAGE_DEPENDENCY_SOURCE,
+        FSL_REPLAY_DEPENDENCY_SOURCE, RUNTIME_DEPENDENCY_SOURCE,
     };
     use ix_trace_rs::trace;
 
@@ -169,44 +142,6 @@ mod tests {
         // Only this crate itself is named by branch: it has no release tag to name.
         for line in function.lines().filter(|line| line.contains("branch =")) {
             assert!(line.starts_with("filament-contract-codegen = "), "{line}");
-        }
-    }
-
-    /// Every first-party source an emitted manifest names is the source this crate's own
-    /// `Cargo.toml` names, so the scratch graph resolves each crate once and from the locked
-    /// source and no second source of a crate is resolved at test time.
-    #[trace("FR-014-AC-8", "TC-024")]
-    #[test]
-    fn manifest_sources_match_this_crates_manifest() {
-        let manifest = std::fs::read_to_string(
-            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml"),
-        )
-        .unwrap();
-        let lines = |name: &str| {
-            let found = manifest
-                .lines()
-                .filter(|line| line.starts_with(&format!("{name} = ")))
-                .map(str::to_owned)
-                .collect::<Vec<_>>();
-            assert!(!found.is_empty(), "{name} in Cargo.toml");
-            found
-        };
-        for (name, source) in [
-            ("filament-contract-runtime", RUNTIME_DEPENDENCY_SOURCE),
-            ("filament-exact", EXACT_DEPENDENCY_SOURCE),
-            ("filament-semantic-value", SEMANTIC_VALUE_DEPENDENCY_SOURCE),
-            ("filament-contract-model", MODEL_DEPENDENCY_SOURCE),
-            ("filament-eval", EVAL_DEPENDENCY_SOURCE),
-            ("ix-trace-rs", TRACE_DEPENDENCY_SOURCE),
-            ("fsl-replay", FSL_REPLAY_DEPENDENCY_SOURCE),
-            ("fsl-package", FSL_PACKAGE_DEPENDENCY_SOURCE),
-        ] {
-            for line in lines(name) {
-                assert!(
-                    line.contains(source),
-                    "{name}: Cargo.toml `{line}` does not spell `{source}`"
-                );
-            }
         }
     }
 

@@ -1402,7 +1402,10 @@ mod tests {
         form: &str,
         members: Vec<CheckedTerm>,
     ) -> (CheckedSemanticNodeV2, CheckedTerm) {
-        let term = CheckedTerm::Aggregate { members };
+        let term = CheckedTerm::Aggregate {
+            members,
+            temporal_profile: None,
+        };
         let node = CheckedSemanticNodeV2 {
             node_id: checked_node_id("0"),
             schema_version: "filament.checked-semantic-graph/v2".into(),

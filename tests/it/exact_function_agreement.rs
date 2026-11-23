@@ -132,7 +132,7 @@ pub(super) fn body_id(package: &CheckedPackageV2, name: &str) -> CheckedNodeId {
         .iter()
         .find(|node| node.node_id == function)
         .expect("function node belongs to the admitted graph");
-    let CheckedTerm::Aggregate { members } = &node.body else {
+    let CheckedTerm::Aggregate { members, .. } = &node.body else {
         panic!("{name} has no function body binding");
     };
     members

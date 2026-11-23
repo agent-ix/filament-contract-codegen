@@ -874,7 +874,8 @@ fn binder_matches_scalar(
                 == Some(CheckedNodeKind::ScalarType(ScalarTypeForm::Boolean))
         }
         MachineScalar::Integer { minimum, maximum } => {
-            let Some(CheckedTerm::Aggregate { members }) = view.package().term(&node.semantic_type)
+            let Some(CheckedTerm::Aggregate { members, .. }) =
+                view.package().term(&node.semantic_type)
             else {
                 return false;
             };
@@ -912,7 +913,7 @@ fn self_binder_matches_context(
         == Some(CheckedNodeKind::CompositeType(CompositeTypeForm::Reference))
         && matches!(
             view.package().term(&node.semantic_type),
-            Some(CheckedTerm::Aggregate { members })
+            Some(CheckedTerm::Aggregate { members, .. })
                 if matches!(members.as_slice(), [CheckedTerm::Reference { target }] if target == context)
         )
 }
@@ -941,7 +942,7 @@ fn read_postcondition_signature<'a>(
     else {
         return Err(mismatch());
     };
-    let CheckedTerm::Aggregate { members } = binders else {
+    let CheckedTerm::Aggregate { members, .. } = binders else {
         return Err(mismatch());
     };
     let anchor = reference(anchor).ok_or_else(mismatch)?;
@@ -1160,7 +1161,7 @@ fn control_operands<'a>(
                 let CheckedTerm::Binding { value, .. } = arm else {
                     continue;
                 };
-                let CheckedTerm::Aggregate { members: parts } = value.as_ref() else {
+                let CheckedTerm::Aggregate { members: parts, .. } = value.as_ref() else {
                     continue;
                 };
                 let [_, body] = parts.as_slice() else {
@@ -1191,7 +1192,7 @@ fn unsupported_checked_clause_operator(
     };
     // The operation parameters the clause declares: every declared binder but `self` and `result`.
     let parameters = match declared {
-        CheckedTerm::Aggregate { members } => members
+        CheckedTerm::Aggregate { members, .. } => members
             .iter()
             .skip(1)
             .filter_map(reference)
@@ -3285,7 +3286,7 @@ mod postcondition_signature_tests {
             .iter()
             .find(|operation| operation.name() == "deposit")
             .expect("selected deposit operation");
-        let [CheckedTerm::Aggregate { members }, _, _] = application(
+        let [CheckedTerm::Aggregate { members, .. }, _, _] = application(
             package.term(&clause).expect("admitted clause body"),
             ApplicationOperator::StateClause,
             "filament.op.state.clause",

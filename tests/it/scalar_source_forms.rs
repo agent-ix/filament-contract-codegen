@@ -48,7 +48,7 @@ pub(crate) fn admit(bytes: &[u8]) -> CheckedPackageV2 {
 }
 
 fn bound_member<'a>(term: &'a CheckedTerm, expected: &str) -> &'a CheckedTerm {
-    let CheckedTerm::Aggregate { members } = term else {
+    let CheckedTerm::Aggregate { members, .. } = term else {
         panic!("owner-admitted bound aggregate");
     };
     members

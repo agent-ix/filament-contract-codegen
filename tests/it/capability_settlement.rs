@@ -40,7 +40,7 @@ fn checked_operation_identity(body: &CheckedTerm) -> Option<&str> {
 }
 
 fn function_body_target(body: &CheckedTerm) -> Option<&CheckedNodeId> {
-    let CheckedTerm::Aggregate { members } = body else {
+    let CheckedTerm::Aggregate { members, .. } = body else {
         return None;
     };
     members.iter().find_map(|member| match member {
