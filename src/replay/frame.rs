@@ -772,6 +772,7 @@ impl FrameReplay {
             &run.source.bytes,
             packages.iter().map(|package| package.bytes.as_slice()),
             &dependencies,
+            &fsl_replay::RequestClocks::default(),
             &operation,
         )
         .map_err(FrameReplayError::CallSite)?;

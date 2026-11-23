@@ -661,6 +661,7 @@ impl ReplayPackage {
             &source.bytes,
             [],
             &dependency_input,
+            &fsl_replay::RequestClocks::default(),
             &selection,
         )
         .map_err(ReplayPackageError::CallSite)?;

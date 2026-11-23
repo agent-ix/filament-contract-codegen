@@ -366,6 +366,7 @@ impl StateClauseReplay {
             &run.source.bytes,
             packages.iter().map(|package| package.bytes.as_slice()),
             &dependencies,
+            &fsl_replay::RequestClocks::default(),
             &clause,
         )
         .map_err(StateClauseReplayError::CallSite)?;

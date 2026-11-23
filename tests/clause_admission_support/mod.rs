@@ -396,6 +396,7 @@ impl Twin {
             &self.unit,
             [self.domain.as_slice()],
             &DependencyInput::default(),
+            &fsl_replay::RequestClocks::default(),
             &ClauseName(Identifier::new(clause).expect("clause identifier")),
         )
         .expect("authored clause is located");

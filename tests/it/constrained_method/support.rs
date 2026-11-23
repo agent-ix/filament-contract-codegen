@@ -98,6 +98,7 @@ pub(super) fn compile_refusal(
         source.as_bytes(),
         [bytes.as_slice()],
         &DependencyInput::default(),
+        &fsl_replay::RequestClocks::default(),
         &ClauseName(Identifier::new("Safe").unwrap()),
     )
     .expect_err("FSL refuses the clause source")
@@ -110,6 +111,7 @@ pub(super) fn fixture_source(bytes: Vec<u8>, name: &str, source: String) -> Fixt
         source.as_bytes(),
         [bytes.as_slice()],
         &DependencyInput::default(),
+        &fsl_replay::RequestClocks::default(),
         &ClauseName(Identifier::new("Safe").unwrap()),
     )
     .expect("authentic FSL clause emission");
