@@ -576,7 +576,7 @@ fn tc_041_bound_prepare_refusal_precedes_disagreed() {
     ));
     assert_eq!(
         bound.terminal_value(),
-        TerminalValue::Inconclusive(InconclusiveCause::ReplayRefused(refusal.code()))
+        TerminalValue::Inconclusive(InconclusiveCause::from_replay_refusal(refusal))
     );
     assert_eq!(bound.terminal_value(), report.terminal_value());
 }
@@ -941,7 +941,7 @@ fn tc_048_verified_prepare_refusal_passes_through() {
     ));
     assert_eq!(
         bound.terminal_value(),
-        TerminalValue::Inconclusive(InconclusiveCause::ReplayRefused(refusal.code()))
+        TerminalValue::Inconclusive(InconclusiveCause::from_replay_refusal(refusal))
     );
 }
 
