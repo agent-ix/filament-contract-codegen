@@ -2,8 +2,7 @@
 //! FR-021: apply a generated body through FSL's retained checked closure.
 
 use filament_contract_model::{
-    encode_checked_package_v2, CheckedNodeId, CheckedOccurrenceRole, CheckedPackageSidecarsRef,
-    CheckedPackageSourceCorrespondenceRef, CheckedPackageV2, ContractSourceKeyV1,
+    CheckedNodeId, CheckedOccurrenceRole, CheckedPackageV2, ContractSourceKeyV1,
 };
 use filament_eval::{Admission, BodyFactory, CallFailure, Evaluation};
 use filament_exact::{Meter, NodeKey, Value};
@@ -270,29 +269,13 @@ fn owner_name(package: &CheckedPackageV2) -> Result<LibraryName, CheckedFunction
     LibraryName::new(package.name()).map_err(|_| CheckedFunctionError::InvalidIdentity)
 }
 
+/// The package's canonical bytes as FSL's admitted closure carries them: the one encoding the
+/// equality oracle compares an owner context against, including the requirement items and the
+/// protocol correlation rows an admitted package holds.
 fn package_bytes(package: &CheckedPackageV2) -> Result<Vec<u8>, CheckedFunctionError> {
-    encode_checked_package_v2(
-        package.name(),
-        package.lock(),
-        package.graph(),
-        CheckedPackageSourceCorrespondenceRef {
-            source_map: package.source_map(),
-            refinement_step_rows: package.refinement_step_rows(),
-        },
-        CheckedPackageSidecarsRef {
-            checked_term_data: package.checked_term_data(),
-            claim_names: package.claim_names(),
-            temporal_bindings: package.temporal_bindings(),
-            temporal_clause_names: package.temporal_clause_names(),
-            schedulability_claims: package.schedulability_claim_rows(),
-            operation_effects: package.operation_effect_rows(),
-            operation_bodies: package.operation_body_rows(),
-        },
-        package.capability_report(),
-        package.diagnostics(),
-        quire_canonical::Limits::new(u64::MAX),
-    )
-    .map_err(|_| CheckedFunctionError::PackageEncoding)
+    crate::oracle::equality::encode_original_package(package)
+        .map(String::into_bytes)
+        .map_err(|_| CheckedFunctionError::PackageEncoding)
 }
 
 /// Select a callable only after binding complete unit and owner contents to this acquisition.
