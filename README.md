@@ -136,6 +136,10 @@ checked-package fixtures from a
 make ci FSPEC_DIR=/path/to/filament-specification
 ```
 
+The checkout must be at the revision `Cargo.lock` pins for `filament-specification-qualification`
+(`cargo metadata` shows it); another revision gives misleading failures, and
+`the_fspec_dir_checkout_is_at_the_pinned_revision` fails when `FSPEC_DIR` is not that revision.
+
 `make ci` runs formatting, specification validation, Clippy, the tests under the
 minimum supported Rust version, license and source checks (`cargo deny`), the
 unsafe-code audit, and the API documentation build. `make kani` runs the slower

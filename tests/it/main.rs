@@ -82,6 +82,7 @@ mod exact_scalar_agreement;
 mod exact_scalar_generation;
 mod float_scalar_harness;
 mod frame_claim_gap;
+mod fspec_checkout;
 mod generated_headers;
 mod harness_generation;
 mod ieee_sqrt_fma;
