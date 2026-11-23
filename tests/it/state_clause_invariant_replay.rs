@@ -1556,3 +1556,38 @@ fn tc_035_a_different_obligation_identity_is_refused_before_the_harness_members(
         );
     }
 }
+
+/// FR-024-AC-78: the invariant replay selects the recorded program row for a unit with a clause
+/// on a clock; the empty selection is refused as a call-site refusal.
+#[trace("FR-024-AC-78", "TC-035")]
+#[test]
+fn tc_035_the_invariant_replay_forwards_the_recorded_clocks() {
+    let twin = unmutated();
+    let fixture = generate(&twin, CLAUSE);
+    let object = fixture.object();
+    let refused_at_call_site = |clocks: filament_contract_codegen::ReplayClocks| {
+        let mut inputs = fixture
+            .decoded(
+                &twin,
+                &object,
+                CLAUSE,
+                &fixture.playback(&[5]),
+                StateClauseHarness::V2Clause(&fixture.harness),
+            )
+            .expect("the playback decodes");
+        super::kani_obligations_state_frame::native_twin::clocked(&mut inputs.run, clocks);
+        match StateClauseReplay::new_invariant(inputs) {
+            Err(StateClauseReplayError::CallSite(refusal)) => Some(refusal.to_string()),
+            Err(_) | Ok(_) => None,
+        }
+    };
+    let refusal = refused_at_call_site(super::kani_obligations_state_frame::native_twin::recorded_clocks());
+    assert!(
+        refusal.is_none(),
+        "the recorded row selects the unit's clock: {refusal:?}"
+    );
+    assert!(
+        refused_at_call_site(Default::default()).is_some(),
+        "an empty selection leaves the unit's clock unselected"
+    );
+}

@@ -1584,3 +1584,34 @@ fn cause_matrix_preserves_literal_terminal_rows_and_pair_refusals() {
         }
     }
 }
+
+/// A clock row CG refuses (`DependencyLockError::Clock`) carries no FSL catalog code, so the
+/// settlement is a failure this repository raised: `ReplaySettlement::CgDefect`, terminal `Failed`,
+/// bare and wrapped in each replay path's error (FR-029-AC-16).
+#[trace("FR-029-AC-16", "TC-040")]
+#[test]
+fn tc_040_a_refused_clock_row_settles_as_a_cg_defect() {
+    let clock = || {
+        DependencyLockError::Clock(fsl_replay::InvalidClock {
+            clock: "unit-ms".to_owned(),
+            field: "timestamp_unit",
+        })
+    };
+    assert!(matches!(
+        ReplaySettlement::from(&clock()),
+        ReplaySettlement::CgDefect
+    ));
+    assert_eq!(map_settled(&clock()), TerminalValue::Failed);
+    assert_eq!(
+        map_settled(&ReplayPackageError::Dependencies(clock())),
+        TerminalValue::Failed
+    );
+    assert_eq!(
+        map_settled(&FrameReplayError::Dependencies(clock())),
+        TerminalValue::Failed
+    );
+    assert_eq!(
+        map_settled(&StateClauseReplayError::Dependencies(clock())),
+        TerminalValue::Failed
+    );
+}
