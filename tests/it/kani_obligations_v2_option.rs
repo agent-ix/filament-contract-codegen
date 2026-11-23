@@ -286,7 +286,7 @@ fn tc_068_a_record_option_is_not_reachable_the_checked_record_carries_no_fields(
         .expect("the record type node");
     assert_eq!(
         format!("{:?}", package.term(&record.node_id)),
-        "Some(Aggregate { members: [] })"
+        "Some(Aggregate { members: [], temporal_profile: None })"
     );
     let (reason, detail) = option_refusal(&twin);
     assert_eq!(reason, OptionNotLoweredReason::PayloadNotScalar);
