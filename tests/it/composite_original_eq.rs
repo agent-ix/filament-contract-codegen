@@ -929,7 +929,7 @@ fn opt_none_with_inline_operand() -> OriginalPackage {
     ]);
     node["dependencies"] = serde_json::json!([parameter_id]);
     node["node_id"] = id(serde_json::json!([
-        "expression", "binary", {"operand": 4}, "filament.op.structural.eq", "binary", {"operand": 3}
+        "expression", "binary", {"operand": 4}, "filament.op.structural.eq", "binary", {"operand": 3}, {"operand": 3}
     ]));
     // The function holding the application names it by id; renumber that id and its row.
     let function = wire["semantic_graph"]["nodes"]
@@ -948,7 +948,7 @@ fn opt_none_with_inline_operand() -> OriginalPackage {
     wire["semantic_graph"]["operand_rows"][function] =
         serde_json::json!([f_text, f_integer, f_option, f_parameter, f_boolean]);
     let application_id = id(serde_json::json!([
-        "expression", "binary", {"operand": 3}, "filament.op.structural.eq", "binary", {"operand": 4}
+        "expression", "binary", {"operand": 3}, "filament.op.structural.eq", "binary", {"operand": 4}, {"operand": 4}
     ]));
     let function_node = &mut wire["semantic_graph"]["nodes"][function];
     function_node["body"]["members"][1]["value"]["target"] = application_id.clone();
@@ -962,12 +962,12 @@ fn opt_none_with_inline_operand() -> OriginalPackage {
             }
         }
     }
-    for decision in wire["checked_term_data"]["equality_decisions"]
-        .as_array_mut()
-        .unwrap()
-    {
-        if let Some(path) = decision["application"]["path"].as_array_mut() {
-            path.retain(|segment| *segment != none_index);
+    // Equality decisions and body locations both carry the application id.
+    for table in ["equality_decisions", "body_locations"] {
+        for entry in wire["checked_term_data"][table].as_array_mut().unwrap() {
+            if let Some(path) = entry["application"]["path"].as_array_mut() {
+                path.retain(|segment| *segment != none_index);
+            }
         }
     }
     let bytes = quire_canonical::to_vec(&wire, quire_canonical::Limits::new(1 << 22)).unwrap();
