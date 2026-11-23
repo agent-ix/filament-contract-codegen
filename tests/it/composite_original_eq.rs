@@ -89,6 +89,7 @@ fn limits() -> ScalarLimits {
 
 fn inputs(source: &str) -> ReplayInputs {
     ReplayInputs {
+        clocks: Default::default(),
         decode_limits: crate::unbounded_decode_limits(),
         package_name: "original-eq".to_owned(),
         source: LockedSource {

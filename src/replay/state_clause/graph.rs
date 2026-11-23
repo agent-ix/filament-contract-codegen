@@ -434,7 +434,8 @@ impl StateClauseReplay {
         let witness = witness.ok_or(StateClauseReplayError::MissingField {
             field: "playback".to_owned(),
         })?;
-        let (run, dependencies) = run.admit().map_err(StateClauseReplayError::Dependencies)?;
+        let (run, dependencies, clocks) =
+            run.admit().map_err(StateClauseReplayError::Dependencies)?;
         let located = call_site(
             run.source.source_identity(),
             package.name().to_owned(),
@@ -442,7 +443,7 @@ impl StateClauseReplay {
             &run.source.bytes,
             packages.iter().map(|package| package.bytes.as_slice()),
             &dependencies,
-            &fsl_replay::RequestClocks::default(),
+            &clocks,
             &clause,
         )
         .map_err(StateClauseReplayError::CallSite)?;

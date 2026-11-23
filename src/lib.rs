@@ -379,7 +379,7 @@ pub use replay::function::{
     replay_counterexample, replay_counterexample_through, replay_enum_witness,
     replay_falsification, replay_float_witness, DependencyLock, DependencyLockError,
     EvidenceFailureCause, FunctionPacketError, LockedSource, PacketClaimMember, ProvidedDocument,
-    ReplayInputs, ReplayPackage, ReplayPackageError, ReplayParameter, ReplayVerdict,
+    ReplayClocks, ReplayInputs, ReplayPackage, ReplayPackageError, ReplayParameter, ReplayVerdict,
     SpineReplayError,
 };
 pub use replay::obligation::ObligationIdentityError;

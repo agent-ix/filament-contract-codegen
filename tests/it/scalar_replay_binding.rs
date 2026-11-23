@@ -71,6 +71,7 @@ pub(super) fn context(fixture: &ReplayFixture) -> OriginalScalarContext {
         fixture.raw_package.clone(),
         &source,
         ReplayInputs {
+            clocks: Default::default(),
             decode_limits: WitnessDecodeLimits {
                 bytes: SCALAR_PLAYBACK_BYTES,
                 values: 2,

@@ -115,6 +115,8 @@ mod native_v2_helper_playback;
 mod no_generation_panics;
 mod oracle_arithmetic;
 mod oracle_generation;
+mod replay_clocks;
+mod replay_clocks_paths;
 mod requirement_records;
 mod routed_generation;
 mod scalar_literal_operands;

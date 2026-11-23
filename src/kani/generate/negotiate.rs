@@ -2160,7 +2160,9 @@ mod tests {
                 source.as_bytes(),
                 [twin.domain.as_slice()],
                 &fsl_replay::DependencyInput::default(),
-                &fsl_replay::RequestClocks::default(),
+                &crate::replay::function::ReplayClocks::default()
+                    .request(("agent-ix".to_owned(), "test:state-frame-twin".to_owned()))
+                    .expect("empty clock rows are well formed"),
                 &fsl_replay::ClauseName(fsl_replay::Identifier::new(&names[0]).unwrap()),
             )
             .expect("distinct authored FSL clauses compile through the owner");
@@ -2300,7 +2302,9 @@ mod tests {
             source.as_bytes(),
             [domain.as_slice()],
             &fsl_replay::DependencyInput::default(),
-            &fsl_replay::RequestClocks::default(),
+            &crate::replay::function::ReplayClocks::default()
+                .request(("agent-ix".to_owned(), package_name.clone()))
+                .expect("empty clock rows are well formed"),
             &selection,
         )
         .expect("public FSL admission of authored finite collection predicate");

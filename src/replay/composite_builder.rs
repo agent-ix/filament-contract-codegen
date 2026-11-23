@@ -738,7 +738,8 @@ impl OriginalReplayContext {
         {
             return Err(CompositeBuildError::SourceMismatch);
         }
-        let (inputs, dependencies) = inputs.admit().map_err(CompositeBuildError::Dependencies)?;
+        let (inputs, dependencies, _clocks) =
+            inputs.admit().map_err(CompositeBuildError::Dependencies)?;
         let selections = &original.lock().dependency_selections;
         if selections.len() != inputs.dependencies.len()
             || selections

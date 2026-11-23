@@ -497,6 +497,7 @@ failure-preserving envelopes, and that the generator holds no copy of FSL's repl
     the six no-record inputs fails the second and the unit case; mapping `Replay` to a defect or
     to another settlement, swallowing it, or mapping `Fault` to a defect fails the request-refusal
     case.
+51. (FR-024-AC-78.) Every path built from `ReplayInputs` takes the recorded clock rows through `RequestClocks::for_replay`; a malformed row is refused as `DependencyLockError::Clock` before the call site (the `tc_026_a_malformed_clock_row_is_refused_before_replay` control, shared with FR-016-AC-31).
 
 ## Status
 

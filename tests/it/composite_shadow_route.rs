@@ -75,6 +75,7 @@ fn fixture_in(
         ReplayPackage::read(compiled.package().bytes(), u64::MAX).unwrap(),
         &source(),
         ReplayInputs {
+            clocks: Default::default(),
             decode_limits: WitnessDecodeLimits {
                 bytes: 1 << 20,
                 values: 1024,

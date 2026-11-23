@@ -363,6 +363,7 @@ fn graph_inputs_for<'a>(
 ) -> GraphReplayInputs<'a> {
     GraphReplayInputs::new(
         ReplayInputs {
+            clocks: Default::default(),
             decode_limits: UNBOUNDED,
             package_name: "graph".to_owned(),
             source: LockedSource {
@@ -1000,4 +1001,55 @@ fn real_kani_each_occurrence_replays_only_under_its_own_clause_name() {
             Err(crate::StateClauseReplayError::ClauseSelectionMismatch)
         ));
     }
+}
+
+/// FR-024-AC-78: the graph-invariant replay selects the recorded program row for a unit with a
+/// clause on a clock; the empty selection is refused as a call-site refusal. No Kani.
+#[trace("FR-024-AC-78", "TC-035")]
+#[test]
+fn tc_035_the_graph_replay_forwards_the_recorded_clocks() {
+    let authored = authored("reaches(self, self, loop)", 1);
+    let refused_at_call_site = |clocks: filament_contract_codegen::ReplayClocks| {
+        let mut inputs = graph_inputs(&authored, &relationship("loop"));
+        inputs.with_witness(crate::GraphWitness {
+            objects: 1,
+            start: 0,
+            edges: vec![vec![0]],
+            forward: true,
+        });
+        // A temporal clause on the clock `unit-ms`: FSL refuses the unit unless the request selects it.
+        let source = String::from_utf8(inputs.run.source.bytes.clone()).expect("UTF-8");
+        let (language, rest) = source.split_once('\n').expect("a language line");
+        inputs.run.source.bytes = format!(
+            "{language}\nprofile cw = \"filament.temporal.timestamped-event.finite-window/v1\";\n{rest}\
+             record ClockReading {{ level: Int[0, 9]; }}\n\
+             temporal ClockLate using cw over (r: ClockReading) clock \"unit-ms\" \
+             on origin {{ eventually[0,5] holds(r.level > 0) }}\n"
+        )
+        .into_bytes();
+        inputs.run.clocks = clocks;
+        match StateClauseReplay::new_graph_invariant(inputs) {
+            Err(filament_contract_codegen::StateClauseReplayError::CallSite(refusal)) => {
+                Some(refusal.to_string())
+            }
+            Err(_) | Ok(_) => None,
+        }
+    };
+    let refusal = refused_at_call_site(filament_contract_codegen::ReplayClocks {
+        program: std::collections::BTreeMap::from([(
+            "unit-ms".to_owned(),
+            fsl_package::ClockConfiguration::TimestampedEvent {
+                timestamp_unit: "ms".into(),
+            },
+        )]),
+        dependencies: std::collections::BTreeMap::new(),
+    });
+    assert!(
+        refusal.is_none(),
+        "the recorded row selects the unit's clock: {refusal:?}"
+    );
+    assert!(
+        refused_at_call_site(Default::default()).is_some(),
+        "an empty selection leaves the unit's clock unselected"
+    );
 }

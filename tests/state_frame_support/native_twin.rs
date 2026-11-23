@@ -59,6 +59,42 @@ pub(crate) fn node_matches_site(id: &CheckedNodeId, key: filament_exact::NodeKey
     path.next().is_none()
 }
 
+/// The clock the clause added by [`with_clock_clause`] reads.
+pub const CLOCK: &str = "unit-ms";
+
+/// `source` with a temporal clause on [`CLOCK`], which FSL refuses unless the request selects that
+/// clock: the clause's profile goes after the `language` line, the clause at the end.
+pub fn with_clock_clause(source: &[u8]) -> Vec<u8> {
+    let text = std::str::from_utf8(source).expect("a UTF-8 unit");
+    let (language, rest) = text.split_once('\n').expect("a language line");
+    format!(
+        "{language}\nprofile cw = \"filament.temporal.timestamped-event.finite-window/v1\";\n{rest}\
+         record ClockReading {{ level: Int[0, 9]; }}\n\
+         temporal ClockLate using cw over (r: ClockReading) clock \"unit-ms\" \
+         on origin {{ eventually[0,5] holds(r.level > 0) }}\n"
+    )
+    .into_bytes()
+}
+
+/// The recorded selection of [`CLOCK`] in the program namespace.
+pub fn recorded_clocks() -> filament_contract_codegen::ReplayClocks {
+    filament_contract_codegen::ReplayClocks {
+        program: std::collections::BTreeMap::from([(
+            CLOCK.to_owned(),
+            fsl_package::ClockConfiguration::TimestampedEvent {
+                timestamp_unit: "ms".into(),
+            },
+        )]),
+        dependencies: std::collections::BTreeMap::new(),
+    }
+}
+
+/// `run`'s unit with a clause on [`CLOCK`], replayed under `clocks`.
+pub fn clocked(run: &mut ReplayInputs, clocks: filament_contract_codegen::ReplayClocks) {
+    run.source.bytes = with_clock_clause(&run.source.bytes);
+    run.clocks = clocks;
+}
+
 const fn unbounded_decode_limits() -> filament_contract_codegen::WitnessDecodeLimits {
     filament_contract_codegen::WitnessDecodeLimits {
         bytes: usize::MAX,
@@ -319,6 +355,9 @@ pub fn playback_text_for_path(path: &str, check: &str, values: &[i64]) -> String
 pub struct Twin {
     unit: Vec<u8>,
     domain: Vec<u8>,
+    /// The unit the replay compiles when it differs from the emitted one, and the clocks it replays under.
+    replay_unit: Option<Vec<u8>>,
+    replay_clocks: filament_contract_codegen::ReplayClocks,
     /// The source and package identity the unit is compiled under.
     identity: &'static str,
 }
@@ -1681,8 +1720,21 @@ impl Twin {
         Self {
             unit,
             domain,
+            replay_unit: None,
+            replay_clocks: Default::default(),
             identity: IDENTITY,
         }
+    }
+
+    /// The replay compiles the unit with a clocked clause appended and selects `clocks`; the
+    /// emitted packages stay the unclocked unit.
+    pub fn with_replay_clock_clause(
+        mut self,
+        clocks: filament_contract_codegen::ReplayClocks,
+    ) -> Self {
+        self.replay_unit = Some(with_clock_clause(&self.unit));
+        self.replay_clocks = clocks;
+        self
     }
 
     /// The same twin compiled under another source and package identity, so its checked package
@@ -1958,6 +2010,8 @@ impl Twin {
             unit: self.unit.clone(),
             domain,
             identity: self.identity,
+            replay_unit: None,
+            replay_clocks: Default::default(),
         };
         twin.emitted_package(clause)
     }
@@ -2235,12 +2289,16 @@ impl Twin {
     /// The proving run's lock: the unit, no dependency, and the limits the twin replays under.
     fn run(&self) -> ReplayInputs {
         ReplayInputs {
+            clocks: self.replay_clocks.clone(),
             decode_limits: unbounded_decode_limits(),
             package_name: self.identity.to_owned(),
             source: LockedSource {
                 authority: AUTHORITY.to_owned(),
                 identity: self.identity.to_owned(),
-                bytes: self.unit.clone(),
+                bytes: self
+                    .replay_unit
+                    .clone()
+                    .unwrap_or_else(|| self.unit.clone()),
             },
             dependencies: Vec::<DependencyLock>::new(),
             accounting_limits: limits(1_000_000),
