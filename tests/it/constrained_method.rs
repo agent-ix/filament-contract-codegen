@@ -680,15 +680,21 @@ fn same_named_general_clause_bodies_and_preconditions_cannot_reuse_a_method() {
         };
         let a = make(0);
         let b = make(1);
+        // Clause identity is content-derived and position-independent: the clause whose body
+        // changed takes another identity; a clause with the same body keeps its own.
+        let same = |x: &filament_contract_model::CheckedNodeId, y: &filament_contract_model::CheckedNodeId| {
+            // The node id carries graph row positions; the structural key is the identity.
+            a.package.structural_key(x) == b.package.structural_key(y)
+        };
         assert_eq!(
-            serde_json::to_value(&a.safety).unwrap(),
-            serde_json::to_value(&b.safety).unwrap(),
-            "{changed}: nominal safety IDs alone do not bind content"
+            same(&a.safety, &b.safety),
+            changed != "safety",
+            "{changed}: safety identity follows its body content"
         );
         assert_eq!(
-            serde_json::to_value(&a.constraints[0]).unwrap(),
-            serde_json::to_value(&b.constraints[0]).unwrap(),
-            "{changed}: nominal constraint IDs alone do not bind content"
+            same(&a.constraints[0], &b.constraints[0]),
+            changed != "constraint",
+            "{changed}: constraint identity follows its body content"
         );
         let initial = initial_positive_aux(0);
         let bindings_a = bindings(&a);
@@ -707,10 +713,12 @@ fn same_named_general_clause_bodies_and_preconditions_cannot_reuse_a_method() {
             object.insert("witness_options".into(), json!([]));
             value
         };
+        // Clause node ids carry graph row positions, so a changed body that shifts rows also
+        // changes the bare id preimage; only the precondition body keeps it equal.
         assert_eq!(
-            legacy(method_a.identity()),
-            legacy(method_b.identity()),
-            "{changed}: the original incomplete preimage collides"
+            legacy(method_a.identity()) == legacy(method_b.identity()),
+            changed == "precondition",
+            "{changed}: the id-only preimage binds content only through row positions"
         );
         assert_ne!(
             method_a.identity().oracle_contents,
