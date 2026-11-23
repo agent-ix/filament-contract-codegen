@@ -40,7 +40,7 @@ use crate::core::contract_package::{
     ContractDriverResultSelection, ContractRequestPosition, PackageItem, PackageItems,
     PackageRequestError,
 };
-use crate::core::ir::checked_term::{aggregate_members, bound_members, literal_integer};
+use crate::core::ir::checked_term::{aggregate_members, literal_integer};
 use crate::core::ir::scalar as scalar_ir;
 use crate::core::ir::scalar_bounds::{
     read_decimal_range, read_float_rounding, read_integer_range, read_rational_range,
@@ -625,33 +625,37 @@ fn value_validity_record_bound<Body: GraphBody>(
         return None;
     }
     let members = aggregate_members(graph.term(&consumer.node_id))?;
-    let [owner, application, occurrence, result_bound, conversion, path_condition, extent_roots, objects] =
-        bound_members(
-            members,
-            [
-                "owner",
-                "application",
-                "occurrence",
-                "result_bound",
-                "conversion",
-                "path_condition",
-                "extent_roots",
-                "objects",
-            ],
-        )?;
-    (reference_target(application).as_ref() == Some(id)
-        && [
-            owner,
-            occurrence,
-            conversion,
-            path_condition,
-            extent_roots,
-            objects,
-        ]
-        .into_iter()
-        .all(|binding| !references(Some(binding), id)))
-    .then(|| reference_target(result_bound))
-    .flatten()
+    // The record body is exactly FSL's eight named bindings (value_validity_requirements.rs).
+    let (mut seen, mut application, mut result_bound) = (0_u8, false, None);
+    for member in members {
+        let CheckedTerm::Binding { name, value, .. } = member else {
+            return None;
+        };
+        let bit = match name.as_ref() {
+            "owner" => 1,
+            "application" => {
+                application = reference_target(value).as_ref() == Some(id);
+                2
+            }
+            "occurrence" => 4,
+            "result_bound" => {
+                result_bound = reference_target(value);
+                8
+            }
+            "conversion" => 16,
+            "path_condition" => 32,
+            "extent_roots" => 64,
+            "objects" => 128,
+            _ => return None,
+        };
+        if seen & bit != 0 || (bit != 2 && references(Some(value), id)) {
+            return None;
+        }
+        seen |= bit;
+    }
+    (seen == u8::MAX && application)
+        .then_some(result_bound)
+        .flatten()
 }
 
 /// The node a `reference` term names.
