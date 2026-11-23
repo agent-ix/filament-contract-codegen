@@ -385,7 +385,7 @@ fn settle(request: &FloatScalarRequest<'_>) -> Result<FloatScalarHarness, FloatS
         // An unreadable `float_rounding` bound is named here; an unpinned operand never reaches
         // this point because Contract IR raises `requires_bound` first (FR-053-AC-3).
         if let Some(bound) = operand_own_bound(&graph, term) {
-            let readable = matches!(&bound.body, CheckedTerm::Aggregate { members }
+            let readable = matches!(&bound.body, CheckedTerm::Aggregate { members, .. }
                 if crate::core::ir::scalar_bounds::read_float_rounding(members).is_some());
             if !readable {
                 return Err(unsupported(

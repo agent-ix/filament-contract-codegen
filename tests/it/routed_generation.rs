@@ -1853,7 +1853,7 @@ fn fsl_function_application(package: &CheckedPackageV2, function: &str) -> Check
             })
         })
         .unwrap_or_else(|| panic!("FSL output declares {function}"));
-    let CheckedTerm::Aggregate { members } = &declaration.body else {
+    let CheckedTerm::Aggregate { members, .. } = &declaration.body else {
         panic!("FSL function {function} has aggregate members");
     };
     let body_id = members

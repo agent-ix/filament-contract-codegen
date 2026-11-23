@@ -83,7 +83,7 @@ fn node_key_matches(id: &CheckedNodeId, key: filament_exact::NodeKeyView<'_>) ->
 }
 
 fn named_member<'a>(node: &'a CheckedSemanticNodeV2, name: &str) -> Option<&'a CheckedTerm> {
-    let CheckedTerm::Aggregate { members } = &node.body else {
+    let CheckedTerm::Aggregate { members, .. } = &node.body else {
         return None;
     };
     members.iter().find_map(|member| match member {
@@ -3654,7 +3654,7 @@ fn finite_sequence_of_unbounded_integer_elements_requires_bound_when_fsl_admits_
         .iter()
         .find(|node| node.node_id == collection_type.semantic_type)
         .unwrap();
-    let CheckedTerm::Aggregate { members } = &sequence_type.body else {
+    let CheckedTerm::Aggregate { members, .. } = &sequence_type.body else {
         panic!("sequence type has a typed element member");
     };
     let Some(CheckedTerm::Reference {

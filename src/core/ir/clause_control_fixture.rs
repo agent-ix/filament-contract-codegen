@@ -61,7 +61,7 @@ pub(crate) fn function_application<'a>(
                 .is_some_and(|found| found.qualified_name == [Box::<str>::from(function)])
         })
         .unwrap_or_else(|| panic!("source function {function}"));
-    let CheckedTerm::Aggregate { members } = &declaration.body else {
+    let CheckedTerm::Aggregate { members, .. } = &declaration.body else {
         panic!("{function} has no function body binding");
     };
     let root = members

@@ -268,6 +268,7 @@ fn tc_024_nested_inference_accepts_inline_canonical_integer_literals() {
                     }),
                 },
             ],
+            temporal_profile: None,
         },
     );
     let value = inference_node(parameter.clone(), "value", "parameter", bounded, None);
@@ -343,6 +344,7 @@ fn tc_024_nested_inference_enforces_depth_before_reusing_memoized_nodes() {
                     }),
                 },
             ],
+            temporal_profile: None,
         },
     );
     let value = inference_node(parameter.clone(), "value", "parameter", bounded, None);
@@ -588,7 +590,10 @@ fn interval_of(lower: &str, upper: &str) -> IntegerInterval {
 }
 
 fn range_body(members: Vec<CheckedTerm>) -> CheckedTerm {
-    CheckedTerm::Aggregate { members }
+    CheckedTerm::Aggregate {
+        members,
+        temporal_profile: None,
+    }
 }
 
 /// Nodes `1` (Integer scalar type), `2` (`Int[0,9]`, an `integer_range` bounded_domain over

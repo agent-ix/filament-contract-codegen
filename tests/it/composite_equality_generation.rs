@@ -1119,7 +1119,7 @@ fn tc_029_admitted_one_reference_sequence_resolves_its_separate_bound() {
     assert_eq!(sequence_node.semantic_form.as_ref(), "sequence");
     assert_eq!(
         match &sequence_node.body {
-            filament_contract_model::CheckedTerm::Aggregate { members } => members.len(),
+            filament_contract_model::CheckedTerm::Aggregate { members, .. } => members.len(),
             _ => panic!("reader-admitted sequence is an aggregate"),
         },
         1,
@@ -1764,15 +1764,15 @@ fn tc_029_ac12_manifest_is_unpublished_and_charge_free() {
     assert!(manifest.contains(&format!("name = \"{COMPOSITE_EQUALITY_CRATE_NAME}\"")));
     assert!(manifest.contains("publish = false"));
     assert!(manifest.contains(&runtime_dependency(&["exact"])));
-    // No first-party crate resolves from a branch: each names the release tag CG's own manifest
-    // names, and only `fsl-replay` (no release tag yet) names a revision.
+    // No first-party crate resolves from a branch: each names the release tag or the commit
+    // revision this crate's own manifest names (read from Cargo.toml by build.rs, QSL-2939).
     assert!(!manifest.contains("branch ="), "{manifest}");
     for line in manifest
         .lines()
         .filter(|line| line.contains("github.com/agent-ix/"))
     {
         assert!(
-            line.contains("tag = \"") || line.starts_with("fsl-replay = "),
+            line.contains("tag = \"") || line.contains("rev = \""),
             "{line}"
         );
     }

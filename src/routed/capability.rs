@@ -397,6 +397,7 @@ fn checked_function_call_matches(
     }
     let Some(CheckedTerm::Aggregate {
         members: function_members,
+        ..
     }) = package.term(function_node_id)
     else {
         return false;
@@ -413,6 +414,7 @@ fn checked_function_call_matches(
     };
     let Some(CheckedTerm::Aggregate {
         members: parameters,
+        ..
     }) = binding("parameters")
     else {
         return false;

@@ -876,7 +876,7 @@ fn carried_quantity_vectors_compile_and_agree_with_owner() {
                 .iter()
                 .find(|node| &node.node_id == target_id)
                 .unwrap();
-            let filament_contract_model::CheckedTerm::Aggregate { members } = &target_node.body
+            let filament_contract_model::CheckedTerm::Aggregate { members, .. } = &target_node.body
             else {
                 panic!("carried target aggregate")
             };

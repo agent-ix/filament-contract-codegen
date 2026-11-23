@@ -36,7 +36,7 @@ pub(crate) fn aggregate_members<'a>(
     term: impl Into<Option<&'a CheckedTerm>>,
 ) -> Option<&'a [CheckedTerm]> {
     match term.into()? {
-        CheckedTerm::Aggregate { members } => Some(members),
+        CheckedTerm::Aggregate { members, .. } => Some(members),
         _ => None,
     }
 }

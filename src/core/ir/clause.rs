@@ -122,7 +122,7 @@ pub(crate) fn option_shape(
     if nodes.kind(type_node) != Some(CheckedNodeKind::CompositeType(CompositeTypeForm::Option)) {
         return None;
     }
-    let CheckedTerm::Aggregate { members } = nodes.package().term(type_node)? else {
+    let CheckedTerm::Aggregate { members, .. } = nodes.package().term(type_node)? else {
         return None;
     };
     let [payload] = members.as_slice() else {
@@ -178,7 +178,8 @@ fn payload_leaves(
         Some(CheckedNodeKind::CompositeType(
             form @ (CompositeTypeForm::Record | CompositeTypeForm::Tuple),
         )) if depth == 0 => {
-            let CheckedTerm::Aggregate { members } = package.term(type_node).ok_or_else(family)?
+            let CheckedTerm::Aggregate { members, .. } =
+                package.term(type_node).ok_or_else(family)?
             else {
                 return Err(family());
             };
@@ -202,7 +203,7 @@ fn payload_leaves(
 
 /// The inclusive bounds of an `integer_range` node.
 fn integer_bound(package: &CheckedPackageV2, id: &CheckedNodeId) -> Option<(i128, i128)> {
-    let CheckedTerm::Aggregate { members } = package.term(id)? else {
+    let CheckedTerm::Aggregate { members, .. } = package.term(id)? else {
         return None;
     };
     let number = |name| -> Option<i128> {
@@ -626,10 +627,13 @@ impl Reader<'_, '_> {
             let position = members
                 .iter()
                 .position(|(member, _)| member == name.as_ref())?;
-            let CheckedTerm::Aggregate { members: parts } = value.as_ref() else {
+            let CheckedTerm::Aggregate { members: parts, .. } = value.as_ref() else {
                 return None;
             };
-            let [CheckedTerm::Aggregate { members: binders }, body] = parts.as_slice() else {
+            let [CheckedTerm::Aggregate {
+                members: binders, ..
+            }, body] = parts.as_slice()
+            else {
                 return None;
             };
             if !binders.is_empty() || ordered[position].is_some() {
@@ -714,7 +718,7 @@ pub(crate) fn union_members(
     if &*declaration.node_tag != "composite_type" || &*declaration.semantic_form != "union" {
         return None;
     }
-    let CheckedTerm::Aggregate { members } = package.term(type_node)? else {
+    let CheckedTerm::Aggregate { members, .. } = package.term(type_node)? else {
         return None;
     };
     members
@@ -723,7 +727,10 @@ pub(crate) fn union_members(
             let CheckedTerm::Binding { name, value, .. } = member else {
                 return None;
             };
-            let CheckedTerm::Aggregate { members: payload } = value.as_ref() else {
+            let CheckedTerm::Aggregate {
+                members: payload, ..
+            } = value.as_ref()
+            else {
                 return None;
             };
             Some((name.to_string(), payload.len()))
@@ -748,7 +755,10 @@ pub(crate) fn read_clause(
     else {
         return None;
     };
-    let CheckedTerm::Aggregate { members: declared } = parameters else {
+    let CheckedTerm::Aggregate {
+        members: declared, ..
+    } = parameters
+    else {
         return None;
     };
     let self_id = declared.first().and_then(reference)?.clone();

@@ -1861,6 +1861,7 @@ mod ir988_source_function_tests {
                         target: body.clone(),
                     }),
                 }],
+                temporal_profile: None,
             }),
         )
     }
@@ -4205,6 +4206,7 @@ mod tests {
                 "pure_function",
                 Some(CheckedTerm::Aggregate {
                     members: vec![binding(reference(target))],
+                    temporal_profile: None,
                 }),
             );
             node.declaration = Some(CheckedDeclaration {
@@ -4274,6 +4276,7 @@ mod tests {
                 }),
                 binding(reference(&body.node_id)),
             ],
+            temporal_profile: None,
         };
         assert_eq!(
             binding_value(&malformed_first, "body")
@@ -4299,6 +4302,7 @@ mod tests {
                 binding(reference(&foreign)),
                 binding(reference(&body.node_id)),
             ],
+            temporal_profile: None,
         };
         assert_eq!(
             binding_value(&first_dangling, "body").and_then(|term| reference_in_graph(term, graph)),
@@ -4321,14 +4325,20 @@ mod tests {
             3,
             "function",
             "pure_function",
-            Some(CheckedTerm::Aggregate { members: vec![] }),
+            Some(CheckedTerm::Aggregate {
+                members: vec![],
+                temporal_profile: None,
+            }),
         );
         function.semantic_type = integer.node_id.clone();
         let mut expression = typed_fixture_node(
             4,
             "expression",
             "binary",
-            Some(CheckedTerm::Aggregate { members: vec![] }),
+            Some(CheckedTerm::Aggregate {
+                members: vec![],
+                temporal_profile: None,
+            }),
         );
         expression.semantic_type = integer.node_id.clone();
         let mut application = typed_fixture_node(

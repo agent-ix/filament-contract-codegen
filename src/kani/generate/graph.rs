@@ -275,6 +275,7 @@ pub(super) fn lower_graph(
     // quantifier binder.
     let Some(CheckedTerm::Aggregate {
         members: parameters,
+        ..
     }) = clause_arguments.first()
     else {
         return Err(Reason::UnsupportedClaimShape.into());
@@ -465,7 +466,7 @@ pub(crate) fn field_edge(
 
 /// The named `name`/`level` literal of a parameter node's aggregate body.
 fn parameter_member<'a>(term: &'a CheckedTerm, member: &str) -> Option<&'a str> {
-    let CheckedTerm::Aggregate { members } = term else {
+    let CheckedTerm::Aggregate { members, .. } = term else {
         return None;
     };
     members.iter().find_map(|candidate| match candidate {
@@ -525,7 +526,7 @@ impl Shape<'_> {
     fn references_population_type(&self, reference_type: &CheckedNodeId) -> bool {
         matches!(
             self.package.term(reference_type),
-            Some(CheckedTerm::Aggregate { members })
+            Some(CheckedTerm::Aggregate { members, .. })
                 if matches!(
                     members.as_slice(),
                     [CheckedTerm::Reference { target }]

@@ -156,7 +156,7 @@ mod tests {
     }
 
     fn bound_member_literal(node: &CheckedSemanticNodeV2, index: usize) -> Option<&str> {
-        let CheckedTerm::Aggregate { members } = &node.body else {
+        let CheckedTerm::Aggregate { members, .. } = &node.body else {
             return None;
         };
         let CheckedTerm::Binding { value, .. } = members.get(index)? else {
@@ -364,7 +364,7 @@ mod tests {
             })
             .expect("q function");
         let function_id = function.node_id.clone();
-        let CheckedTerm::Aggregate { members } = &function.body else {
+        let CheckedTerm::Aggregate { members, .. } = &function.body else {
             panic!("function body members");
         };
         let body_id = members

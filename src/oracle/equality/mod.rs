@@ -89,13 +89,13 @@ use crate::core::profile::equality_oracle_crate_manifest;
 use crate::oracle::checked_graph::{CheckedGraph as Graph, GraphBody};
 use crate::oracle::claim::{ClaimDisposition, ClaimMap, OracleGenerationError, UpstreamBlocker};
 use crate::oracle::direct_unsupported_form;
+#[cfg(test)]
+use filament_contract_model::ProtocolCorrelationProvenance;
 use filament_contract_model::{
     ApplicationOperator, CheckedNodeId, CheckedNodeTag, CheckedPackageV2, CheckedSemanticNodeV2,
     CheckedSourceMapEntry, CheckedTerm, ContractFeatureRecordV1, ContractPackageV1,
     ContractSourceV1,
 };
-#[cfg(test)]
-use filament_contract_model::ProtocolCorrelationProvenance;
 use filament_exact::{
     self as exact, CardinalityBound, CollectionKind, CollectionType, DecimalType, IllTypedCause,
     IntegerInterval, NodeKey, Presence, RoundingMode, TextProfile, ValueType,
@@ -2779,7 +2779,7 @@ mod tests {
     }
 
     fn fixture_members_mut(node: &mut FixtureNode) -> &mut Vec<CheckedTerm> {
-        let Some(CheckedTerm::Aggregate { members }) = node.body.as_mut() else {
+        let Some(CheckedTerm::Aggregate { members, .. }) = node.body.as_mut() else {
             panic!("fixture must be an aggregate")
         };
         members
@@ -2977,6 +2977,7 @@ mod tests {
                 .iter()
                 .map(|id| CheckedTerm::Reference { target: id.clone() })
                 .collect(),
+            temporal_profile: None,
         });
         if let Some(mutation) = mutation {
             let base = match mutation {
@@ -3502,6 +3503,7 @@ mod tests {
                         node,
                         Some(CheckedTerm::Aggregate {
                             members: Vec::new(),
+                            temporal_profile: None,
                         }),
                     )
                 })
@@ -3810,7 +3812,10 @@ mod tests {
                     (
                         "scalar_type",
                         "boolean",
-                        CheckedTerm::Aggregate { members: vec![] },
+                        CheckedTerm::Aggregate {
+                            members: vec![],
+                            temporal_profile: None,
+                        },
                     )
                 } else {
                     (
@@ -3820,6 +3825,7 @@ mod tests {
                             members: vec![CheckedTerm::Reference {
                                 target: ids[index + 1].clone(),
                             }],
+                            temporal_profile: None,
                         },
                     )
                 };
@@ -4363,6 +4369,7 @@ fn deep_matches_shallow() {
                     target: recursive_node_id('7'),
                 },
             ],
+            temporal_profile: None,
         });
         let graph: Graph<'_> = nodes.iter().map(|node| (&node.node_id, node)).collect();
         let mut at_limit = TypeClosure {
@@ -4440,7 +4447,10 @@ fn deep_matches_shallow() {
         for mutation in ["remove", "rename", "second", "non_option"] {
             let mut nodes = recursive_shape_nodes();
             let value = fixture_binding_value_mut(&mut fixture_members_mut(&mut nodes[0])[0]);
-            let CheckedTerm::Aggregate { members: optional } = value else {
+            let CheckedTerm::Aggregate {
+                members: optional, ..
+            } = value
+            else {
                 panic!("optional wrapper")
             };
             match mutation {
