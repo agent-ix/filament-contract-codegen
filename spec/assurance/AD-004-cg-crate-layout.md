@@ -918,8 +918,9 @@ records only the work order the ruling allows, because the code still has V1 rea
   switch to it and `core/ir` is deleted in the same change; CG's one source for CG-only rendering
   decisions remains internal without retaining a forwarding layer for node access.
 - **The version profile in one place** `core/profile.rs`: the emitted oracle crate's manifest
-  template (written once, called by the three emitters), whose runtime dependency names the
-  runtime source the way CG's own `Cargo.toml` does (git URL and branch), and every contract and
+  template (written once, called by the three emitters), whose first-party dependency
+  sources (git URL and tag or commit revision) are derived by `build.rs` from CG's own `Cargo.toml`
+  at build time, never spelled a second time, and every contract and
   schema spelling listed under Current state. `RUNTIME_REVISION` is deleted (see Decisions taken
   from the planner). A spelling FSL will export (AD-002's R-Q5) leaves this file
   when it does. The profile holds spellings this build emits or requires; it records no tool
@@ -1018,7 +1019,8 @@ requirement is authored.
   test on its pairing helper, because unique name assignment makes the duplicate unreachable from
   the public entry.
 - L-11. The oracle crate manifest template, the runtime dependency spelling and every contract
-  and schema spelling are defined in `core/profile.rs` once.
+  and schema spelling are defined in `core/profile.rs` once; the dependency sources it emits are
+  derived from CG's own `Cargo.toml` by `build.rs`.
 - L-12. `BoundPackage` and `BoundClause` are named nowhere in `kani/`, `routed/` or `replay/`, and
   after the last V1 reader is replaced nowhere. Until step 4f the interim exceptions, listed by
   file, were the V1 arm in `kani/generate/{outcome,negotiate,clause}.rs` and the V1 clause

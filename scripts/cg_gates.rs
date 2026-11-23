@@ -81,6 +81,7 @@ fn touches_kani(path: &str) -> bool {
         "tests/checked_package_support/rekey.rs",
         "tests/checked_package_support/temporal.rs",
         "Cargo.toml",
+        "build.rs",
         "Cargo.lock",
     ];
     PREFIXES.iter().any(|prefix| path.starts_with(prefix))

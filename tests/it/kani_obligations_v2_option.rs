@@ -284,10 +284,12 @@ fn tc_068_a_record_option_is_not_reachable_the_checked_record_carries_no_fields(
         .iter()
         .find(|node| &*node.semantic_form == "record_value_type")
         .expect("the record type node");
-    assert_eq!(
-        format!("{:?}", package.term(&record.node_id)),
-        "Some(Aggregate { members: [], temporal_profile: None })"
-    );
+    let Some(filament_contract_model::CheckedTerm::Aggregate { members, .. }) =
+        package.term(&record.node_id)
+    else {
+        panic!("the record type term is an aggregate");
+    };
+    assert!(members.is_empty(), "the record type carries no members");
     let (reason, detail) = option_refusal(&twin);
     assert_eq!(reason, OptionNotLoweredReason::PayloadNotScalar);
     assert_eq!(detail, "record_value_type");

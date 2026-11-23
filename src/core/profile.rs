@@ -29,7 +29,7 @@ pub(crate) fn oracle_crate_manifest(crate_name: &str) -> String {
 
 /// The concrete function oracle's checked-closure facade and direct leaf dependencies. The
 /// `filament-contract-codegen` line stays `branch = "main"`: this crate has no usable release tag
-/// (its only tag, v0.1.0, predates the pins above) and every test replaces the line with a `path`
+/// (its only tag, v0.1.0, predates the revisions `Cargo.toml` pins) and every test replaces the line with a `path`
 /// dependency on the checkout under test, so no emitted crate resolves CG main at test time.
 pub(crate) fn function_oracle_crate_manifest(crate_name: &str) -> String {
     format!(
