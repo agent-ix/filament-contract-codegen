@@ -1981,8 +1981,10 @@ mod ir988_admitted_generation_tests {
             );
         }
         let mut wire = builder.raw_wire();
-        let locations = wire["checked_term_data"]["body_locations"]
-            .as_array_mut()
+        // pointer_mut: the core::ir source lint forbids raw JSON indexing in this file's production-ordered text.
+        let locations = wire
+            .pointer_mut("/checked_term_data/body_locations")
+            .and_then(serde_json::Value::as_array_mut)
             .expect("the source fixture authors body locations");
         // Every additional declaration above shares the one SOURCE_BODY application.
         for offset in 0..(function_count - 2) {

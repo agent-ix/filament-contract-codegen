@@ -544,6 +544,27 @@ fn tc_048_verified_public_rows_keep_their_fsl_terminal_values() {
     }
 }
 
+/// The terminal value of a replay refused by the 1-byte `replay.input_bytes` bound names that
+/// bound: code `stage_limit_exceeded`, cause `input-bytes-exceeded`, setting `replay.input_bytes`
+/// and the exact bound and size (FSL FR-940-AC-22).
+fn assert_input_bytes_bound(refusal: &ReplayRefusal, terminal: TerminalValue) {
+    let ReplayRefusal::Request(ReplayRequestRefusal::BoundExceeded(exceeded)) = refusal else {
+        panic!("expected the input-bytes bound refusal, got {refusal:?}");
+    };
+    assert_eq!(exceeded.bound, 1);
+    assert!(exceeded.actual > 1);
+    assert_eq!(refusal.code().as_str(), "stage_limit_exceeded");
+    assert_eq!(
+        terminal,
+        TerminalValue::Inconclusive(InconclusiveCause::ReplayRefusedAtBound {
+            code: refusal.code(),
+            cause: "input-bytes-exceeded",
+            setting: "replay.input_bytes",
+            exceeded: *exceeded,
+        })
+    );
+}
+
 /// A real FSL prepare refusal remains a bound report and carries FSL's own code before F-1.
 #[trace("FR-029-AC-28", "FR-030-AC-17", "TC-041", "TC-048")]
 #[test]
@@ -570,14 +591,7 @@ fn tc_041_bound_prepare_refusal_precedes_disagreed() {
     let CompositeParityResult::Refused(refusal) = bound.result() else {
         panic!("FSL prepare should refuse before F-1: {:?}", bound.result());
     };
-    assert!(matches!(
-        &**refusal,
-        ReplayRefusal::Request(ReplayRequestRefusal::BoundExceeded(_))
-    ));
-    assert_eq!(
-        bound.terminal_value(),
-        TerminalValue::Inconclusive(InconclusiveCause::ReplayRefused(refusal.code()))
-    );
+    assert_input_bytes_bound(refusal, bound.terminal_value());
     assert_eq!(bound.terminal_value(), report.terminal_value());
 }
 
@@ -935,14 +949,7 @@ fn tc_048_verified_prepare_refusal_passes_through() {
     let VerifiedShadowResult::Refused(refusal) = bound.result() else {
         panic!("expected FSL prepare refusal, got {:?}", bound.result());
     };
-    assert!(matches!(
-        &**refusal,
-        ReplayRefusal::Request(ReplayRequestRefusal::BoundExceeded(_))
-    ));
-    assert_eq!(
-        bound.terminal_value(),
-        TerminalValue::Inconclusive(InconclusiveCause::ReplayRefused(refusal.code()))
-    );
+    assert_input_bytes_bound(refusal, bound.terminal_value());
 }
 
 /// The two CG binding refusals stay distinct and human-readable.

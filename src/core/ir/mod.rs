@@ -6,6 +6,8 @@ pub(crate) mod clause;
 pub(crate) mod checked_term;
 /// Typed graph and operation access for state-frame clauses.
 pub(crate) mod frame;
+/// Re-encoding of an admitted package with every sidecar its closure carries.
+pub(crate) mod original_encoding;
 /// Fallible structural node identity conversion at the IR/FSL boundary.
 pub(crate) mod node_key;
 /// Typed scalar node and operation access.

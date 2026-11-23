@@ -90,12 +90,12 @@ use crate::oracle::checked_graph::{CheckedGraph as Graph, GraphBody};
 use crate::oracle::claim::{ClaimDisposition, ClaimMap, OracleGenerationError, UpstreamBlocker};
 use crate::oracle::direct_unsupported_form;
 use filament_contract_model::{
-    encode_checked_package_v2_with_protocol_correlation_occurrences, ApplicationOperator,
-    CheckedNodeId, CheckedNodeTag, CheckedPackageSidecarsRef,
-    CheckedPackageSourceCorrespondenceRef, CheckedPackageV2, CheckedSemanticNodeV2,
+    ApplicationOperator, CheckedNodeId, CheckedNodeTag, CheckedPackageV2, CheckedSemanticNodeV2,
     CheckedSourceMapEntry, CheckedTerm, ContractFeatureRecordV1, ContractPackageV1,
-    ContractSourceV1, ProtocolCorrelationProvenance,
+    ContractSourceV1,
 };
+#[cfg(test)]
+use filament_contract_model::ProtocolCorrelationProvenance;
 use filament_exact::{
     self as exact, CardinalityBound, CollectionKind, CollectionType, DecimalType, IllTypedCause,
     IntegerInterval, NodeKey, Presence, RoundingMode, TextProfile, ValueType,
@@ -779,42 +779,8 @@ impl CompositeReplayAuthority for CompositeEqualityOracles {
 pub(crate) fn encode_original_package(
     original: &CheckedPackageV2,
 ) -> Result<String, OracleGenerationError> {
-    let correlation_rows = match original.protocol_correlation_provenance() {
-        ProtocolCorrelationProvenance::Unavailable(_) => None,
-        ProtocolCorrelationProvenance::Complete(table) => Some(
-            table
-                .groups()
-                .flat_map(|group| group.clauses().iter().cloned())
-                .collect::<Vec<_>>(),
-        ),
-    };
-    // The FSL-admitted context carries the package's `requirement_items`; leaving them out makes
-    // this re-encoding differ from the owner's bytes whenever the package has value-validity records.
-    let requirement_items = original.requirement_items();
-    let bytes = encode_checked_package_v2_with_protocol_correlation_occurrences(
-        original.name(),
-        original.lock(),
-        original.graph(),
-        CheckedPackageSourceCorrespondenceRef {
-            source_map: original.source_map(),
-            refinement_step_rows: original.refinement_step_rows(),
-        },
-        CheckedPackageSidecarsRef {
-            checked_term_data: original.checked_term_data(),
-            claim_names: original.claim_names(),
-            temporal_bindings: original.temporal_bindings(),
-            temporal_clause_names: original.temporal_clause_names(),
-            schedulability_claims: original.schedulability_claim_rows(),
-            operation_effects: original.operation_effect_rows(),
-            operation_bodies: original.operation_body_rows(),
-        },
-        (!requirement_items.is_empty()).then_some(requirement_items),
-        correlation_rows.as_deref(),
-        original.capability_report(),
-        original.diagnostics(),
-        quire_canonical::Limits::new(u64::MAX),
-    )
-    .map_err(|_| OracleGenerationError::CheckedPackageEncoding)?;
+    let bytes = crate::core::ir::original_encoding::encode_original_package_bytes(original)
+        .map_err(|_| OracleGenerationError::CheckedPackageEncoding)?;
     String::from_utf8(bytes).map_err(|_| OracleGenerationError::CheckedPackageEncoding)
 }
 
