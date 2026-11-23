@@ -4467,10 +4467,17 @@ pub const CALL_OVER_CONVERSION: u32 = 2153;
 pub const REFERENCE_FUNCTION: u32 = 2156;
 /// A call of [`REFERENCE_FUNCTION`] whose first argument is a quantity conversion node.
 pub const CALL_REFERENCE_OVER_CONVERSION: u32 = 2157;
-/// A pure function named [`CONVERTING_NAME`] whose body is the 1086 quantity conversion node.
+/// A pure function named [`CONVERTING_NAME`] whose body is the [`CONVERTING_BODY`] quantity conversion node.
 pub const CONVERTING_FUNCTION: u32 = 2158;
 /// A call of [`CONVERTING_FUNCTION`] with no arguments.
 pub const CALL_CONVERTING_FUNCTION: u32 = 2159;
+/// The quantity conversion over a plain quantity value that [`CONVERTING_FUNCTION`] returns. A
+/// function body is walked through its expression operands, and only applications own a
+/// `body_locations` row, so the body is a conversion whose operand is a value node.
+pub const CONVERTING_BODY: u32 = 2160;
+/// The integer addition of [`ADDER_RIGHT`] with itself that [`ADDER_FUNCTION`] returns: operands that
+/// are parameters are not walked terms, so it is the one application the body walk meets.
+pub const ADDER_BODY: u32 = 2161;
 /// The declared name of [`CONVERTING_FUNCTION`].
 pub const CONVERTING_NAME: &str = "nconverting";
 /// The adder's parameters.
@@ -4535,6 +4542,20 @@ pub fn conversion_operand_package() -> PackageBuilder {
             &key(T_INTEGER),
             parameter_body("b", 0),
         );
+    builder.application_code_with(
+        ADDER_BODY,
+        "expression",
+        "binary",
+        &key(T_INTEGER),
+        application(
+            "binary",
+            op("filament.op.integer.add"),
+            &key(T_INTEGER),
+            vec![reference(&right), reference(&right)],
+        ),
+        std::slice::from_ref(&right),
+    );
+    let adder_body = fixture_label(&code_id(ADDER_BODY)).to_owned();
     register_code(ADDER_FUNCTION, key(ADDER_FUNCTION));
     builder.node_with_label(
         &key(ADDER_FUNCTION),
@@ -4547,9 +4568,9 @@ pub fn conversion_operand_package() -> PackageBuilder {
                 "parameters",
                 json!({"term": "aggregate", "members": [reference(&left), reference(&right)]}),
             ),
-            member("body", reference(&addition)),
+            member("body", reference(&adder_body)),
         ]}),
-        &[addition.clone(), left, right],
+        &[adder_body.clone(), left, right],
     );
     let function = key(ADDER_FUNCTION);
     let integer = key(V_INTEGER);
@@ -4570,6 +4591,25 @@ pub fn conversion_operand_package() -> PackageBuilder {
         ),
         &[function, conversion.clone(), integer.clone()],
     );
+    builder.application_bounded(
+        CONVERTING_BODY,
+        "expression",
+        "conversion",
+        &unit_type(),
+        application(
+            "convert",
+            op_full(
+                "filament.op.quantity.convert",
+                vec![],
+                Some(mode_kv("rounding", "exact")),
+                Some(type_argument_member(&unit_type())),
+            ),
+            &unit_type(),
+            vec![reference(&key(V_QUANTITY))],
+        ),
+        &[],
+    );
+    let converting_body = fixture_label(&code_id(CONVERTING_BODY)).to_owned();
     register_code(CONVERTING_FUNCTION, key(CONVERTING_FUNCTION));
     builder.node_with_label(
         &key(CONVERTING_FUNCTION),
@@ -4579,9 +4619,9 @@ pub fn conversion_operand_package() -> PackageBuilder {
         &unit_type(),
         json!({"term": "aggregate", "members": [
             member("parameters", json!({"term": "aggregate", "members": []})),
-            member("body", reference(&conversion)),
+            member("body", reference(&converting_body)),
         ]}),
-        std::slice::from_ref(&conversion),
+        std::slice::from_ref(&converting_body),
     );
     let converting = key(CONVERTING_FUNCTION);
     builder.application_code_with(
@@ -4624,6 +4664,29 @@ pub fn conversion_operand_package() -> PackageBuilder {
         ),
         &[reference_function, conversion, integer],
     );
+    // The reader requires one body_locations row per walked term of each function body (FSpec
+    // FR-322): the adder body is the one addition, the converting body its one conversion.
+    // Rows ascend by application id, whichever function owns them.
+    let rows = [
+        (CONVERTING_FUNCTION, node_ref(&converting_body), 1, json!([])),
+        (ADDER_FUNCTION, node_ref(&adder_body), 0, json!([])),
+    ]
+    .map(|(function, application, index, down)| {
+        json!({
+            "application": application,
+            "occurrence": {"role": "declaration", "ordinal": 0},
+            "term_ordinal": 0,
+            "location": {"origin": {
+                "kind": "function_body", "function": node_ref(&key(function)),
+                "name": format!("n{}", key(function)), "index": index
+            }, "up": 0, "down": down}
+        })
+    });
+    builder.value["checked_term_data"] = json!({
+        "equality_decisions": [], "protocol_locations": [],
+        "dispatch_tables": [], "probabilistic_claims": [],
+        "body_locations": rows,
+    });
     builder
 }
 
