@@ -706,6 +706,11 @@ impl PackageBuilder {
                 "qualified_name": [name],
                 "declaration_region": {"source": source_for_names, "start": start, "end": start + 1},
             }));
+            // The reader requires the rows in the order of their declarations' node identities.
+            rows.sort_by_key(|row| {
+                serde_json::from_value::<CheckedNodeId>(row["declaration"].clone())
+                    .expect("claim row declaration is a node id")
+            });
             self.value["claim_names"] = Value::Array(rows);
         }
         self
