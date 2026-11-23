@@ -1787,6 +1787,9 @@ fn wide_fsl_package() -> CheckedPackageV2 {
     }
 }
 
+/// The byte ceiling the oversized work fixture is emitted and read under.
+const WORK_PACKAGE_BYTES: u64 = 32 << 20;
+
 fn work_fsl_package() -> CheckedPackageV2 {
     fn balanced(start: u64, count: u64) -> String {
         if count == 1 {
@@ -1814,7 +1817,12 @@ fn work_fsl_package() -> CheckedPackageV2 {
         },
         [],
         &DependencyInput::default(),
-        StageLimits::default(),
+        // One value_validity record per application (4097 here) takes this fixture past FSL's
+        // default 16 MiB emit output limit (16777217 bytes against 16777216). Only this oversized
+        // fixture raises it.
+        StageLimits::default()
+            .with_named("emit.output_bytes", WORK_PACKAGE_BYTES)
+            .expect("emit.output_bytes is a stage limit"),
         ReplayLimits::default(),
     )
     .expect("high-work operand fixture compiles through FSL's public facade");
@@ -1823,7 +1831,7 @@ fn work_fsl_package() -> CheckedPackageV2 {
     match CheckedPackageV2::read(
         compiled.bytes(),
         CheckedPackageReadLimits {
-            bytes: 16 << 20,
+            bytes: WORK_PACKAGE_BYTES,
             ..CheckedPackageReadLimits::bounded()
         },
         &evidence,
@@ -2139,7 +2147,7 @@ fn tc_033_fsl_nested_operand_depth_limit_is_typed_and_keeps_sibling_supported() 
     // This oversized package exists only to cross the scalar inference work ceiling; keep its
     // larger read limit local to this test path. Normal fixture readers retain the default 1 MiB.
     let work_read_limits = CheckedPackageReadLimits {
-        bytes: 16 << 20,
+        bytes: WORK_PACKAGE_BYTES,
         ..CheckedPackageReadLimits::bounded()
     };
     let generation = route_fsl_functions(&package, &["work_nested", "sibling"], work_read_limits);

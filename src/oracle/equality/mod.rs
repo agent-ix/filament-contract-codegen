@@ -788,6 +788,9 @@ pub(crate) fn encode_original_package(
                 .collect::<Vec<_>>(),
         ),
     };
+    // The FSL-admitted context carries the package's `requirement_items`; leaving them out makes
+    // this re-encoding differ from the owner's bytes whenever the package has value-validity records.
+    let requirement_items = original.requirement_items();
     let bytes = encode_checked_package_v2_with_protocol_correlation_occurrences(
         original.name(),
         original.lock(),
@@ -805,7 +808,7 @@ pub(crate) fn encode_original_package(
             operation_effects: original.operation_effect_rows(),
             operation_bodies: original.operation_body_rows(),
         },
-        None,
+        (!requirement_items.is_empty()).then_some(requirement_items),
         correlation_rows.as_deref(),
         original.capability_report(),
         original.diagnostics(),
