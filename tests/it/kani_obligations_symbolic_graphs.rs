@@ -124,6 +124,7 @@ fn try_authored_clause(
         source.as_bytes(),
         [bytes.as_slice()],
         &DependencyInput::default(),
+        &fsl_replay::RequestClocks::default(),
         &ClauseName(Identifier::new(clause_name).unwrap()),
     )
     .map_err(|error| format!("{error:?}"))?;

@@ -632,21 +632,29 @@ fn for_each_setup_refusal(check: impl Fn(Code, ReplaySettlement<'_>)) {
         let package = LibraryName::new("terminal-map").expect("fixture package name");
         [
             CallSiteRefusal::Compile {
+                cause: None,
+                selection: None,
                 code: Code::InvalidIdentifier,
                 message: "does not compile".to_owned(),
                 region: None,
             },
             CallSiteRefusal::ModelIntake {
+                cause: None,
+                selection: None,
                 alias: "m".to_owned(),
                 code: Code::InvalidPackage,
                 message: "no package".to_owned(),
             },
             CallSiteRefusal::DependencyInput(shared_owner()),
             CallSiteRefusal::Import {
+                cause: None,
+                selection: None,
                 code: Code::StaleDependency,
                 message: "unresolved".to_owned(),
             },
             CallSiteRefusal::Dependency {
+                cause: None,
+                selection: None,
                 path: Vec::new(),
                 code: Code::InvalidIdentifier,
                 message: "library".to_owned(),

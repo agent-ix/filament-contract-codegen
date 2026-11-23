@@ -622,6 +622,7 @@ fn replay_collection_function(
         fixture.source.as_bytes(),
         [fixture.model_bytes.as_slice()],
         &DependencyInput::default(),
+        &fsl_replay::RequestClocks::default(),
         &selection,
     )
     .expect("the exact source function remains callable by FSL");
@@ -789,6 +790,7 @@ fn try_emitted_from_document_and_body(document: Value, body: &str) -> Result<Emi
         unit.as_bytes(),
         [document_bytes.as_slice()],
         &DependencyInput::default(),
+        &fsl_replay::RequestClocks::default(),
         &selection,
     )
     .map_err(|error| format!("{error:?}"))?;
@@ -812,6 +814,7 @@ fn try_emitted_from_document_and_clause(
         unit.as_bytes(),
         [document_bytes.as_slice()],
         &DependencyInput::default(),
+        &fsl_replay::RequestClocks::default(),
         &ClauseName(Identifier::new("CollectionReady").expect("clause name")),
     )
     .map_err(|error| format!("{error:?}"))?;

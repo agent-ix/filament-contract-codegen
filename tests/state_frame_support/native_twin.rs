@@ -1736,6 +1736,7 @@ impl Twin {
             &self.unit,
             [self.domain.as_slice()],
             &DependencyInput::default(),
+            &fsl_replay::RequestClocks::default(),
             &self.operation_for_object(object, operation),
         )
         .map(|located| located.site)
@@ -1762,6 +1763,7 @@ impl Twin {
             &self.unit,
             [self.domain.as_slice()],
             &DependencyInput::default(),
+            &fsl_replay::RequestClocks::default(),
             &name,
         )
         .expect("the clause is located");
@@ -1984,6 +1986,7 @@ impl Twin {
             unit,
             [fsl_document],
             &DependencyInput::default(),
+            &fsl_replay::RequestClocks::default(),
             &name,
         )
         .expect("the clause is located");
@@ -2269,6 +2272,7 @@ impl Twin {
             &self.unit,
             [self.domain.as_slice()],
             &DependencyInput::default(),
+            &fsl_replay::RequestClocks::default(),
             &name,
         )
         .map(|located| located.site)

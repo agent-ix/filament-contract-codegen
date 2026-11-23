@@ -162,6 +162,7 @@ pub(crate) fn authored_over(
         source.as_bytes(),
         [domain.as_slice()],
         &DependencyInput::default(),
+        &fsl_replay::RequestClocks::default(),
         &ClauseName(Identifier::new(names[0]).unwrap()),
     )
     .unwrap_or_else(|error| panic!("FSL emits the authored clause: {error:?}"));

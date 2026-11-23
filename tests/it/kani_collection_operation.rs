@@ -77,6 +77,7 @@ fn fixture_with_body(doc: &Value, preconditions: &str, body: &str) -> CheckedPac
         source.as_bytes(),
         [bytes.as_slice()],
         &DependencyInput::default(),
+        &fsl_replay::RequestClocks::default(),
         &ClauseName(Identifier::new("CollectionReady").unwrap()),
     )
     .expect("FSL emits the authored operation clauses");
