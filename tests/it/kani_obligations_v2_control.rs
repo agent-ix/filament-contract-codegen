@@ -274,7 +274,7 @@ fn operator_refusal(condition: &str) -> String {
 /// A twin whose clause `result = (let q = amount in true)` binds the nullable `amount`.
 fn optional_binding() -> Twin {
     Twin::with_bounded_amount_implication_condition("result = (let q = amount in true)")
-        .with_optional_amount()
+        .with_option_amount()
 }
 
 #[trace("FR-015-AC-160", "FR-015-AC-167", "TC-025")]

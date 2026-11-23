@@ -1004,29 +1004,6 @@ impl Twin {
         self
     }
 
-    /// The same twin with the `amount` parameter declared nullable, an option of its range.
-    pub fn with_optional_amount(mut self) -> Self {
-        let mut domain: Value = serde_json::from_slice(&self.domain).expect("domain document");
-        let account = domain["types"]
-            .as_array_mut()
-            .expect("types")
-            .iter_mut()
-            .find(|ty| ty["identity"] == account_type())
-            .expect("account type");
-        let deposit = account["operations"]
-            .as_array_mut()
-            .expect("operations")
-            .iter_mut()
-            .find(|operation| operation["name"] == "deposit")
-            .expect("deposit operation");
-        deposit["params"][0]["nullable"] = json!(true);
-        deposit["params"][0]["multiplicity"] =
-            json!({"lower": 0, "upper": 1, "ordered": false, "unique": true});
-        deposit["params"][0]["presence"] = json!("optional");
-        self.domain = domain.to_string().into_bytes();
-        self
-    }
-
     /// The same twin with the `amount` parameter typed by an option type over the `balance` range,
     /// the shape FSL reads as `Option<Int[...]>`.
     pub fn with_option_amount(self) -> Self {
