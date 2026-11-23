@@ -273,8 +273,7 @@ fn owner_name(package: &CheckedPackageV2) -> Result<LibraryName, CheckedFunction
 /// equality oracle compares an owner context against, including the requirement items and the
 /// protocol correlation rows an admitted package holds.
 fn package_bytes(package: &CheckedPackageV2) -> Result<Vec<u8>, CheckedFunctionError> {
-    crate::oracle::equality::encode_original_package(package)
-        .map(String::into_bytes)
+    crate::core::ir::original_encoding::encode_original_package_bytes(package)
         .map_err(|_| CheckedFunctionError::PackageEncoding)
 }
 
@@ -662,9 +661,8 @@ mod tests {
         assert_eq!(bytes, compiled.package().bytes());
         assert_eq!(
             bytes,
-            crate::oracle::equality::encode_original_package(&package)
+            crate::core::ir::original_encoding::encode_original_package_bytes(&package)
                 .expect("the original package encodes")
-                .into_bytes()
         );
     }
 
