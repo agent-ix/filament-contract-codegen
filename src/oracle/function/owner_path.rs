@@ -627,6 +627,47 @@ mod tests {
     use ix_trace_rs::trace;
     use std::sync::Arc;
 
+    /// The owner-path identity comparison reads FSLs closure bytes, which carry the packages
+    /// `requirement_items`; `package_bytes` must be the one canonical re-encoding that carries them
+    /// too (QSL-2940: it once dropped them, so every such package was refused OwnerIdentityMismatch).
+    #[test]
+    fn package_bytes_carry_requirement_items_and_equal_the_fsl_closure_bytes() {
+        let compiled = fsl_replay::compile_admitted(
+            fsl_replay::CompileUnit {
+                source: fsl_replay::SourceIdentity::new("test", "bytes.native"),
+                package_name: "bytes".to_owned(),
+                path: "bytes.native",
+                bytes: b"language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.value.complete/v1\";\nfunction t using v(x: Int[0, 9]): Int[0, 10] pure { x + 1 }\n",
+            },
+            [],
+            &fsl_replay::DependencyInput::default(),
+            fsl_replay::StageLimits::default(),
+            fsl_replay::ReplayLimits::default(),
+        )
+        .expect("the one-operation package compiles");
+        let mut evidence = CheckedPackageEvidence::new();
+        evidence.support_feature("filament.value.complete/v1");
+        let CheckedPackageV2ReadResult::Admitted(package) = CheckedPackageV2::read(
+            compiled.package().bytes(),
+            CheckedPackageReadLimits::bounded(),
+            &evidence,
+        ) else {
+            panic!("the one-operation package is admitted");
+        };
+        assert!(
+            !package.requirement_items().is_empty(),
+            "FSL emits a requirement item for the scalar operation"
+        );
+        let bytes = package_bytes(&package).expect("the package encodes");
+        assert_eq!(bytes, compiled.package().bytes());
+        assert_eq!(
+            bytes,
+            crate::oracle::equality::encode_original_package(&package)
+                .expect("the original package encodes")
+                .into_bytes()
+        );
+    }
+
     const SOURCE: &str = concat!(
         "language \"ix:native\" edition \"1-draft\";\n",
         "profile v = \"filament.value.complete/v1\";\n",

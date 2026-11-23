@@ -4463,7 +4463,7 @@ pub const CONVERSION_FUNCTION: u32 = 2150;
 /// A quantity equality whose left operand references a quantity conversion node.
 pub const EQUALITY_OVER_CONVERSION: u32 = 2151;
 
-/// A pure function named [`ADDER_NAME`] whose body is the integer addition node 1001.
+/// A pure function named [`ADDER_NAME`] whose body is [`ADDER_BODY`], the addition of its right parameter with itself.
 pub const ADDER_FUNCTION: u32 = 2152;
 /// A call of [`ADDER_FUNCTION`] whose first argument is a quantity conversion node.
 pub const CALL_OVER_CONVERSION: u32 = 2153;
@@ -4497,7 +4497,7 @@ pub const ADDER_NAME: &str = "nadder";
 pub fn conversion_operand_package() -> PackageBuilder {
     // The adder parameters added below carry a text `name` literal, so its scalar type is retained;
     // the calls below pass an integer value, so that value is retained too, and
-    // the adder body is the integer addition `1001`.
+    // the adder body is its own parameter addition (`ADDER_BODY`); `1001` stays in the retained set for `REFERENCE_FUNCTION`.
     let mut builder = corpus_package().focused(&[
         code_id(T_BOOLEAN),
         code_id(T_TEXT),
