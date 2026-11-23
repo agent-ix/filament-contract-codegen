@@ -342,13 +342,13 @@ fn ieee_extension_preserves_binary_support_and_refuses_other_shapes() {
                 node["body"]["operation"]["identity"] == "filament.op.ieee.numeric_equal"
             })
             .unwrap();
-        let application = nodes[position]["node_id"].clone();
         nodes[position]["semantic_form"] = form.into();
         // FR-322 "checked_term_data": an `equality_decisions` row is keyed by the equality application
-        // node and the reader joins it to the node's form (a float schedule needs the `call` form), so
-        // a node given another form no longer carries its row.
+        // node (named by its document-index path, which carries the operation identity); the
+        // reader joins it to the node's form (a float
+        // schedule needs the `call` form), so a node given another form no longer carries its row.
         if let Some(rows) = wire["checked_term_data"]["equality_decisions"].as_array_mut() {
-            rows.retain(|row| row["application"] != application);
+            rows.retain(|row| !row["application"]["path"].as_array().is_some_and(|path| path.iter().any(|segment| segment == "filament.op.ieee.numeric_equal")));
         }
         let CheckedPackageV2ReadResult::Admitted(package) = read_mutated_wire(wire) else {
             panic!("IR independently admits expression forms with catalogued call bodies");
