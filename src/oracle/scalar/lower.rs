@@ -576,6 +576,12 @@ pub(super) fn narrowing<'g, Body: GraphBody>(
         if &consumer.node_id == id || !references(graph.term(&consumer.node_id), id) {
             continue;
         }
+        // A claim states a property of the node (FSL emits a `value_validity` claim naming the
+        // application, its result bound and its narrowing conversion); it does not use the
+        // node's value, so the narrow's bound still bounds every use.
+        if &*consumer.node_tag == CheckedNodeTag::Claim.as_wire() {
+            continue;
+        }
         if !narrows(graph, consumer, id) {
             other = true;
             continue;

@@ -134,7 +134,8 @@ is the domain typing the node's result when the node's `semantic_type` is a
 `bounded_domain`; when it is a scalar type and only narrowing conversions consume
 the node, the result bound is the one `bounded_domain` they narrow it to, and a
 node that a narrowing conversion and any other node both consume has no result
-bound, since the narrow's bound does not bound the other use. FSL emits an
+bound, since the narrow's bound does not bound the other use; a `claim` node that
+references the node states a property of it and is not such a use. FSL emits an
 expression in a bounded context this way: the arithmetic node's own type is the
 plain scalar type, and the declared bound types a `conversion` node whose body
 is a `convert` application with identity `filament.op.numeric.narrow` and exactly
@@ -510,8 +511,8 @@ otherwise.
   the result bound, record it first among the checked bounds, and compare the
   descriptor with it.
 - If the narrowing conversions consuming a node narrow it to two or more
-  distinct bounds, or a narrowing conversion and a node that is not one both
-  consume it, then the generator shall refuse the item as `AmbiguousBound`; if
+  distinct bounds, or a narrowing conversion and a node that is neither one nor a
+  `claim` both consume it, then the generator shall refuse the item as `AmbiguousBound`; if
   they narrow it to one bound of another form, or of the form over another
   scalar type, then as `MissingBound`.
 - Where a `reference` operand's target is typed by a `bounded_domain` node, the
