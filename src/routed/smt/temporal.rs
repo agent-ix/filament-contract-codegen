@@ -327,18 +327,78 @@ fn cvc5_proof_dump_selected(arguments: &[OsString]) -> bool {
 #[cfg(test)]
 mod tests {
     use std::{
+        collections::BTreeMap,
         ffi::OsString,
         num::{NonZeroU64, NonZeroUsize},
         path::PathBuf,
         time::Duration,
     };
 
-    use fsl_replay::{ProofFormat, RefutedQuery};
+    use filament_exact::ScalarLimits;
+    use fsl_eval::{
+        model_subject::ModelSubject,
+        simulation::model::{
+            ExpansionLimits, ModelCheckInput, ModelSimulationRequest, ModelSystem,
+        },
+    };
+    use fsl_replay::spine::{self, DependencyInput, ParseRequest};
+    use fsl_replay::{
+        CertificateCheckLimits, CertificateRequest, DomainKey, DomainKind, FiniteBound,
+        ModelCheckItem, ProofBound, ProofFormat, RefutedQuery, SmtEncodingLimits, SpineLimits,
+        TerminalValue,
+    };
     use ix_trace_rs::trace;
 
-    use super::{map_proof_outcome, TemporalProofQuery};
+    use super::{
+        map_proof_outcome, run_and_settle_temporal_smt_proof, TemporalProofQuery,
+        TemporalSmtProofResult,
+    };
     use crate::kani::run::process::{ProcessLimits, ProcessOutcome, ProcessRun};
     use crate::routed::smt::SolverStatus;
+
+    struct NoAtomLetters;
+
+    impl fsl_eval::model_subject::ModelLetters for NoAtomLetters {
+        fn atom(
+            &self,
+            _atom: fsl_semantics::check::FormulaNodeId,
+            _instance: &fsl_eval::model_subject::ModelInstance,
+            _state: &fsl_eval::simulation::model::ModelSimState,
+            _meter: &mut filament_exact::Meter,
+        ) -> Result<fsl_eval::temporal::AtomReading, fsl_eval::model_subject::AtomStop> {
+            panic!("the fixture clause has no holds atoms")
+        }
+
+        fn activation(
+            &self,
+            _instance: &fsl_eval::model_subject::ModelInstance,
+            _state: &fsl_eval::simulation::model::ModelSimState,
+            _meter: &mut filament_exact::Meter,
+        ) -> Result<fsl_eval::temporal::AtomReading, fsl_eval::model_subject::AtomStop> {
+            panic!("the fixture clause has no guarded activation")
+        }
+
+        fn activation_reads(
+            &self,
+        ) -> Result<
+            std::collections::BTreeSet<fsl_semantics::check::footprint::SymbolicLocation>,
+            fsl_semantics::check::footprint::FootprintRefusal,
+        > {
+            Ok(std::collections::BTreeSet::new())
+        }
+
+        fn reads(
+            &self,
+            _atom: fsl_semantics::check::FormulaNodeId,
+        ) -> Result<
+            std::collections::BTreeSet<fsl_semantics::check::footprint::SymbolicLocation>,
+            fsl_semantics::check::footprint::FootprintRefusal,
+        > {
+            Ok(std::collections::BTreeSet::new())
+        }
+    }
+
+    static NO_ATOM_LETTERS: NoAtomLetters = NoAtomLetters;
 
     fn query(kind: fsl_replay::SmtQueryKind, response: &[u8]) -> TemporalProofQuery {
         TemporalProofQuery::new(
@@ -367,7 +427,7 @@ mod tests {
         )
     }
 
-    #[trace("FSpec-FR-127-AC-14")]
+    #[trace("TC-041", "FR-030-AC-19", "FSpec-FR-127-AC-14")]
     #[test]
     fn bounded_complete_outcome_keeps_fsl_query_and_captured_proof() {
         let kind = fsl_replay::SmtQueryKind::Unrolling { depth: 3 };
@@ -394,7 +454,7 @@ mod tests {
         );
     }
 
-    #[trace("FSpec-FR-127-AC-14")]
+    #[trace("TC-041", "FR-030-AC-19", "FSpec-FR-127-AC-14")]
     #[test]
     fn induction_requires_both_unsat_query_roles_and_preserves_order() {
         let basis = fsl_replay::SmtProofBasis::Inductive { depth: 1 };
@@ -429,7 +489,7 @@ mod tests {
         assert!(map_proof_outcome(basis, &[base, step_sat]).is_none());
     }
 
-    #[trace("FSpec-FR-127-AC-14")]
+    #[trace("TC-041", "FR-030-AC-19", "FSpec-FR-127-AC-14")]
     #[test]
     fn proof_mode_without_certificate_maps_to_uncertified_outcome() {
         let kind = fsl_replay::SmtQueryKind::Unrolling { depth: 3 };
@@ -448,5 +508,390 @@ mod tests {
             &[malformed]
         )
         .is_none());
+    }
+
+    struct TemporalRequestFixture {
+        checked: spine::CheckedUnit,
+        packages: BTreeMap<String, Vec<u8>>,
+        snapshots: BTreeMap<fsl_replay::DocumentRef, Vec<u8>>,
+        initial: Vec<fsl_replay::DocumentRef>,
+    }
+
+    impl TemporalRequestFixture {
+        fn new() -> Self {
+            let package_name = "test/temporal-smt";
+            let spec_identity = format!("ix://{package_name}/spec");
+            let gadget_identity = format!("ix://{package_name}/Gadget");
+            let population_identity = format!("ix://{package_name}/gadgets");
+            let model = serde_json::json!({
+                "contractVersion": "2.0.0",
+                "canonicalization": {"algorithm": "rfc8785-v1"},
+                "source": {
+                    "identity": spec_identity,
+                    "version": "1.0.0",
+                    "dialect": "spec-bundle"
+                },
+                "package": {
+                    "identity": package_name,
+                    "version": "1.0.0",
+                    "mappingVersions": [],
+                    "profileVersions": []
+                },
+                "occurrences": [],
+                "extensions": [],
+                "constructs": [
+                    {
+                        "kind": {"module": package_name, "name": "entity"},
+                        "moduleVersion": "1.0.0",
+                        "construct": {
+                            "identity": "none",
+                            "shape": "record",
+                            "members": {},
+                            "meaning": "filament.meaning.model.object-type/v1"
+                        }
+                    },
+                    {
+                        "kind": {"module": package_name, "name": "population"},
+                        "moduleVersion": "1.0.0",
+                        "construct": {
+                            "identity": "none",
+                            "shape": "record",
+                            "members": {},
+                            "meaning": "filament.meaning.model.population/v1"
+                        }
+                    }
+                ],
+                "types": [{
+                    "identity": gadget_identity,
+                    "displayName": "Gadget",
+                    "kind": {"module": package_name, "name": "entity"},
+                    "roles": [],
+                    "origin": {"generated": {
+                        "generatorIdentity": spec_identity,
+                        "generatorVersion": "1.0.0",
+                        "inputIdentities": [gadget_identity]
+                    }},
+                    "constraints": [],
+                    "extensions": [],
+                    "unknownPolicy": "reject",
+                    "supertypes": [],
+                    "fields": [],
+                    "operations": [],
+                    "relationships": []
+                }],
+                "populations": [{
+                    "identity": population_identity,
+                    "displayName": "gadgets",
+                    "kind": {"module": package_name, "name": "population"},
+                    "members": [gadget_identity],
+                    "extent": "closed",
+                    "origin": {"generated": {
+                        "generatorIdentity": spec_identity,
+                        "generatorVersion": "1.0.0",
+                        "inputIdentities": [population_identity]
+                    }}
+                }]
+            })
+            .to_string()
+            .into_bytes();
+            let source = format!(
+                "language \"ix:native\" edition \"1-draft\";\n\
+                 profile v = \"filament.value.complete/v1\";\n\
+                 profile ep = \"filament.temporal.event-position.false-extension/v1\";\n\
+                 model M = \"{package_name}\";\n\
+                 temporal Bounded using ep over (g: M::Gadget) clock \"model-steps\" on origin {{\n\
+                   always[0,3] holds(true)\n\
+                 }}\n"
+            );
+            let source_identity = fsl_replay::SourceIdentity::new("test", "temporal-smt");
+            let cancel = fsl_replay::Cancel::new();
+            let limits = SpineLimits::default();
+            let parsed = spine::parse(
+                &ParseRequest {
+                    source: &source_identity,
+                    path: "temporal-smt.native",
+                    bytes: source.as_bytes(),
+                },
+                limits.source,
+                &cancel,
+            )
+            .expect("the FSL fixture source parses")
+            .into_value();
+            let packages = BTreeMap::from([(package_name.to_owned(), model)]);
+            let admitted = spine::select(&parsed, &packages, limits.model, &cancel)
+                .expect("the FSL model package admits")
+                .into_value();
+            let checked = spine::check(
+                &parsed,
+                "temporal-smt-fixture".to_owned(),
+                &admitted,
+                &DependencyInput::default(),
+                limits,
+                &cancel,
+            )
+            .expect("the FSL temporal item checks")
+            .into_value();
+            let initial_ref = fsl_replay::DocumentRef {
+                authority: "test".to_owned(),
+                identity: "s0".to_owned(),
+            };
+            let snapshot = serde_json::json!({
+                "format": "filament.state.snapshot/v1",
+                "identity": {"authority": "test", "identity": "s0"},
+                "observation": "current",
+                "model": {"identity": package_name},
+                "anchor": {"kind": "initialization", "name": "start"},
+                "populations": [{
+                    "population": population_identity,
+                    "complete": true,
+                    "objects": [{
+                        "key": "g",
+                        "type": gadget_identity,
+                        "fields": {}
+                    }]
+                }]
+            })
+            .to_string()
+            .into_bytes();
+            Self {
+                checked,
+                packages,
+                snapshots: BTreeMap::from([(initial_ref.clone(), snapshot)]),
+                initial: vec![initial_ref],
+            }
+        }
+
+        fn subject(&self) -> ModelSubject<'_> {
+            ModelSubject {
+                simulation: ModelSimulationRequest {
+                    input: ModelCheckInput::source(self.checked.package()),
+                    packages: &self.packages,
+                    normalization: Default::default(),
+                    snapshots: &self.snapshots,
+                    initial: self.initial.clone(),
+                    universes: vec![fsl_eval::simulation::model::PopulationUniverse {
+                        population: fsl_replay::DeclarationKey {
+                            package: "test/temporal-smt".to_owned(),
+                            node: "ix://test/temporal-smt/gadgets".to_owned(),
+                        },
+                        keys: vec!["g".to_owned()],
+                    }],
+                    observation: Default::default(),
+                    expansion: ExpansionLimits {
+                        max_candidates: 1_000,
+                    },
+                    meter: ScalarLimits {
+                        integer_bits: 1 << 20,
+                        decimal_digits: 1 << 20,
+                        scale_expansion: 1 << 20,
+                        text_input_bytes: 1 << 20,
+                        text_scalars: 1 << 20,
+                        normalized_scalars: 1 << 20,
+                        unit_edges: 1 << 20,
+                        value_occurrences: 1 << 20,
+                        work_units: 1 << 20,
+                        result_units: 1 << 20,
+                    },
+                    emit: fsl_package::EmitLimits::new(1 << 20),
+                },
+                proof_bounds: vec![ProofBound::new(
+                    DomainKey::Node {
+                        node: fsl_replay::NodeKey::new(
+                            "test/temporal-smt",
+                            vec![
+                                fsl_replay::PathSegment::Text("relation".to_owned()),
+                                fsl_replay::PathSegment::Text("population".to_owned()),
+                                fsl_replay::PathSegment::Text(
+                                    "ix://test/temporal-smt/gadgets".to_owned(),
+                                ),
+                            ],
+                            0,
+                        )
+                        .expect("the population identity is a valid node key"),
+                        path: Vec::new(),
+                    },
+                    Some(DomainKind::Population),
+                    FiniteBound::Cardinality { maximum: 1 },
+                )
+                .expect("the proof subject has a finite population bound")],
+            }
+        }
+
+        fn request_with_item<'a>(
+            &'a self,
+            subject: ModelSubject<'a>,
+            item: ModelCheckItem<'a>,
+        ) -> CertificateRequest<'a> {
+            CertificateRequest {
+                subject,
+                temporal_clock_selections: &[],
+                item,
+                smt_encoding: SmtEncodingLimits::default(),
+            }
+        }
+
+        fn request(&self) -> CertificateRequest<'_> {
+            let [clause] = self.checked.package().graph().temporal_clauses() else {
+                panic!("the fixture contains one temporal clause")
+            };
+            self.request_with_item(
+                self.subject(),
+                ModelCheckItem::Clause {
+                    clause: clause.clause(),
+                    letters: &NO_ATOM_LETTERS,
+                },
+            )
+        }
+    }
+
+    fn fake_solver_script(stdout: &'static str) -> Vec<OsString> {
+        vec![
+            OsString::from("-c"),
+            OsString::from(format!("cat >/dev/null; printf '%b' '{stdout}'")),
+            OsString::from("fake-cvc5"),
+            OsString::from("--dump-proofs"),
+            OsString::from("--proof-format-mode=alethe"),
+        ]
+    }
+
+    fn process_limits() -> ProcessLimits {
+        ProcessLimits {
+            input_bytes: NonZeroUsize::new(1 << 20).expect("positive input limit"),
+            wall_clock: Duration::from_secs(2),
+            output_bytes: NonZeroUsize::new(1 << 20).expect("positive output limit"),
+        }
+    }
+
+    #[trace("TC-041", "FR-030-AC-19", "FSpec-FR-127-AC-14")]
+    #[test]
+    fn public_temporal_route_encodes_the_checked_clause_and_settles_uncertified_proof() {
+        let fixture = TemporalRequestFixture::new();
+        let request = fixture.request();
+        let expected_query = fsl_replay::encode_smt_query(
+            &request.subject,
+            request.item,
+            fsl_replay::SmtQueryKind::Unrolling { depth: 3 },
+            &request.smt_encoding,
+        )
+        .expect("the FSL clause has a canonical temporal query");
+        let result = run_and_settle_temporal_smt_proof(
+            &request,
+            fsl_replay::SmtProofBasis::BoundedComplete { depth: 3 },
+            PathBuf::from("/bin/sh").as_path(),
+            &fake_solver_script("unsat\\n"),
+            process_limits(),
+            &CertificateCheckLimits::default(),
+            &fsl_replay::Cancel::new(),
+        )
+        .expect("the bounded solver invocation returns typed evidence");
+        let TemporalSmtProofResult::Settled(settlement) = result else {
+            panic!("an Unsat bounded run settles: {result:?}");
+        };
+        assert_eq!(settlement.queries.len(), 1);
+        assert_eq!(
+            settlement.queries[0].kind(),
+            fsl_replay::SmtQueryKind::Unrolling { depth: 3 }
+        );
+        assert!(settlement
+            .queries
+            .iter()
+            .all(|query| { query.status() == SolverStatus::Unsat && query.process().started }));
+        assert_eq!(settlement.queries[0].query_bytes(), expected_query);
+        assert!(settlement.outcome.certificate.is_none());
+        assert_eq!(
+            settlement.terminal,
+            TerminalValue::Proved {
+                basis: fsl_replay::ProofBasis::BoundedComplete { depth: 3 },
+                certification: fsl_replay::Certification::Uncertified,
+            }
+        );
+    }
+
+    #[trace("TC-041", "FR-030-AC-19", "FSpec-FR-127-AC-14")]
+    #[test]
+    fn public_deadlock_induction_route_settles_without_a_certificate_as_uncertified() {
+        let fixture = TemporalRequestFixture::new();
+        let request = fixture.request_with_item(fixture.subject(), ModelCheckItem::DeadlockFreedom);
+        let expected_query = fsl_replay::encode_smt_query(
+            &request.subject,
+            request.item,
+            fsl_replay::SmtQueryKind::InductionBase { depth: 1 },
+            &request.smt_encoding,
+        )
+        .expect("the bounded FSL clause has a canonical query");
+        let result = run_and_settle_temporal_smt_proof(
+            &request,
+            fsl_replay::SmtProofBasis::Inductive { depth: 1 },
+            PathBuf::from("/bin/sh").as_path(),
+            &fake_solver_script("unsat\\n"),
+            process_limits(),
+            &CertificateCheckLimits::default(),
+            &fsl_replay::Cancel::new(),
+        )
+        .expect("the bounded solver invocation returns typed evidence");
+        let TemporalSmtProofResult::Settled(settlement) = result else {
+            panic!("an Unsat bounded run settles: {result:?}");
+        };
+        assert_eq!(settlement.queries.len(), 2);
+        assert_eq!(settlement.queries[0].query_bytes(), expected_query);
+        assert!(settlement.queries[0].process().started);
+        assert!(settlement.outcome.certificate.is_none());
+        assert_eq!(
+            settlement.terminal,
+            TerminalValue::Proved {
+                basis: fsl_replay::ProofBasis::Inductive { depth: 1 },
+                certification: fsl_replay::Certification::Uncertified,
+            }
+        );
+    }
+
+    #[trace("TC-041", "FR-030-AC-20", "FSpec-FR-127-AC-14")]
+    #[test]
+    fn public_temporal_route_preserves_fsl_certificate_rejection() {
+        let fixture = TemporalRequestFixture::new();
+        let subject = fixture.subject();
+        let system = ModelSystem::new(subject.simulation.clone()).expect("the model admits");
+        let [clause] = fixture.checked.package().graph().temporal_clauses() else {
+            panic!("the fixture contains one temporal clause")
+        };
+        let letters = system
+            .clause_letters(clause)
+            .expect("the checked clause has model letters");
+        let request = fixture.request_with_item(
+            subject,
+            ModelCheckItem::Clause {
+                clause: clause.clause(),
+                letters: &letters,
+            },
+        );
+        let result = run_and_settle_temporal_smt_proof(
+            &request,
+            fsl_replay::SmtProofBasis::BoundedComplete { depth: 3 },
+            PathBuf::from("/bin/sh").as_path(),
+            &fake_solver_script("unsat\\n((step t0 (cl (= x x)) :rule poly_simp))\\n"),
+            process_limits(),
+            &CertificateCheckLimits::default(),
+            &fsl_replay::Cancel::new(),
+        )
+        .expect("the bounded solver invocation returns typed evidence");
+        let TemporalSmtProofResult::Settled(settlement) = result else {
+            panic!("an Unsat run with a captured proof reaches FSL: {result:?}");
+        };
+        assert_eq!(settlement.queries.len(), 1);
+        assert!(settlement
+            .queries
+            .iter()
+            .all(|query| query.proof_bytes().is_some()));
+        assert!(matches!(
+            settlement.terminal,
+            TerminalValue::Inconclusive(fsl_replay::InconclusiveCause::CertificateRejected {
+                rule: fsl_replay::CertificateRule::NotRefutation,
+                ..
+            })
+        ));
+        assert_eq!(
+            settlement.outcome.basis,
+            fsl_replay::SmtProofBasis::BoundedComplete { depth: 3 }
+        );
     }
 }
