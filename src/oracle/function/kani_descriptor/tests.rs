@@ -134,6 +134,7 @@ fn every_variant() -> Vec<ValueType> {
         ValueType::Reference(reference),
         ValueType::Population(Some(7)),
         ValueType::Population(None),
+        ValueType::ClockReference,
         ValueType::option(ValueType::collection(CollectionType::new(
             CollectionKind::Sequence,
             ValueType::map(
@@ -158,6 +159,7 @@ fn variant_name(value: &ValueType) -> &'static str {
         ValueType::String => "String",
         ValueType::Bytes => "Bytes",
         ValueType::JsonObject => "JsonObject",
+        ValueType::ClockReference => "ClockReference",
         ValueType::Uuid => "Uuid",
         ValueType::Timestamp => "Timestamp",
         ValueType::Enum(_) => "Enum",

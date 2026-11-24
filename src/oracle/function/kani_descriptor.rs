@@ -295,6 +295,9 @@ pub(super) fn value_type(value_type: &ValueType) -> Rendered {
                 ValueType::String => rendered.push("exact::ValueType::String".to_owned()),
                 ValueType::Bytes => rendered.push("exact::ValueType::Bytes".to_owned()),
                 ValueType::JsonObject => rendered.push("exact::ValueType::JsonObject".to_owned()),
+                ValueType::ClockReference => {
+                    rendered.push("exact::ValueType::ClockReference".to_owned());
+                }
                 ValueType::Uuid => rendered.push("exact::ValueType::Uuid".to_owned()),
                 ValueType::Timestamp => rendered.push("exact::ValueType::Timestamp".to_owned()),
                 ValueType::Enum(shape) => {

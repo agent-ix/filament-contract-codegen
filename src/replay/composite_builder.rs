@@ -79,6 +79,8 @@ pub enum CompositeBuildError {
     PackageReadLimit(CheckedPackageIncomplete),
     /// The owner operation catalog is unavailable, independently of package validity.
     CatalogUnavailable(filament_contract_model::CatalogReadError),
+    /// The host refused an allocation the package read needed; the package was not judged.
+    HostAllocationFailed(filament_contract_model::CheckedPackageHostAllocationFailed),
     /// The original application has no complete admitted structural equality operand projection.
     Operands(Box<CheckedCompositeOperandError>),
     /// The requested equality operator differs from the original application's operator.
@@ -170,6 +172,9 @@ impl fmt::Display for CompositeBuildError {
                 cause.limit, cause.consumed
             ),
             Self::CatalogUnavailable(cause) => cause.fmt(f),
+            Self::HostAllocationFailed(_) => {
+                f.write_str("host allocation failed during checked-package read")
+            }
             Self::Operands(cause) => cause.fmt(f),
             Self::OperatorMismatch { requested, actual } => {
                 write!(
@@ -811,6 +816,9 @@ impl OriginalReplayContext {
                 }
                 CheckedPackageV2ReadResult::Incomplete(cause) => {
                     return Err(CompositeBuildError::PackageReadLimit(cause))
+                }
+                CheckedPackageV2ReadResult::HostAllocationFailed(cause) => {
+                    return Err(CompositeBuildError::HostAllocationFailed(cause))
                 }
             };
         if self.original.as_ref() != recompiled.as_ref() {
