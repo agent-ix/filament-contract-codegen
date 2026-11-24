@@ -118,7 +118,8 @@ fn request_of(package: &ReplayPackage, source: ReplaySource) -> fsl_replay::Repl
         ReplaySource::Input(_) => {
             Witness::parse("<<<assertion|h|c|>>>").expect("the fixture witness parses")
         }
-        ReplaySource::ObservedTemporal(_)
+        ReplaySource::ClaimFree
+        | ReplaySource::ObservedTemporal(_)
         | ReplaySource::ModelGraph(_)
         | ReplaySource::ProtocolAnalysis(_)
         | ReplaySource::Hybrid(_) => {

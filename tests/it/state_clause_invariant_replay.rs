@@ -1581,7 +1581,8 @@ fn tc_035_the_invariant_replay_forwards_the_recorded_clocks() {
             Err(_) | Ok(_) => None,
         }
     };
-    let refusal = refused_at_call_site(super::kani_obligations_state_frame::native_twin::recorded_clocks());
+    let refusal =
+        refused_at_call_site(super::kani_obligations_state_frame::native_twin::recorded_clocks());
     assert!(
         refusal.is_none(),
         "the recorded row selects the unit's clock: {refusal:?}"
