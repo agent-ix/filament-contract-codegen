@@ -692,9 +692,11 @@ impl ReplayPackage {
         let source = &inputs.source;
         let site = call_site(
             source.source_identity(),
-            inputs.package_name.clone(),
-            &source.identity,
-            &source.bytes,
+            fsl_replay::CallSiteUnit::new(
+                inputs.package_name.clone(),
+                &source.identity,
+                &source.bytes,
+            ),
             [],
             &dependency_input,
             &clocks,

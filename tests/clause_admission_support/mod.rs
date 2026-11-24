@@ -391,9 +391,7 @@ impl Twin {
     pub fn emitted_package(&self, clause: &str) -> (CheckedPackageV2, CheckedNodeId) {
         let located = call_site(
             SourceIdentity::new(AUTHORITY, IDENTITY),
-            IDENTITY.to_owned(),
-            IDENTITY,
-            &self.unit,
+            fsl_replay::CallSiteUnit::new(IDENTITY.to_owned(), IDENTITY, &self.unit),
             [self.domain.as_slice()],
             &DependencyInput::default(),
             &fsl_replay::RequestClocks::default(),

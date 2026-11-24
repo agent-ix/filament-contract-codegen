@@ -93,9 +93,7 @@ pub(super) fn compile_refusal(
     let source = clause_source(safety, constraints);
     call_site(
         SourceIdentity::new("agent-ix", format!("{name}.native")),
-        name.to_owned(),
-        "constrained.native",
-        source.as_bytes(),
+        fsl_replay::CallSiteUnit::new(name.to_owned(), "constrained.native", source.as_bytes()),
         [bytes.as_slice()],
         &DependencyInput::default(),
         &fsl_replay::RequestClocks::default(),
@@ -106,9 +104,7 @@ pub(super) fn compile_refusal(
 pub(super) fn fixture_source(bytes: Vec<u8>, name: &str, source: String) -> Fixture {
     let site = call_site(
         SourceIdentity::new("agent-ix", format!("{name}.native")),
-        name.to_owned(),
-        "constrained.native",
-        source.as_bytes(),
+        fsl_replay::CallSiteUnit::new(name.to_owned(), "constrained.native", source.as_bytes()),
         [bytes.as_slice()],
         &DependencyInput::default(),
         &fsl_replay::RequestClocks::default(),

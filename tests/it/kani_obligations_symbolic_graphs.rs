@@ -119,9 +119,7 @@ fn try_authored_clause(
     );
     let site = call_site(
         SourceIdentity::new("agent-ix", "graph.native"),
-        "graph".to_owned(),
-        "graph.native",
-        source.as_bytes(),
+        fsl_replay::CallSiteUnit::new("graph".to_owned(), "graph.native", source.as_bytes()),
         [bytes.as_slice()],
         &DependencyInput::default(),
         &fsl_replay::RequestClocks::default(),

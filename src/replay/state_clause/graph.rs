@@ -438,9 +438,11 @@ impl StateClauseReplay {
             run.admit().map_err(StateClauseReplayError::Dependencies)?;
         let located = call_site(
             run.source.source_identity(),
-            package.name().to_owned(),
-            &run.source.identity,
-            &run.source.bytes,
+            fsl_replay::CallSiteUnit::new(
+                package.name().to_owned(),
+                &run.source.identity,
+                &run.source.bytes,
+            ),
             packages.iter().map(|package| package.bytes.as_slice()),
             &dependencies,
             &clocks,

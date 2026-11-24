@@ -587,9 +587,9 @@ fn genuine_union_capability_refusals_preserve_the_healthy_sibling() {
 #[test]
 fn reader_refuses_a_package_without_its_checked_term_sidecar() {
     use filament_contract_model::{
-        encode_checked_package_v2, CheckedPackageEvidence, CheckedPackageReadLimits, CheckedPackageRefusalCause,
-        CheckedPackageRefusalCode, CheckedPackageSidecarsRef, CheckedPackageSourceCorrespondenceRef, CheckedPackageV2,
-        CheckedPackageV2ReadResult,
+        encode_checked_package_v2, CheckedPackageEvidence, CheckedPackageReadLimits,
+        CheckedPackageRefusalCause, CheckedPackageRefusalCode, CheckedPackageSidecarsRef,
+        CheckedPackageSourceCorrespondenceRef, CheckedPackageV2, CheckedPackageV2ReadResult,
     };
     let compiled = fixture::compile(fixture::UNION_SOURCE, &Default::default());
     let original = checked(&compiled, &[]);
@@ -635,9 +635,16 @@ fn reader_refuses_a_package_without_its_checked_term_sidecar() {
         panic!("a package without its checked-term sidecar must be refused by the reader");
     };
     assert_eq!(refusal.code, CheckedPackageRefusalCode::InvalidPackage);
-    assert_eq!(refusal.cause, Some(CheckedPackageRefusalCause::InvalidValue));
     assert_eq!(
-        refusal.loci[0].path.as_ref().map(ToString::to_string).as_deref(),
+        refusal.cause,
+        Some(CheckedPackageRefusalCause::InvalidValue)
+    );
+    assert_eq!(
+        refusal.loci[0]
+            .path
+            .as_ref()
+            .map(ToString::to_string)
+            .as_deref(),
         Some("/checked_term_data/body_locations")
     );
 }

@@ -81,9 +81,7 @@ fn tc_029_ac50_a_top_level_float_pair_is_reader_ineligible_and_records_the_float
             .path
             .as_ref()
             .map(|path| path.as_str().to_owned()),
-        Some(format!(
-            "/semantic_graph/nodes/{position}/body/arguments/0"
-        ))
+        Some(format!("/semantic_graph/nodes/{position}/body/arguments/0"))
     );
 
     let float = || ValueType::Float(filament_exact::FloatType::exact(IeeeWidth::Binary64));

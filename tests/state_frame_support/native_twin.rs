@@ -1783,9 +1783,7 @@ impl Twin {
     ) -> Result<OperationSite, Box<CallSiteRefusal>> {
         call_site(
             SourceIdentity::new(AUTHORITY, self.identity),
-            self.identity.to_owned(),
-            self.identity,
-            &self.unit,
+            fsl_replay::CallSiteUnit::new(self.identity.to_owned(), self.identity, &self.unit),
             [self.domain.as_slice()],
             &DependencyInput::default(),
             &fsl_replay::RequestClocks::default(),
@@ -1810,9 +1808,7 @@ impl Twin {
         let name = ClauseName(Identifier::new(clause).expect("identifier"));
         let located = call_site(
             SourceIdentity::new(AUTHORITY, self.identity),
-            self.identity.to_owned(),
-            self.identity,
-            &self.unit,
+            fsl_replay::CallSiteUnit::new(self.identity.to_owned(), self.identity, &self.unit),
             [self.domain.as_slice()],
             &DependencyInput::default(),
             &fsl_replay::RequestClocks::default(),
@@ -2035,9 +2031,7 @@ impl Twin {
         let name = ClauseName(Identifier::new(clause).expect("identifier"));
         let located = call_site(
             SourceIdentity::new(AUTHORITY, self.identity),
-            self.identity.to_owned(),
-            self.identity,
-            unit,
+            fsl_replay::CallSiteUnit::new(self.identity.to_owned(), self.identity, unit),
             [fsl_document],
             &DependencyInput::default(),
             &fsl_replay::RequestClocks::default(),
@@ -2325,9 +2319,7 @@ impl Twin {
         let name = ClauseName(Identifier::new(clause).expect("identifier"));
         call_site(
             SourceIdentity::new(AUTHORITY, self.identity),
-            self.identity.to_owned(),
-            self.identity,
-            &self.unit,
+            fsl_replay::CallSiteUnit::new(self.identity.to_owned(), self.identity, &self.unit),
             [self.domain.as_slice()],
             &DependencyInput::default(),
             &fsl_replay::RequestClocks::default(),

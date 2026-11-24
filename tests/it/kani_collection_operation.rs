@@ -72,9 +72,11 @@ fn fixture_with_body(doc: &Value, preconditions: &str, body: &str) -> CheckedPac
     let source = format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.model.complete/v1\";\nmodel M = \"{MODEL}\";\n{preconditions}\npost CollectionReady using v on M::Node::step {{ {body} }}\n");
     let site = call_site(
         SourceIdentity::new("agent-ix", "ir1091-operation.native"),
-        "ir1091-operation".to_owned(),
-        "ir1091-operation.native",
-        source.as_bytes(),
+        fsl_replay::CallSiteUnit::new(
+            "ir1091-operation".to_owned(),
+            "ir1091-operation.native",
+            source.as_bytes(),
+        ),
         [bytes.as_slice()],
         &DependencyInput::default(),
         &fsl_replay::RequestClocks::default(),
