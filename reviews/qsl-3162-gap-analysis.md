@@ -40,3 +40,39 @@ The computed matrix reports 208 untagged criteria repository-wide. Four local SM
 ## Tracker
 
 Linear issue resolution/read-back and posting were unavailable: `linear issue view QSL-3162` returned `No usable API key for workspace "agent-ix"`. No GitHub PR exists, and findings were not posted to GitHub.
+
+## Dispositions
+
+| FND     | outcome | reason |
+| ------- | ------- | ------ |
+| FND-001 | fixed   | The new trace-tagged unit and public-route tests exercise certificate mapping plus a real FSL settlement terminal; `quoin matrix` now reports FR-030-AC-19 as tagged with five test binders. |
+| FND-002 | fixed   | The new trace-tagged public-route test invokes settlement with captured proof bytes and asserts the `CertificateRejected(NotRefutation)` terminal; `quoin matrix` now reports FR-030-AC-20 as tagged with one test binder. |
+| FND-003 | deferred | QSL-3189 owns FR-030-AC-21/22 after QSL-3162 and QSL-3179. |
+| FND-004 | deferred | QSL-3189 owns FR-030-AC-21/22 after QSL-3162 and QSL-3179. |
+
+## Disposition result (round 1)
+
+**FAIL** — FR-030-AC-19/20 are now tagged with behavioral test binders; FR-030-AC-21/22 remain deferred to QSL-3189, and this repository-level audit still reports 208 global untagged criteria. No global matrix rows are represented as fixed by this disposition pass.
+
+## QSL-3162 Mergeability
+
+**No in-scope review findings remain open or lack a latest disposition.** With arch's ruling that FR-030-AC-21/22 are out of QSL-3162 and owned by QSL-3189, the CG PR candidate is mergeable from this review's perspective: FND-001/002 are fixed and FND-003/004 are explicitly deferred. The 208 repository-wide untagged rows are unrelated to this ticket's scoped change and do not block this candidate.
+
+### Round 1 evidence
+
+FND-002 `after_excerpt` (verbatim, `src/routed/smt/temporal.rs`,
+`public_temporal_route_preserves_fsl_certificate_rejection`):
+
+```rust
+assert!(settlement
+    .queries
+    .iter()
+    .all(|query| query.proof_bytes().is_some()));
+assert!(matches!(
+    settlement.terminal,
+    TerminalValue::Inconclusive(fsl_replay::InconclusiveCause::CertificateRejected {
+        rule: fsl_replay::CertificateRule::NotRefutation,
+        ..
+    })
+));
+```

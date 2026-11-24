@@ -36,3 +36,36 @@ The three unit tests cover mapping synthetic process records into `SmtProofOutco
 ## Tracker
 
 Linear issue resolution/read-back and posting were unavailable: `linear issue view QSL-3162` returned `No usable API key for workspace "agent-ix"`. No GitHub PR exists, and findings were not posted to GitHub.
+
+## Dispositions
+
+| FND     | outcome | reason |
+| ------- | ------- | ------ |
+| FND-001 | fixed   | The added public-route test builds a checked temporal request, compares the routed bytes with FSL's encoded query, verifies a process started, and asserts the terminal settlement. A second checked-clause route test captures proof bytes and verifies the FSL rejection terminal. |
+
+## Disposition result (round 1)
+
+**PASS** — FND-001 is fixed on the reviewed candidate head, and this pass found no new code-review defects. The original Verdict above records the review-pass state before the fix.
+
+### Round 1 evidence
+
+FND-001 `after_excerpt` (verbatim, `src/routed/smt/temporal.rs`,
+`public_temporal_route_preserves_fsl_certificate_rejection`):
+
+```rust
+let TemporalSmtProofResult::Settled(settlement) = result else {
+    panic!("an Unsat run with a captured proof reaches FSL: {result:?}");
+};
+assert_eq!(settlement.queries.len(), 1);
+assert!(settlement
+    .queries
+    .iter()
+    .all(|query| query.proof_bytes().is_some()));
+assert!(matches!(
+    settlement.terminal,
+    TerminalValue::Inconclusive(fsl_replay::InconclusiveCause::CertificateRejected {
+        rule: fsl_replay::CertificateRule::NotRefutation,
+        ..
+    })
+));
+```
