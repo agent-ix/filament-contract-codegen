@@ -237,7 +237,7 @@ fn rebuilt_debug(name: &str, expressions: &[String]) -> String {
 fn every_value_type_variant_rebuilds_from_its_rendered_descriptor() {
     let values = every_variant();
     let covered: std::collections::BTreeSet<_> = values.iter().map(variant_name).collect();
-    assert_eq!(covered.len(), 22, "every variant has a case: {covered:?}");
+    assert_eq!(covered.len(), 23, "every variant has a case: {covered:?}");
     let expressions = values
         .iter()
         .map(|value| value_type(value).expect("every variant renders"))
