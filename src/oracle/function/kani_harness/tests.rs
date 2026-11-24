@@ -358,6 +358,10 @@ fn each_reader_result_maps_to_its_own_variant() {
             "CatalogUnavailable(error)",
             "KaniReaderCatalogUnavailable(Box::new(error))",
         ),
+        (
+            "HostAllocationFailed(error)",
+            "KaniReaderHostAllocationFailed(Box::new(error))",
+        ),
     ] {
         let arm = function
             .split(&format!("CheckedPackageV2ReadResult::{result} =>"))

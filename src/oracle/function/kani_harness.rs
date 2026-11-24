@@ -239,6 +239,9 @@ fn admitted_package(
         CheckedPackageV2ReadResult::CatalogUnavailable(error) => Err(
             OracleGenerationError::KaniReaderCatalogUnavailable(Box::new(error)),
         ),
+        CheckedPackageV2ReadResult::HostAllocationFailed(error) => Err(
+            OracleGenerationError::KaniReaderHostAllocationFailed(Box::new(error)),
+        ),
     }
 }
 

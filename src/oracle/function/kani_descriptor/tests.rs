@@ -134,6 +134,7 @@ fn every_variant() -> Vec<ValueType> {
         ValueType::Reference(reference),
         ValueType::Population(Some(7)),
         ValueType::Population(None),
+        ValueType::ClockReference,
         ValueType::option(ValueType::collection(CollectionType::new(
             CollectionKind::Sequence,
             ValueType::map(
@@ -158,6 +159,7 @@ fn variant_name(value: &ValueType) -> &'static str {
         ValueType::String => "String",
         ValueType::Bytes => "Bytes",
         ValueType::JsonObject => "JsonObject",
+        ValueType::ClockReference => "ClockReference",
         ValueType::Uuid => "Uuid",
         ValueType::Timestamp => "Timestamp",
         ValueType::Enum(_) => "Enum",
@@ -235,7 +237,7 @@ fn rebuilt_debug(name: &str, expressions: &[String]) -> String {
 fn every_value_type_variant_rebuilds_from_its_rendered_descriptor() {
     let values = every_variant();
     let covered: std::collections::BTreeSet<_> = values.iter().map(variant_name).collect();
-    assert_eq!(covered.len(), 22, "every variant has a case: {covered:?}");
+    assert_eq!(covered.len(), 23, "every variant has a case: {covered:?}");
     let expressions = values
         .iter()
         .map(|value| value_type(value).expect("every variant renders"))

@@ -2,7 +2,7 @@
 //! The canonical bytes of an admitted checked package, as FSL's admitted closure carries them.
 
 use filament_contract_model::{
-    encode_checked_package_v2_with_protocol_correlation_occurrences, CheckedPackageSidecarsRef,
+    encode_checked_package_v2_with_path_condition_frames, CheckedPackageSidecarsRef,
     CheckedPackageSourceCorrespondenceRef, CheckedPackageV2, ProtocolCorrelationProvenance,
 };
 
@@ -11,7 +11,7 @@ use filament_contract_model::{
 pub(crate) struct EncodingFailed;
 
 /// Re-encode `original` with every sidecar its admitted closure carries: the checked-term data,
-/// claim names, temporal rows, `requirement_items` and the protocol correlation rows. Leaving one
+/// claim names, temporal rows, `requirement_items`, the protocol correlation rows and the shared path-condition frames. Leaving one
 /// out makes the bytes differ from the owner's whenever the package has such records.
 pub(crate) fn encode_original_package_bytes(
     original: &CheckedPackageV2,
@@ -26,7 +26,8 @@ pub(crate) fn encode_original_package_bytes(
         ),
     };
     let requirement_items = original.requirement_items();
-    encode_checked_package_v2_with_protocol_correlation_occurrences(
+    let path_condition_frames = original.path_condition_frames();
+    encode_checked_package_v2_with_path_condition_frames(
         original.name(),
         original.lock(),
         original.graph(),
@@ -45,6 +46,7 @@ pub(crate) fn encode_original_package_bytes(
         },
         (!requirement_items.is_empty()).then_some(requirement_items),
         correlation_rows.as_deref(),
+        (!path_condition_frames.is_empty()).then_some(path_condition_frames),
         original.capability_report(),
         original.diagnostics(),
         quire_canonical::Limits::new(u64::MAX),
