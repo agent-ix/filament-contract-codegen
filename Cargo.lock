@@ -447,7 +447,7 @@ checksum = "da7c62ceae207dd37ea5b845da6a0696c799f85e97da1ab5b7910be3c1c80223"
 [[package]]
 name = "filament-checked"
 version = "0.1.6"
-source = "git+https://github.com/agent-ix/filament-eval?rev=b50cfacb80459d5f1fb3b8deeafc63222db69401#b50cfacb80459d5f1fb3b8deeafc63222db69401"
+source = "git+https://github.com/agent-ix/filament-eval?rev=b50cfacb80459d5f1fb3b8deeafc63222db69401#7fc24dcbb3bf74f77a61dfde897fbdc9883918d3"
 dependencies = [
  "filament-exact",
  "filament-semantic-value",
@@ -464,7 +464,7 @@ dependencies = [
  "filament-contract-ir",
  "filament-contract-model",
  "filament-contract-runtime",
- "filament-eval",
+ "filament-eval 0.1.6 (git+https://github.com/agent-ix/filament-eval?rev=7fc24dcbb3bf74f77a61dfde897fbdc9883918d3)",
  "filament-exact",
  "filament-semantic-value",
  "filament-specification-qualification",
@@ -542,7 +542,17 @@ dependencies = [
 [[package]]
 name = "filament-eval"
 version = "0.1.6"
-source = "git+https://github.com/agent-ix/filament-eval?rev=b50cfacb80459d5f1fb3b8deeafc63222db69401#b50cfacb80459d5f1fb3b8deeafc63222db69401"
+source = "git+https://github.com/agent-ix/filament-eval?rev=7fc24dcbb3bf74f77a61dfde897fbdc9883918d3#7fc24dcbb3bf74f77a61dfde897fbdc9883918d3"
+dependencies = [
+ "filament-exact",
+ "filament-semantic-value",
+ "thiserror",
+]
+
+[[package]]
+name = "filament-eval"
+version = "0.1.6"
+source = "git+https://github.com/agent-ix/filament-eval?rev=b50cfacb80459d5f1fb3b8deeafc63222db69401#7fc24dcbb3bf74f77a61dfde897fbdc9883918d3"
 dependencies = [
  "filament-exact",
  "filament-semantic-value",
@@ -696,7 +706,7 @@ version = "0.1.0"
 source = "git+https://github.com/agent-ix/filament-spec-language?rev=1ef2101d8638f41c823644527061bdb78f33cddd#1ef2101d8638f41c823644527061bdb78f33cddd"
 dependencies = [
  "filament-checked",
- "filament-eval",
+ "filament-eval 0.1.6 (git+https://github.com/agent-ix/filament-eval?rev=b50cfacb80459d5f1fb3b8deeafc63222db69401)",
  "filament-exact",
  "filament-observation",
  "filament-semantic-value",
@@ -766,7 +776,7 @@ dependencies = [
  "base64 0.22.1",
  "filament-checked",
  "filament-contract-model",
- "filament-eval",
+ "filament-eval 0.1.6 (git+https://github.com/agent-ix/filament-eval?rev=b50cfacb80459d5f1fb3b8deeafc63222db69401)",
  "filament-exact",
  "filament-observation",
  "filament-semantic-value",
