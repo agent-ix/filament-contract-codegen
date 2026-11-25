@@ -14,8 +14,10 @@ use std::{
 use filament_exact::Cancel;
 
 use crate::kani::run::process::{
-    run_bounded_process, ProcessError, ProcessLimits, ProcessOutcome, ProcessRequest, ProcessRun,
+    run_bounded_process, ProcessError, ProcessOutcome, ProcessRequest, ProcessRun,
 };
+
+pub use crate::kani::run::process::ProcessLimits;
 
 pub mod temporal;
 
