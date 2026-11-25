@@ -1,5 +1,40 @@
-//! Resolve native-driver externs from the running test's exact Cargo cohort.
-use std::{fs, path::PathBuf};
+//! Shared native-driver support: resolve externs from the running test's exact Cargo cohort,
+//! and give each driver call its own staging directory.
+use std::{
+    fs,
+    path::{Path, PathBuf},
+    sync::atomic::{AtomicU64, Ordering},
+};
+
+/// A staging directory owned by exactly one driver call, removed on drop.
+pub(super) struct Scratch(pub(super) PathBuf);
+
+impl Scratch {
+    /// Creates a new directory under `target`. Tests run on parallel threads and can read the
+    /// same clock value, so a process-wide sequence number makes the name unique; the clock only
+    /// keeps it apart from directories a killed earlier run left behind.
+    pub(super) fn create(target: &Path, prefix: &str) -> Self {
+        static NEXT: AtomicU64 = AtomicU64::new(0);
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let directory = target.join(format!(
+            "{prefix}-{}-{nanos}-{}",
+            std::process::id(),
+            NEXT.fetch_add(1, Ordering::Relaxed)
+        ));
+        fs::create_dir_all(target).unwrap();
+        fs::create_dir(&directory).expect("a staging directory no other driver call holds");
+        Self(directory)
+    }
+}
+
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.0);
+    }
+}
 
 pub(super) fn dependency(name: &str) -> PathBuf {
     let executable = std::env::current_exe().expect("running integration executable");
