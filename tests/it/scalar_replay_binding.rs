@@ -105,13 +105,6 @@ pub(super) fn plan(fixture: &ReplayFixture, values: &[i64]) -> ScalarReplayPlan 
         .expect("original scalar plan")
 }
 
-struct Scratch(PathBuf);
-impl Drop for Scratch {
-    fn drop(&mut self) {
-        let _ = fs::remove_dir_all(&self.0);
-    }
-}
-
 // This is a driver, outside CG's builder. It stages the retained bytes, compiles
 // the actual staged oracle, executes it at the decoded vector and retained limits,
 // then independently reads back every original staged path. No expected outcome
@@ -124,16 +117,7 @@ pub(super) fn observe(
     let target = std::env::var_os("CARGO_TARGET_DIR")
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target"));
-    let directory = target.join(format!(
-        "ir1184-native-{}-{}",
-        std::process::id(),
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos()
-    ));
-    fs::create_dir_all(&directory).unwrap();
-    let scratch = Scratch(directory);
+    let scratch = super::native_driver_artifacts::Scratch::create(&target, "ir1184-native");
     for (path, bytes) in plan.staged_entries() {
         let destination = scratch.0.join(path);
         fs::create_dir_all(destination.parent().unwrap()).unwrap();

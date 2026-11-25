@@ -88,12 +88,6 @@ pub(super) fn binding(
         100_000,
     )
 }
-struct Scratch(PathBuf);
-impl Drop for Scratch {
-    fn drop(&mut self) {
-        let _ = fs::remove_dir_all(&self.0);
-    }
-}
 fn observe(
     package: &CheckedPackageV2,
     binding: &OriginalCompositeArtifactBinding,
@@ -102,16 +96,7 @@ fn observe(
     let target = std::env::var_os("CARGO_TARGET_DIR")
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target"));
-    let directory = target.join(format!(
-        "ir1184-composite-{}-{}",
-        std::process::id(),
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos()
-    ));
-    fs::create_dir_all(&directory).unwrap();
-    let scratch = Scratch(directory);
+    let scratch = super::native_driver_artifacts::Scratch::create(&target, "ir1184-composite");
     for artifact in binding.artifacts() {
         let path = scratch.0.join(&artifact.path);
         fs::create_dir_all(path.parent().unwrap()).unwrap();
