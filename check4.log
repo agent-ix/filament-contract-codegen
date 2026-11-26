@@ -1,0 +1,22 @@
+    Updating git repository `https://github.com/agent-ix/filament-contract-ir`
+    Updating git repository `https://github.com/agent-ix/filament-eval`
+    Updating git repository `https://github.com/agent-ix/filament-semantic-value`
+    Updating git repository `https://github.com/agent-ix/filament-spec-language`
+    Updating git repository `https://github.com/agent-ix/filament-observation`
+     Locking 14 packages to latest compatible versions
+      Adding filament-checked v0.1.6 (https://github.com/agent-ix/filament-eval?rev=b50cfacb80459d5f1fb3b8deeafc63222db69401#b50cfacb)
+      Adding filament-contract-ir v0.1.5 (https://github.com/agent-ix/filament-contract-ir?rev=4f0b908a5c8077458e4748509284704b9025493f#4f0b908a)
+      Adding filament-contract-model v0.1.2 (https://github.com/agent-ix/filament-contract-ir?rev=4f0b908a5c8077458e4748509284704b9025493f#4f0b908a)
+      Adding filament-eval v0.1.6 (https://github.com/agent-ix/filament-eval?rev=b50cfacb80459d5f1fb3b8deeafc63222db69401#b50cfacb)
+      Adding filament-observation v0.1.1 (https://github.com/agent-ix/filament-observation?rev=a36e5ed2e1bde35a27461fa38084d3e140e09fcd#a36e5ed2)
+      Adding filament-semantic-value v0.1.5 (https://github.com/agent-ix/filament-semantic-value?rev=689f259eab592b62cb362f5e649dba16adf874f7#689f259e)
+      Adding fsl-cst v0.1.0 (https://github.com/agent-ix/filament-spec-language?rev=dccaf11c3d00f51738761f26cb72ef3124415e02#dccaf11c)
+      Adding fsl-eval v0.1.0 (https://github.com/agent-ix/filament-spec-language?rev=dccaf11c3d00f51738761f26cb72ef3124415e02#dccaf11c)
+      Adding fsl-forms v0.1.0 (https://github.com/agent-ix/filament-spec-language?rev=dccaf11c3d00f51738761f26cb72ef3124415e02#dccaf11c)
+      Adding fsl-foundation v0.1.0 (https://github.com/agent-ix/filament-spec-language?rev=dccaf11c3d00f51738761f26cb72ef3124415e02#dccaf11c)
+      Adding fsl-package v0.3.0 (https://github.com/agent-ix/filament-spec-language?rev=dccaf11c3d00f51738761f26cb72ef3124415e02#dccaf11c)
+      Adding fsl-replay v0.3.0 (https://github.com/agent-ix/filament-spec-language?rev=dccaf11c3d00f51738761f26cb72ef3124415e02#dccaf11c)
+      Adding fsl-route v0.1.0 (https://github.com/agent-ix/filament-spec-language?rev=dccaf11c3d00f51738761f26cb72ef3124415e02#dccaf11c)
+      Adding fsl-semantics v0.1.0 (https://github.com/agent-ix/filament-spec-language?rev=dccaf11c3d00f51738761f26cb72ef3124415e02#dccaf11c)
+   Compiling filament-contract-codegen v0.1.0 (/home/peter/dev/worktrees/codegen-pinhop)
+    Finished `dev` profile [unoptimized] target(s) in 25.17s

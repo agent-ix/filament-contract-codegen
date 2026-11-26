@@ -157,9 +157,7 @@ pub(crate) fn authored_over(
     );
     let site = call_site(
         SourceIdentity::new(AUTHORITY, UNIT),
-        "graph".to_owned(),
-        UNIT,
-        source.as_bytes(),
+        fsl_replay::CallSiteUnit::new("graph".to_owned(), UNIT, source.as_bytes()),
         [domain.as_slice()],
         &DependencyInput::default(),
         &fsl_replay::RequestClocks::default(),

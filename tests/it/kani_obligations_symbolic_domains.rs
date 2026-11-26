@@ -617,9 +617,11 @@ fn replay_collection_function(
     let selection = QualifiedName::new(vec![Identifier::new("inspect").unwrap()]).unwrap();
     let site = call_site(
         source_identity,
-        "ir268-symbolic".to_owned(),
-        "ir268-symbolic.native",
-        fixture.source.as_bytes(),
+        fsl_replay::CallSiteUnit::new(
+            "ir268-symbolic".to_owned(),
+            "ir268-symbolic.native",
+            fixture.source.as_bytes(),
+        ),
         [fixture.model_bytes.as_slice()],
         &DependencyInput::default(),
         &fsl_replay::RequestClocks::default(),
@@ -785,9 +787,11 @@ fn try_emitted_from_document_and_body(document: Value, body: &str) -> Result<Emi
         .expect("qualified function name");
     let site = call_site(
         SourceIdentity::new("agent-ix", "ir268-symbolic.native"),
-        "ir268-symbolic".to_owned(),
-        "ir268-symbolic.native",
-        unit.as_bytes(),
+        fsl_replay::CallSiteUnit::new(
+            "ir268-symbolic".to_owned(),
+            "ir268-symbolic.native",
+            unit.as_bytes(),
+        ),
         [document_bytes.as_slice()],
         &DependencyInput::default(),
         &fsl_replay::RequestClocks::default(),
@@ -809,9 +813,11 @@ fn try_emitted_from_document_and_clause(
     let unit = source_unit_with_clause(declaration, body);
     let site = call_site(
         SourceIdentity::new("agent-ix", "ir1091-clause.native"),
-        "ir1091-clause".to_owned(),
-        "ir1091-clause.native",
-        unit.as_bytes(),
+        fsl_replay::CallSiteUnit::new(
+            "ir1091-clause".to_owned(),
+            "ir1091-clause.native",
+            unit.as_bytes(),
+        ),
         [document_bytes.as_slice()],
         &DependencyInput::default(),
         &fsl_replay::RequestClocks::default(),

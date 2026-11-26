@@ -682,7 +682,8 @@ fn same_named_general_clause_bodies_and_preconditions_cannot_reuse_a_method() {
         let b = make(1);
         // Clause identity is content-derived and position-independent: the clause whose body
         // changed takes another identity; a clause with the same body keeps its own.
-        let same = |x: &filament_contract_model::CheckedNodeId, y: &filament_contract_model::CheckedNodeId| {
+        let same = |x: &filament_contract_model::CheckedNodeId,
+                    y: &filament_contract_model::CheckedNodeId| {
             // The node id carries graph row positions; the structural key is the identity.
             a.package.structural_key(x) == b.package.structural_key(y)
         };

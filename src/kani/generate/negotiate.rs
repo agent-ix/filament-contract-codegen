@@ -2155,9 +2155,11 @@ mod tests {
             }
             let located = fsl_replay::call_site(
                 fsl_replay::SourceIdentity::new("agent-ix", "test:state-frame-twin"),
-                "state-frame-twin".to_owned(),
-                "test:state-frame-twin",
-                source.as_bytes(),
+                fsl_replay::CallSiteUnit::new(
+                    "state-frame-twin".to_owned(),
+                    "test:state-frame-twin",
+                    source.as_bytes(),
+                ),
                 [twin.domain.as_slice()],
                 &fsl_replay::DependencyInput::default(),
                 &crate::replay::function::ReplayClocks::default()
@@ -2297,9 +2299,11 @@ mod tests {
         let package_name = format!("ir276-collection-request-{quantifiers}");
         let located = fsl_replay::call_site(
             fsl_replay::SourceIdentity::new("agent-ix", package_name.as_str()),
-            package_name.clone(),
-            package_name.as_str(),
-            source.as_bytes(),
+            fsl_replay::CallSiteUnit::new(
+                package_name.clone(),
+                package_name.as_str(),
+                source.as_bytes(),
+            ),
             [domain.as_slice()],
             &fsl_replay::DependencyInput::default(),
             &crate::replay::function::ReplayClocks::default()

@@ -1,0 +1,7 @@
+    Updating git repository `https://github.com/agent-ix/filament-contract-ir`
+    Updating git repository `https://github.com/agent-ix/filament-eval`
+    Updating git repository `https://github.com/agent-ix/filament-semantic-value`
+    Updating git repository `https://github.com/agent-ix/filament-spec-language`
+    Updating git repository `https://github.com/agent-ix/filament-observation`
+error: cannot update the lock file /home/peter/dev/worktrees/codegen-pinhop/Cargo.lock because --locked was passed to prevent this
+help: to generate the lock file without accessing the network, remove the --locked flag and use --offline instead.

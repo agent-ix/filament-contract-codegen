@@ -1,0 +1,244 @@
+    Updating git repository `https://github.com/agent-ix/filament-contract-ir`
+    Updating git repository `https://github.com/agent-ix/filament-eval`
+    Updating git repository `https://github.com/agent-ix/filament-semantic-value`
+    Updating git repository `https://github.com/agent-ix/filament-spec-language`
+    Updating git repository `https://github.com/agent-ix/filament-observation`
+     Locking 14 packages to latest compatible versions
+      Adding filament-checked v0.1.6 (https://github.com/agent-ix/filament-eval?rev=b50cfacb80459d5f1fb3b8deeafc63222db69401#b50cfacb)
+      Adding filament-contract-ir v0.1.5 (https://github.com/agent-ix/filament-contract-ir?rev=4f0b908a5c8077458e4748509284704b9025493f#4f0b908a)
+      Adding filament-contract-model v0.1.2 (https://github.com/agent-ix/filament-contract-ir?rev=4f0b908a5c8077458e4748509284704b9025493f#4f0b908a)
+      Adding filament-eval v0.1.6 (https://github.com/agent-ix/filament-eval?rev=b50cfacb80459d5f1fb3b8deeafc63222db69401#b50cfacb)
+      Adding filament-observation v0.1.1 (https://github.com/agent-ix/filament-observation?rev=a36e5ed2e1bde35a27461fa38084d3e140e09fcd#a36e5ed2)
+      Adding filament-semantic-value v0.1.5 (https://github.com/agent-ix/filament-semantic-value?rev=689f259eab592b62cb362f5e649dba16adf874f7#689f259e)
+      Adding fsl-cst v0.1.0 (https://github.com/agent-ix/filament-spec-language?rev=dccaf11c3d00f51738761f26cb72ef3124415e02#dccaf11c)
+      Adding fsl-eval v0.1.0 (https://github.com/agent-ix/filament-spec-language?rev=dccaf11c3d00f51738761f26cb72ef3124415e02#dccaf11c)
+      Adding fsl-forms v0.1.0 (https://github.com/agent-ix/filament-spec-language?rev=dccaf11c3d00f51738761f26cb72ef3124415e02#dccaf11c)
+      Adding fsl-foundation v0.1.0 (https://github.com/agent-ix/filament-spec-language?rev=dccaf11c3d00f51738761f26cb72ef3124415e02#dccaf11c)
+      Adding fsl-package v0.3.0 (https://github.com/agent-ix/filament-spec-language?rev=dccaf11c3d00f51738761f26cb72ef3124415e02#dccaf11c)
+      Adding fsl-replay v0.3.0 (https://github.com/agent-ix/filament-spec-language?rev=dccaf11c3d00f51738761f26cb72ef3124415e02#dccaf11c)
+      Adding fsl-route v0.1.0 (https://github.com/agent-ix/filament-spec-language?rev=dccaf11c3d00f51738761f26cb72ef3124415e02#dccaf11c)
+      Adding fsl-semantics v0.1.0 (https://github.com/agent-ix/filament-spec-language?rev=dccaf11c3d00f51738761f26cb72ef3124415e02#dccaf11c)
+   Compiling filament-contract-codegen v0.1.0 (/home/peter/dev/worktrees/codegen-pinhop)
+error[E0277]: `&str` is not an iterator
+    --> src/kani/generate/negotiate.rs:2159:17
+     |
+2156 |             let located = fsl_replay::call_site(
+     |                           --------------------- required by a bound introduced by this call
+...
+2159 |                 "test:state-frame-twin",
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^ `&str` is not an iterator; try calling `.chars()` or `.bytes()`
+     |
+     = help: the trait `Iterator` is not implemented for `&str`
+     = note: required for `&str` to implement `IntoIterator`
+note: required by a bound in `call_site`
+    --> /home/peter/.cargo/git/checkouts/filament-spec-language-1ba4ce0e71f23cf3/dccaf11/fsl-replay/src/call_site.rs:670:20
+     |
+ 667 | pub fn call_site<'a, S: CallSiteSelection>(
+     |        --------- required by a bound in this function
+...
+ 670 |     packages: impl IntoIterator<Item = &'a [u8]>,
+     |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `call_site`
+
+error[E0277]: the trait bound `fsl_replay::DependencyInput: CallSiteSelection` is not satisfied
+    --> src/kani/generate/negotiate.rs:2162:17
+     |
+2156 |             let located = fsl_replay::call_site(
+     |                           --------------------- required by a bound introduced by this call
+...
+2162 |                 &fsl_replay::DependencyInput::default(),
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `CallSiteSelection` is not implemented for `fsl_replay::DependencyInput`
+     |
+     = help: the following other types implement trait `CallSiteSelection`:
+               ClauseName
+               FieldName
+               ImportedFunctionName
+               OperationName
+               fsl_replay::PopulationName
+               fsl_replay::QualifiedName
+note: required by a bound in `call_site`
+    --> /home/peter/.cargo/git/checkouts/filament-spec-language-1ba4ce0e71f23cf3/dccaf11/fsl-replay/src/call_site.rs:667:25
+     |
+ 667 | pub fn call_site<'a, S: CallSiteSelection>(
+     |                         ^^^^^^^^^^^^^^^^^ required by this bound in `call_site`
+
+error[E0277]: the trait bound `fsl_replay::DependencyInput: fsl_replay::call_site::sealed::Locate` is not satisfied
+    --> src/kani/generate/negotiate.rs:2156:27
+     |
+2156 |               let located = fsl_replay::call_site(
+     |  ___________________________^
+2157 | |                 fsl_replay::SourceIdentity::new("agent-ix", "test:state-frame-twin"),
+2158 | |                 "state-frame-twin".to_owned(),
+2159 | |                 "test:state-frame-twin",
+...    |
+2166 | |                 &fsl_replay::ClauseName(fsl_replay::Identifier::new(&names[0]).unwrap()),
+2167 | |             )
+     | |_____________^ the trait `fsl_replay::call_site::sealed::Locate` is not implemented for `fsl_replay::DependencyInput`
+     |
+     = help: the following other types implement trait `fsl_replay::call_site::sealed::Locate`:
+               ClauseName
+               FieldName
+               ImportedFunctionName
+               OperationName
+               fsl_replay::PopulationName
+               fsl_replay::QualifiedName
+
+error[E0061]: this function takes 6 arguments but 8 arguments were supplied
+    --> src/kani/generate/negotiate.rs:2156:27
+     |
+2156 |             let located = fsl_replay::call_site(
+     |                           ^^^^^^^^^^^^^^^^^^^^^
+2157 |                 fsl_replay::SourceIdentity::new("agent-ix", "test:state-frame-twin"),
+2158 |                 "state-frame-twin".to_owned(),
+     |                 ----------------------------- expected `CallSiteUnit<'_>`, found `String`
+2159 |                 "test:state-frame-twin",
+2160 |                 source.as_bytes(),
+     |                 ----------------- expected `&DependencyInput`, found `&[u8]`
+2161 |                 [twin.domain.as_slice()],
+     |                 ------------------------ unexpected argument #5 of type `[&[u8]; 1]`
+...
+2166 |                 &fsl_replay::ClauseName(fsl_replay::Identifier::new(&names[0]).unwrap()),
+     |                 ------------------------------------------------------------------------ unexpected argument #8 of type `&ClauseName`
+     |
+     = note: expected reference `&fsl_replay::DependencyInput`
+                found reference `&[u8]`
+note: function defined here
+    --> /home/peter/.cargo/git/checkouts/filament-spec-language-1ba4ce0e71f23cf3/dccaf11/fsl-replay/src/call_site.rs:667:8
+     |
+ 667 | pub fn call_site<'a, S: CallSiteSelection>(
+     |        ^^^^^^^^^
+help: remove the extra arguments
+     |
+2158 ~                 /* CallSiteUnit<'_> */,
+2159 |                 "test:state-frame-twin",
+2160 ~                 /* &fsl_replay::DependencyInput */,
+2161 |                 &fsl_replay::DependencyInput::default(),
+2162 |                 &crate::replay::function::ReplayClocks::default()
+2163 |                     .request(("agent-ix".to_owned(), "test:state-frame-twin".to_owned()))
+2164 ~                     .expect("empty clock rows are well formed"),
+     |
+
+error[E0277]: `&str` is not an iterator
+    --> src/kani/generate/negotiate.rs:2301:13
+     |
+2298 |         let located = fsl_replay::call_site(
+     |                       --------------------- required by a bound introduced by this call
+...
+2301 |             package_name.as_str(),
+     |             ^^^^^^^^^^^^^^^^^^^^^ `&str` is not an iterator; try calling `.chars()` or `.bytes()`
+     |
+     = help: the trait `Iterator` is not implemented for `&str`
+     = note: required for `&str` to implement `IntoIterator`
+note: required by a bound in `call_site`
+    --> /home/peter/.cargo/git/checkouts/filament-spec-language-1ba4ce0e71f23cf3/dccaf11/fsl-replay/src/call_site.rs:670:20
+     |
+ 667 | pub fn call_site<'a, S: CallSiteSelection>(
+     |        --------- required by a bound in this function
+...
+ 670 |     packages: impl IntoIterator<Item = &'a [u8]>,
+     |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `call_site`
+
+error[E0277]: the trait bound `fsl_replay::DependencyInput: CallSiteSelection` is not satisfied
+    --> src/kani/generate/negotiate.rs:2304:13
+     |
+2298 |         let located = fsl_replay::call_site(
+     |                       --------------------- required by a bound introduced by this call
+...
+2304 |             &fsl_replay::DependencyInput::default(),
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `CallSiteSelection` is not implemented for `fsl_replay::DependencyInput`
+     |
+     = help: the following other types implement trait `CallSiteSelection`:
+               ClauseName
+               FieldName
+               ImportedFunctionName
+               OperationName
+               fsl_replay::PopulationName
+               fsl_replay::QualifiedName
+note: required by a bound in `call_site`
+    --> /home/peter/.cargo/git/checkouts/filament-spec-language-1ba4ce0e71f23cf3/dccaf11/fsl-replay/src/call_site.rs:667:25
+     |
+ 667 | pub fn call_site<'a, S: CallSiteSelection>(
+     |                         ^^^^^^^^^^^^^^^^^ required by this bound in `call_site`
+
+error[E0277]: the trait bound `fsl_replay::DependencyInput: fsl_replay::call_site::sealed::Locate` is not satisfied
+    --> src/kani/generate/negotiate.rs:2298:23
+     |
+2298 |           let located = fsl_replay::call_site(
+     |  _______________________^
+2299 | |             fsl_replay::SourceIdentity::new("agent-ix", package_name.as_str()),
+2300 | |             package_name.clone(),
+2301 | |             package_name.as_str(),
+...    |
+2308 | |             &selection,
+2309 | |         )
+     | |_________^ the trait `fsl_replay::call_site::sealed::Locate` is not implemented for `fsl_replay::DependencyInput`
+     |
+     = help: the following other types implement trait `fsl_replay::call_site::sealed::Locate`:
+               ClauseName
+               FieldName
+               ImportedFunctionName
+               OperationName
+               fsl_replay::PopulationName
+               fsl_replay::QualifiedName
+
+error[E0061]: this function takes 6 arguments but 8 arguments were supplied
+    --> src/kani/generate/negotiate.rs:2298:23
+     |
+2298 |         let located = fsl_replay::call_site(
+     |                       ^^^^^^^^^^^^^^^^^^^^^
+2299 |             fsl_replay::SourceIdentity::new("agent-ix", package_name.as_str()),
+2300 |             package_name.clone(),
+     |             -------------------- expected `CallSiteUnit<'_>`, found `String`
+2301 |             package_name.as_str(),
+2302 |             source.as_bytes(),
+     |             ----------------- expected `&DependencyInput`, found `&[u8]`
+2303 |             [domain.as_slice()],
+     |             ------------------- unexpected argument #5 of type `[&[u8]; 1]`
+...
+2308 |             &selection,
+     |             ---------- unexpected argument #8 of type `&fsl_replay::QualifiedName`
+     |
+     = note: expected reference `&fsl_replay::DependencyInput`
+                found reference `&[u8]`
+note: function defined here
+    --> /home/peter/.cargo/git/checkouts/filament-spec-language-1ba4ce0e71f23cf3/dccaf11/fsl-replay/src/call_site.rs:667:8
+     |
+ 667 | pub fn call_site<'a, S: CallSiteSelection>(
+     |        ^^^^^^^^^
+help: remove the extra arguments
+     |
+2300 ~             /* CallSiteUnit<'_> */,
+2301 |             package_name.as_str(),
+2302 ~             /* &fsl_replay::DependencyInput */,
+2303 |             &fsl_replay::DependencyInput::default(),
+2304 |             &crate::replay::function::ReplayClocks::default()
+2305 |                 .request(("agent-ix".to_owned(), package_name.clone()))
+2306 ~                 .expect("empty clock rows are well formed"),
+     |
+
+Some errors have detailed explanations: E0061, E0277.
+For more information about an error, try `rustc --explain E0061`.
+error: could not compile `filament-contract-codegen` (lib test) due to 8 previous errors
+warning: build failed, waiting for other jobs to finish...
+error[E0004]: non-exhaustive patterns: `&ReplaySource::ClaimFree` not covered
+   --> tests/it/skeleton_spine.rs:116:25
+    |
+116 |     let witness = match &source {
+    |                         ^^^^^^^ pattern `&ReplaySource::ClaimFree` not covered
+    |
+note: `ReplaySource` defined here
+   --> /home/peter/.cargo/git/checkouts/filament-spec-language-1ba4ce0e71f23cf3/dccaf11/fsl-replay/src/witness.rs:436:1
+    |
+436 | pub enum ReplaySource {
+    | ^^^^^^^^^^^^^^^^^^^^^
+...
+446 |     ClaimFree,
+    |     --------- not covered
+    = note: the matched value is of type `&ReplaySource`
+help: ensure that all possible cases are being handled by adding a match arm with a wildcard pattern or an explicit pattern as shown
+    |
+126 ~         },
+127 +         &ReplaySource::ClaimFree => todo!()
+    |
+
+For more information about this error, try `rustc --explain E0004`.
+error: could not compile `filament-contract-codegen` (test "it") due to 1 previous error
