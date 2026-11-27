@@ -374,9 +374,12 @@ fn tc_006_generated_oracle_probes_qualify_against_native_llvm_export() {
         ),
     );
     let output_path = directory.path.join("coverage.json");
-    let toolchain = format!("+{}", env!("CARGO_PKG_RUST_VERSION"));
+    let Some(toolchain) = option_env!("RUSTUP_TOOLCHAIN") else {
+        panic!("native coverage requires the running test's recorded rustup toolchain");
+    };
     let sysroot = Command::new("rustc")
-        .args([&toolchain, "--print", "sysroot"])
+        .args(["--print", "sysroot"])
+        .env("RUSTUP_TOOLCHAIN", toolchain)
         .output()
         .unwrap();
     assert!(sysroot.status.success());
@@ -389,13 +392,8 @@ fn tc_006_generated_oracle_probes_qualify_against_native_llvm_export() {
         );
     }
     let output = Command::new("cargo")
-        .args([
-            &toolchain,
-            "llvm-cov",
-            "--offline",
-            "--json",
-            "--output-path",
-        ])
+        .args(["llvm-cov", "--offline", "--json", "--output-path"])
+        .env("RUSTUP_TOOLCHAIN", toolchain)
         .arg(&output_path)
         .current_dir(&directory.path)
         .env("CARGO_TARGET_DIR", directory.path.join("target"))
