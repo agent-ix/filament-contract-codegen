@@ -304,9 +304,11 @@ fn complete_bound_package_is_observed_against_actual_native_llvm() {
             runtime_dependency(&[])
         ),
     );
-    let toolchain = format!("+{}", env!("CARGO_PKG_RUST_VERSION"));
+    let toolchain = option_env!("RUSTUP_TOOLCHAIN")
+        .expect("native coverage requires the running test's recorded rustup toolchain");
     let sysroot = Command::new("rustc")
-        .args([&toolchain, "--print", "sysroot"])
+        .args(["--print", "sysroot"])
+        .env("RUSTUP_TOOLCHAIN", toolchain)
         .output()
         .unwrap();
     assert!(sysroot.status.success());
@@ -316,13 +318,8 @@ fn complete_bound_package_is_observed_against_actual_native_llvm() {
         assert!(tools.join(tool).is_file(), "qualified tool missing");
     }
     let out = Command::new("cargo")
-        .args([
-            &toolchain,
-            "llvm-cov",
-            "--offline",
-            "--json",
-            "--output-path",
-        ])
+        .args(["llvm-cov", "--offline", "--json", "--output-path"])
+        .env("RUSTUP_TOOLCHAIN", toolchain)
         .arg(source_root.join("coverage.json"))
         .current_dir(&source_root)
         .env("CARGO_TARGET_DIR", root.join("target"))

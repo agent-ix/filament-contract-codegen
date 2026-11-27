@@ -420,9 +420,11 @@ fn admitted_v2_oracle_is_vacuous_under_real_llvm_when_consequent_is_skipped() {
             filament_contract_codegen::EXACT_DEPENDENCY_SOURCE
         ),
     );
-    let toolchain = format!("+{}", env!("CARGO_PKG_RUST_VERSION"));
+    let toolchain = option_env!("RUSTUP_TOOLCHAIN")
+        .expect("native coverage requires the running test's recorded rustup toolchain");
     let sysroot = Command::new("rustc")
-        .args([&toolchain, "--print", "sysroot"])
+        .args(["--print", "sysroot"])
+        .env("RUSTUP_TOOLCHAIN", toolchain)
         .output()
         .unwrap();
     assert!(sysroot.status.success());
@@ -432,13 +434,8 @@ fn admitted_v2_oracle_is_vacuous_under_real_llvm_when_consequent_is_skipped() {
         assert!(tools.join(tool).is_file());
     }
     let run = Command::new("cargo")
-        .args([
-            &toolchain,
-            "llvm-cov",
-            "--offline",
-            "--json",
-            "--output-path",
-        ])
+        .args(["llvm-cov", "--offline", "--json", "--output-path"])
+        .env("RUSTUP_TOOLCHAIN", toolchain)
         .arg(root.join("coverage.json"))
         .current_dir(&root)
         .env("CARGO_TARGET_DIR", scratch.path.join("target"))

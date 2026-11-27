@@ -2265,9 +2265,11 @@ fn skipped_v2_clause_consequent_has_a_measured_zero_native_probe() {
             filament_contract_codegen::EXACT_DEPENDENCY_SOURCE
         ),
     );
-    let toolchain = format!("+{}", env!("CARGO_PKG_RUST_VERSION"));
+    let toolchain = option_env!("RUSTUP_TOOLCHAIN")
+        .expect("native coverage requires the running test's recorded rustup toolchain");
     let sysroot = std::process::Command::new("rustc")
-        .args([&toolchain, "--print", "sysroot"])
+        .args(["--print", "sysroot"])
+        .env("RUSTUP_TOOLCHAIN", toolchain)
         .output()
         .unwrap();
     assert!(sysroot.status.success());
@@ -2277,13 +2279,8 @@ fn skipped_v2_clause_consequent_has_a_measured_zero_native_probe() {
         assert!(tools.join(tool).is_file(), "qualified tool missing");
     }
     let output = std::process::Command::new("cargo")
-        .args([
-            &toolchain,
-            "llvm-cov",
-            "--offline",
-            "--json",
-            "--output-path",
-        ])
+        .args(["llvm-cov", "--offline", "--json", "--output-path"])
+        .env("RUSTUP_TOOLCHAIN", toolchain)
         .arg(scratch.path.join("coverage.json"))
         .current_dir(&scratch.path)
         .env("CARGO_TARGET_DIR", scratch.path.join("target"))

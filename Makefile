@@ -61,7 +61,7 @@ GATES_CARGO_TARGET_DIR := $(if $(strip $(CARGO_TARGET_DIR)),$(CARGO_TARGET_DIR),
 
 $(GATES_BIN): scripts/cg_gates.rs Cargo.toml Cargo.lock Makefile
 	@mkdir -p target
-	$(CARGO) +$(MSRV) build $(LOCKED) --bin cg_gates --target-dir "$(GATES_CARGO_TARGET_DIR)"
+	$(CARGO) build $(LOCKED) --bin cg_gates --target-dir "$(GATES_CARGO_TARGET_DIR)"
 	install -m 755 "$(GATES_CARGO_TARGET_DIR)/debug/cg_gates" $@
 
 .PHONY: fspec-preflight
@@ -100,12 +100,12 @@ test: fspec-preflight fspec-preflight-selftest
 # count before and after, and a real mixed batch) run through `cargo kani`. The filters
 # follow `--` because libtest accepts several; cargo's own positional filter
 # takes one.
-# The test suite drives real tools: the native-coverage tests run `cargo +$(MSRV)
+# The test suite drives real tools: the native-coverage tests run `cargo
 # llvm-cov` and read llvm-cov/llvm-profdata from that toolchain's sysroot, and the Kani
 # tests run `cargo kani`. Install them once per machine.
 .PHONY: tools
 tools:
-	rustup component add llvm-tools-preview --toolchain $(MSRV)
+	rustup component add llvm-tools-preview
 	$(CARGO) install --locked cargo-llvm-cov
 	$(CARGO) install --locked kani-verifier
 	$(CARGO) kani setup
@@ -119,7 +119,7 @@ KANI_LOCK ?= /tmp/agent-e-heavy-build.lock
 # name with --ignored (see
 # docs/qualification/ir854-general-route-division-measurements.md).
 KANI_FILTERS := kani_obligations kani_obligations_symbolic_domains skeleton_spine kani_stdout_capture bounded_kani_corpus kani_generation kani_batching enum_scalar_harness float_scalar_harness shadow_kani native_constant_divisor_8_bit native_div_floor_mutants
-KANI_TEST := $(CARGO) +$(MSRV) test $(LOCKED) -j 4 --test it --target-dir target-codex-backends -- --ignored --test-threads=1 $(KANI_FILTERS)
+KANI_TEST := $(CARGO) test $(LOCKED) -j 4 --test it --target-dir target-codex-backends -- --ignored --test-threads=1 $(KANI_FILTERS)
 
 # Opt-in live-solver lane (TC-059, FR-045-AC-4/5): real cvc5 proofs through the refinement
 # adapter. The test is #[ignore]d because it needs a cvc5 binary; run it with
@@ -148,7 +148,7 @@ kani-gate: $(GATES_BIN)
 KANI_MUTANTS ?= scripts/kani-mutants.json
 KANI_MUTANT_TIMEOUT ?= 3600
 KANI_MUTATIONS_BUDGET ?= 21600
-KANI_MUTANT_TEST := $(CARGO) +$(MSRV) test $(LOCKED) -j 4 --test it -- --ignored --test-threads=1 --nocapture --exact
+KANI_MUTANT_TEST := $(CARGO) test $(LOCKED) -j 4 --test it -- --ignored --test-threads=1 --nocapture --exact
 
 .PHONY: kani-mutations
 kani-mutations: $(GATES_BIN)
