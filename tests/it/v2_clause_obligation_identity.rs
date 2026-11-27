@@ -506,6 +506,8 @@ fn clause_key(
         text(field),
         text("false"),
         text("query"),
+        node(domain.clone()),
+        // The application result type and semantic type are distinct path positions.
         node(domain),
     ]);
     let literal = twin_key(vec![
