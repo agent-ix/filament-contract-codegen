@@ -487,6 +487,8 @@ fn clause_key(
         text("filament.op.model.deref"),
         text("deref"),
         node(account.clone()),
+        // The application result type and semantic type are distinct path positions.
+        node(account.clone()),
     ]);
     let domain = twin_key(vec![
         text("bounded_domain"),
@@ -523,6 +525,8 @@ fn clause_key(
         node(literal),
         text("filament.op.integer.ge"),
         text("binary"),
+        node(twin_key(vec![text("scalar_type"), text("boolean")])),
+        // The application result type and semantic type are distinct path positions.
         node(twin_key(vec![text("scalar_type"), text("boolean")])),
     ]);
     let anchor = twin_key(vec![
