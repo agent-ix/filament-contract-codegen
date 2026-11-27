@@ -470,6 +470,7 @@ fn a_reaches_field_without_a_field_member_is_refused_not_read_as_another_form() 
         declaration: node.clone(),
         name: "next".into(),
         read_form: None,
+        population: None,
     };
     let refused = Err(GraphRefusal::Unsupported(Reason::FieldNotAdmitted));
     assert_eq!(
