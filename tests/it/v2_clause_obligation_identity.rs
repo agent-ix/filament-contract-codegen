@@ -447,6 +447,7 @@ fn twin_key(path: Vec<PathSegment>) -> NodeKey {
 /// `self.<field> >= literal` over a field declared `minimum..=maximum`.
 fn clause_key(
     operation: &str,
+    field: &str,
     literal: &str,
     minimum: &str,
     maximum: &str,
@@ -501,6 +502,8 @@ fn clause_key(
         text("query"),
         node(deref),
         text("filament.op.record.project"),
+        node(account.clone()),
+        text(field),
         text("false"),
         text("query"),
         node(domain),
@@ -541,12 +544,12 @@ fn clause_key(
 
 /// `ClauseA`: `pre` on `deposit` over `balance` (`-5..=10`).
 fn key_a() -> NodeKey {
-    clause_key("deposit", "0", "-5", "10", 0)
+    clause_key("deposit", "balance", "0", "-5", "10", 0)
 }
 
 /// `ClauseB`: `pre` on `transfer` over `audit` (`50..=60`).
 fn key_b() -> NodeKey {
-    clause_key("transfer", "55", "50", "60", 0)
+    clause_key("transfer", "audit", "55", "50", "60", 0)
 }
 
 struct TwoClauses {
@@ -712,7 +715,7 @@ fn a_claim_key_differing_only_in_its_node_ordinal_is_refused() {
     let two = two_clauses();
     let reordinal = two.claim(
         &two.a,
-        clause_key("deposit", "0", "-5", "10", 1),
+        clause_key("deposit", "balance", "0", "-5", "10", 1),
         two.read_a(10),
     );
     let claim_b = two.claim(&two.b, key_b(), two.read_b());
