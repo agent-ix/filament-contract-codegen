@@ -420,8 +420,9 @@ fn admitted_v2_oracle_is_vacuous_under_real_llvm_when_consequent_is_skipped() {
             filament_contract_codegen::EXACT_DEPENDENCY_SOURCE
         ),
     );
-    let toolchain = option_env!("RUSTUP_TOOLCHAIN")
-        .expect("native coverage requires the running test's recorded rustup toolchain");
+    let Some(toolchain) = option_env!("RUSTUP_TOOLCHAIN") else {
+        panic!("native coverage requires the running test's recorded rustup toolchain");
+    };
     let sysroot = Command::new("rustc")
         .args(["--print", "sysroot"])
         .env("RUSTUP_TOOLCHAIN", toolchain)

@@ -2265,8 +2265,9 @@ fn skipped_v2_clause_consequent_has_a_measured_zero_native_probe() {
             filament_contract_codegen::EXACT_DEPENDENCY_SOURCE
         ),
     );
-    let toolchain = option_env!("RUSTUP_TOOLCHAIN")
-        .expect("native coverage requires the running test's recorded rustup toolchain");
+    let Some(toolchain) = option_env!("RUSTUP_TOOLCHAIN") else {
+        panic!("native coverage requires the running test's recorded rustup toolchain");
+    };
     let sysroot = std::process::Command::new("rustc")
         .args(["--print", "sysroot"])
         .env("RUSTUP_TOOLCHAIN", toolchain)

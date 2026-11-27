@@ -368,8 +368,8 @@ pub(super) fn render(
             let parameters = (0..operation.parameters.len())
                 .map(|parameter| format!(", &parameter_{parameter}"))
                 .collect::<String>();
-            for condition in 0..prepared.preconditions[index].len() {
-                if prepared.preconditions[index][condition]
+            for (condition, precondition) in prepared.preconditions[index].iter().enumerate() {
+                if precondition
                     .oracle
                     .descriptor
                     .operation_identities
@@ -381,7 +381,6 @@ pub(super) fn render(
                     )
                     .map_err(|_| R::Render)?;
                 } else {
-                    let precondition = &prepared.preconditions[index][condition];
                     writeln!(
                         source,
                         "match evaluate_pre_{index}_{condition}(&state{parameters}) {{\n{}\n{}\n}}",

@@ -892,7 +892,7 @@ fn tc_024_sqrt_and_fma_operands_are_checked_for_float_type_and_width() {
         } else {
             LiteralKind::Float32Bits
         };
-        for position in 0..positions {
+        for (position, operand) in shape.operands.iter().enumerate() {
             for (term, found) in [
                 (zero_literal(), "integer"),
                 (
@@ -905,7 +905,7 @@ fn tc_024_sqrt_and_fma_operands_are_checked_for_float_type_and_width() {
                 ),
             ] {
                 assert_eq!(
-                    check_operand(&graph, position, &term, shape.operands[position]),
+                    check_operand(&graph, position, &term, *operand),
                     Err(ExactScalarRefusal::OperandTypeMismatch {
                         position,
                         expected: form,

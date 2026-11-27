@@ -304,8 +304,9 @@ fn complete_bound_package_is_observed_against_actual_native_llvm() {
             runtime_dependency(&[])
         ),
     );
-    let toolchain = option_env!("RUSTUP_TOOLCHAIN")
-        .expect("native coverage requires the running test's recorded rustup toolchain");
+    let Some(toolchain) = option_env!("RUSTUP_TOOLCHAIN") else {
+        panic!("native coverage requires the running test's recorded rustup toolchain");
+    };
     let sysroot = Command::new("rustc")
         .args(["--print", "sysroot"])
         .env("RUSTUP_TOOLCHAIN", toolchain)

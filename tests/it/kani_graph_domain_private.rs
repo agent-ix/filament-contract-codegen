@@ -1075,18 +1075,18 @@ fn zeroed_dormant_padding_preserves_the_samplers_admission() {
                 graph.target = graph.start;
                 for row in 0..ROWS {
                     graph.degrees[row] = next(COLS as i64 + 1);
-                    for column in 0..COLS {
-                        graph.edges[row][column] = next(ROWS as i64);
+                    for edge in &mut graph.edges[row] {
+                        *edge = next(ROWS as i64);
                     }
                 }
                 let zeroed = graph.normalized();
                 let mut filled = zeroed;
                 for row in 0..ROWS {
-                    for column in 0..COLS {
+                    for (column, edge) in filled.edges[row].iter_mut().enumerate() {
                         let dormant =
                             (row as i64) >= zeroed.count || (column as i64) >= zeroed.degrees[row];
                         if dormant {
-                            filled.edges[row][column] = next(sampler.rows.max(1) as i64);
+                            *edge = next(sampler.rows.max(1) as i64);
                         }
                     }
                     if (row as i64) >= zeroed.count {

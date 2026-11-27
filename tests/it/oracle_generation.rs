@@ -374,8 +374,9 @@ fn tc_006_generated_oracle_probes_qualify_against_native_llvm_export() {
         ),
     );
     let output_path = directory.path.join("coverage.json");
-    let toolchain = option_env!("RUSTUP_TOOLCHAIN")
-        .expect("native coverage requires the running test's recorded rustup toolchain");
+    let Some(toolchain) = option_env!("RUSTUP_TOOLCHAIN") else {
+        panic!("native coverage requires the running test's recorded rustup toolchain");
+    };
     let sysroot = Command::new("rustc")
         .args(["--print", "sysroot"])
         .env("RUSTUP_TOOLCHAIN", toolchain)

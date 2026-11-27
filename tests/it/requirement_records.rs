@@ -1644,11 +1644,11 @@ fn routed_identity_carries_the_occurrence_and_the_direct_one_does_not() {
         .generate(&scenario.valid(), scenario.records())
         .expect("both occurrences route");
     let mut occurrences = Vec::new();
-    for index in 0..2 {
+    for (index, requirement) in scenario.requirements[..2].iter().enumerate() {
         let harness = kani_record(&generation, index).1.expect("a harness");
         assert_eq!(
             harness.identity.requirement_occurrence.as_ref(),
-            Some(&scenario.requirements[index].occurrence)
+            Some(&requirement.occurrence)
         );
         assert!(harness.identity.path_condition.is_empty());
         assert!(harness.identity.guard_inputs.is_empty());
