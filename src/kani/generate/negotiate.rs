@@ -2154,6 +2154,7 @@ mod tests {
                 source = source.replace(&original, &distinct);
             }
             let located = fsl_replay::call_site(
+                &fsl_cst::ParserContext::new(),
                 fsl_replay::SourceIdentity::new("agent-ix", "test:state-frame-twin"),
                 fsl_replay::CallSiteUnit::new(
                     "state-frame-twin".to_owned(),
@@ -2298,6 +2299,7 @@ mod tests {
                 .unwrap();
         let package_name = format!("ir276-collection-request-{quantifiers}");
         let located = fsl_replay::call_site(
+            &fsl_cst::ParserContext::new(),
             fsl_replay::SourceIdentity::new("agent-ix", package_name.as_str()),
             fsl_replay::CallSiteUnit::new(
                 package_name.clone(),

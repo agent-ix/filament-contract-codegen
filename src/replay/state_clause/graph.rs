@@ -17,6 +17,7 @@ use filament_contract_model::{
     CheckedOccurrenceRole, CheckedPackageV2,
 };
 use filament_exact::Origin;
+use fsl_cst::ParserContext;
 use fsl_package::ObligationIdentity;
 use fsl_replay::{
     call_site, AnchorKind, ClauseName, ClauseSelectionInput, EnvelopeSource, QualifiedName,
@@ -436,7 +437,9 @@ impl StateClauseReplay {
         })?;
         let (run, dependencies, clocks) =
             run.admit().map_err(StateClauseReplayError::Dependencies)?;
+        let parser_context = ParserContext::new();
         let located = call_site(
+            &parser_context,
             run.source.source_identity(),
             fsl_replay::CallSiteUnit::new(
                 package.name().to_owned(),
