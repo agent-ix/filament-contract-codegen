@@ -457,7 +457,7 @@ dependencies = [
  "filament-exact",
  "filament-semantic-value",
  "filament-walk",
- "quire-canonical",
+ "quire-canonical 0.3.2",
  "serde",
  "thiserror",
 ]
@@ -484,7 +484,7 @@ dependencies = [
  "num-bigint",
  "proc-macro2",
  "proptest",
- "quire-canonical",
+ "quire-canonical 0.3.3",
  "quote",
  "rustix",
  "semver",
@@ -522,7 +522,7 @@ dependencies = [
  "num-bigint",
  "num-integer",
  "num-traits",
- "quire-canonical",
+ "quire-canonical 0.3.2",
  "serde",
  "serde_json",
  "serde_path_to_error",
@@ -581,7 +581,7 @@ source = "git+https://github.com/agent-ix/filament-observation?rev=a571be6adc71d
 dependencies = [
  "filament-exact",
  "filament-semantic-value",
- "quire-canonical",
+ "quire-canonical 0.3.2",
  "serde",
  "serde_json",
  "sha2",
@@ -594,7 +594,7 @@ version = "0.1.5"
 source = "git+https://github.com/agent-ix/filament-semantic-value?rev=95a9034d5ac8abe856f1d67428dd60c9bbc85fc5#95a9034d5ac8abe856f1d67428dd60c9bbc85fc5"
 dependencies = [
  "filament-exact",
- "quire-canonical",
+ "quire-canonical 0.3.2",
  "thiserror",
 ]
 
@@ -609,7 +609,7 @@ version = "0.2.1"
 source = "git+https://github.com/agent-ix/filament-verification-contracts?rev=e6eebb660c6d9b3dee25d643923d3984cbc745b6#e6eebb660c6d9b3dee25d643923d3984cbc745b6"
 dependencies = [
  "jsonschema 0.55.1",
- "quire-canonical",
+ "quire-canonical 0.3.2",
  "regress",
  "schemars",
  "serde",
@@ -709,7 +709,7 @@ dependencies = [
  "fsl-package",
  "fsl-semantics",
  "ix-trace-rs",
- "quire-canonical",
+ "quire-canonical 0.3.2",
  "serde",
  "serde_json",
  "sha2",
@@ -739,7 +739,7 @@ dependencies = [
  "filament-semantic-value",
  "hashbrown 0.17.1",
  "ix-trace-rs",
- "quire-canonical",
+ "quire-canonical 0.3.2",
  "serde",
  "serde_json",
  "thiserror",
@@ -757,7 +757,7 @@ dependencies = [
  "fsl-foundation",
  "fsl-semantics",
  "ix-trace-rs",
- "quire-canonical",
+ "quire-canonical 0.3.2",
  "serde",
  "serde_json",
  "thiserror",
@@ -787,7 +787,7 @@ dependencies = [
  "num-bigint",
  "num-integer",
  "num-traits",
- "quire-canonical",
+ "quire-canonical 0.3.2",
  "quire-rs 0.62.3",
  "serde",
  "serde_json",
@@ -825,7 +825,7 @@ dependencies = [
  "fsl-forms",
  "fsl-foundation",
  "ix-trace-rs",
- "quire-canonical",
+ "quire-canonical 0.3.2",
  "serde",
  "serde_json",
  "tempfile",
@@ -1595,12 +1595,35 @@ name = "quire-canonical"
 version = "0.3.2"
 source = "git+https://github.com/agent-ix/quire-canonical?tag=v0.3.2#f00840e4add08100e3491e8bc5bcb7d60a9e9ca2"
 dependencies = [
- "quire-canonical-derive",
+ "quire-canonical-derive 0.3.0 (git+https://github.com/agent-ix/quire-canonical?tag=v0.3.2)",
  "ryu-js",
  "serde",
  "serde_json",
  "sha2",
  "thiserror",
+]
+
+[[package]]
+name = "quire-canonical"
+version = "0.3.3"
+source = "git+https://github.com/agent-ix/quire-canonical?tag=quire-canonical-v0.3.3#9e6c3002a71944899c532b727dd05957d3c97265"
+dependencies = [
+ "quire-canonical-derive 0.3.0 (git+https://github.com/agent-ix/quire-canonical?tag=quire-canonical-v0.3.3)",
+ "ryu-js",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thiserror",
+]
+
+[[package]]
+name = "quire-canonical-derive"
+version = "0.3.0"
+source = "git+https://github.com/agent-ix/quire-canonical?tag=quire-canonical-v0.3.3#9e6c3002a71944899c532b727dd05957d3c97265"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 3.0.10",
 ]
 
 [[package]]
