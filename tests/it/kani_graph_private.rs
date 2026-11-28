@@ -156,6 +156,7 @@ pub(crate) fn authored_over(
         "language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.model.complete/v1\";\nmodel M = \"{DOMAIN}\";\nbound Nodes on M::CollectionNodes [{maximum}]\npredicate inspect using v (input: M::Node): Boolean {{ true }}\n{invariants}"
     );
     let site = call_site(
+        &fsl_cst::ParserContext::new(),
         SourceIdentity::new(AUTHORITY, UNIT),
         fsl_replay::CallSiteUnit::new("graph".to_owned(), UNIT, source.as_bytes()),
         [domain.as_slice()],

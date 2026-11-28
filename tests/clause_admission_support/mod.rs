@@ -390,6 +390,7 @@ impl Twin {
 
     pub fn emitted_package(&self, clause: &str) -> (CheckedPackageV2, CheckedNodeId) {
         let located = call_site(
+            &fsl_cst::ParserContext::new(),
             SourceIdentity::new(AUTHORITY, IDENTITY),
             fsl_replay::CallSiteUnit::new(IDENTITY.to_owned(), IDENTITY, &self.unit),
             [self.domain.as_slice()],

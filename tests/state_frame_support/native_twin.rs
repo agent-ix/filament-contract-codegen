@@ -1782,6 +1782,7 @@ impl Twin {
         operation: &str,
     ) -> Result<OperationSite, Box<CallSiteRefusal>> {
         call_site(
+            &fsl_cst::ParserContext::new(),
             SourceIdentity::new(AUTHORITY, self.identity),
             fsl_replay::CallSiteUnit::new(self.identity.to_owned(), self.identity, &self.unit),
             [self.domain.as_slice()],
@@ -1807,6 +1808,7 @@ impl Twin {
     pub fn emitted_wire(&self, clause: &str) -> Value {
         let name = ClauseName(Identifier::new(clause).expect("identifier"));
         let located = call_site(
+            &fsl_cst::ParserContext::new(),
             SourceIdentity::new(AUTHORITY, self.identity),
             fsl_replay::CallSiteUnit::new(self.identity.to_owned(), self.identity, &self.unit),
             [self.domain.as_slice()],
@@ -2030,6 +2032,7 @@ impl Twin {
     ) -> (CheckedPackageV2, CheckedNodeId) {
         let name = ClauseName(Identifier::new(clause).expect("identifier"));
         let located = call_site(
+            &fsl_cst::ParserContext::new(),
             SourceIdentity::new(AUTHORITY, self.identity),
             fsl_replay::CallSiteUnit::new(self.identity.to_owned(), self.identity, unit),
             [fsl_document],
@@ -2318,6 +2321,7 @@ impl Twin {
     pub fn clause_site(&self, clause: &str) -> Result<ClauseSite, Box<CallSiteRefusal>> {
         let name = ClauseName(Identifier::new(clause).expect("identifier"));
         call_site(
+            &fsl_cst::ParserContext::new(),
             SourceIdentity::new(AUTHORITY, self.identity),
             fsl_replay::CallSiteUnit::new(self.identity.to_owned(), self.identity, &self.unit),
             [self.domain.as_slice()],
