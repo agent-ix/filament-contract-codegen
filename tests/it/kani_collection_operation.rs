@@ -71,6 +71,7 @@ fn fixture_with_body(doc: &Value, preconditions: &str, body: &str) -> CheckedPac
     let bytes = quire_canonical::to_vec(doc, quire_canonical::Limits::new(1 << 20)).unwrap();
     let source = format!("language \"ix:native\" edition \"1-draft\";\nprofile v = \"filament.model.complete/v1\";\nmodel M = \"{MODEL}\";\n{preconditions}\npost CollectionReady using v on M::Node::step {{ {body} }}\n");
     let site = call_site(
+        &fsl_cst::ParserContext::new(),
         SourceIdentity::new("agent-ix", "ir1091-operation.native"),
         fsl_replay::CallSiteUnit::new(
             "ir1091-operation".to_owned(),
