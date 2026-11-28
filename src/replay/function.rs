@@ -11,6 +11,7 @@
 use std::{collections::BTreeMap, fmt};
 
 use filament_semantic_value::{catalog::Category, supplied_stop::SuppliedLimits};
+use fsl_cst::ParserContext;
 use fsl_package::{ClockConfiguration, ObligationIdentity};
 use fsl_replay::{
     call_site, replay, witness_entry_name, BackendId, CallSite, CallSiteRefusal,
@@ -690,7 +691,9 @@ impl ReplayPackage {
         let identifier = Identifier::new(function).map_err(|_| invalid())?;
         let selection = QualifiedName::new(vec![identifier]).map_err(|_| invalid())?;
         let source = &inputs.source;
+        let parser_context = ParserContext::new();
         let site = call_site(
+            &parser_context,
             source.source_identity(),
             fsl_replay::CallSiteUnit::new(
                 inputs.package_name.clone(),

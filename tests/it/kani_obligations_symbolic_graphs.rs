@@ -118,6 +118,7 @@ fn try_authored_clause(
         declarations.join("\n")
     );
     let site = call_site(
+        &fsl_cst::ParserContext::new(),
         SourceIdentity::new("agent-ix", "graph.native"),
         fsl_replay::CallSiteUnit::new("graph".to_owned(), "graph.native", source.as_bytes()),
         [bytes.as_slice()],

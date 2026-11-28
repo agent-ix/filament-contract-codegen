@@ -92,6 +92,7 @@ pub(super) fn compile_refusal(
     let bytes = quire_canonical::to_vec(doc, quire_canonical::Limits::new(1 << 20)).unwrap();
     let source = clause_source(safety, constraints);
     call_site(
+        &fsl_cst::ParserContext::new(),
         SourceIdentity::new("agent-ix", format!("{name}.native")),
         fsl_replay::CallSiteUnit::new(name.to_owned(), "constrained.native", source.as_bytes()),
         [bytes.as_slice()],
@@ -103,6 +104,7 @@ pub(super) fn compile_refusal(
 }
 pub(super) fn fixture_source(bytes: Vec<u8>, name: &str, source: String) -> Fixture {
     let site = call_site(
+        &fsl_cst::ParserContext::new(),
         SourceIdentity::new("agent-ix", format!("{name}.native")),
         fsl_replay::CallSiteUnit::new(name.to_owned(), "constrained.native", source.as_bytes()),
         [bytes.as_slice()],

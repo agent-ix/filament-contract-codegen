@@ -616,6 +616,7 @@ fn replay_collection_function(
     let source_identity = SourceIdentity::new("agent-ix", "ir268-symbolic.native");
     let selection = QualifiedName::new(vec![Identifier::new("inspect").unwrap()]).unwrap();
     let site = call_site(
+        &fsl_cst::ParserContext::new(),
         source_identity,
         fsl_replay::CallSiteUnit::new(
             "ir268-symbolic".to_owned(),
@@ -786,6 +787,7 @@ fn try_emitted_from_document_and_body(document: Value, body: &str) -> Result<Emi
     let selection = QualifiedName::new(vec![Identifier::new("inspect").expect("function name")])
         .expect("qualified function name");
     let site = call_site(
+        &fsl_cst::ParserContext::new(),
         SourceIdentity::new("agent-ix", "ir268-symbolic.native"),
         fsl_replay::CallSiteUnit::new(
             "ir268-symbolic".to_owned(),
@@ -812,6 +814,7 @@ fn try_emitted_from_document_and_clause(
         .expect("the authored model document has bounded JCS bytes");
     let unit = source_unit_with_clause(declaration, body);
     let site = call_site(
+        &fsl_cst::ParserContext::new(),
         SourceIdentity::new("agent-ix", "ir1091-clause.native"),
         fsl_replay::CallSiteUnit::new(
             "ir1091-clause".to_owned(),

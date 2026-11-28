@@ -20,6 +20,7 @@ use std::{collections::BTreeMap, fmt};
 
 use filament_contract_model::{CheckedPackageLockV2, CheckedPackageV2, ContractSourceV1};
 use filament_exact::NodeKey;
+use fsl_cst::ParserContext;
 use fsl_package::ObligationIdentity;
 use fsl_replay::{
     call_site, replay_frame, CallSiteRefusal, ClaimedChange, DocumentRef, EmptyQualifiedName,
@@ -765,7 +766,9 @@ impl FrameReplay {
         let (check_text, values) = decoded_state(&harness, &playback, limits)?;
         let (run, dependencies, clocks) = run.admit().map_err(FrameReplayError::Dependencies)?;
         let replay_limits = run.replay_limits;
+        let parser_context = ParserContext::new();
         let located = call_site(
+            &parser_context,
             run.source.source_identity(),
             fsl_replay::CallSiteUnit::new(
                 run.package_name.clone(),
