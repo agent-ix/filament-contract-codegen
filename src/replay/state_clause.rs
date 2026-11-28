@@ -28,6 +28,7 @@ use std::{collections::BTreeMap, fmt};
 
 use filament_contract_model::{CheckedModelFieldsError, CheckedNodeId, CheckedPackageV2};
 use filament_semantic_value::catalog::{Category, InternalFault};
+use fsl_cst::ParserContext;
 use fsl_replay::{
     call_site, derive_state_clause_witness, replay_state_clause, CallSiteRefusal, ClauseName,
     ClauseSelectionInput, DeclaredDomain, DerivationRefusal, DocumentRef, DomainKey, DomainKind,
@@ -659,7 +660,9 @@ impl StateClauseReplay {
         } = inputs;
         let (run, dependencies, clocks) =
             run.admit().map_err(StateClauseReplayError::Dependencies)?;
+        let parser_context = ParserContext::new();
         let located = call_site(
+            &parser_context,
             run.source.source_identity(),
             fsl_replay::CallSiteUnit::new(
                 package.name().to_owned(),
